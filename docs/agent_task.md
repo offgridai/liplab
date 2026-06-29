@@ -1,6 +1,6 @@
 # Agent Iteration Task
 
-Improve `src/lipsync` only. Run `liplab_runner` before and after changes. Do not touch LineCoach or Unreal code. Do not add or consume TTS hint streams; the harness and core are transcript + PCM only.
+Improve lipsync logic in `offgrid_dropin` only. Run `liplab_runner` before and after changes. Do not touch LineCoach. Do not add or consume TTS hint streams; the harness and core are transcript + PCM only.
 
 Primary failure classes to reduce:
 

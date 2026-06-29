@@ -2,6 +2,8 @@
 
 Standalone lipsync lab for iterating on the OffgridAI lipsync core outside Unreal Engine.
 
+`offgrid_dropin` is the authoritative lipsync source tree shared with OffgridAI. The standalone harness compiles and exercises that code directly.
+
 ## Goals
 
 - Build locally with CMake, without UE.
@@ -14,7 +16,7 @@ Standalone lipsync lab for iterating on the OffgridAI lipsync core outside Unrea
 ## Layout
 
 ```text
-src/lipsync/                 Standalone, agent-editable core and stable data model
+offgrid_dropin/              Authoritative OffgridAI lipsync source snapshot and edit target
 harness/                     Local command-line runner
 inputs/transcripts/          One .txt per case
 inputs/wav/                  Matching .wav files, PCM16
@@ -22,7 +24,6 @@ inputs/handmade/             Matching handmade .csv labels
 outputs/runs/latest/         Generated planned/speech/committed/grade logs
 scripts/verify.bat          One-command Windows build/run/grade verification
 AGENTS.md                   Rules for Codex and other coding agents
-offgrid_dropin/              Current Unreal plugin lipsync source snapshot for transplant/reference
 lipsync.md                   OffgridAI architecture/spec
 ```
 
@@ -36,6 +37,14 @@ build\Release\liplab_runner.exe .
 
 With Ninja or Makefile generators, the executable may instead be `build\liplab_runner.exe` or `./build/liplab_runner`.
 
+Optional streaming knobs:
+
+```bash
+build\Release\liplab_runner.exe . --buffer-ms 350 --chunk-ms 40
+```
+
+`--buffer-ms` controls how far playback trails observed audio in the standalone stream simulation and defaults to `350`. The same value is passed into the shared lipsync runtime as `PrerollSec`.
+
 
 ## One-command verification
 
@@ -46,6 +55,28 @@ scripts\verify.bat
 ```
 
 This configures CMake, builds `liplab_runner`, runs the sample corpus, summarizes the latest run, and checks grade thresholds from `docs/grade_thresholds.json`.
+
+## Handmade draft generation
+
+Generate batch draft annotations from the current transcript + WAV corpus:
+
+```bash
+python scripts/draft_handmade.py
+```
+
+This runs `liplab_runner`, converts the latest runtime outputs into rich draft packages under `outputs/handmade_drafts/<case>/`, and writes a `draft.annotation.json` plus `review_notes.txt` for each case.
+
+Export draft packages into grader-facing CSV files:
+
+```bash
+python scripts/export_handmade.py --allow-draft
+```
+
+Validate handmade CSVs and draft packages:
+
+```bash
+python scripts/check_handmade.py --include-drafts
+```
 
 ## Handmade CSV format
 
@@ -59,19 +90,19 @@ Praat TextGrid support can be added later, but CSV is deliberately the first-cla
 ## Agent rules
 
 1. Do not modify Offgrid LineCoach.
-2. Do not add Unreal dependencies to `src/lipsync`.
+2. Iterate lipsync logic in `offgrid_dropin`.
 3. Preserve monotonic committed event order.
 4. Transcript owns viseme identity; PCM audio only affects timing.
 5. Do not add TTS hint-stream inputs, text-progress fields, token progress, or predicted word schedule dependencies.
 6. Do not permanently suppress planned visible visemes.
 7. Scheduling changes must improve or preserve aggregate grade.
 8. Prefer deleting overlapping layers over adding fallbacks.
-9. `offgrid_dropin/Public/Lipsync` and `offgrid_dropin/Private/Lipsync` are the Unreal transplant/reference boundary.
+9. `offgrid_dropin/Public/Lipsync` and `offgrid_dropin/Private/Lipsync` are the authoritative lipsync boundary.
 
 10. Run `scripts\verify.bat` before handing off code changes.
-11. Keep the public API in `src/lipsync/LipsyncCore.h` stable unless the Offgrid transplant contract is updated.
+11. Keep the authoritative lipsync behavior in `offgrid_dropin` and route standalone verification through that same code.
 
-See `AGENTS.md`, `docs/regression_policy.md`, and `docs/offgrid_transplant_contract.md` for the full automation contract.
+See `AGENTS.md`, `docs/regression_policy.md`, `docs/offgrid_transplant_contract.md`, and `docs/handmade_authoring_pipeline.md` for the full automation contract and the proposed gold-annotation workflow.
 
 ## Outputs
 

@@ -1,6 +1,6 @@
 # Offgrid Transplant Contract
 
-`src/lipsync` is the portable lipsync core. It must stay usable outside Unreal Engine and remain straightforward to transplant back into the OffgridAI plugin.
+`offgrid_dropin` is the authoritative lipsync code shared with OffgridAI. The local harness exists to exercise and grade that code path directly.
 
 ## LineCoach boundary
 

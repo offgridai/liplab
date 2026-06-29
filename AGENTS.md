@@ -1,10 +1,9 @@
 # Agent Instructions
 
-This repository is a standalone research harness for the OffgridAI lipsync core. It is designed for Codex and other coding agents to iterate safely without touching Unreal Engine code.
+This repository is a standalone research harness around the OffgridAI lipsync core. Lipsync logic should be iterated in `offgrid_dropin`, while the local harness remains responsible for standalone build/run/grade flow.
 
 ## Hard boundaries
 
-- Do not add Unreal Engine, UObject, USTRUCT, FString, TArray, MetaHuman, FaceDriver, or LineCoach dependencies to `src/lipsync`.
 - Do not reintroduce TTS hint streams, text-progress estimates, token indices, predicted word schedules, or external TTS timing ownership.
 - Do not make audio choose viseme identity. Transcript-derived viseme identity is authoritative.
 - Do not permanently suppress planned visible visemes as a scheduling shortcut.
@@ -15,7 +14,8 @@ This repository is a standalone research harness for the OffgridAI lipsync core.
 
 Preferred edit targets:
 
-- `src/lipsync/` — core lipsync algorithm and stable public data model.
+- `offgrid_dropin/Public/Lipsync/` — authoritative public lipsync interfaces shared with OffgridAI.
+- `offgrid_dropin/Private/Lipsync/` — authoritative lipsync implementation shared with OffgridAI.
 - `harness/` — standalone local runner only.
 - `grader/` — grading utilities and metrics.
 - `scripts/` — local automation.
@@ -54,13 +54,13 @@ A change is not acceptable if it introduces:
 - new missing visemes on the checked-in sample corpus,
 - worse mean absolute center timing by more than the configured tolerance,
 - worse pause-boundary leakage once that metric is present,
-- Unreal-specific dependencies in `src/lipsync`.
+- divergence between the standalone harness behavior and the authoritative `offgrid_dropin` lipsync logic.
 
 ## Offgrid transplant contract
 
-`src/lipsync` is the transplantable core. Offgrid LineCoach should only call the narrow lipsync API/facade and should not contain lipsync scheduling logic.
+`offgrid_dropin` is the authoritative lipsync code shared with OffgridAI. The local harness should adapt around that code; it should not become an independent second implementation.
 
-Keep the public core API stable unless the Offgrid integration contract is deliberately updated and documented.
+Keep the public lipsync API stable unless the Offgrid integration contract is deliberately updated and documented.
 
 ## Coding style
 

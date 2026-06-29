@@ -1,0 +1,440 @@
+{
+  "case_id": "case_0044_20260629_094441_616_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000043_00",
+  "created_utc": "2026-06-29T20:13:39.063808+00:00",
+  "generator": {
+    "kind": "liplab_offline_full_wav",
+    "buffer_ms": 600000,
+    "chunk_ms": 600000,
+    "source_run_dir": "outputs/offline_gold/latest/case_0044_20260629_094441_616_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000043_00"
+  },
+  "approval": {
+    "status": "draft",
+    "reviewed": false,
+    "reviewer": ""
+  },
+  "transcript": "Croatia has stunning coastlines and historic cities!",
+  "audio": {
+    "path": "inputs/wav/case_0044_20260629_094441_616_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000043_00.wav",
+    "sample_rate_hz": 24000,
+    "channels": 1,
+    "frame_count": 83925,
+    "duration_sec": 3.496875
+  },
+  "speech_regions": [
+    {
+      "index": 0,
+      "start": 0.22,
+      "end": 3.31,
+      "last_speech": 3.31,
+      "started": true,
+      "ended": true
+    }
+  ],
+  "planned_visemes": [
+    {
+      "index": 0,
+      "pose": "09_Oh",
+      "word": "croatia",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "text_center_norm": 0.083333,
+      "strength": 0.5,
+      "source_phone": "OW",
+      "source_phone_index": 2,
+      "generator": "cmu_oh_vowel"
+    },
+    {
+      "index": 1,
+      "pose": "06_Eh",
+      "word": "croatia",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "text_center_norm": 0.116667,
+      "strength": 0.92,
+      "source_phone": "EY",
+      "source_phone_index": 3,
+      "generator": "cmu_eh_vowel"
+    },
+    {
+      "index": 2,
+      "pose": "14_ChJjSh",
+      "word": "croatia",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "text_center_norm": 0.15,
+      "strength": 0.82,
+      "source_phone": "SH",
+      "source_phone_index": 4,
+      "generator": "cmu_affricate_sibilant"
+    },
+    {
+      "index": 3,
+      "pose": "07_Aa",
+      "word": "has",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "text_center_norm": 0.24,
+      "strength": 0.92,
+      "source_phone": "AE",
+      "source_phone_index": 1,
+      "generator": "cmu_open_vowel"
+    },
+    {
+      "index": 4,
+      "pose": "07_Aa",
+      "word": "stunning",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "text_center_norm": 0.346667,
+      "strength": 0.92,
+      "source_phone": "AH",
+      "source_phone_index": 2,
+      "generator": "cmu_open_vowel"
+    },
+    {
+      "index": 5,
+      "pose": "09_Oh",
+      "word": "coastlines",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "text_center_norm": 0.47,
+      "strength": 0.92,
+      "source_phone": "OW",
+      "source_phone_index": 1,
+      "generator": "cmu_oh_vowel"
+    },
+    {
+      "index": 6,
+      "pose": "05_Ay",
+      "word": "coastlines",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "text_center_norm": 0.55,
+      "strength": 0.94,
+      "source_phone": "AY",
+      "source_phone_index": 5,
+      "generator": "cmu_ay"
+    },
+    {
+      "index": 7,
+      "pose": "07_Aa",
+      "word": "and",
+      "word_index": 4,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "text_center_norm": 0.613333,
+      "strength": 0.5,
+      "source_phone": "AH",
+      "source_phone_index": 0,
+      "generator": "cmu_open_vowel"
+    },
+    {
+      "index": 8,
+      "pose": "09_Oh",
+      "word": "historic",
+      "word_index": 5,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "text_center_norm": 0.7925,
+      "strength": 0.92,
+      "source_phone": "AO",
+      "source_phone_index": 4,
+      "generator": "cmu_oh_vowel"
+    },
+    {
+      "index": 9,
+      "pose": "03_Ee",
+      "word": "cities",
+      "word_index": 6,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "text_center_norm": 0.916,
+      "strength": 0.92,
+      "source_phone": "IH",
+      "source_phone_index": 1,
+      "generator": "cmu_front_vowel"
+    }
+  ],
+  "visemes": [
+    {
+      "index": 0,
+      "id": "09_Oh",
+      "pose": "09_Oh",
+      "start": 0.2965,
+      "center": 0.364,
+      "end": 0.4315,
+      "word": "croatia",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "strength": 0.58,
+      "commit_reason": "streaming_forced_alignment",
+      "alignment_reason": "streaming_forced_alignment_viterbi",
+      "source_phone_class": "vowel_round",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "draft",
+        "reviewed": false
+      },
+      "notes": [],
+      "flags": [
+        {
+          "kind": "low_strength_viseme",
+          "start": 0.2965,
+          "end": 0.4315,
+          "note": "Viseme strength is low (0.580)."
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "id": "06_Eh",
+      "pose": "06_Eh",
+      "start": 0.4465,
+      "center": 0.514,
+      "end": 0.5815,
+      "word": "croatia",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "strength": 0.92,
+      "commit_reason": "streaming_forced_alignment",
+      "alignment_reason": "streaming_forced_alignment_viterbi",
+      "source_phone_class": "vowel_front",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "draft",
+        "reviewed": false
+      },
+      "notes": [],
+      "flags": []
+    },
+    {
+      "index": 2,
+      "id": "14_ChJjSh",
+      "pose": "14_ChJjSh",
+      "start": 0.5795,
+      "center": 0.627,
+      "end": 0.6745,
+      "word": "croatia",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "strength": 0.82,
+      "commit_reason": "streaming_forced_alignment",
+      "alignment_reason": "streaming_forced_alignment_viterbi",
+      "source_phone_class": "sibilant",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "draft",
+        "reviewed": false
+      },
+      "notes": [],
+      "flags": []
+    },
+    {
+      "index": 3,
+      "id": "07_Aa",
+      "pose": "07_Aa",
+      "start": 0.8365,
+      "center": 0.904,
+      "end": 0.9715,
+      "word": "has",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "strength": 0.92,
+      "commit_reason": "streaming_forced_alignment",
+      "alignment_reason": "streaming_forced_alignment_viterbi",
+      "source_phone_class": "vowel_open",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "draft",
+        "reviewed": false
+      },
+      "notes": [],
+      "flags": []
+    },
+    {
+      "index": 4,
+      "id": "07_Aa",
+      "pose": "07_Aa",
+      "start": 1.2165,
+      "center": 1.284,
+      "end": 1.3515,
+      "word": "stunning",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "strength": 0.92,
+      "commit_reason": "streaming_forced_alignment",
+      "alignment_reason": "streaming_forced_alignment_viterbi",
+      "source_phone_class": "vowel_open",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "draft",
+        "reviewed": false
+      },
+      "notes": [],
+      "flags": []
+    },
+    {
+      "index": 5,
+      "id": "09_Oh",
+      "pose": "09_Oh",
+      "start": 1.6065,
+      "center": 1.674,
+      "end": 1.7415,
+      "word": "coastlines",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "strength": 0.92,
+      "commit_reason": "streaming_forced_alignment",
+      "alignment_reason": "streaming_forced_alignment_viterbi",
+      "source_phone_class": "vowel_round",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "draft",
+        "reviewed": false
+      },
+      "notes": [],
+      "flags": []
+    },
+    {
+      "index": 6,
+      "id": "05_Ay",
+      "pose": "05_Ay",
+      "start": 1.974,
+      "center": 2.029,
+      "end": 2.084,
+      "word": "coastlines",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "strength": 0.94,
+      "commit_reason": "streaming_forced_alignment",
+      "alignment_reason": "streaming_forced_alignment_viterbi",
+      "source_phone_class": "vowel_open",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "draft",
+        "reviewed": false
+      },
+      "notes": [],
+      "flags": []
+    },
+    {
+      "index": 7,
+      "id": "07_Aa",
+      "pose": "07_Aa",
+      "start": 2.1815,
+      "center": 2.249,
+      "end": 2.3165,
+      "word": "and",
+      "word_index": 4,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "strength": 0.58,
+      "commit_reason": "streaming_forced_alignment",
+      "alignment_reason": "streaming_forced_alignment_viterbi",
+      "source_phone_class": "vowel_open",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "draft",
+        "reviewed": false
+      },
+      "notes": [],
+      "flags": [
+        {
+          "kind": "low_strength_viseme",
+          "start": 2.1815,
+          "end": 2.3165,
+          "note": "Viseme strength is low (0.580)."
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "id": "09_Oh",
+      "pose": "09_Oh",
+      "start": 2.5715,
+      "center": 2.639,
+      "end": 2.7065,
+      "word": "historic",
+      "word_index": 5,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "strength": 0.92,
+      "commit_reason": "streaming_forced_alignment",
+      "alignment_reason": "streaming_forced_alignment_viterbi",
+      "source_phone_class": "vowel_round",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "draft",
+        "reviewed": false
+      },
+      "notes": [],
+      "flags": []
+    },
+    {
+      "index": 9,
+      "id": "03_Ee",
+      "pose": "03_Ee",
+      "start": 2.8615,
+      "center": 2.929,
+      "end": 2.9965,
+      "word": "cities",
+      "word_index": 6,
+      "phrase_index": 0,
+      "sentence_index": 0,
+      "strength": 0.92,
+      "commit_reason": "streaming_forced_alignment",
+      "alignment_reason": "streaming_forced_alignment_viterbi",
+      "source_phone_class": "vowel_front",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "draft",
+        "reviewed": false
+      },
+      "notes": [],
+      "flags": []
+    }
+  ],
+  "flags": [
+    {
+      "kind": "low_strength_viseme",
+      "start": 0.2965,
+      "end": 0.4315,
+      "note": "Viseme strength is low (0.580)."
+    },
+    {
+      "kind": "low_strength_viseme",
+      "start": 2.1815,
+      "end": 2.3165,
+      "note": "Viseme strength is low (0.580)."
+    }
+  ],
+  "notes": [],
+  "summary": {
+    "viseme_count": 10,
+    "flag_count": 2,
+    "flags_by_kind": {
+      "low_strength_viseme": 2
+    },
+    "commit_reasons": {
+      "streaming_forced_alignment": 10
+    },
+    "alignment_reasons": {
+      "streaming_forced_alignment_viterbi": 10
+    },
+    "mapped_to_observed_speech_count": 10
+  }
+}

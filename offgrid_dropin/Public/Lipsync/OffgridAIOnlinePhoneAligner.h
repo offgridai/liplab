@@ -4,6 +4,9 @@
 #include "Lipsync/OffgridAITextVisemePlanner.h"
 #include "Lipsync/OffgridAIStreamingSpeechDetector.h"
 
+// Broad acoustic classes used by the streaming forced aligner.  These are not
+// identity decisions: transcript/CMU phones remain authoritative and these
+// classes only score how plausible a frame is for the next expected phone.
 enum class EOffgridAIPhoneClass : uint8
 {
     Silence,
@@ -46,6 +49,8 @@ struct FOffgridAIOnlinePhoneAlignmentInput
     float ObservedAudioEndSec = 0.0f;
     float PlaybackSec = 0.0f;
     float LookaheadSec = 0.350f;
+    float CommitLagSec = 0.120f;
+    int32 BeamWidth = 18;
     bool bFinal = false;
 };
 
@@ -66,6 +71,13 @@ struct FOffgridAIOnlinePhoneAlignmentResult
     FName AdvanceReason = FName(TEXT("none"));
 };
 
+// Streaming forced alignment over the expected CMU phone path.
+//
+// This replaces the previous occupancy-stretch aligner.  The algorithm is still
+// lightweight enough for runtime use, but it is structurally MFA-inspired:
+// a monotonic left-to-right phone sequence is segmented over observed speech
+// frames using acoustic emission scores plus duration priors.  The aligner never
+// invents phones and never reorders the transcript-derived phone path.
 class OFFGRIDAI_API FOffgridAIOnlinePhoneAligner
 {
 public:

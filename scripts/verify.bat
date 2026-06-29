@@ -1,11 +1,24 @@
 @echo off
-setlocal
+setlocal EnableDelayedExpansion
 cd /d "%~dp0\.."
 
-cmake -S . -B build
+set "CMAKE_EXE=cmake"
+where /q "%CMAKE_EXE%"
+if errorlevel 1 (
+    set "VS_CMAKE=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
+    if exist "!VS_CMAKE!" (
+        set "CMAKE_EXE=!VS_CMAKE!"
+    ) else (
+        echo cmake not found on PATH and Visual Studio CMake was not found at:
+        echo   !VS_CMAKE!
+        exit /b 1
+    )
+)
+
+"%CMAKE_EXE%" -S . -B build
 if errorlevel 1 exit /b 1
 
-cmake --build build --config Release
+"%CMAKE_EXE%" --build build --config Release
 if errorlevel 1 exit /b 1
 
 if exist build\Release\liplab_runner.exe (

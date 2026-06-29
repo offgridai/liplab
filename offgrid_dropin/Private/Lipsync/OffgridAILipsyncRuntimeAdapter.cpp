@@ -132,25 +132,6 @@ static TCHAR BoundaryPunctuationBeforeEvent(const FOffgridAITextVisemePlan& Plan
         : TCHAR(0);
 }
 
-static TCHAR BoundaryPunctuationBetweenEvents(const FOffgridAITextVisemePlan& Plan, int32 PrevEventIndex)
-{
-    if (!Plan.Events.IsValidIndex(PrevEventIndex) || !Plan.Events.IsValidIndex(PrevEventIndex + 1))
-    {
-        return TCHAR(0);
-    }
-
-    const int32 AWord = Plan.Events[PrevEventIndex].WordIndex;
-    const int32 BWord = Plan.Events[PrevEventIndex + 1].WordIndex;
-    if (AWord == INDEX_NONE || BWord == INDEX_NONE || AWord >= BWord)
-    {
-        return TCHAR(0);
-    }
-
-    return Plan.WordBoundaryPunctuationAfter.IsValidIndex(AWord)
-        ? Plan.WordBoundaryPunctuationAfter[AWord]
-        : TCHAR(0);
-}
-
 static bool IsSoftCommaBoundary(TCHAR Punctuation)
 {
     return Punctuation == TCHAR(',');
@@ -392,207 +373,6 @@ static bool HasLongRuntimeSilenceBetween(
     return false;
 }
 
-
-struct FRuntimeSpeechGroup
-{
-    float Start = 0.0f;
-    float End = 0.0f;
-};
-
-static float EventCoverageGapWeight(const FOffgridAITextVisemePlan& Plan, int32 PrevEventIndex)
-{
-    if (!Plan.Events.IsValidIndex(PrevEventIndex) || !Plan.Events.IsValidIndex(PrevEventIndex + 1))
-    {
-        return 1.0f;
-    }
-    float Weight = 1.0f;
-    const FOffgridAITextVisemeEvent& A = Plan.Events[PrevEventIndex];
-    const FOffgridAITextVisemeEvent& B = Plan.Events[PrevEventIndex + 1];
-    if (A.WordIndex != B.WordIndex)
-    {
-        Weight += 0.35f;
-    }
-    if (ResolvePose(A) == ResolvePose(B))
-    {
-        Weight += 0.10f;
-    }
-
-    const TCHAR BoundaryPunctuation = BoundaryPunctuationBetweenEvents(Plan, PrevEventIndex);
-    if (A.SentenceIslandIndex != INDEX_NONE && B.SentenceIslandIndex != INDEX_NONE && A.SentenceIslandIndex != B.SentenceIslandIndex)
-    {
-        Weight += 0.45f;
-    }
-    else if (A.PhraseIndex != INDEX_NONE && B.PhraseIndex != INDEX_NONE && A.PhraseIndex != B.PhraseIndex)
-    {
-        // Reduced soft-comma carry: commas remain softer than sentence/phrase
-        // boundaries, but they still need enough spacing to keep enumerated
-        // list items from running one word early.
-        Weight += IsSoftCommaBoundary(BoundaryPunctuation) ? 0.115f : 0.18f;
-    }
-    return Weight;
-}
-
-static void BuildRuntimeSpeechGroups(const TArray<FOffgridAIStreamingSpeechIsland>* Islands, TArray<FRuntimeSpeechGroup>& OutGroups)
-{
-    OutGroups.Reset();
-    if (!Islands || Islands->Num() == 0)
-    {
-        return;
-    }
-
-    const float MergeGapSec = 0.115f;
-    for (const FOffgridAIStreamingSpeechIsland& Island : *Islands)
-    {
-        const float Start = Island.AudioBufferStartSec;
-        const float End = FMath::Max(Island.AudioBufferLastSpeechSec, Island.AudioBufferEndSec);
-        if (End <= Start + 0.020f)
-        {
-            continue;
-        }
-        if (OutGroups.Num() == 0 || Start > OutGroups.Last().End + MergeGapSec)
-        {
-            FRuntimeSpeechGroup G;
-            G.Start = Start;
-            G.End = End;
-            OutGroups.Add(G);
-        }
-        else
-        {
-            OutGroups.Last().End = FMath::Max(OutGroups.Last().End, End);
-        }
-    }
-}
-
-
-static bool MapActiveSpeechSecondsToWallTime(const TArray<FRuntimeSpeechGroup>& Groups, float ActiveSeconds, float& OutWallTime)
-{
-    if (Groups.Num() == 0)
-    {
-        return false;
-    }
-    float Remaining = ActiveSeconds;
-    for (const FRuntimeSpeechGroup& G : Groups)
-    {
-        const float Duration = FMath::Max(0.0f, G.End - G.Start);
-        if (Remaining <= Duration)
-        {
-            OutWallTime = G.Start + FMath::Max(0.0f, Remaining);
-            return true;
-        }
-        Remaining -= Duration;
-    }
-    OutWallTime = Groups.Last().End;
-    return true;
-}
-
-static bool ComputeRegionalActiveCoverageTarget(
-    const FOffgridAITextVisemePlan& Plan,
-    const TArray<FOffgridAIStreamingSpeechIsland>* Islands,
-    const TArray<FOffgridAIStreamingAudioFeatureFrame>* Frames,
-    float ObservedAudioEndSec,
-    int32 EventIndex,
-    bool bFinal,
-    float& OutTargetCenter,
-    bool& bOutWaitForMoreAudio)
-{
-    bOutWaitForMoreAudio = false;
-    if (!Plan.Events.IsValidIndex(EventIndex) || Plan.Events.Num() <= 0)
-    {
-        return false;
-    }
-
-    TArray<FRuntimeSpeechGroup> Groups;
-    BuildRuntimeSpeechGroups(Islands, Groups);
-    if (Groups.Num() == 0)
-    {
-        return false;
-    }
-
-    float ObservedActive = 0.0f;
-    for (const FRuntimeSpeechGroup& G : Groups)
-    {
-        ObservedActive += FMath::Max(0.0f, G.End - G.Start);
-    }
-    if (ObservedActive <= 0.050f)
-    {
-        return false;
-    }
-
-    // Segment-local occupancy: distribute within the current text sentence rather
-    // than across the whole line. This prevents long merged speech islands from
-    // letting early list items or a first sentence consume timing intended for
-    // later sentence-local visemes. Commas remain soft because they normally keep
-    // the same sentence segment; terminal punctuation gets its own segment.
-    int32 SegmentStart = EventIndex;
-    int32 SegmentEnd = EventIndex;
-    const int32 SentenceIndex = Plan.Events[EventIndex].SentenceIslandIndex;
-    while (SegmentStart > 0 && Plan.Events[SegmentStart - 1].SentenceIslandIndex == SentenceIndex)
-    {
-        --SegmentStart;
-    }
-    while (SegmentEnd + 1 < Plan.Events.Num() && Plan.Events[SegmentEnd + 1].SentenceIslandIndex == SentenceIndex)
-    {
-        ++SegmentEnd;
-    }
-
-    float TotalLineGapWeight = 0.0f;
-    float SegmentStartGapWeight = 0.0f;
-    float SegmentGapWeight = 0.0f;
-    float EventGapWeight = 0.0f;
-    for (int32 I = 0; I < Plan.Events.Num() - 1; ++I)
-    {
-        const float W = EventCoverageGapWeight(Plan, I);
-        if (I < SegmentStart)
-        {
-            SegmentStartGapWeight += W;
-        }
-        if (I >= SegmentStart && I < SegmentEnd)
-        {
-            SegmentGapWeight += W;
-            if (I < EventIndex)
-            {
-                EventGapWeight += W;
-            }
-        }
-        TotalLineGapWeight += W;
-    }
-
-    const float ObservedWallDuration = Groups.Num() > 0
-        ? FMath::Max(0.0f, ObservedAudioEndSec - Groups[0].Start)
-        : 0.0f;
-    const float StreamingDurationEstimate = FMath::Max(Plan.EstimatedDurationSeconds * 0.78f, ObservedWallDuration * 0.86f);
-    const float EstimatedActive = bFinal
-        ? ObservedActive
-        : FMath::Max(ObservedActive, FMath::Max(StreamingDurationEstimate, 0.250f));
-
-    const float LineWeight = FMath::Max(TotalLineGapWeight, 0.001f);
-    const float SegmentStartActive = (SegmentStart <= 0) ? 0.0f : EstimatedActive * (SegmentStartGapWeight / LineWeight);
-    const float SegmentEndActive = (SegmentEnd >= Plan.Events.Num() - 1)
-        ? EstimatedActive
-        : EstimatedActive * ((SegmentStartGapWeight + FMath::Max(SegmentGapWeight, 0.001f)) / LineWeight);
-    const float SegmentActive = FMath::Max(0.040f, SegmentEndActive - SegmentStartActive);
-    const int32 SegmentEventCount = SegmentEnd - SegmentStart + 1;
-    const float SegmentMargin = (SegmentEventCount > 1) ? FMath::Min(0.070f, SegmentActive * 0.075f) : SegmentActive * 0.5f;
-    const float SegmentUsable = FMath::Max(0.001f, SegmentActive - 2.0f * SegmentMargin);
-    const float SegmentNorm = (SegmentEventCount > 1)
-        ? (EventGapWeight / FMath::Max(SegmentGapWeight, 0.001f))
-        : 0.5f;
-    const float TargetActive = SegmentStartActive + SegmentMargin + SegmentUsable * FMath::Clamp(SegmentNorm, 0.0f, 1.0f);
-
-    if (!bFinal && TargetActive > ObservedActive - 0.020f)
-    {
-        bOutWaitForMoreAudio = true;
-        return false;
-    }
-
-    return MapActiveSpeechSecondsToWallTime(Groups, FMath::Clamp(TargetActive, 0.010f, FMath::Max(0.020f, ObservedActive - 0.010f)), OutTargetCenter);
-}
-
-static bool HasObservedFramesThrough(const TArray<FOffgridAIStreamingAudioFeatureFrame>* Frames, float TimeSec)
-{
-    return Frames && Frames->Num() > 0 && Frames->Last().AudioBufferEndSec >= TimeSec - 0.005f;
-}
-
 static bool HasVisibleAlignedPhone(const FOffgridAIOnlinePhoneAlignmentResult& A, int32 PhoneIndex)
 {
     return A.PhoneCenterSeconds.IsValidIndex(PhoneIndex) && A.PhoneCenterSeconds[PhoneIndex] >= 0.0f;
@@ -780,9 +560,10 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
     AlignmentInput.ObservedAudioEndSec = Input.ObservedAudioBufferEndSec;
     AlignmentInput.PlaybackSec = Input.CurrentPlaybackSec;
     AlignmentInput.LookaheadSec = FMath::Max(Input.PrerollSec, 0.0f);
+    AlignmentInput.CommitLagSec = 0.120f;
     // Input-stream close means all audio evidence for this line is known.
-    // Final drain is allowed to use occupancy/duration fallback so weak phone
-    // evidence never suppresses planned visemes.
+    // Final drain is allowed to use transcript-duration fallback so weak or
+    // under-resolved acoustic evidence never suppresses planned visemes.
     AlignmentInput.bFinal = Input.bInputStreamClosed || Input.bPlaybackFinalized;
     const FOffgridAIOnlinePhoneAlignmentResult Alignment = FOffgridAIOnlinePhoneAligner::Compute(AlignmentInput);
 
@@ -818,7 +599,7 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         if (bHasPhoneEvidence)
         {
             Center = Alignment.PhoneCenterSeconds[PhoneIndex] - LeadForPose(Pose);
-            PlacementReason = FName(TEXT("phone_class_local_bias"));
+            PlacementReason = FName(TEXT("streaming_forced_alignment"));
         }
 
         // The first visible state must not pre-open before confirmed speech.
@@ -921,8 +702,8 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
                 const bool bNextSoftCommaBoundary = bNextPhraseBoundary && IsSoftCommaBoundary(NextBoundaryPunctuation);
                 // Soft comma carry: keep phrase-tail protection for real
                 // pauses, but do not clamp a list item's tail before every short
-                // comma dip. This lets occupancy spread articulation through
-                // supported comma gaps.
+                // comma dip. This lets the forced path keep articulation
+                // continuous through supported comma gaps.
                 const float RequiredTailGap = bNextSentenceBoundary ? 0.115f : (bNextSoftCommaBoundary ? 0.340f : 0.135f);
                 const float MaxTailSearch = bNextSentenceBoundary ? 1.350f : (bNextSoftCommaBoundary ? 0.700f : 0.750f);
                 float TailGapStart = -1.0f;
@@ -933,8 +714,8 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
                     // Phrase-tail ownership: this event belongs to the current
                     // text phrase/sentence. If a real acoustic gap and next speech
                     // onset have been observed before the next text event, do not
-                    // let phone bias or active-coverage targeting pull the current
-                    // phrase's tail into the next phrase.
+                    // let the forced alignment path pull the current phrase
+                    // tail into the next phrase.
                     TailGuardMaxCenter = TailGapStart - FMath::Min(EventSpan * 0.38f, 0.055f);
                     TailGuardMaxCenter = FMath::Max(LastCenter + 0.050f, TailGuardMaxCenter);
                     TailGuardReason = bNextSentenceBoundary
@@ -949,58 +730,31 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             }
         }
 
-        // Active-speech occupancy target: distribute the text plan through
-        // observed speech mass while preserving real silence gaps.  Local
-        // phone evidence may locally bias placement, but it must not gate,
-        // suppress, or replace planned viseme identity/order.
-        bool bUsedActiveCoverageTarget = false;
+        // Streaming forced alignment owns timing.  The transcript-derived phone
+        // path is segmented over observed speech frames by the aligner; runtime
+        // guards only preserve phrase ownership and monotonic commit safety.
+        const bool bUsedForcedAlignment = bHasPhoneEvidence;
+
+        if (!bUsedForcedAlignment && !Input.bInputStreamClosed && !Input.bPlaybackFinalized)
         {
-            float ActiveCoverageTarget = 0.0f;
-            bool bWaitForCoverageAudio = false;
-            if (ComputeRegionalActiveCoverageTarget(Plan, Input.SpeechIslands, Input.AudioFeatureFrames, Input.ObservedAudioBufferEndSec, EventIndex, Input.bInputStreamClosed || Input.bPlaybackFinalized, ActiveCoverageTarget, bWaitForCoverageAudio))
-            {
-                const bool bTargetObserved = HasObservedFramesThrough(Input.AudioFeatureFrames, ActiveCoverageTarget) || Input.bInputStreamClosed || Input.bPlaybackFinalized;
-                const bool bTargetInsideCommitHorizon = ActiveCoverageTarget <= CommitTimeHorizon + 0.040f;
-                if (bTargetObserved && bTargetInsideCommitHorizon)
-                {
-                    // Occupancy owns timing.  Phone evidence, when present, only nudges locally.
-                    Center = ActiveCoverageTarget;
-                    if (bHasPhoneEvidence)
-                    {
-                        const float PhoneBiasedCenter = Alignment.PhoneCenterSeconds[PhoneIndex] - LeadForPose(Pose);
-                        Center = FMath::Clamp(PhoneBiasedCenter, ActiveCoverageTarget - 0.045f, ActiveCoverageTarget + 0.045f);
-                        PlacementReason = FName(TEXT("active_speech_coverage_phone_bias"));
-                    }
-                    else
-                    {
-                        PlacementReason = FName(TEXT("active_speech_coverage"));
-                    }
-                    bUsedActiveCoverageTarget = true;
-                }
-                else if (!Input.bInputStreamClosed && !Input.bPlaybackFinalized && ActiveCoverageTarget > CommitTimeHorizon + 0.040f)
-                {
-                    break;
-                }
-            }
-            else if (bWaitForCoverageAudio)
-            {
-                break;
-            }
+            // Streaming-safe: wait until the online Viterbi path has enough
+            // stable audio evidence to expose this phone.
+            break;
         }
 
-        if (!bUsedActiveCoverageTarget && !bHasPhoneEvidence && !Input.bInputStreamClosed && !Input.bPlaybackFinalized)
+        if (!bUsedForcedAlignment && (Input.bInputStreamClosed || Input.bPlaybackFinalized))
         {
-            // Streaming-safe fallback: do not fabricate a future event before either
-            // occupancy or phone-local evidence reaches it.  On final drain, duration
-            // fallback is allowed so weak phone evidence never suppresses planned visemes.
-            break;
+            // End-of-line drain: only after the stream is closed, use the
+            // transcript duration model so weak/under-resolved audio cannot
+            // permanently suppress planned visemes.
+            PlacementReason = FName(TEXT("final_duration_drain"));
         }
 
         // Phrase-start guard: once a real acoustic gap/onset has been observed
         // at a text boundary, later placement stages may not pull the first event
         // of the new phrase/sentence backward into the previous phrase tail. This
-        // runs after active-coverage targeting because coverage can overwrite the
-        // early boundary clamp above.
+        // runs after forced-alignment placement because the aligner can place
+        // a boundary phone before the acoustic phrase onset.
         if (BoundaryGuardMinCenter >= 0.0f && Center < BoundaryGuardMinCenter - 0.010f)
         {
             Center = BoundaryGuardMinCenter;
@@ -1029,7 +783,7 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         const float MinOrderedCenter = LastCenter + 0.050f;
         Center = FMath::Max(Center, MinOrderedCenter);
 
-        if (!bUsedActiveCoverageTarget && SameSentenceAsLast(InOutTrack, T))
+        if (!bUsedForcedAlignment && SameSentenceAsLast(InOutTrack, T))
         {
             const float MaxGap = MaxWallClockGapForPose(Pose);
             const float MaxSameSentenceCenter = LastCenter + MaxGap;
@@ -1090,20 +844,20 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         E.AlignmentReason = bHasPhoneEvidence
             ? (Alignment.PhoneAdvanceReasons.IsValidIndex(PhoneIndex) && !Alignment.PhoneAdvanceReasons[PhoneIndex].IsNone()
                 ? Alignment.PhoneAdvanceReasons[PhoneIndex]
-                : FName(TEXT("phone_class_local_bias")))
+                : FName(TEXT("streaming_forced_alignment")))
             : FName(TEXT("no_phone_evidence"));
         E.CommitPlaybackSeconds = Input.CurrentPlaybackSec;
         E.CommitLeadSeconds = Center - Input.CurrentPlaybackSec;
         E.CommitReason = PlacementReason;
         E.RequiredActiveElapsedSeconds = static_cast<float>(EventIndex + 1);
-        E.ObservedActiveElapsedSeconds = bUsedActiveCoverageTarget
-            ? static_cast<float>(EventIndex + 1)
-            : static_cast<float>(FMath::Max(Alignment.HighestAlignedPhoneIndex + 1, 0));
+        E.ObservedActiveElapsedSeconds = bUsedForcedAlignment
+            ? static_cast<float>(FMath::Max(Alignment.HighestAlignedPhoneIndex + 1, 0))
+            : 0.0f;
         E.ActiveProgressDeficitSeconds = FMath::Max(0.0f, E.RequiredActiveElapsedSeconds - E.ObservedActiveElapsedSeconds);
         E.RequiredProgressNorm = E.RequiredActiveElapsedSeconds;
         E.ObservedProgressNorm = E.ObservedActiveElapsedSeconds;
         E.ActiveProgressRatio = E.RequiredActiveElapsedSeconds > 0.001f ? E.ObservedActiveElapsedSeconds / E.RequiredActiveElapsedSeconds : 1.0f;
-        E.bMappedToObservedSpeech = bUsedActiveCoverageTarget;
+        E.bMappedToObservedSpeech = bUsedForcedAlignment;
         E.SentenceIndex = T.SentenceIslandIndex;
 
         InOutTrack.Events.Add(E);
