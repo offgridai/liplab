@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.20)
+project(liplab LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_library(liplab_core src/lipsync/LipsyncCore.cpp)
+target_include_directories(liplab_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_executable(liplab_runner harness/main.cpp)
+target_link_libraries(liplab_runner PRIVATE liplab_core)
