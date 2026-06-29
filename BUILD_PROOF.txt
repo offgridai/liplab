@@ -1,14 +1,11 @@
-Built locally with:
+Build and verification performed on 2026-06-29T16:12:11Z
 
-cmake -S /mnt/data/liplab -B /mnt/data/liplab/build
-cmake --build /mnt/data/liplab/build -j2
-/mnt/data/liplab/build/liplab_runner /mnt/data/liplab
+Commands:
+  cmake -S . -B build
+  cmake --build build --config Release
+  python3 scripts/run_all.py
+  python3 scripts/summarize.py
+  python3 scripts/check_grades.py
 
-Observed result:
-case001: planned=22 committed=22 handmade=15 mean_ms=75.4647
-
-Generated logs:
-outputs/runs/latest/case001/planned.csv
-outputs/runs/latest/case001/speech_regions.csv
-outputs/runs/latest/case001/committed.csv
-outputs/runs/latest/case001/grade.json
+Result:
+Grade thresholds passed for 1 case(s).

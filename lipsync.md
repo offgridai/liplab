@@ -7,9 +7,11 @@ OffgridAI Lipsync is a real-time streaming viseme scheduler for MetaHuman charac
 The system follows a strict ownership model:
 
 - Transcript owns viseme identity.
-- Audio owns speech timing.
+- PCM audio owns speech timing.
 - The runtime scheduler owns placement.
 - The FaceDriver owns rendering.
+
+The lipsync core does not consume TTS hint streams, text-progress estimates, token indices, or predicted word schedules.
 
 The design is intentionally streaming-first and avoids global sentence alignment.
 
@@ -77,13 +79,13 @@ The detector is not a phoneme recognizer.
 
 It exists only to determine where articulation may occur.
 
-Audio occupancy is the primary timing authority.
+PCM audio occupancy is the timing authority.
 
 ---
 
 ### OnlinePhoneAligner
 
-Provides lightweight phone-class evidence from observed speech.
+Provides lightweight phone-class evidence from observed PCM speech.
 
 Purpose:
 
@@ -254,7 +256,7 @@ The runtime operates on partial future information and does not require complete
 
 ## Current Design Notes
 
-- Audio occupancy is the primary timing signal.
+- PCM audio occupancy is the primary timing signal.
 - Phone alignment acts as secondary placement evidence.
 - Transcript-derived viseme identity remains authoritative.
 - Runtime scheduling is incremental rather than global.
