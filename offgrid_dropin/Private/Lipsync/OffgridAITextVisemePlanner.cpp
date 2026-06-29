@@ -383,7 +383,7 @@ static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FStr
     return false;
 }
 
-static void AddCmuWordVisemeHints(TArray<FOffgridAITextVisemeEvent>& Events, const FString& Word, const TArray<FString>& Phones, int32 WordIndex, int32 Phrase, int32 Sentence)
+static void AddCmuWordVisemeEvents(TArray<FOffgridAITextVisemeEvent>& Events, const FString& Word, const TArray<FString>& Phones, int32 WordIndex, int32 Phrase, int32 Sentence)
 {
     const int32 FirstEventIndex = Events.Num();
     for (int32 I = 0; I < Phones.Num(); ++I)
@@ -433,7 +433,7 @@ static int32 EstimateUnknownWordSyllables(const FString& Word)
     return FMath::Max(Count, 1);
 }
 
-static void AddConservativeUnknownWordHint(TArray<FOffgridAITextVisemeEvent>& Events, const FString& Word, int32 WordIndex, int32 Phrase, int32 Sentence)
+static void AddConservativeUnknownWordEvents(TArray<FOffgridAITextVisemeEvent>& Events, const FString& Word, int32 WordIndex, int32 Phrase, int32 Sentence)
 {
     // Unknown words should not fall back to letter soup. Emit one low-strength
     // generic vowel so timing can continue, and make CMU misses obvious in logs.
@@ -518,11 +518,11 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
 
         if (WordCmuHit.IsValidIndex(W) && WordCmuHit[W])
         {
-            AddCmuWordVisemeHints(Plan.Events, Word, WordPhones[W], W, Phrase, Sentence);
+            AddCmuWordVisemeEvents(Plan.Events, Word, WordPhones[W], W, Phrase, Sentence);
         }
         else
         {
-            AddConservativeUnknownWordHint(Plan.Events, Word, W, Phrase, Sentence);
+            AddConservativeUnknownWordEvents(Plan.Events, Word, W, Phrase, Sentence);
         }
 
         const TArray<FString>* PhonesForWordPtr = (WordCmuHit.IsValidIndex(W) && WordCmuHit[W]) ? &WordPhones[W] : nullptr;

@@ -9,6 +9,7 @@ Standalone lipsync lab for iterating on the OffgridAI lipsync core outside Unrea
 - Emit inspectable logs for every case.
 - Grade committed visemes against handmade Praat-quality answers.
 - Keep the iterated lipsync logic compatible with Offgrid LineCoach while avoiding LineCoach edits.
+- Use transcript + PCM audio only; do not consume TTS hint streams, text-progress estimates, token indices, or predicted word schedules.
 
 ## Layout
 
@@ -47,11 +48,12 @@ Praat TextGrid support can be added later, but CSV is deliberately the first-cla
 1. Do not modify Offgrid LineCoach.
 2. Do not add Unreal dependencies to `src/lipsync`.
 3. Preserve monotonic committed event order.
-4. Transcript owns viseme identity; audio only affects timing.
-5. Do not permanently suppress planned visible visemes.
-6. Scheduling changes must improve or preserve aggregate grade.
-7. Prefer deleting overlapping layers over adding fallbacks.
-8. `offgrid_dropin/Public/Lipsync` and `offgrid_dropin/Private/Lipsync` are the Unreal transplant/reference boundary.
+4. Transcript owns viseme identity; PCM audio only affects timing.
+5. Do not add TTS hint-stream inputs, text-progress fields, token progress, or predicted word schedule dependencies.
+6. Do not permanently suppress planned visible visemes.
+7. Scheduling changes must improve or preserve aggregate grade.
+8. Prefer deleting overlapping layers over adding fallbacks.
+9. `offgrid_dropin/Public/Lipsync` and `offgrid_dropin/Private/Lipsync` are the Unreal transplant/reference boundary.
 
 ## Outputs
 

@@ -1,14 +1,18 @@
-Built locally with:
+Build proof for liplab standalone repo
 
-cmake -S /mnt/data/liplab -B /mnt/data/liplab/build
-cmake --build /mnt/data/liplab/build -j2
-/mnt/data/liplab/build/liplab_runner /mnt/data/liplab
+Commands run from repo root:
+  rm -rf build
+  cmake -S . -B build
+  cmake --build build --config Release
+  ./build/liplab_runner .
 
-Observed result:
-case001: planned=22 committed=22 handmade=15 mean_ms=75.4647
+Result:
+  CMake configure succeeded.
+  CMake build succeeded.
+  Harness run succeeded.
+  Sample output: case001: planned=22 committed=22 handmade=15 mean_ms=75.4647
 
-Generated logs:
-outputs/runs/latest/case001/planned.csv
-outputs/runs/latest/case001/speech_regions.csv
-outputs/runs/latest/case001/committed.csv
-outputs/runs/latest/case001/grade.json
+Revision note:
+  TTS hint-stream usage has been removed from the standalone core/harness contract.
+  The code now uses transcript + PCM WAV input only for planning and timing.
+  No HintStream/TTSHint/text_progress/word_schedule API paths are present in src/lipsync or harness.
