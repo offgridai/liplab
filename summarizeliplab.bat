@@ -1,1 +1,0 @@
-python scripts\summarize_run.py --run experiments\runs\local_run
