@@ -11,6 +11,7 @@
 #include <optional>
 #include <numeric>
 #include <sstream>
+#include <limits>
 #include <vector>
 
 namespace fs = std::filesystem;
@@ -29,6 +30,77 @@ struct HandmadeLabel
     std::string pose;
     std::string word;
     double confidence = 1.0;
+    int word_index = -1;
+    int phrase_index = -1;
+    int sentence_index = -1;
+};
+
+struct GoldWordTiming
+{
+    int word_index = -1;
+    std::string word;
+    double start = 0.0;
+    double end = 0.0;
+    int phrase_index = -1;
+    int sentence_index = -1;
+};
+
+struct GoldSpeechRegion
+{
+    int index = -1;
+    double start = 0.0;
+    double end = 0.0;
+    double last_speech = 0.0;
+};
+
+struct BoundaryAlignmentReport
+{
+    int reference_count = 0;
+    int predicted_count = 0;
+    int matched_count = 0;
+    int missing_count = 0;
+    int extra_count = 0;
+    double mean_abs_start_error_ms = 0.0;
+    double mean_abs_end_error_ms = 0.0;
+    double mean_lead_in_ms = 0.0;
+    double mean_tail_out_ms = 0.0;
+};
+
+struct PauseAlignmentReport
+{
+    BoundaryAlignmentReport speech_regions;
+    BoundaryAlignmentReport sentence_regions;
+    BoundaryAlignmentReport clause_regions;
+};
+
+struct WordOnsetAlignmentReport
+{
+    int reference_count = 0;
+    int matched_count = 0;
+    int missing_count = 0;
+    double mean_abs_start_error_ms = 0.0;
+    double p90_abs_start_error_ms = 0.0;
+    double mean_early_start_ms = 0.0;
+    double mean_late_start_ms = 0.0;
+};
+
+struct IntraWordAlignmentReport
+{
+    int reference_count = 0;
+    int matched_count = 0;
+    int missing_count = 0;
+    int extra_count = 0;
+    double mean_abs_center_error_ms = 0.0;
+    double p90_abs_center_error_ms = 0.0;
+    double mean_abs_start_error_ms = 0.0;
+    double mean_abs_end_error_ms = 0.0;
+};
+
+struct TimeSpan
+{
+    int key = -1;
+    double start = 0.0;
+    double end = 0.0;
 };
 
 struct GradeReport
@@ -46,6 +118,9 @@ struct GradeReport
     double mean_abs_duration_error_ms = 0.0;
     double early_start_rate = 0.0;
     double late_tail_rate = 0.0;
+    PauseAlignmentReport pause_alignment;
+    WordOnsetAlignmentReport word_onset_alignment;
+    IntraWordAlignmentReport intra_word_alignment;
 };
 
 struct GradeMatch
@@ -62,6 +137,18 @@ struct StreamConfig
 
 static std::string to_std(const FString& value) { return value.Str(); }
 static std::string to_std(const FName& value) { return value.Str(); }
+
+static std::vector<std::string> parse_csv_cells(const std::string& line)
+{
+    std::vector<std::string> cells;
+    std::stringstream ss(line);
+    std::string cell;
+    while (std::getline(ss, cell, ','))
+    {
+        cells.push_back(cell);
+    }
+    return cells;
+}
 
 static std::string read_text(const fs::path& path)
 {
@@ -157,17 +244,66 @@ static std::vector<HandmadeLabel> read_handmade_csv(const fs::path& path)
     while (std::getline(file, line))
     {
         if (line.empty()) continue;
-        std::stringstream ss(line);
-        std::string cell;
+        const std::vector<std::string> cells = parse_csv_cells(line);
+        if (cells.size() < 4) continue;
         HandmadeLabel label;
-        std::getline(ss, cell, ',');
-        label.start = std::stod(cell);
-        std::getline(ss, cell, ',');
-        label.end = std::stod(cell);
-        std::getline(ss, label.pose, ',');
-        std::getline(ss, label.word, ',');
-        if (std::getline(ss, cell, ',')) label.confidence = std::stod(cell);
+        label.start = std::stod(cells[0]);
+        label.end = std::stod(cells[1]);
+        label.pose = cells[2];
+        label.word = cells[3];
+        if (cells.size() > 4 && !cells[4].empty()) label.confidence = std::stod(cells[4]);
+        if (cells.size() > 5 && !cells[5].empty()) label.word_index = std::stoi(cells[5]);
+        if (cells.size() > 6 && !cells[6].empty()) label.phrase_index = std::stoi(cells[6]);
+        if (cells.size() > 7 && !cells[7].empty()) label.sentence_index = std::stoi(cells[7]);
         out.push_back(label);
+    }
+    return out;
+}
+
+static std::vector<GoldWordTiming> read_gold_words_csv(const fs::path& path)
+{
+    std::vector<GoldWordTiming> out;
+    std::ifstream file(path);
+    if (!file) return out;
+
+    std::string line;
+    std::getline(file, line);
+    while (std::getline(file, line))
+    {
+        if (line.empty()) continue;
+        const std::vector<std::string> cells = parse_csv_cells(line);
+        if (cells.size() < 4) continue;
+        GoldWordTiming word;
+        if (!cells[0].empty()) word.word_index = std::stoi(cells[0]);
+        word.word = cells[1];
+        word.start = std::stod(cells[2]);
+        word.end = std::stod(cells[3]);
+        if (cells.size() > 4 && !cells[4].empty()) word.phrase_index = std::stoi(cells[4]);
+        if (cells.size() > 5 && !cells[5].empty()) word.sentence_index = std::stoi(cells[5]);
+        out.push_back(word);
+    }
+    return out;
+}
+
+static std::vector<GoldSpeechRegion> read_gold_speech_csv(const fs::path& path)
+{
+    std::vector<GoldSpeechRegion> out;
+    std::ifstream file(path);
+    if (!file) return out;
+
+    std::string line;
+    std::getline(file, line);
+    while (std::getline(file, line))
+    {
+        if (line.empty()) continue;
+        const std::vector<std::string> cells = parse_csv_cells(line);
+        if (cells.size() < 3) continue;
+        GoldSpeechRegion region;
+        if (!cells[0].empty()) region.index = std::stoi(cells[0]);
+        region.start = std::stod(cells[1]);
+        region.end = std::stod(cells[2]);
+        if (cells.size() > 3 && !cells[3].empty()) region.last_speech = std::stod(cells[3]);
+        out.push_back(region);
     }
     return out;
 }
@@ -398,10 +534,14 @@ static bool better_match_state(const MatchState& A, const MatchState& B)
     return A.total_center_error_ms < B.total_center_error_ms - 1e-9;
 }
 
-static std::vector<GradeMatch> compute_monotonic_matches(const FOffgridAIAlignedVisemeTrack& track, const std::vector<HandmadeLabel>& handmade)
+static std::vector<GradeMatch> compute_monotonic_matches_subset(
+    const FOffgridAIAlignedVisemeTrack& track,
+    const std::vector<HandmadeLabel>& handmade,
+    const std::vector<int>& label_indices,
+    const std::vector<int>& event_indices)
 {
-    const int n = static_cast<int>(handmade.size());
-    const int m = track.Events.Num();
+    const int n = static_cast<int>(label_indices.size());
+    const int m = static_cast<int>(event_indices.size());
     std::vector<MatchState> dp(static_cast<size_t>((n + 1) * (m + 1)));
     std::vector<uint8_t> parent(static_cast<size_t>((n + 1) * (m + 1)), 0);
     auto at = [&](int i, int j) -> MatchState& { return dp[static_cast<size_t>(i) * static_cast<size_t>(m + 1) + static_cast<size_t>(j)]; };
@@ -440,8 +580,8 @@ static std::vector<GradeMatch> compute_monotonic_matches(const FOffgridAIAligned
 
             if (i < n && j < m)
             {
-                const HandmadeLabel& label = handmade[static_cast<size_t>(i)];
-                const auto& event = track.Events[j];
+                const HandmadeLabel& label = handmade[static_cast<size_t>(label_indices[static_cast<size_t>(i)])];
+                const auto& event = track.Events[event_indices[static_cast<size_t>(j)]];
                 if (to_std(event.PoseID) == label.pose)
                 {
                     const double center = (label.start + label.end) * 0.5;
@@ -483,7 +623,9 @@ static std::vector<GradeMatch> compute_monotonic_matches(const FOffgridAIAligned
         const uint8_t step = parent_at(i, j);
         if (step == 3)
         {
-            matches.push_back(GradeMatch{i - 1, j - 1});
+            matches.push_back(GradeMatch{
+                label_indices[static_cast<size_t>(i - 1)],
+                event_indices[static_cast<size_t>(j - 1)]});
             --i;
             --j;
         }
@@ -505,7 +647,314 @@ static std::vector<GradeMatch> compute_monotonic_matches(const FOffgridAIAligned
     return matches;
 }
 
-static GradeReport grade(const FOffgridAIAlignedVisemeTrack& track, const std::vector<HandmadeLabel>& handmade)
+static std::vector<GradeMatch> compute_monotonic_matches(const FOffgridAIAlignedVisemeTrack& track, const std::vector<HandmadeLabel>& handmade)
+{
+    std::vector<int> label_indices(handmade.size());
+    std::iota(label_indices.begin(), label_indices.end(), 0);
+    std::vector<int> event_indices(track.Events.Num());
+    std::iota(event_indices.begin(), event_indices.end(), 0);
+    return compute_monotonic_matches_subset(track, handmade, label_indices, event_indices);
+}
+
+static std::vector<TimeSpan> build_predicted_speech_regions(const FOffgridAIAlignedVisemeTrack& track)
+{
+    std::vector<TimeSpan> spans;
+    constexpr double merge_gap_seconds = 0.120;
+    for (const auto& event : track.Events)
+    {
+        const double start = static_cast<double>(event.RenderStartSeconds);
+        const double end = static_cast<double>(event.RenderEndSeconds);
+        if (spans.empty() || start > spans.back().end + merge_gap_seconds)
+        {
+            spans.push_back(TimeSpan{static_cast<int>(spans.size()), start, end});
+        }
+        else
+        {
+            spans.back().end = std::max(spans.back().end, end);
+        }
+    }
+    return spans;
+}
+
+static std::vector<TimeSpan> build_gold_speech_regions(const std::vector<GoldSpeechRegion>& regions)
+{
+    std::vector<TimeSpan> spans;
+    for (const auto& region : regions)
+    {
+        spans.push_back(TimeSpan{region.index, region.start, region.end});
+    }
+    return spans;
+}
+
+static std::vector<TimeSpan> build_gold_sentence_regions(const std::vector<GoldWordTiming>& words)
+{
+    std::vector<TimeSpan> spans;
+    for (const auto& word : words)
+    {
+        if (word.sentence_index < 0) continue;
+        if (spans.empty() || spans.back().key != word.sentence_index)
+        {
+            spans.push_back(TimeSpan{word.sentence_index, word.start, word.end});
+        }
+        else
+        {
+            spans.back().end = std::max(spans.back().end, word.end);
+        }
+    }
+    return spans;
+}
+
+static std::vector<TimeSpan> build_gold_clause_regions(const std::vector<GoldWordTiming>& words)
+{
+    std::vector<TimeSpan> spans;
+    int last_sentence = std::numeric_limits<int>::min();
+    int last_phrase = std::numeric_limits<int>::min();
+    int synthetic_key = -1;
+    for (const auto& word : words)
+    {
+        if (word.phrase_index < 0) continue;
+        if (spans.empty() || word.sentence_index != last_sentence || word.phrase_index != last_phrase)
+        {
+            ++synthetic_key;
+            spans.push_back(TimeSpan{synthetic_key, word.start, word.end});
+            last_sentence = word.sentence_index;
+            last_phrase = word.phrase_index;
+        }
+        else
+        {
+            spans.back().end = std::max(spans.back().end, word.end);
+        }
+    }
+    return spans;
+}
+
+static std::vector<TimeSpan> build_predicted_sentence_regions(const FOffgridAIAlignedVisemeTrack& track)
+{
+    std::vector<TimeSpan> spans;
+    for (const auto& event : track.Events)
+    {
+        if (event.SentenceIndex < 0) continue;
+        const double start = static_cast<double>(event.RenderStartSeconds);
+        const double end = static_cast<double>(event.RenderEndSeconds);
+        if (spans.empty() || spans.back().key != event.SentenceIndex)
+        {
+            spans.push_back(TimeSpan{event.SentenceIndex, start, end});
+        }
+        else
+        {
+            spans.back().end = std::max(spans.back().end, end);
+        }
+    }
+    return spans;
+}
+
+static std::vector<TimeSpan> build_predicted_clause_regions(const FOffgridAIAlignedVisemeTrack& track)
+{
+    std::vector<TimeSpan> spans;
+    int last_sentence = std::numeric_limits<int>::min();
+    int last_phrase = std::numeric_limits<int>::min();
+    int synthetic_key = -1;
+    for (const auto& event : track.Events)
+    {
+        if (event.PhraseIndex < 0) continue;
+        const double start = static_cast<double>(event.RenderStartSeconds);
+        const double end = static_cast<double>(event.RenderEndSeconds);
+        if (spans.empty() || event.SentenceIndex != last_sentence || event.PhraseIndex != last_phrase)
+        {
+            ++synthetic_key;
+            spans.push_back(TimeSpan{synthetic_key, start, end});
+            last_sentence = event.SentenceIndex;
+            last_phrase = event.PhraseIndex;
+        }
+        else
+        {
+            spans.back().end = std::max(spans.back().end, end);
+        }
+    }
+    return spans;
+}
+
+static BoundaryAlignmentReport grade_region_boundaries(const std::vector<TimeSpan>& gold, const std::vector<TimeSpan>& predicted)
+{
+    BoundaryAlignmentReport report;
+    report.reference_count = static_cast<int>(gold.size());
+    report.predicted_count = static_cast<int>(predicted.size());
+    report.matched_count = std::min(report.reference_count, report.predicted_count);
+    report.missing_count = std::max(0, report.reference_count - report.matched_count);
+    report.extra_count = std::max(0, report.predicted_count - report.matched_count);
+
+    if (report.matched_count <= 0)
+    {
+        return report;
+    }
+
+    double abs_start_sum = 0.0;
+    double abs_end_sum = 0.0;
+    double lead_sum = 0.0;
+    double tail_sum = 0.0;
+    for (int i = 0; i < report.matched_count; ++i)
+    {
+        const double start_error_ms = std::abs(predicted[static_cast<size_t>(i)].start - gold[static_cast<size_t>(i)].start) * 1000.0;
+        const double end_error_ms = std::abs(predicted[static_cast<size_t>(i)].end - gold[static_cast<size_t>(i)].end) * 1000.0;
+        abs_start_sum += start_error_ms;
+        abs_end_sum += end_error_ms;
+        lead_sum += std::max(0.0, gold[static_cast<size_t>(i)].start - predicted[static_cast<size_t>(i)].start) * 1000.0;
+        tail_sum += std::max(0.0, predicted[static_cast<size_t>(i)].end - gold[static_cast<size_t>(i)].end) * 1000.0;
+    }
+
+    const double denom = static_cast<double>(report.matched_count);
+    report.mean_abs_start_error_ms = abs_start_sum / denom;
+    report.mean_abs_end_error_ms = abs_end_sum / denom;
+    report.mean_lead_in_ms = lead_sum / denom;
+    report.mean_tail_out_ms = tail_sum / denom;
+    return report;
+}
+
+static WordOnsetAlignmentReport grade_word_onsets(
+    const FOffgridAIAlignedVisemeTrack& track,
+    const std::vector<HandmadeLabel>& handmade,
+    const std::vector<GoldWordTiming>& gold_words)
+{
+    WordOnsetAlignmentReport report;
+    std::vector<int> reference_word_indices;
+    std::vector<int> seen_words;
+    for (const auto& label : handmade)
+    {
+        if (label.word_index < 0) continue;
+        if (std::find(seen_words.begin(), seen_words.end(), label.word_index) == seen_words.end())
+        {
+            seen_words.push_back(label.word_index);
+            reference_word_indices.push_back(label.word_index);
+        }
+    }
+
+    std::vector<double> errors;
+    double early_sum = 0.0;
+    double late_sum = 0.0;
+    report.reference_count = static_cast<int>(reference_word_indices.size());
+    for (int word_index : reference_word_indices)
+    {
+        const auto gold_it = std::find_if(gold_words.begin(), gold_words.end(), [&](const GoldWordTiming& word) {
+            return word.word_index == word_index;
+        });
+        if (gold_it == gold_words.end())
+        {
+            continue;
+        }
+
+        const auto event_it = std::find_if(track.Events.begin(), track.Events.end(), [&](const FOffgridAIAlignedVisemeEvent& event) {
+            return event.WordIndex == word_index;
+        });
+        if (event_it == track.Events.end())
+        {
+            continue;
+        }
+
+        ++report.matched_count;
+        const double error_ms = std::abs(static_cast<double>(event_it->RenderStartSeconds) - gold_it->start) * 1000.0;
+        errors.push_back(error_ms);
+        early_sum += std::max(0.0, gold_it->start - static_cast<double>(event_it->RenderStartSeconds)) * 1000.0;
+        late_sum += std::max(0.0, static_cast<double>(event_it->RenderStartSeconds) - gold_it->start) * 1000.0;
+    }
+
+    report.missing_count = std::max(0, report.reference_count - report.matched_count);
+    if (!errors.empty())
+    {
+        std::sort(errors.begin(), errors.end());
+        report.mean_abs_start_error_ms = std::accumulate(errors.begin(), errors.end(), 0.0) / static_cast<double>(errors.size());
+        const size_t p90_index = static_cast<size_t>(std::ceil(static_cast<double>(errors.size()) * 0.9)) - 1;
+        report.p90_abs_start_error_ms = errors[p90_index];
+        report.mean_early_start_ms = early_sum / static_cast<double>(errors.size());
+        report.mean_late_start_ms = late_sum / static_cast<double>(errors.size());
+    }
+    return report;
+}
+
+static IntraWordAlignmentReport grade_intra_word_alignment(
+    const FOffgridAIAlignedVisemeTrack& track,
+    const std::vector<HandmadeLabel>& handmade)
+{
+    IntraWordAlignmentReport report;
+    std::vector<int> unique_word_indices;
+    for (const auto& label : handmade)
+    {
+        if (label.word_index >= 0
+            && std::find(unique_word_indices.begin(), unique_word_indices.end(), label.word_index) == unique_word_indices.end())
+        {
+            unique_word_indices.push_back(label.word_index);
+        }
+    }
+
+    std::vector<double> center_errors;
+    std::vector<double> start_errors;
+    std::vector<double> end_errors;
+    int matched_events_total = 0;
+    int predicted_events_total = 0;
+
+    for (int word_index : unique_word_indices)
+    {
+        std::vector<int> label_indices;
+        for (size_t i = 0; i < handmade.size(); ++i)
+        {
+            if (handmade[i].word_index == word_index)
+            {
+                label_indices.push_back(static_cast<int>(i));
+            }
+        }
+        std::vector<int> event_indices;
+        for (int32 i = 0; i < track.Events.Num(); ++i)
+        {
+            if (track.Events[i].WordIndex == word_index)
+            {
+                event_indices.push_back(i);
+            }
+        }
+        if (label_indices.size() <= 1)
+        {
+            continue;
+        }
+
+        label_indices.erase(label_indices.begin());
+        report.reference_count += static_cast<int>(label_indices.size());
+        if (!event_indices.empty())
+        {
+            event_indices.erase(event_indices.begin());
+        }
+        predicted_events_total += static_cast<int>(event_indices.size());
+
+        const std::vector<GradeMatch> matches = compute_monotonic_matches_subset(track, handmade, label_indices, event_indices);
+        matched_events_total += static_cast<int>(matches.size());
+        for (const GradeMatch& match : matches)
+        {
+            const HandmadeLabel& label = handmade[static_cast<size_t>(match.label_index)];
+            const auto& event = track.Events[match.event_index];
+            const double center = (label.start + label.end) * 0.5;
+            center_errors.push_back(std::abs(static_cast<double>(event.FinalRenderCenterSeconds) - center) * 1000.0);
+            start_errors.push_back(std::abs(static_cast<double>(event.RenderStartSeconds) - label.start) * 1000.0);
+            end_errors.push_back(std::abs(static_cast<double>(event.RenderEndSeconds) - label.end) * 1000.0);
+        }
+    }
+
+    report.matched_count = matched_events_total;
+    report.missing_count = std::max(0, report.reference_count - report.matched_count);
+    report.extra_count = std::max(0, predicted_events_total - report.matched_count);
+    if (!center_errors.empty())
+    {
+        std::sort(center_errors.begin(), center_errors.end());
+        report.mean_abs_center_error_ms = std::accumulate(center_errors.begin(), center_errors.end(), 0.0) / static_cast<double>(center_errors.size());
+        const size_t p90_index = static_cast<size_t>(std::ceil(static_cast<double>(center_errors.size()) * 0.9)) - 1;
+        report.p90_abs_center_error_ms = center_errors[p90_index];
+        report.mean_abs_start_error_ms = std::accumulate(start_errors.begin(), start_errors.end(), 0.0) / static_cast<double>(start_errors.size());
+        report.mean_abs_end_error_ms = std::accumulate(end_errors.begin(), end_errors.end(), 0.0) / static_cast<double>(end_errors.size());
+    }
+    return report;
+}
+
+static GradeReport grade(
+    const FOffgridAIAlignedVisemeTrack& track,
+    const std::vector<HandmadeLabel>& handmade,
+    const std::vector<GoldWordTiming>& gold_words,
+    const std::vector<GoldSpeechRegion>& gold_speech)
 {
     GradeReport report;
     report.reference_count = static_cast<int>(handmade.size());
@@ -558,6 +1007,18 @@ static GradeReport grade(const FOffgridAIAlignedVisemeTrack& track, const std::v
         report.early_start_rate /= static_cast<double>(errors.size());
         report.late_tail_rate /= static_cast<double>(errors.size());
     }
+
+    report.pause_alignment.speech_regions = grade_region_boundaries(
+        build_gold_speech_regions(gold_speech),
+        build_predicted_speech_regions(track));
+    report.pause_alignment.sentence_regions = grade_region_boundaries(
+        build_gold_sentence_regions(gold_words),
+        build_predicted_sentence_regions(track));
+    report.pause_alignment.clause_regions = grade_region_boundaries(
+        build_gold_clause_regions(gold_words),
+        build_predicted_clause_regions(track));
+    report.word_onset_alignment = grade_word_onsets(track, handmade, gold_words);
+    report.intra_word_alignment = grade_intra_word_alignment(track, handmade);
     return report;
 }
 
@@ -578,7 +1039,55 @@ static std::string grade_json(const GradeReport& grade_report)
         << "  \"mean_abs_end_error_ms\": " << grade_report.mean_abs_end_error_ms << ",\n"
         << "  \"mean_abs_duration_error_ms\": " << grade_report.mean_abs_duration_error_ms << ",\n"
         << "  \"early_start_rate\": " << grade_report.early_start_rate << ",\n"
-        << "  \"late_tail_rate\": " << grade_report.late_tail_rate << "\n"
+        << "  \"late_tail_rate\": " << grade_report.late_tail_rate << ",\n"
+        << "  \"pause_alignment\": {\n"
+        << "    \"speech_region_reference_count\": " << grade_report.pause_alignment.speech_regions.reference_count << ",\n"
+        << "    \"speech_region_predicted_count\": " << grade_report.pause_alignment.speech_regions.predicted_count << ",\n"
+        << "    \"speech_region_matched_count\": " << grade_report.pause_alignment.speech_regions.matched_count << ",\n"
+        << "    \"speech_region_missing_count\": " << grade_report.pause_alignment.speech_regions.missing_count << ",\n"
+        << "    \"speech_region_extra_count\": " << grade_report.pause_alignment.speech_regions.extra_count << ",\n"
+        << "    \"mean_abs_speech_region_start_error_ms\": " << grade_report.pause_alignment.speech_regions.mean_abs_start_error_ms << ",\n"
+        << "    \"mean_abs_speech_region_end_error_ms\": " << grade_report.pause_alignment.speech_regions.mean_abs_end_error_ms << ",\n"
+        << "    \"mean_speech_region_lead_in_ms\": " << grade_report.pause_alignment.speech_regions.mean_lead_in_ms << ",\n"
+        << "    \"mean_speech_region_tail_out_ms\": " << grade_report.pause_alignment.speech_regions.mean_tail_out_ms << ",\n"
+        << "    \"sentence_region_reference_count\": " << grade_report.pause_alignment.sentence_regions.reference_count << ",\n"
+        << "    \"sentence_region_predicted_count\": " << grade_report.pause_alignment.sentence_regions.predicted_count << ",\n"
+        << "    \"sentence_region_matched_count\": " << grade_report.pause_alignment.sentence_regions.matched_count << ",\n"
+        << "    \"sentence_region_missing_count\": " << grade_report.pause_alignment.sentence_regions.missing_count << ",\n"
+        << "    \"sentence_region_extra_count\": " << grade_report.pause_alignment.sentence_regions.extra_count << ",\n"
+        << "    \"mean_abs_sentence_region_start_error_ms\": " << grade_report.pause_alignment.sentence_regions.mean_abs_start_error_ms << ",\n"
+        << "    \"mean_abs_sentence_region_end_error_ms\": " << grade_report.pause_alignment.sentence_regions.mean_abs_end_error_ms << ",\n"
+        << "    \"mean_sentence_region_lead_in_ms\": " << grade_report.pause_alignment.sentence_regions.mean_lead_in_ms << ",\n"
+        << "    \"mean_sentence_region_tail_out_ms\": " << grade_report.pause_alignment.sentence_regions.mean_tail_out_ms << ",\n"
+        << "    \"clause_region_reference_count\": " << grade_report.pause_alignment.clause_regions.reference_count << ",\n"
+        << "    \"clause_region_predicted_count\": " << grade_report.pause_alignment.clause_regions.predicted_count << ",\n"
+        << "    \"clause_region_matched_count\": " << grade_report.pause_alignment.clause_regions.matched_count << ",\n"
+        << "    \"clause_region_missing_count\": " << grade_report.pause_alignment.clause_regions.missing_count << ",\n"
+        << "    \"clause_region_extra_count\": " << grade_report.pause_alignment.clause_regions.extra_count << ",\n"
+        << "    \"mean_abs_clause_region_start_error_ms\": " << grade_report.pause_alignment.clause_regions.mean_abs_start_error_ms << ",\n"
+        << "    \"mean_abs_clause_region_end_error_ms\": " << grade_report.pause_alignment.clause_regions.mean_abs_end_error_ms << ",\n"
+        << "    \"mean_clause_region_lead_in_ms\": " << grade_report.pause_alignment.clause_regions.mean_lead_in_ms << ",\n"
+        << "    \"mean_clause_region_tail_out_ms\": " << grade_report.pause_alignment.clause_regions.mean_tail_out_ms << "\n"
+        << "  },\n"
+        << "  \"word_onset_alignment\": {\n"
+        << "    \"reference_count\": " << grade_report.word_onset_alignment.reference_count << ",\n"
+        << "    \"matched_count\": " << grade_report.word_onset_alignment.matched_count << ",\n"
+        << "    \"missing_count\": " << grade_report.word_onset_alignment.missing_count << ",\n"
+        << "    \"mean_abs_start_error_ms\": " << grade_report.word_onset_alignment.mean_abs_start_error_ms << ",\n"
+        << "    \"p90_abs_start_error_ms\": " << grade_report.word_onset_alignment.p90_abs_start_error_ms << ",\n"
+        << "    \"mean_early_start_ms\": " << grade_report.word_onset_alignment.mean_early_start_ms << ",\n"
+        << "    \"mean_late_start_ms\": " << grade_report.word_onset_alignment.mean_late_start_ms << "\n"
+        << "  },\n"
+        << "  \"intra_word_alignment\": {\n"
+        << "    \"reference_count\": " << grade_report.intra_word_alignment.reference_count << ",\n"
+        << "    \"matched_count\": " << grade_report.intra_word_alignment.matched_count << ",\n"
+        << "    \"missing_count\": " << grade_report.intra_word_alignment.missing_count << ",\n"
+        << "    \"extra_count\": " << grade_report.intra_word_alignment.extra_count << ",\n"
+        << "    \"mean_abs_center_error_ms\": " << grade_report.intra_word_alignment.mean_abs_center_error_ms << ",\n"
+        << "    \"p90_abs_center_error_ms\": " << grade_report.intra_word_alignment.p90_abs_center_error_ms << ",\n"
+        << "    \"mean_abs_start_error_ms\": " << grade_report.intra_word_alignment.mean_abs_start_error_ms << ",\n"
+        << "    \"mean_abs_end_error_ms\": " << grade_report.intra_word_alignment.mean_abs_end_error_ms << "\n"
+        << "  }\n"
         << "}\n";
     return out.str();
 }
@@ -747,7 +1256,9 @@ int main(int argc, char** argv)
             write_text(case_dir / "online_phone_alignment.csv", alignment_csv(plan, final_alignment));
 
             const auto handmade = read_handmade_csv(root / "inputs" / "handmade" / (stem + ".csv"));
-            const GradeReport report = grade(committed, handmade);
+            const auto gold_words = read_gold_words_csv(root / "inputs" / "handmade_words" / (stem + ".csv"));
+            const auto gold_speech = read_gold_speech_csv(root / "inputs" / "handmade_speech" / (stem + ".csv"));
+            const GradeReport report = grade(committed, handmade, gold_words, gold_speech);
             write_text(case_dir / "grade.json", grade_json(report));
 
             std::cout << stem
