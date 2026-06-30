@@ -5,6 +5,8 @@
 
 namespace
 {
+constexpr float StreamingCommitLagSec = 0.100f;
+
 static float EventCenterNorm(const FOffgridAITextVisemeEvent& E)
 {
     return FMath::Clamp((E.StartNorm + E.EndNorm) * 0.5f, 0.0f, 1.0f);
@@ -636,12 +638,27 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         ? RawObservedHorizon
         : FMath::Min(RawObservedHorizon, PlaybackLeadHorizon);
     const float FirstSpeechStart = FirstConfirmedSpeechStart(Input.SpeechIslands);
+    if (InOutTrack.RuntimeFirstAlignedObservedEndSeconds.Num() < Plan.ExpectedPhones.Num())
+    {
+        const int32 OldNum = InOutTrack.RuntimeFirstAlignedObservedEndSeconds.Num();
+        InOutTrack.RuntimeFirstAlignedObservedEndSeconds.SetNum(Plan.ExpectedPhones.Num());
+        for (int32 Index = OldNum; Index < InOutTrack.RuntimeFirstAlignedObservedEndSeconds.Num(); ++Index)
+        {
+            InOutTrack.RuntimeFirstAlignedObservedEndSeconds[Index] = -1.0f;
+        }
+    }
 
     for (int32 EventIndex = FirstNewIndex; EventIndex < Plan.Events.Num(); ++EventIndex)
     {
         const FOffgridAITextVisemeEvent& T = Plan.Events[EventIndex];
         const int32 PhoneIndex = FOffgridAIOnlinePhoneAligner::FindPhoneForEvent(Plan, T);
         const bool bHasPhoneEvidence = PhoneIndex != INDEX_NONE && HasVisibleAlignedPhone(Alignment, PhoneIndex);
+        if (bHasPhoneEvidence
+            && InOutTrack.RuntimeFirstAlignedObservedEndSeconds.IsValidIndex(PhoneIndex)
+            && InOutTrack.RuntimeFirstAlignedObservedEndSeconds[PhoneIndex] < 0.0f)
+        {
+            InOutTrack.RuntimeFirstAlignedObservedEndSeconds[PhoneIndex] = Input.ObservedAudioBufferEndSec;
+        }
 
         const FName Pose = ResolvePose(T);
         const EOffgridAIPhoneClass PhoneClass = Plan.ExpectedPhones.IsValidIndex(PhoneIndex)
@@ -799,17 +816,28 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             const bool bNextPhoneVisible = HasVisibleAlignedPhone(Alignment, PhoneIndex + 1);
             const bool bLaterPhonesVisible = Alignment.HighestAlignedPhoneIndex > PhoneIndex;
             const float LeadToPlayback = Center - Input.CurrentPlaybackSec;
+            const float FirstAlignableObservedEnd = InOutTrack.RuntimeFirstAlignedObservedEndSeconds.IsValidIndex(PhoneIndex)
+                ? InOutTrack.RuntimeFirstAlignedObservedEndSeconds[PhoneIndex]
+                : -1.0f;
+            const float AlignableLagSeconds = FirstAlignableObservedEnd >= 0.0f
+                ? Input.ObservedAudioBufferEndSec - FirstAlignableObservedEnd
+                : 0.0f;
             const float MinConfidence = CommitConfidenceThresholdForClass(PhoneClass, Pose);
             const bool bStableByConfidence = Confidence >= MinConfidence;
             const bool bStableByBoundary = bNextPhoneVisible || bLaterPhonesVisible;
             const bool bStableByDuration = PhoneDuration >= 0.040f || IsStrongPose(Pose);
             const bool bStableByLead = LeadToPlayback >= 0.040f;
+            const bool bStableByLag = AlignableLagSeconds >= StreamingCommitLagSec;
 
             if ((!bStableByConfidence || !bStableByDuration) && !bStableByBoundary)
             {
                 break;
             }
             if (!bStableByLead && !bStableByBoundary)
+            {
+                break;
+            }
+            if (!bStableByLag && !bStableByBoundary)
             {
                 break;
             }

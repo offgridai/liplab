@@ -49,6 +49,10 @@ struct FOffgridAIAlignedVisemeTrack
     float SpeechStartSeconds = 0.0f;
     float SpeechEndSeconds = 0.0f;
     TArray<FOffgridAIAlignedVisemeEvent> Events;
+    // Runtime-only state: when each transcript phone first became alignable in
+    // the observed stream. This lets the streaming harness keep a short
+    // movable suffix before freezing a phone into the committed prefix.
+    TArray<float> RuntimeFirstAlignedObservedEndSeconds;
 };
 
 struct FOffgridAIPerformedVisemeFrame
