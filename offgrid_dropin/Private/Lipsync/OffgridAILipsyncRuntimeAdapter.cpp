@@ -806,29 +806,28 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         // path is segmented over observed speech frames by the aligner; runtime
         // guards only preserve phrase ownership and monotonic commit safety.
         const bool bUsedForcedAlignment = bHasPhoneEvidence;
+        const float Confidence = Alignment.PhoneMatchScores.IsValidIndex(PhoneIndex) ? Alignment.PhoneMatchScores[PhoneIndex] : 0.0f;
+        const float PhoneStart = Alignment.PhoneStartSeconds.IsValidIndex(PhoneIndex) ? Alignment.PhoneStartSeconds[PhoneIndex] : 0.0f;
+        const float PhoneEnd = Alignment.PhoneEndSeconds.IsValidIndex(PhoneIndex) ? Alignment.PhoneEndSeconds[PhoneIndex] : 0.0f;
+        const float PhoneDuration = FMath::Max(PhoneEnd - PhoneStart, 0.0f);
+        const bool bNextPhoneVisible = HasVisibleAlignedPhone(Alignment, PhoneIndex + 1);
+        const bool bLaterPhonesVisible = Alignment.HighestAlignedPhoneIndex > PhoneIndex;
+        const float LeadToPlayback = Center - Input.CurrentPlaybackSec;
+        const float FirstAlignableObservedEnd = InOutTrack.RuntimeFirstAlignedObservedEndSeconds.IsValidIndex(PhoneIndex)
+            ? InOutTrack.RuntimeFirstAlignedObservedEndSeconds[PhoneIndex]
+            : -1.0f;
+        const float AlignableLagSeconds = FirstAlignableObservedEnd >= 0.0f
+            ? Input.ObservedAudioBufferEndSec - FirstAlignableObservedEnd
+            : 0.0f;
+        const float MinConfidence = CommitConfidenceThresholdForClass(PhoneClass, Pose);
+        const bool bStableByConfidence = Confidence >= MinConfidence;
+        const bool bStableByBoundary = bNextPhoneVisible || bLaterPhonesVisible;
+        const bool bStableByDuration = PhoneDuration >= 0.040f || IsStrongPose(Pose);
+        const bool bStableByLead = LeadToPlayback >= 0.040f;
+        const bool bStableByLag = AlignableLagSeconds >= StreamingCommitLagSec;
 
         if (bUsedForcedAlignment && !Input.bInputStreamClosed && !Input.bPlaybackFinalized)
         {
-            const float Confidence = Alignment.PhoneMatchScores.IsValidIndex(PhoneIndex) ? Alignment.PhoneMatchScores[PhoneIndex] : 0.0f;
-            const float PhoneStart = Alignment.PhoneStartSeconds.IsValidIndex(PhoneIndex) ? Alignment.PhoneStartSeconds[PhoneIndex] : 0.0f;
-            const float PhoneEnd = Alignment.PhoneEndSeconds.IsValidIndex(PhoneIndex) ? Alignment.PhoneEndSeconds[PhoneIndex] : 0.0f;
-            const float PhoneDuration = FMath::Max(PhoneEnd - PhoneStart, 0.0f);
-            const bool bNextPhoneVisible = HasVisibleAlignedPhone(Alignment, PhoneIndex + 1);
-            const bool bLaterPhonesVisible = Alignment.HighestAlignedPhoneIndex > PhoneIndex;
-            const float LeadToPlayback = Center - Input.CurrentPlaybackSec;
-            const float FirstAlignableObservedEnd = InOutTrack.RuntimeFirstAlignedObservedEndSeconds.IsValidIndex(PhoneIndex)
-                ? InOutTrack.RuntimeFirstAlignedObservedEndSeconds[PhoneIndex]
-                : -1.0f;
-            const float AlignableLagSeconds = FirstAlignableObservedEnd >= 0.0f
-                ? Input.ObservedAudioBufferEndSec - FirstAlignableObservedEnd
-                : 0.0f;
-            const float MinConfidence = CommitConfidenceThresholdForClass(PhoneClass, Pose);
-            const bool bStableByConfidence = Confidence >= MinConfidence;
-            const bool bStableByBoundary = bNextPhoneVisible || bLaterPhonesVisible;
-            const bool bStableByDuration = PhoneDuration >= 0.040f || IsStrongPose(Pose);
-            const bool bStableByLead = LeadToPlayback >= 0.040f;
-            const bool bStableByLag = AlignableLagSeconds >= StreamingCommitLagSec;
-
             if ((!bStableByConfidence || !bStableByDuration) && !bStableByBoundary)
             {
                 break;
@@ -946,7 +945,10 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         E.SourcePhoneClass = FName(*FOffgridAIOnlinePhoneAligner::PhoneClassToString(PhoneClass));
         E.AlignedPhoneStartSeconds = Alignment.PhoneStartSeconds.IsValidIndex(PhoneIndex) ? Alignment.PhoneStartSeconds[PhoneIndex] : 0.0f;
         E.AlignedPhoneEndSeconds = Alignment.PhoneEndSeconds.IsValidIndex(PhoneIndex) ? Alignment.PhoneEndSeconds[PhoneIndex] : 0.0f;
-        E.AlignmentConfidence = Alignment.PhoneMatchScores.IsValidIndex(PhoneIndex) ? Alignment.PhoneMatchScores[PhoneIndex] : 0.0f;
+        E.AlignmentConfidence = Confidence;
+        E.AlignmentScoreGap = Alignment.PhoneScoreGaps.IsValidIndex(PhoneIndex) ? Alignment.PhoneScoreGaps[PhoneIndex] : 0.0f;
+        E.AlignmentObservedDurationSeconds = Alignment.PhoneObservedDurations.IsValidIndex(PhoneIndex) ? Alignment.PhoneObservedDurations[PhoneIndex] : 0.0f;
+        E.AlignmentExpectedDurationSeconds = Alignment.PhoneExpectedDurations.IsValidIndex(PhoneIndex) ? Alignment.PhoneExpectedDurations[PhoneIndex] : 0.0f;
         E.AlignmentReason = bHasPhoneEvidence
             ? (Alignment.PhoneAdvanceReasons.IsValidIndex(PhoneIndex) && !Alignment.PhoneAdvanceReasons[PhoneIndex].IsNone()
                 ? Alignment.PhoneAdvanceReasons[PhoneIndex]
@@ -955,6 +957,13 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         E.CommitPlaybackSeconds = Input.CurrentPlaybackSec;
         E.CommitLeadSeconds = Center - Input.CurrentPlaybackSec;
         E.CommitReason = PlacementReason;
+        E.bCommitStableByConfidence = bStableByConfidence;
+        E.bCommitStableByBoundary = bStableByBoundary;
+        E.bCommitStableByDuration = bStableByDuration;
+        E.bCommitStableByLead = bStableByLead;
+        E.bCommitStableByLag = bStableByLag;
+        E.CommitConfidenceThreshold = MinConfidence;
+        E.CommitAlignableLagSeconds = AlignableLagSeconds;
         E.RequiredActiveElapsedSeconds = static_cast<float>(EventIndex + 1);
         E.ObservedActiveElapsedSeconds = bUsedForcedAlignment
             ? static_cast<float>(FMath::Max(Alignment.HighestAlignedPhoneIndex + 1, 0))

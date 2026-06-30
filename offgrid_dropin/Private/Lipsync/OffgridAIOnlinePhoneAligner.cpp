@@ -91,6 +91,8 @@ struct FAlignFrame
     float End = 0.0f;
     float Center = 0.0f;
     float Duration = 0.0f;
+    float ActiveStart = 0.0f;
+    float ActiveEnd = 0.0f;
     float Speech = 0.0f;
     FOffgridAIPhoneClassScores Scores;
 };
@@ -138,7 +140,7 @@ static float SegmentEmissionScore(const TArray<FAlignFrame>& Frames, int32 Start
         const float ClassScore = FOffgridAIOnlinePhoneAligner::ScoreForClass(Frame.Scores, PhoneClass);
         const float UnknownScore = FOffgridAIOnlinePhoneAligner::ScoreForClass(Frame.Scores, EOffgridAIPhoneClass::Unknown);
         const float Speech = Frame.Speech;
-        const float Combined = FMath::Max(ClassScore, UnknownScore * 0.35f) * 0.76f + Speech * 0.24f;
+        const float Combined = FMath::Max(ClassScore, UnknownScore * 0.15f) * 0.82f + Speech * 0.18f;
         const float W = FMath::Max(Frame.Duration, 0.001f);
         Sum += Combined * W;
         Weight += W;
@@ -146,19 +148,36 @@ static float SegmentEmissionScore(const TArray<FAlignFrame>& Frames, int32 Start
     return Weight > 0.0f ? Sum / Weight : 0.0f;
 }
 
-static float SegmentDurationSeconds(const TArray<FAlignFrame>& Frames, int32 StartFrame, int32 EndFrame)
+static float SegmentBestAlternateEmissionScore(const TArray<FAlignFrame>& Frames, int32 StartFrame, int32 EndFrame, EOffgridAIPhoneClass PhoneClass)
+{
+    float BestAlternate = -1000.0f;
+    for (int32 ClassIndex = 0; ClassIndex <= static_cast<int32>(EOffgridAIPhoneClass::Unknown); ++ClassIndex)
+    {
+        const EOffgridAIPhoneClass CandidateClass = static_cast<EOffgridAIPhoneClass>(ClassIndex);
+        if (CandidateClass == PhoneClass)
+        {
+            continue;
+        }
+        BestAlternate = FMath::Max(BestAlternate, SegmentEmissionScore(Frames, StartFrame, EndFrame, CandidateClass));
+    }
+    return BestAlternate;
+}
+
+static float SegmentActiveDurationSeconds(const TArray<FAlignFrame>& Frames, int32 StartFrame, int32 EndFrame)
 {
     if (!Frames.IsValidIndex(StartFrame) || !Frames.IsValidIndex(EndFrame) || EndFrame < StartFrame)
     {
         return 0.0f;
     }
-    return FMath::Max(Frames[EndFrame].End - Frames[StartFrame].Start, 0.0f);
+    return FMath::Max(Frames[EndFrame].ActiveEnd - Frames[StartFrame].ActiveStart, 0.0f);
 }
 
 static float SegmentScore(const TArray<FAlignFrame>& Frames, int32 StartFrame, int32 EndFrame, const FPhoneModel& Phone)
 {
     const float Emission = SegmentEmissionScore(Frames, StartFrame, EndFrame, Phone.Class);
-    const float Dur = SegmentDurationSeconds(Frames, StartFrame, EndFrame);
+    const float Alternate = SegmentBestAlternateEmissionScore(Frames, StartFrame, EndFrame, Phone.Class);
+    const float Margin = Emission - Alternate;
+    const float Dur = SegmentActiveDurationSeconds(Frames, StartFrame, EndFrame);
     const float Expected = FMath::Max(Phone.ExpectedDuration, 0.001f);
     const float DurErrorNorm = FMath::Abs(Dur - Expected) / Expected;
     const float TooShortPenalty = Dur < Phone.MinDuration ? (Phone.MinDuration - Dur) / FMath::Max(Phone.MinDuration, 0.001f) : 0.0f;
@@ -167,7 +186,8 @@ static float SegmentScore(const TArray<FAlignFrame>& Frames, int32 StartFrame, i
     // Scores are negative costs in log-like units.  Emission dominates when the
     // local audio feature clearly supports the expected phone class; duration
     // priors prevent the path from dumping too many phones into one peak.
-    return Emission * 3.25f
+    return Emission * 2.75f
+        + Margin * 1.15f
         - DurErrorNorm * 0.55f
         - TooShortPenalty * 1.05f
         - TooLongPenalty * 0.85f
@@ -394,6 +414,9 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
     Out.PhoneCenterSeconds.Init(-1.0f, PhoneCount);
     Out.PhoneEndSeconds.Init(-1.0f, PhoneCount);
     Out.PhoneMatchScores.Init(0.0f, PhoneCount);
+    Out.PhoneScoreGaps.Init(0.0f, PhoneCount);
+    Out.PhoneObservedDurations.Init(0.0f, PhoneCount);
+    Out.PhoneExpectedDurations.Init(0.0f, PhoneCount);
     Out.PhoneAdvanceReasons.Init(NAME_None, PhoneCount);
 
     if (!Input.AudioFeatureFrames || Input.AudioFeatureFrames->Num() == 0)
@@ -409,6 +432,7 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
         : FMath::Max(0.0f, VisibleEnd - FMath::Clamp(Input.CommitLagSec, 0.020f, 0.250f));
 
     TArray<FAlignFrame> Frames;
+    float ActiveCursor = 0.0f;
     for (const FOffgridAIStreamingAudioFeatureFrame& SourceFrame : *Input.AudioFeatureFrames)
     {
         if (SourceFrame.AudioBufferEndSec > VisibleEnd)
@@ -425,9 +449,12 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
         Frame.End = SourceFrame.AudioBufferEndSec;
         Frame.Center = SourceFrame.AudioBufferCenterSec;
         Frame.Duration = FMath::Max(SourceFrame.AudioBufferEndSec - SourceFrame.AudioBufferStartSec, 0.001f);
+        Frame.ActiveStart = ActiveCursor;
+        Frame.ActiveEnd = ActiveCursor + Frame.Duration;
         Frame.Speech = SpeechScore(SourceFrame);
         Frame.Scores = ScoreFramePhoneClasses(SourceFrame);
         Frames.Add(Frame);
+        ActiveCursor = Frame.ActiveEnd;
     }
 
     if (Frames.Num() == 0)
@@ -439,18 +466,18 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
         return Out;
     }
 
+    float ObservedSpeechSeconds = 0.0f;
+    for (const FAlignFrame& Frame : Frames)
+    {
+        ObservedSpeechSeconds += FMath::Max(Frame.Duration, 0.0f);
+    }
     Out.bHasSpeechEvidence = true;
+    Out.VisibleSpeechSeconds = ObservedSpeechSeconds;
 
     const int32 M = Frames.Num();
     if (M < 1 || PhoneCount < 1)
     {
         return Out;
-    }
-
-    float ObservedSpeechSeconds = 0.0f;
-    for (const FAlignFrame& Frame : Frames)
-    {
-        ObservedSpeechSeconds += FMath::Max(Frame.Duration, 0.0f);
     }
 
     int32 PhoneLimit = PhoneCount;
@@ -510,6 +537,8 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
     const float SpeechRateScale = VisibleExpectedSeconds > 0.010f
         ? FMath::Clamp(ObservedSpeechSeconds / VisibleExpectedSeconds, 0.80f, 1.30f)
         : 1.0f;
+    Out.VisibleExpectedSeconds = VisibleExpectedSeconds;
+    Out.SpeechRateScale = SpeechRateScale;
 
     TArray<FPhoneModel> Models;
     BuildPhoneModels(VisiblePlan, Frames, SpeechRateScale, Models);
@@ -630,10 +659,15 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
         }
 
         const float Match = SegmentEmissionScore(Frames, S, E, Models[PhoneIndex].Class);
+        const float Alternate = SegmentBestAlternateEmissionScore(Frames, S, E, Models[PhoneIndex].Class);
+        const float Duration = FMath::Max(PhoneEnd - PhoneStart, 0.0f);
         Out.PhoneStartSeconds[PhoneIndex] = PhoneStart;
         Out.PhoneEndSeconds[PhoneIndex] = PhoneEnd;
         Out.PhoneCenterSeconds[PhoneIndex] = PhoneCenter;
         Out.PhoneMatchScores[PhoneIndex] = Match;
+        Out.PhoneScoreGaps[PhoneIndex] = Match - Alternate;
+        Out.PhoneObservedDurations[PhoneIndex] = Duration;
+        Out.PhoneExpectedDurations[PhoneIndex] = Models[PhoneIndex].ExpectedDuration;
         Out.PhoneAdvanceReasons[PhoneIndex] = FName(TEXT("streaming_forced_alignment_viterbi"));
         Out.HighestAlignedPhoneIndex = PhoneIndex;
         Out.HighestAlignedWordIndex = Plan.ExpectedPhones[PhoneIndex].WordIndex;

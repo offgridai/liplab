@@ -216,7 +216,7 @@ static std::string speech_csv(const TArray<FOffgridAIStreamingSpeechIsland>& isl
 static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "index,start,center,end,pose,word,word_index,phrase_index,sentence_index,strength,reason,alignment_reason,source_phone_index,source_phone_base,source_phone_class,aligned_phone_start,aligned_phone_end,alignment_confidence,commit_playback,commit_lead,mapped_to_observed_speech\n";
+    out << "index,start,center,end,pose,word,word_index,phrase_index,sentence_index,strength,reason,alignment_reason,source_phone_index,source_phone_base,source_phone_class,aligned_phone_start,aligned_phone_end,alignment_confidence,alignment_score_gap,alignment_observed_duration,alignment_expected_duration,commit_playback,commit_lead,commit_confidence_threshold,commit_alignable_lag,stable_by_confidence,stable_by_boundary,stable_by_duration,stable_by_lead,stable_by_lag,mapped_to_observed_speech\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.Events)
     {
@@ -238,8 +238,18 @@ static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
             << event.AlignedPhoneStartSeconds << ','
             << event.AlignedPhoneEndSeconds << ','
             << event.AlignmentConfidence << ','
+            << event.AlignmentScoreGap << ','
+            << event.AlignmentObservedDurationSeconds << ','
+            << event.AlignmentExpectedDurationSeconds << ','
             << event.CommitPlaybackSeconds << ','
             << event.CommitLeadSeconds << ','
+            << event.CommitConfidenceThreshold << ','
+            << event.CommitAlignableLagSeconds << ','
+            << (event.bCommitStableByConfidence ? 1 : 0) << ','
+            << (event.bCommitStableByBoundary ? 1 : 0) << ','
+            << (event.bCommitStableByDuration ? 1 : 0) << ','
+            << (event.bCommitStableByLead ? 1 : 0) << ','
+            << (event.bCommitStableByLag ? 1 : 0) << ','
             << (event.bMappedToObservedSpeech ? 1 : 0) << '\n';
     }
     return out.str();
@@ -248,7 +258,7 @@ static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
 static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "event_index,pose,word,word_index,source_phone_index,source_phone_base,source_phone_class,commit_reason,alignment_reason,alignment_confidence,aligned_phone_start,aligned_phone_end,render_start,render_center,render_end,commit_playback,commit_lead,mapped_to_observed_speech\n";
+    out << "event_index,pose,word,word_index,source_phone_index,source_phone_base,source_phone_class,commit_reason,alignment_reason,alignment_confidence,alignment_score_gap,alignment_observed_duration,alignment_expected_duration,aligned_phone_start,aligned_phone_end,render_start,render_center,render_end,commit_playback,commit_lead,commit_confidence_threshold,commit_alignable_lag,stable_by_confidence,stable_by_boundary,stable_by_duration,stable_by_lead,stable_by_lag,mapped_to_observed_speech\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.Events)
     {
@@ -262,6 +272,9 @@ static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& trac
             << to_std(event.CommitReason) << ','
             << to_std(event.AlignmentReason) << ','
             << event.AlignmentConfidence << ','
+            << event.AlignmentScoreGap << ','
+            << event.AlignmentObservedDurationSeconds << ','
+            << event.AlignmentExpectedDurationSeconds << ','
             << event.AlignedPhoneStartSeconds << ','
             << event.AlignedPhoneEndSeconds << ','
             << event.RenderStartSeconds << ','
@@ -269,6 +282,13 @@ static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& trac
             << event.RenderEndSeconds << ','
             << event.CommitPlaybackSeconds << ','
             << event.CommitLeadSeconds << ','
+            << event.CommitConfidenceThreshold << ','
+            << event.CommitAlignableLagSeconds << ','
+            << (event.bCommitStableByConfidence ? 1 : 0) << ','
+            << (event.bCommitStableByBoundary ? 1 : 0) << ','
+            << (event.bCommitStableByDuration ? 1 : 0) << ','
+            << (event.bCommitStableByLead ? 1 : 0) << ','
+            << (event.bCommitStableByLag ? 1 : 0) << ','
             << (event.bMappedToObservedSpeech ? 1 : 0) << '\n';
     }
     return out.str();
@@ -277,7 +297,7 @@ static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& trac
 static std::string alignment_csv(const FOffgridAITextVisemePlan& plan, const FOffgridAIOnlinePhoneAlignmentResult& alignment)
 {
     std::ostringstream out;
-    out << "phone_index,word_index,word_phone_index,word,phone_base,phone_class,start,center,end,match_score,advance_reason\n";
+    out << "phone_index,word_index,word_phone_index,word,phone_base,phone_class,start,center,end,match_score,score_gap,observed_duration,expected_duration,visible_speech_seconds,visible_expected_seconds,speech_rate_scale,advance_reason\n";
     out << std::fixed << std::setprecision(6);
     for (int32 i = 0; i < plan.ExpectedPhones.Num(); ++i)
     {
@@ -292,8 +312,72 @@ static std::string alignment_csv(const FOffgridAITextVisemePlan& plan, const FOf
             << (alignment.PhoneCenterSeconds.IsValidIndex(i) ? alignment.PhoneCenterSeconds[i] : -1.0f) << ','
             << (alignment.PhoneEndSeconds.IsValidIndex(i) ? alignment.PhoneEndSeconds[i] : -1.0f) << ','
             << (alignment.PhoneMatchScores.IsValidIndex(i) ? alignment.PhoneMatchScores[i] : 0.0f) << ','
+            << (alignment.PhoneScoreGaps.IsValidIndex(i) ? alignment.PhoneScoreGaps[i] : 0.0f) << ','
+            << (alignment.PhoneObservedDurations.IsValidIndex(i) ? alignment.PhoneObservedDurations[i] : 0.0f) << ','
+            << (alignment.PhoneExpectedDurations.IsValidIndex(i) ? alignment.PhoneExpectedDurations[i] : 0.0f) << ','
+            << alignment.VisibleSpeechSeconds << ','
+            << alignment.VisibleExpectedSeconds << ','
+            << alignment.SpeechRateScale << ','
             << to_std(alignment.PhoneAdvanceReasons.IsValidIndex(i) ? alignment.PhoneAdvanceReasons[i] : NAME_None) << '\n';
     }
+    return out.str();
+}
+
+static std::string occupancy_diagnostics_csv(const TArray<FOffgridAIAudioOccupancyDiagnosticRow>& rows)
+{
+    std::ostringstream out;
+    out << "line_id,update_ordinal,final_replay,current_playback,preroll,event_index,word,pose,planned_center,committed_center,render_start,render_end,commit_reason,playback_mode,aligned_phone_start,aligned_phone_end,audio_active,text_playhead,required_active_elapsed,observed_active_elapsed,active_progress_deficit,required_progress_norm,observed_progress_norm,active_progress_ratio,mapped_to_observed_speech,diagnostic_kind\n";
+    out << std::fixed << std::setprecision(6);
+    for (const auto& row : rows)
+    {
+        out << to_std(row.LineID) << ','
+            << row.UpdateOrdinal << ','
+            << (row.bFinalReplay ? 1 : 0) << ','
+            << row.CurrentPlaybackSec << ','
+            << row.PrerollSec << ','
+            << row.SourceEventIndex << ','
+            << to_std(row.Word) << ','
+            << to_std(row.PoseID) << ','
+            << row.PlannedCenterSec << ','
+            << row.CommittedCenterSec << ','
+            << row.RenderStartSec << ','
+            << row.RenderEndSec << ','
+            << to_std(row.CommitReason) << ','
+            << to_std(row.PlaybackMode) << ','
+            << row.AlignedPhoneStartSec << ','
+            << row.AlignedPhoneEndSec << ','
+            << row.AudioActiveSec << ','
+            << row.TextPlayheadSec << ','
+            << row.RequiredActiveElapsedSec << ','
+            << row.ObservedActiveElapsedSec << ','
+            << row.ActiveProgressDeficitSec << ','
+            << row.RequiredProgressNorm << ','
+            << row.ObservedProgressNorm << ','
+            << row.ActiveProgressRatio << ','
+            << (row.bMappedToObservedSpeech ? 1 : 0) << ','
+            << to_std(row.DiagnosticKind) << '\n';
+    }
+    return out.str();
+}
+
+static std::string stream_tail_csv(const FOffgridAIStreamTailDiagnosticRow& row)
+{
+    std::ostringstream out;
+    out << "line_id,pcm_chunk_count,pcm_bytes_received,pcm_samples_received,last_sample_rate,last_num_channels,last_chunk_start_sample,last_chunk_end_sample,observed_audio_buffer_end,first_speech_audio_buffer_start,speech_island_count,input_stream_closed,diagnostic_kind\n";
+    out << std::fixed << std::setprecision(6);
+    out << to_std(row.LineID) << ','
+        << row.PCMChunkCount << ','
+        << row.PCMBytesReceived << ','
+        << row.PCMSamplesReceived << ','
+        << row.LastSampleRate << ','
+        << row.LastNumChannels << ','
+        << row.LastChunkStartSample << ','
+        << row.LastChunkEndSample << ','
+        << row.ObservedAudioBufferEndSec << ','
+        << row.FirstSpeechAudioBufferStartSec << ','
+        << row.SpeechIslandCount << ','
+        << (row.bInputStreamClosed ? 1 : 0) << ','
+        << to_std(row.DiagnosticKind) << '\n';
     return out.str();
 }
 
@@ -647,6 +731,8 @@ int main(int argc, char** argv)
             write_text(case_dir / "speech_regions.csv", speech_csv(speech));
             write_text(case_dir / "committed.csv", committed_csv(committed));
             write_text(case_dir / "commit_decisions.csv", commit_decisions_csv(committed));
+            write_text(case_dir / "occupancy_diagnostics.csv", occupancy_diagnostics_csv(session.GetAudioOccupancyDiagnosticRows()));
+            write_text(case_dir / "stream_tail.csv", stream_tail_csv(session.GetStreamTailDiagnosticRow()));
 
             FOffgridAIOnlinePhoneAlignmentInput alignment_input;
             alignment_input.Plan = &plan;

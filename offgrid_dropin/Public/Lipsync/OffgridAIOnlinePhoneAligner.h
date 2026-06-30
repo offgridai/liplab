@@ -59,11 +59,17 @@ struct FOffgridAIOnlinePhoneAlignmentResult
     int32 HighestAlignedPhoneIndex = INDEX_NONE;
     int32 HighestAlignedWordIndex = INDEX_NONE;
     bool bHasSpeechEvidence = false;
+    float VisibleSpeechSeconds = 0.0f;
+    float VisibleExpectedSeconds = 0.0f;
+    float SpeechRateScale = 1.0f;
 
     TArray<float> PhoneStartSeconds;
     TArray<float> PhoneCenterSeconds;
     TArray<float> PhoneEndSeconds;
     TArray<float> PhoneMatchScores;
+    TArray<float> PhoneScoreGaps;
+    TArray<float> PhoneObservedDurations;
+    TArray<float> PhoneExpectedDurations;
     TArray<FName> PhoneAdvanceReasons;
 
     EOffgridAIPhoneClass CurrentExpectedClass = EOffgridAIPhoneClass::Unknown;

@@ -27,12 +27,22 @@ struct FOffgridAIAlignedVisemeEvent
     float AlignedPhoneStartSeconds = 0.0f;
     float AlignedPhoneEndSeconds = 0.0f;
     float AlignmentConfidence = 0.0f;
+    float AlignmentScoreGap = 0.0f;
+    float AlignmentObservedDurationSeconds = 0.0f;
+    float AlignmentExpectedDurationSeconds = 0.0f;
     FName AlignmentReason = NAME_None;
     bool bMappedToObservedSpeech = false;
 
     float CommitPlaybackSeconds = 0.0f;
     float CommitLeadSeconds = 0.0f;
     FName CommitReason = FName(TEXT("unknown"));
+    bool bCommitStableByConfidence = false;
+    bool bCommitStableByBoundary = false;
+    bool bCommitStableByDuration = false;
+    bool bCommitStableByLead = false;
+    bool bCommitStableByLag = false;
+    float CommitConfidenceThreshold = 0.0f;
+    float CommitAlignableLagSeconds = 0.0f;
 
     float RequiredActiveElapsedSeconds = 0.0f;
     float ObservedActiveElapsedSeconds = 0.0f;
