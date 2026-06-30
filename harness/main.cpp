@@ -1,12 +1,15 @@
 #include "Lipsync/OffgridAILipsyncRuntimeAdapter.h"
+#include "Lipsync/OffgridAIOnlinePhoneAligner.h"
 #include "Lipsync/OffgridAIVisemePerformer.h"
 
 #include <cstring>
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <optional>
+#include <numeric>
 #include <sstream>
 #include <vector>
 
@@ -38,6 +41,9 @@ struct GradeReport
     int order_violations = 0;
     double mean_abs_center_error_ms = 0.0;
     double p90_abs_center_error_ms = 0.0;
+    double mean_abs_start_error_ms = 0.0;
+    double mean_abs_end_error_ms = 0.0;
+    double mean_abs_duration_error_ms = 0.0;
     double early_start_rate = 0.0;
     double late_tail_rate = 0.0;
 };
@@ -204,7 +210,7 @@ static std::string speech_csv(const TArray<FOffgridAIStreamingSpeechIsland>& isl
 static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "index,start,center,end,pose,word,word_index,phrase_index,sentence_index,strength,reason,alignment_reason,source_phone_class,mapped_to_observed_speech\n";
+    out << "index,start,center,end,pose,word,word_index,phrase_index,sentence_index,strength,reason,alignment_reason,source_phone_index,source_phone_base,source_phone_class,aligned_phone_start,aligned_phone_end,alignment_confidence,commit_playback,commit_lead,mapped_to_observed_speech\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.Events)
     {
@@ -220,8 +226,67 @@ static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
             << event.Strength << ','
             << to_std(event.CommitReason) << ','
             << to_std(event.AlignmentReason) << ','
+            << event.SourcePhoneIndex << ','
+            << to_std(event.SourcePhoneBase) << ','
             << to_std(event.SourcePhoneClass) << ','
+            << event.AlignedPhoneStartSeconds << ','
+            << event.AlignedPhoneEndSeconds << ','
+            << event.AlignmentConfidence << ','
+            << event.CommitPlaybackSeconds << ','
+            << event.CommitLeadSeconds << ','
             << (event.bMappedToObservedSpeech ? 1 : 0) << '\n';
+    }
+    return out.str();
+}
+
+static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& track)
+{
+    std::ostringstream out;
+    out << "event_index,pose,word,word_index,source_phone_index,source_phone_base,source_phone_class,commit_reason,alignment_reason,alignment_confidence,aligned_phone_start,aligned_phone_end,render_start,render_center,render_end,commit_playback,commit_lead,mapped_to_observed_speech\n";
+    out << std::fixed << std::setprecision(6);
+    for (const auto& event : track.Events)
+    {
+        out << event.EventIndex << ','
+            << to_std(event.PoseID) << ','
+            << to_std(event.SourceWord) << ','
+            << event.WordIndex << ','
+            << event.SourcePhoneIndex << ','
+            << to_std(event.SourcePhoneBase) << ','
+            << to_std(event.SourcePhoneClass) << ','
+            << to_std(event.CommitReason) << ','
+            << to_std(event.AlignmentReason) << ','
+            << event.AlignmentConfidence << ','
+            << event.AlignedPhoneStartSeconds << ','
+            << event.AlignedPhoneEndSeconds << ','
+            << event.RenderStartSeconds << ','
+            << event.FinalRenderCenterSeconds << ','
+            << event.RenderEndSeconds << ','
+            << event.CommitPlaybackSeconds << ','
+            << event.CommitLeadSeconds << ','
+            << (event.bMappedToObservedSpeech ? 1 : 0) << '\n';
+    }
+    return out.str();
+}
+
+static std::string alignment_csv(const FOffgridAITextVisemePlan& plan, const FOffgridAIOnlinePhoneAlignmentResult& alignment)
+{
+    std::ostringstream out;
+    out << "phone_index,word_index,word_phone_index,word,phone_base,phone_class,start,center,end,match_score,advance_reason\n";
+    out << std::fixed << std::setprecision(6);
+    for (int32 i = 0; i < plan.ExpectedPhones.Num(); ++i)
+    {
+        const auto& phone = plan.ExpectedPhones[i];
+        out << i << ','
+            << phone.WordIndex << ','
+            << phone.WordPhoneIndex << ','
+            << to_std(phone.SourceWord) << ','
+            << to_std(phone.BasePhone) << ','
+            << to_std(FOffgridAIOnlinePhoneAligner::PhoneClassToString(FOffgridAIOnlinePhoneAligner::ClassForPhoneBase(phone.BasePhone))) << ','
+            << (alignment.PhoneStartSeconds.IsValidIndex(i) ? alignment.PhoneStartSeconds[i] : -1.0f) << ','
+            << (alignment.PhoneCenterSeconds.IsValidIndex(i) ? alignment.PhoneCenterSeconds[i] : -1.0f) << ','
+            << (alignment.PhoneEndSeconds.IsValidIndex(i) ? alignment.PhoneEndSeconds[i] : -1.0f) << ','
+            << (alignment.PhoneMatchScores.IsValidIndex(i) ? alignment.PhoneMatchScores[i] : 0.0f) << ','
+            << to_std(alignment.PhoneAdvanceReasons.IsValidIndex(i) ? alignment.PhoneAdvanceReasons[i] : NAME_None) << '\n';
     }
     return out.str();
 }
@@ -233,6 +298,9 @@ static GradeReport grade(const FOffgridAIAlignedVisemeTrack& track, const std::v
     report.committed_count = track.Events.Num();
 
     std::vector<double> errors;
+    std::vector<double> start_errors;
+    std::vector<double> end_errors;
+    std::vector<double> duration_errors;
     std::vector<bool> used(static_cast<size_t>(track.Events.Num()), false);
     int last_match = -1;
 
@@ -257,6 +325,11 @@ static GradeReport grade(const FOffgridAIAlignedVisemeTrack& track, const std::v
             used[static_cast<size_t>(best)] = true;
             ++report.matched_count;
             errors.push_back(best_err * 1000.0);
+            start_errors.push_back(std::abs(static_cast<double>(track.Events[best].RenderStartSeconds) - label.start) * 1000.0);
+            end_errors.push_back(std::abs(static_cast<double>(track.Events[best].RenderEndSeconds) - label.end) * 1000.0);
+            duration_errors.push_back(std::abs(
+                (static_cast<double>(track.Events[best].RenderEndSeconds) - static_cast<double>(track.Events[best].RenderStartSeconds))
+                - (label.end - label.start)) * 1000.0);
             if (best < last_match) ++report.order_violations;
             last_match = best;
             if (track.Events[best].RenderStartSeconds + 0.050f < label.start) report.early_start_rate += 1.0;
@@ -271,6 +344,9 @@ static GradeReport grade(const FOffgridAIAlignedVisemeTrack& track, const std::v
         double sum = 0.0;
         for (double err : errors) sum += err;
         report.mean_abs_center_error_ms = sum / static_cast<double>(errors.size());
+        report.mean_abs_start_error_ms = std::accumulate(start_errors.begin(), start_errors.end(), 0.0) / static_cast<double>(start_errors.size());
+        report.mean_abs_end_error_ms = std::accumulate(end_errors.begin(), end_errors.end(), 0.0) / static_cast<double>(end_errors.size());
+        report.mean_abs_duration_error_ms = std::accumulate(duration_errors.begin(), duration_errors.end(), 0.0) / static_cast<double>(duration_errors.size());
         std::sort(errors.begin(), errors.end());
         const size_t p90_index = std::min(errors.size() - 1, static_cast<size_t>(std::floor(errors.size() * 0.9)));
         report.p90_abs_center_error_ms = errors[p90_index];
@@ -293,6 +369,9 @@ static std::string grade_json(const GradeReport& grade_report)
         << "  \"order_violations\": " << grade_report.order_violations << ",\n"
         << "  \"mean_abs_center_error_ms\": " << grade_report.mean_abs_center_error_ms << ",\n"
         << "  \"p90_abs_center_error_ms\": " << grade_report.p90_abs_center_error_ms << ",\n"
+        << "  \"mean_abs_start_error_ms\": " << grade_report.mean_abs_start_error_ms << ",\n"
+        << "  \"mean_abs_end_error_ms\": " << grade_report.mean_abs_end_error_ms << ",\n"
+        << "  \"mean_abs_duration_error_ms\": " << grade_report.mean_abs_duration_error_ms << ",\n"
         << "  \"early_start_rate\": " << grade_report.early_start_rate << ",\n"
         << "  \"late_tail_rate\": " << grade_report.late_tail_rate << "\n"
         << "}\n";
@@ -446,6 +525,19 @@ int main(int argc, char** argv)
             write_text(case_dir / "planned.csv", planned_csv(plan));
             write_text(case_dir / "speech_regions.csv", speech_csv(speech));
             write_text(case_dir / "committed.csv", committed_csv(committed));
+            write_text(case_dir / "commit_decisions.csv", commit_decisions_csv(committed));
+
+            FOffgridAIOnlinePhoneAlignmentInput alignment_input;
+            alignment_input.Plan = &plan;
+            alignment_input.AudioFeatureFrames = &session.GetAudioFeatureFrames();
+            alignment_input.SpeechIslands = &speech;
+            alignment_input.ObservedAudioEndSec = wav_duration_seconds(wav);
+            alignment_input.PlaybackSec = wav_duration_seconds(wav);
+            alignment_input.LookaheadSec = stream.buffer_seconds;
+            alignment_input.CommitLagSec = 0.120f;
+            alignment_input.bFinal = true;
+            const auto final_alignment = FOffgridAIOnlinePhoneAligner::Compute(alignment_input);
+            write_text(case_dir / "online_phone_alignment.csv", alignment_csv(plan, final_alignment));
 
             const auto handmade = read_handmade_csv(root / "inputs" / "handmade" / (stem + ".csv"));
             const GradeReport report = grade(committed, handmade);

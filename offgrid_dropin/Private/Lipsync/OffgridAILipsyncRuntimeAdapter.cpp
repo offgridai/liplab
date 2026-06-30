@@ -49,6 +49,56 @@ static float LeadForPose(FName PoseID)
     return 0.006f;
 }
 
+static float CenterForAlignedPhone(FName PoseID, EOffgridAIPhoneClass PhoneClass, float PhoneStart, float PhoneEnd)
+{
+    const float Duration = FMath::Max(PhoneEnd - PhoneStart, 0.0f);
+    if (Duration <= 0.0f)
+    {
+        return PhoneStart;
+    }
+
+    switch (PhoneClass)
+    {
+    case EOffgridAIPhoneClass::Bilabial:
+        return PhoneStart + FMath::Min(0.018f, Duration * 0.35f);
+    case EOffgridAIPhoneClass::Labiodental:
+        return PhoneStart + FMath::Min(0.022f, Duration * 0.40f);
+    case EOffgridAIPhoneClass::Dental:
+    case EOffgridAIPhoneClass::Sibilant:
+    case EOffgridAIPhoneClass::StopBurst:
+        return PhoneStart + FMath::Min(0.020f, Duration * 0.35f);
+    case EOffgridAIPhoneClass::Liquid:
+    case EOffgridAIPhoneClass::Glide:
+    case EOffgridAIPhoneClass::Nasal:
+        return PhoneStart + Duration * 0.38f;
+    case EOffgridAIPhoneClass::VowelOpen:
+    case EOffgridAIPhoneClass::VowelFront:
+    case EOffgridAIPhoneClass::VowelRound:
+        return PhoneStart + Duration * 0.42f;
+    default:
+        return ((PhoneStart + PhoneEnd) * 0.5f) - LeadForPose(PoseID);
+    }
+}
+
+static float CommitConfidenceThresholdForClass(EOffgridAIPhoneClass PhoneClass, FName PoseID)
+{
+    switch (PhoneClass)
+    {
+    case EOffgridAIPhoneClass::Bilabial: return 0.22f;
+    case EOffgridAIPhoneClass::Labiodental: return 0.24f;
+    case EOffgridAIPhoneClass::Dental: return 0.26f;
+    case EOffgridAIPhoneClass::Sibilant: return 0.28f;
+    case EOffgridAIPhoneClass::StopBurst: return 0.20f;
+    case EOffgridAIPhoneClass::Liquid:
+    case EOffgridAIPhoneClass::Glide:
+    case EOffgridAIPhoneClass::Nasal: return 0.22f;
+    case EOffgridAIPhoneClass::VowelOpen:
+    case EOffgridAIPhoneClass::VowelFront:
+    case EOffgridAIPhoneClass::VowelRound: return 0.18f;
+    default: return IsStrongPose(PoseID) ? 0.20f : 0.24f;
+    }
+}
+
 static float StrengthForEvent(const FOffgridAITextVisemeEvent& E, FName PoseID)
 {
     float S = FMath::Clamp(E.Strength, 0.18f, 1.0f);
@@ -594,11 +644,16 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         const bool bHasPhoneEvidence = PhoneIndex != INDEX_NONE && HasVisibleAlignedPhone(Alignment, PhoneIndex);
 
         const FName Pose = ResolvePose(T);
+        const EOffgridAIPhoneClass PhoneClass = Plan.ExpectedPhones.IsValidIndex(PhoneIndex)
+            ? FOffgridAIOnlinePhoneAligner::ClassForPhoneBase(Plan.ExpectedPhones[PhoneIndex].BasePhone)
+            : EOffgridAIPhoneClass::Unknown;
         float Center = EventCenterNorm(T) * FMath::Max(Plan.EstimatedDurationSeconds, 0.001f);
         FName PlacementReason = FName(TEXT("duration_fallback"));
         if (bHasPhoneEvidence)
         {
-            Center = Alignment.PhoneCenterSeconds[PhoneIndex] - LeadForPose(Pose);
+            const float PhoneStart = Alignment.PhoneStartSeconds[PhoneIndex];
+            const float PhoneEnd = Alignment.PhoneEndSeconds[PhoneIndex];
+            Center = CenterForAlignedPhone(Pose, PhoneClass, PhoneStart, PhoneEnd);
             PlacementReason = FName(TEXT("streaming_forced_alignment"));
         }
 
@@ -735,6 +790,31 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         // guards only preserve phrase ownership and monotonic commit safety.
         const bool bUsedForcedAlignment = bHasPhoneEvidence;
 
+        if (bUsedForcedAlignment && !Input.bInputStreamClosed && !Input.bPlaybackFinalized)
+        {
+            const float Confidence = Alignment.PhoneMatchScores.IsValidIndex(PhoneIndex) ? Alignment.PhoneMatchScores[PhoneIndex] : 0.0f;
+            const float PhoneStart = Alignment.PhoneStartSeconds.IsValidIndex(PhoneIndex) ? Alignment.PhoneStartSeconds[PhoneIndex] : 0.0f;
+            const float PhoneEnd = Alignment.PhoneEndSeconds.IsValidIndex(PhoneIndex) ? Alignment.PhoneEndSeconds[PhoneIndex] : 0.0f;
+            const float PhoneDuration = FMath::Max(PhoneEnd - PhoneStart, 0.0f);
+            const bool bNextPhoneVisible = HasVisibleAlignedPhone(Alignment, PhoneIndex + 1);
+            const bool bLaterPhonesVisible = Alignment.HighestAlignedPhoneIndex > PhoneIndex;
+            const float LeadToPlayback = Center - Input.CurrentPlaybackSec;
+            const float MinConfidence = CommitConfidenceThresholdForClass(PhoneClass, Pose);
+            const bool bStableByConfidence = Confidence >= MinConfidence;
+            const bool bStableByBoundary = bNextPhoneVisible || bLaterPhonesVisible;
+            const bool bStableByDuration = PhoneDuration >= 0.040f || IsStrongPose(Pose);
+            const bool bStableByLead = LeadToPlayback >= 0.040f;
+
+            if ((!bStableByConfidence || !bStableByDuration) && !bStableByBoundary)
+            {
+                break;
+            }
+            if (!bStableByLead && !bStableByBoundary)
+            {
+                break;
+            }
+        }
+
         if (!bUsedForcedAlignment && !Input.bInputStreamClosed && !Input.bPlaybackFinalized)
         {
             // Streaming-safe: wait until the online Viterbi path has enough
@@ -834,9 +914,7 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         E.RenderStartSeconds = FMath::Max(0.0f, Center - EventSpan * 0.5f);
         E.RenderEndSeconds = Center + EventSpan * 0.5f;
         E.SourcePhoneIndex = PhoneIndex;
-        const EOffgridAIPhoneClass PhoneClass = Plan.ExpectedPhones.IsValidIndex(PhoneIndex)
-            ? FOffgridAIOnlinePhoneAligner::ClassForPhoneBase(Plan.ExpectedPhones[PhoneIndex].BasePhone)
-            : EOffgridAIPhoneClass::Unknown;
+        E.SourcePhoneBase = Plan.ExpectedPhones.IsValidIndex(PhoneIndex) ? Plan.ExpectedPhones[PhoneIndex].BasePhone : T.SourcePhoneBase;
         E.SourcePhoneClass = FName(*FOffgridAIOnlinePhoneAligner::PhoneClassToString(PhoneClass));
         E.AlignedPhoneStartSeconds = Alignment.PhoneStartSeconds.IsValidIndex(PhoneIndex) ? Alignment.PhoneStartSeconds[PhoneIndex] : 0.0f;
         E.AlignedPhoneEndSeconds = Alignment.PhoneEndSeconds.IsValidIndex(PhoneIndex) ? Alignment.PhoneEndSeconds[PhoneIndex] : 0.0f;

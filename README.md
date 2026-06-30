@@ -56,15 +56,44 @@ scripts\verify.bat
 
 This configures CMake, builds `liplab_runner`, runs the sample corpus, summarizes the latest run, and checks grade thresholds from `docs/grade_thresholds.json`.
 
-## Handmade draft generation
+## MFA-backed gold generation
+
+The gold-label workflow is now split into two paths:
+
+- offline MFA-backed batch generation creates or refreshes `inputs/handmade`
+- the standalone harness simulates the streamed runtime path and grades against that gold set
+
+### Prerequisites
+
+Expected local MFA layout:
+
+```text
+.conda/mfa/                         Local Conda environment containing MFA
+.mfa/pretrained_models/acoustic/    Downloaded MFA acoustic models
+.mfa/pretrained_models/dictionary/  Downloaded MFA dictionaries
+```
+
+Expected commands:
+
+```bash
+conda run -p C:\git\liplab\.conda\mfa mfa version
+```
+
+If MFA cannot write to your user Documents folder, ensure `MFA_ROOT_DIR` points at `C:\git\liplab\.mfa`.
+
+### Regenerate the gold set
 
 Generate batch draft annotations from the current transcript + WAV corpus:
 
 ```bash
-python scripts/draft_handmade.py
+python scripts/draft_handmade.py --mfa-num-jobs 4
 ```
 
-This runs `liplab_runner`, converts the latest runtime outputs into rich draft packages under `outputs/handmade_drafts/<case>/`, and writes a `draft.annotation.json` plus `review_notes.txt` for each case.
+This does three things:
+
+1. runs the authoritative `offgrid_dropin` core offline to capture `planned.csv` and fallback committed timings under `outputs/offline_gold/latest/`
+2. runs offline MFA alignment over the full corpus and writes TextGrids to `outputs/mfa_align/latest/`
+3. converts MFA phone timings plus transcript-owned viseme identity into draft packages under `outputs/handmade_drafts/<case>/`
 
 Export draft packages into grader-facing CSV files:
 
@@ -77,6 +106,24 @@ Validate handmade CSVs and draft packages:
 ```bash
 python scripts/check_handmade.py --include-drafts
 ```
+
+### Re-run the streamed harness against gold
+
+```bash
+python scripts/run_all.py
+python scripts/summarize.py
+python scripts/check_grades.py
+```
+
+This is the intended evaluation split:
+
+- offline MFA batch creates the accepted gold answer
+- streamed harness runs with `--buffer-ms 350 --chunk-ms 40`
+- grading measures runtime error against offline gold
+
+### Important constraint
+
+MFA is offline-only. It must not be added to `offgrid_dropin` runtime scheduling logic. Transcript still owns viseme identity; MFA only improves offline timing evidence.
 
 ## Handmade CSV format
 

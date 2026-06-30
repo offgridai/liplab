@@ -22,6 +22,7 @@ struct FOffgridAIAlignedVisemeEvent
     float RenderEndSeconds = 0.0f;
 
     int32 SourcePhoneIndex = INDEX_NONE;
+    FString SourcePhoneBase;
     FName SourcePhoneClass = NAME_None;
     float AlignedPhoneStartSeconds = 0.0f;
     float AlignedPhoneEndSeconds = 0.0f;
@@ -89,4 +90,3 @@ struct FOffgridAILipsyncPoseRuntimeState
     float Funnel = 0.0f;
     float Teeth = 0.0f;
 };
-

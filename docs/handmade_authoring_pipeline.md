@@ -1,6 +1,6 @@
 # Handmade Authoring Pipeline
 
-This document proposes an offline batch system for creating `inputs/handmade` gold answers from full `transcript + WAV` case inputs.
+This document describes the offline batch system used to create `inputs/handmade` gold answers from full `transcript + WAV` case inputs.
 
 The goal is to create reviewer-approved viseme timing answers for grading. This system is not part of the runtime lipsync path and must not become a second production scheduler.
 
@@ -13,8 +13,9 @@ Inputs:
 
 Outputs:
 
-- `inputs/handmade/<case>.json` or `inputs/handmade/<case>.csv` as the final grader-facing gold answer
+- `inputs/handmade/<case>.csv` as the grader-facing gold answer
 - a richer draft annotation artifact used during human review
+- `outputs/mfa_align/latest/<case>.TextGrid` as the offline timing evidence
 
 ## Non-goals
 
@@ -44,15 +45,58 @@ This means offline tools may use full-file alignment to improve timing proposals
 For each case:
 
 1. Read the transcript and WAV.
-2. Run the authoritative `offgrid_dropin` lipsync core offline to generate a first-pass viseme plan and committed schedule.
-3. Run a transcript-constrained alignment pass to estimate:
+2. Run the authoritative `offgrid_dropin` lipsync core offline to generate a first-pass viseme plan and fallback committed schedule.
+3. Run offline MFA over the full WAV plus transcript to estimate:
    - word timings,
    - phone timings,
    - silence and pause spans.
-4. Convert the aligned phone sequence into draft viseme intervals using the same transcript-owned pronunciation rules as the runtime core.
-5. Mark low-confidence regions for review.
+4. Keep viseme identity from the transcript-owned `planned.csv` output of `offgrid_dropin`.
+5. Map each planned viseme to the corresponding MFA phone timing using:
+   - `word_index`
+   - `source_phone`
+   - `source_phone_index`
+6. If MFA cannot provide a usable monotonic phone timing, fall back to the offline committed timing for that viseme.
+7. Mark low-confidence or fallback regions for review.
 
 The draft generator is an assistant for annotation. It is allowed to use stronger full-file timing analysis than the streaming runtime, because its output is reviewed by a human before becoming gold data.
+
+## Implemented Phase 1
+
+The current implementation is intentionally narrow:
+
+- MFA is the offline timing authority
+- `offgrid_dropin` `planned.csv` is the viseme identity authority
+- no acoustic model is allowed to invent viseme identity
+- no streaming heuristics are used during gold creation
+- the exporter preserves transcript order even when MFA phone evidence is imperfect
+
+Current script entrypoints:
+
+- `python scripts/draft_handmade.py --mfa-num-jobs 4`
+- `python scripts/export_handmade.py --allow-draft`
+- `python scripts/check_handmade.py --include-drafts`
+
+Current generated directories:
+
+```text
+outputs/offline_gold/latest/<case>/
+outputs/mfa_align/latest/<case>.TextGrid
+outputs/handmade_drafts/<case>/draft.annotation.json
+inputs/handmade/<case>.csv
+```
+
+Current `draft.annotation.json` carries:
+
+- transcript and audio metadata
+- MFA word intervals
+- MFA phone intervals
+- planned visemes from the transcript path
+- exported viseme timings
+- alignment provenance such as:
+  - `mfa_exact_source_phone_index`
+  - `mfa_source_phone_index_label_fallback`
+  - `mfa_source_phone_index_label_mismatch`
+  - `offline_committed_fallback`
 
 ### 2. Review package
 
@@ -83,11 +127,11 @@ Suggested JSON shape:
     "sample_rate_hz": 16000,
     "duration_sec": 1.84
   },
-  "words": [
+  "mfa_words": [
     { "text": "welcome", "start": 0.11, "end": 0.62 }
   ],
-  "phones": [
-    { "phone": "W", "start": 0.11, "end": 0.16, "source": "aligner" }
+  "mfa_phones": [
+    { "phone": "W", "start": 0.11, "end": 0.16, "source": "mfa" }
   ],
   "visemes": [
     {
@@ -95,7 +139,8 @@ Suggested JSON shape:
       "start": 0.18,
       "end": 0.28,
       "center": 0.23,
-      "driven_by_phones": ["M"]
+      "source_phone": "M",
+      "alignment_reason": "mfa_exact_source_phone_index"
     }
   ],
   "flags": [
@@ -131,7 +176,7 @@ Required edit actions:
 - move viseme centers
 - split a viseme
 - merge adjacent visemes
-- relabel viseme identity when the pronunciation draft is wrong
+- relabel viseme identity when the transcript pronunciation draft is wrong
 - mark silence or hold regions
 - leave reviewer notes
 
@@ -170,20 +215,19 @@ The grader-facing format should stay simple and stable. Rich draft data belongs 
 
 ## Repository-facing workflow
 
-Suggested local scripts:
+Repository scripts:
 
 - `scripts/draft_handmade.py`
-  Batch-generate draft authoring artifacts for every case.
-- `scripts/review_queue.py`
-  List cases that still need review or contain low-confidence spans.
+  Batch-generate draft authoring artifacts for every case using offline core outputs plus MFA TextGrids.
 - `scripts/export_handmade.py`
   Convert approved draft annotations into final `inputs/handmade` gold files.
 - `scripts/check_handmade.py`
-  Validate schema, monotonicity, allowed viseme set, and no-overlap constraints.
+  Validate schema and monotonicity.
 
 Suggested directories:
 
 ```text
+outputs/mfa_align/latest/<case>.TextGrid
 outputs/handmade_drafts/<case>/draft.annotation.json
 outputs/handmade_drafts/<case>/review_notes.txt
 inputs/handmade/<case>.csv
@@ -215,11 +259,11 @@ Because of that review boundary, offline analysis can be more powerful without c
 
 Start with a narrow and deterministic first version:
 
-1. Generate a draft from `offgrid_dropin`.
-2. Add transcript-constrained word and phone timing alignment.
-3. Convert aligned phones to draft visemes.
-4. Review in a simple local timeline tool.
-5. Export final gold CSV or JSON into `inputs/handmade`.
+1. Generate a viseme plan from `offgrid_dropin`.
+2. Run offline MFA to produce full-file word and phone timings.
+3. Convert aligned phones to draft visemes while keeping transcript-owned identity.
+4. Review flagged cases in a simple local timeline tool.
+5. Export final gold CSV into `inputs/handmade`.
 
 This is enough to build a useful corpus without redesigning the runtime core or the grader.
 
@@ -231,6 +275,7 @@ Possible later improvements:
 - confidence ranking so reviewers see the hardest cases first,
 - side-by-side display of `planned.csv`, `committed.csv`, and gold answers,
 - per-viseme provenance for auditability,
+- a custom MFA dictionary generated from the larger Offgrid lexicon,
 - a corpus migration tool if the grader format evolves.
 
 Those should remain optional conveniences. The core contract is simple: full-file offline tools help create gold answers, while runtime lipsync stays in `offgrid_dropin` and is evaluated against those answers.

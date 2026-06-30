@@ -1,11 +1,13 @@
 {
   "case_id": "case_0036_20260629_094333_229_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000035_00",
-  "created_utc": "2026-06-29T20:13:38.926441+00:00",
+  "created_utc": "2026-06-29T20:40:21.321095+00:00",
   "generator": {
-    "kind": "liplab_offline_full_wav",
+    "kind": "liplab_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
-    "source_run_dir": "outputs/offline_gold/latest/case_0036_20260629_094333_229_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000035_00"
+    "mfa_num_jobs": 4,
+    "source_run_dir": "outputs/offline_gold/latest/case_0036_20260629_094333_229_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000035_00",
+    "mfa_align_dir": "outputs/mfa_align/latest"
   },
   "approval": {
     "status": "draft",
@@ -52,6 +54,478 @@
       "last_speech": 4.65,
       "started": true,
       "ended": true
+    }
+  ],
+  "mfa_words": [
+    {
+      "word_index": 0,
+      "word": "the",
+      "start": 0.14,
+      "end": 0.26
+    },
+    {
+      "word_index": 1,
+      "word": "maple",
+      "start": 0.26,
+      "end": 0.6
+    },
+    {
+      "word_index": 2,
+      "word": "syrup",
+      "start": 0.6,
+      "end": 1.05
+    },
+    {
+      "word_index": 3,
+      "word": "the",
+      "start": 1.3,
+      "end": 1.4
+    },
+    {
+      "word_index": 4,
+      "word": "lakes",
+      "start": 1.4,
+      "end": 1.94
+    },
+    {
+      "word_index": 5,
+      "word": "and",
+      "start": 2.06,
+      "end": 2.18
+    },
+    {
+      "word_index": 6,
+      "word": "the",
+      "start": 2.18,
+      "end": 2.22
+    },
+    {
+      "word_index": 7,
+      "word": "northern",
+      "start": 2.22,
+      "end": 2.65
+    },
+    {
+      "word_index": 8,
+      "word": "lights",
+      "start": 2.65,
+      "end": 3.11
+    },
+    {
+      "word_index": 9,
+      "word": "need",
+      "start": 3.67,
+      "end": 3.94
+    },
+    {
+      "word_index": 10,
+      "word": "anything",
+      "start": 3.94,
+      "end": 4.28
+    },
+    {
+      "word_index": 11,
+      "word": "else",
+      "start": 4.28,
+      "end": 4.68
+    }
+  ],
+  "mfa_phones": [
+    {
+      "index_in_word": 0,
+      "phone": "DH",
+      "phone_base": "DH",
+      "start": 0.14,
+      "end": 0.21,
+      "word_index": 0,
+      "word": "the"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 0.21,
+      "end": 0.26,
+      "word_index": 0,
+      "word": "the"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "M",
+      "phone_base": "M",
+      "start": 0.26,
+      "end": 0.36,
+      "word_index": 1,
+      "word": "maple"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "EY1",
+      "phone_base": "EY",
+      "start": 0.36,
+      "end": 0.45,
+      "word_index": 1,
+      "word": "maple"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "P",
+      "phone_base": "P",
+      "start": 0.45,
+      "end": 0.53,
+      "word_index": 1,
+      "word": "maple"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 0.53,
+      "end": 0.56,
+      "word_index": 1,
+      "word": "maple"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 0.56,
+      "end": 0.6,
+      "word_index": 1,
+      "word": "maple"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 0.6,
+      "end": 0.76,
+      "word_index": 2,
+      "word": "syrup"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "ER1",
+      "phone_base": "ER",
+      "start": 0.76,
+      "end": 0.9,
+      "word_index": 2,
+      "word": "syrup"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 0.9,
+      "end": 0.96,
+      "word_index": 2,
+      "word": "syrup"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "P",
+      "phone_base": "P",
+      "start": 0.96,
+      "end": 1.05,
+      "word_index": 2,
+      "word": "syrup"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "DH",
+      "phone_base": "DH",
+      "start": 1.3,
+      "end": 1.34,
+      "word_index": 3,
+      "word": "the"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AH1",
+      "phone_base": "AH",
+      "start": 1.34,
+      "end": 1.4,
+      "word_index": 3,
+      "word": "the"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 1.4,
+      "end": 1.52,
+      "word_index": 4,
+      "word": "lakes"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "EY1",
+      "phone_base": "EY",
+      "start": 1.52,
+      "end": 1.64,
+      "word_index": 4,
+      "word": "lakes"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "K",
+      "phone_base": "K",
+      "start": 1.64,
+      "end": 1.73,
+      "word_index": 4,
+      "word": "lakes"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 1.73,
+      "end": 1.94,
+      "word_index": 4,
+      "word": "lakes"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "AE1",
+      "phone_base": "AE",
+      "start": 2.06,
+      "end": 2.1,
+      "word_index": 5,
+      "word": "and"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 2.1,
+      "end": 2.15,
+      "word_index": 5,
+      "word": "and"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 2.15,
+      "end": 2.18,
+      "word_index": 5,
+      "word": "and"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "DH",
+      "phone_base": "DH",
+      "start": 2.18,
+      "end": 2.19,
+      "word_index": 6,
+      "word": "the"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 2.19,
+      "end": 2.22,
+      "word_index": 6,
+      "word": "the"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 2.22,
+      "end": 2.31,
+      "word_index": 7,
+      "word": "northern"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AO1",
+      "phone_base": "AO",
+      "start": 2.31,
+      "end": 2.4,
+      "word_index": 7,
+      "word": "northern"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "R",
+      "phone_base": "R",
+      "start": 2.4,
+      "end": 2.47,
+      "word_index": 7,
+      "word": "northern"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "DH",
+      "phone_base": "DH",
+      "start": 2.47,
+      "end": 2.52,
+      "word_index": 7,
+      "word": "northern"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "ER0",
+      "phone_base": "ER",
+      "start": 2.52,
+      "end": 2.58,
+      "word_index": 7,
+      "word": "northern"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 2.58,
+      "end": 2.65,
+      "word_index": 7,
+      "word": "northern"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 2.65,
+      "end": 2.7,
+      "word_index": 8,
+      "word": "lights"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AY1",
+      "phone_base": "AY",
+      "start": 2.7,
+      "end": 2.82,
+      "word_index": 8,
+      "word": "lights"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 2.82,
+      "end": 2.9,
+      "word_index": 8,
+      "word": "lights"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 2.9,
+      "end": 3.11,
+      "word_index": 8,
+      "word": "lights"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 3.67,
+      "end": 3.77,
+      "word_index": 9,
+      "word": "need"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "IY1",
+      "phone_base": "IY",
+      "start": 3.77,
+      "end": 3.89,
+      "word_index": 9,
+      "word": "need"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 3.89,
+      "end": 3.94,
+      "word_index": 9,
+      "word": "need"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "EH1",
+      "phone_base": "EH",
+      "start": 3.94,
+      "end": 4.0,
+      "word_index": 10,
+      "word": "anything"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 4.0,
+      "end": 4.04,
+      "word_index": 10,
+      "word": "anything"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "IY0",
+      "phone_base": "IY",
+      "start": 4.04,
+      "end": 4.1,
+      "word_index": 10,
+      "word": "anything"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "TH",
+      "phone_base": "TH",
+      "start": 4.1,
+      "end": 4.18,
+      "word_index": 10,
+      "word": "anything"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "IH2",
+      "phone_base": "IH",
+      "start": 4.18,
+      "end": 4.22,
+      "word_index": 10,
+      "word": "anything"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "NG",
+      "phone_base": "NG",
+      "start": 4.22,
+      "end": 4.28,
+      "word_index": 10,
+      "word": "anything"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "EH1",
+      "phone_base": "EH",
+      "start": 4.28,
+      "end": 4.34,
+      "word_index": 11,
+      "word": "else"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 4.34,
+      "end": 4.44,
+      "word_index": 11,
+      "word": "else"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 4.44,
+      "end": 4.68,
+      "word_index": 11,
+      "word": "else"
     }
   ],
   "planned_visemes": [
@@ -256,17 +730,19 @@
       "index": 0,
       "id": "07_Aa",
       "pose": "07_Aa",
-      "start": 0.1865,
-      "center": 0.254,
-      "end": 0.3215,
+      "start": 0.21,
+      "center": 0.235,
+      "end": 0.26,
       "word": "the",
       "word_index": 0,
       "phrase_index": 0,
       "sentence_index": 0,
-      "strength": 0.58,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_open",
+      "strength": 0.5,
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "AH",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -276,9 +752,9 @@
       "flags": [
         {
           "kind": "low_strength_viseme",
-          "start": 0.1865,
-          "end": 0.3215,
-          "note": "Viseme strength is low (0.580)."
+          "start": 0.21,
+          "end": 0.26,
+          "note": "Viseme strength is low (0.500)."
         }
       ]
     },
@@ -286,17 +762,19 @@
       "index": 1,
       "id": "22_MBP",
       "pose": "22_MBP",
-      "start": 0.2515,
-      "center": 0.304,
-      "end": 0.3565,
+      "start": 0.26,
+      "center": 0.31,
+      "end": 0.36,
       "word": "maple",
       "word_index": 1,
       "phrase_index": 0,
       "sentence_index": 0,
       "strength": 1.0,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "bilabial",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "M",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -309,17 +787,19 @@
       "index": 2,
       "id": "06_Eh",
       "pose": "06_Eh",
-      "start": 0.3265,
-      "center": 0.394,
-      "end": 0.4615,
+      "start": 0.36,
+      "center": 0.405,
+      "end": 0.45,
       "word": "maple",
       "word_index": 1,
       "phrase_index": 0,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "EY",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -332,17 +812,19 @@
       "index": 3,
       "id": "06_Eh",
       "pose": "06_Eh",
-      "start": 0.7465,
-      "center": 0.814,
-      "end": 0.8815,
+      "start": 0.76,
+      "center": 0.8300000000000001,
+      "end": 0.9,
       "word": "syrup",
       "word_index": 2,
       "phrase_index": 0,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "ER",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -355,17 +837,19 @@
       "index": 4,
       "id": "22_MBP",
       "pose": "22_MBP",
-      "start": 0.9525,
+      "start": 0.96,
       "center": 1.005,
-      "end": 1.0575,
+      "end": 1.05,
       "word": "syrup",
       "word_index": 2,
       "phrase_index": 0,
       "sentence_index": 0,
       "strength": 1.0,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "bilabial",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "P",
+      "source_phone_index": 3,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -378,17 +862,19 @@
       "index": 5,
       "id": "07_Aa",
       "pose": "07_Aa",
-      "start": 2.0475,
-      "center": 2.115,
-      "end": 2.1825,
+      "start": 1.34,
+      "center": 1.37,
+      "end": 1.4,
       "word": "the",
       "word_index": 3,
       "phrase_index": 1,
       "sentence_index": 0,
-      "strength": 0.58,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_open",
+      "strength": 0.5,
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "AH",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -398,15 +884,9 @@
       "flags": [
         {
           "kind": "low_strength_viseme",
-          "start": 2.0475,
-          "end": 2.1825,
-          "note": "Viseme strength is low (0.580)."
-        },
-        {
-          "kind": "large_inter_event_gap",
-          "start": 2.0475,
-          "end": 2.1825,
-          "note": "Large gap from previous viseme center (1.110s)."
+          "start": 1.34,
+          "end": 1.4,
+          "note": "Viseme strength is low (0.500)."
         }
       ]
     },
@@ -414,17 +894,19 @@
       "index": 6,
       "id": "06_Eh",
       "pose": "06_Eh",
-      "start": 2.0975,
-      "center": 2.165,
-      "end": 2.2325,
+      "start": 1.52,
+      "center": 1.58,
+      "end": 1.64,
       "word": "lakes",
       "word_index": 4,
       "phrase_index": 1,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "EY",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -437,17 +919,19 @@
       "index": 7,
       "id": "07_Aa",
       "pose": "07_Aa",
-      "start": 3.6675,
-      "center": 3.735,
-      "end": 3.8025,
+      "start": 2.06,
+      "center": 2.08,
+      "end": 2.1,
       "word": "and",
       "word_index": 5,
       "phrase_index": 2,
       "sentence_index": 0,
-      "strength": 0.58,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_open",
+      "strength": 0.5,
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_source_phone_index_label_mismatch",
+      "source_phone": "AH",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -457,15 +941,15 @@
       "flags": [
         {
           "kind": "low_strength_viseme",
-          "start": 3.6675,
-          "end": 3.8025,
-          "note": "Viseme strength is low (0.580)."
+          "start": 2.06,
+          "end": 2.1,
+          "note": "Viseme strength is low (0.500)."
         },
         {
           "kind": "large_inter_event_gap",
-          "start": 3.6675,
-          "end": 3.8025,
-          "note": "Large gap from previous viseme center (1.570s)."
+          "start": 2.06,
+          "end": 2.1,
+          "note": "Large gap from previous viseme center (0.500s)."
         }
       ]
     },
@@ -473,17 +957,19 @@
       "index": 8,
       "id": "07_Aa",
       "pose": "07_Aa",
-      "start": 3.7175,
-      "center": 3.785,
-      "end": 3.8525,
+      "start": 2.19,
+      "center": 2.205,
+      "end": 2.22,
       "word": "the",
       "word_index": 6,
       "phrase_index": 2,
       "sentence_index": 0,
-      "strength": 0.58,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_open",
+      "strength": 0.5,
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "AH",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -493,9 +979,9 @@
       "flags": [
         {
           "kind": "low_strength_viseme",
-          "start": 3.7175,
-          "end": 3.8525,
-          "note": "Viseme strength is low (0.580)."
+          "start": 2.19,
+          "end": 2.22,
+          "note": "Viseme strength is low (0.500)."
         }
       ]
     },
@@ -503,17 +989,19 @@
       "index": 9,
       "id": "09_Oh",
       "pose": "09_Oh",
-      "start": 3.7675,
-      "center": 3.835,
-      "end": 3.9025,
+      "start": 2.31,
+      "center": 2.355,
+      "end": 2.4,
       "word": "northern",
       "word_index": 7,
       "phrase_index": 2,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_round",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "AO",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -526,17 +1014,19 @@
       "index": 10,
       "id": "05_Ay",
       "pose": "05_Ay",
-      "start": 3.83,
-      "center": 3.885,
-      "end": 3.94,
+      "start": 2.7,
+      "center": 2.76,
+      "end": 2.82,
       "word": "lights",
       "word_index": 8,
       "phrase_index": 2,
       "sentence_index": 0,
       "strength": 0.94,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_open",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "AY",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -549,40 +1039,51 @@
       "index": 11,
       "id": "03_Ee",
       "pose": "03_Ee",
-      "start": 3.8675,
-      "center": 3.935,
-      "end": 4.0025,
+      "start": 3.77,
+      "center": 3.83,
+      "end": 3.89,
       "word": "need",
       "word_index": 9,
       "phrase_index": 3,
       "sentence_index": 1,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "IY",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
         "reviewed": false
       },
       "notes": [],
-      "flags": []
+      "flags": [
+        {
+          "kind": "large_inter_event_gap",
+          "start": 3.77,
+          "end": 3.89,
+          "note": "Large gap from previous viseme center (1.070s)."
+        }
+      ]
     },
     {
       "index": 12,
       "id": "06_Eh",
       "pose": "06_Eh",
-      "start": 3.9175,
-      "center": 3.985,
-      "end": 4.0525,
+      "start": 3.94,
+      "center": 3.9699999999999998,
+      "end": 4.0,
       "word": "anything",
       "word_index": 10,
       "phrase_index": 3,
       "sentence_index": 1,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "EH",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -595,17 +1096,19 @@
       "index": 13,
       "id": "03_Ee",
       "pose": "03_Ee",
-      "start": 3.9675,
-      "center": 4.035,
-      "end": 4.1025,
+      "start": 4.04,
+      "center": 4.07,
+      "end": 4.1,
       "word": "anything",
       "word_index": 10,
       "phrase_index": 3,
       "sentence_index": 1,
-      "strength": 0.58,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "strength": 0.5,
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "IY",
+      "source_phone_index": 2,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -615,9 +1118,9 @@
       "flags": [
         {
           "kind": "low_strength_viseme",
-          "start": 3.9675,
-          "end": 4.1025,
-          "note": "Viseme strength is low (0.580)."
+          "start": 4.04,
+          "end": 4.1,
+          "note": "Viseme strength is low (0.500)."
         }
       ]
     },
@@ -625,17 +1128,19 @@
       "index": 14,
       "id": "06_Eh",
       "pose": "06_Eh",
-      "start": 4.3365,
-      "center": 4.404,
-      "end": 4.4715,
+      "start": 4.28,
+      "center": 4.3100000000000005,
+      "end": 4.34,
       "word": "else",
       "word_index": 11,
       "phrase_index": 3,
       "sentence_index": 1,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "EH",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -648,45 +1153,45 @@
   "flags": [
     {
       "kind": "low_strength_viseme",
-      "start": 0.1865,
-      "end": 0.3215,
-      "note": "Viseme strength is low (0.580)."
+      "start": 0.21,
+      "end": 0.26,
+      "note": "Viseme strength is low (0.500)."
     },
     {
       "kind": "low_strength_viseme",
-      "start": 2.0475,
-      "end": 2.1825,
-      "note": "Viseme strength is low (0.580)."
+      "start": 1.34,
+      "end": 1.4,
+      "note": "Viseme strength is low (0.500)."
+    },
+    {
+      "kind": "low_strength_viseme",
+      "start": 2.06,
+      "end": 2.1,
+      "note": "Viseme strength is low (0.500)."
     },
     {
       "kind": "large_inter_event_gap",
-      "start": 2.0475,
-      "end": 2.1825,
-      "note": "Large gap from previous viseme center (1.110s)."
+      "start": 2.06,
+      "end": 2.1,
+      "note": "Large gap from previous viseme center (0.500s)."
     },
     {
       "kind": "low_strength_viseme",
-      "start": 3.6675,
-      "end": 3.8025,
-      "note": "Viseme strength is low (0.580)."
+      "start": 2.19,
+      "end": 2.22,
+      "note": "Viseme strength is low (0.500)."
     },
     {
       "kind": "large_inter_event_gap",
-      "start": 3.6675,
-      "end": 3.8025,
-      "note": "Large gap from previous viseme center (1.570s)."
+      "start": 3.77,
+      "end": 3.89,
+      "note": "Large gap from previous viseme center (1.070s)."
     },
     {
       "kind": "low_strength_viseme",
-      "start": 3.7175,
-      "end": 3.8525,
-      "note": "Viseme strength is low (0.580)."
-    },
-    {
-      "kind": "low_strength_viseme",
-      "start": 3.9675,
-      "end": 4.1025,
-      "note": "Viseme strength is low (0.580)."
+      "start": 4.04,
+      "end": 4.1,
+      "note": "Viseme strength is low (0.500)."
     }
   ],
   "notes": [],
@@ -698,10 +1203,11 @@
       "large_inter_event_gap": 2
     },
     "commit_reasons": {
-      "streaming_forced_alignment": 15
+      "mfa_phone_alignment": 15
     },
     "alignment_reasons": {
-      "streaming_forced_alignment_viterbi": 15
+      "mfa_exact_source_phone_index": 14,
+      "mfa_source_phone_index_label_mismatch": 1
     },
     "mapped_to_observed_speech_count": 15
   }

@@ -1,11 +1,13 @@
 {
   "case_id": "case_0012_20260629_093929_211_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000011_00",
-  "created_utc": "2026-06-29T20:13:38.497528+00:00",
+  "created_utc": "2026-06-29T20:40:21.281411+00:00",
   "generator": {
-    "kind": "liplab_offline_full_wav",
+    "kind": "liplab_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
-    "source_run_dir": "outputs/offline_gold/latest/case_0012_20260629_093929_211_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000011_00"
+    "mfa_num_jobs": 4,
+    "source_run_dir": "outputs/offline_gold/latest/case_0012_20260629_093929_211_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000011_00",
+    "mfa_align_dir": "outputs/mfa_align/latest"
   },
   "approval": {
     "status": "draft",
@@ -36,6 +38,418 @@
       "last_speech": 3.38,
       "started": true,
       "ended": true
+    }
+  ],
+  "mfa_words": [
+    {
+      "word_index": 0,
+      "word": "indeed",
+      "start": 0.31,
+      "end": 0.89
+    },
+    {
+      "word_index": 1,
+      "word": "and",
+      "start": 1.15,
+      "end": 1.3
+    },
+    {
+      "word_index": 2,
+      "word": "did",
+      "start": 1.3,
+      "end": 1.46
+    },
+    {
+      "word_index": 3,
+      "word": "you",
+      "start": 1.46,
+      "end": 1.55
+    },
+    {
+      "word_index": 4,
+      "word": "know",
+      "start": 1.55,
+      "end": 1.75
+    },
+    {
+      "word_index": 5,
+      "word": "it's",
+      "start": 1.75,
+      "end": 1.88
+    },
+    {
+      "word_index": 6,
+      "word": "also",
+      "start": 1.88,
+      "end": 2.23
+    },
+    {
+      "word_index": 7,
+      "word": "the",
+      "start": 2.23,
+      "end": 2.34
+    },
+    {
+      "word_index": 8,
+      "word": "birthplace",
+      "start": 2.34,
+      "end": 2.85
+    },
+    {
+      "word_index": 9,
+      "word": "of",
+      "start": 2.85,
+      "end": 2.96
+    },
+    {
+      "word_index": 10,
+      "word": "tango",
+      "start": 2.96,
+      "end": 3.41
+    }
+  ],
+  "mfa_phones": [
+    {
+      "index_in_word": 0,
+      "phone": "IH0",
+      "phone_base": "IH",
+      "start": 0.31,
+      "end": 0.41,
+      "word_index": 0,
+      "word": "indeed"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 0.41,
+      "end": 0.49,
+      "word_index": 0,
+      "word": "indeed"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 0.49,
+      "end": 0.55,
+      "word_index": 0,
+      "word": "indeed"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "IY1",
+      "phone_base": "IY",
+      "start": 0.55,
+      "end": 0.78,
+      "word_index": 0,
+      "word": "indeed"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 0.78,
+      "end": 0.89,
+      "word_index": 0,
+      "word": "indeed"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "AE1",
+      "phone_base": "AE",
+      "start": 1.15,
+      "end": 1.23,
+      "word_index": 1,
+      "word": "and"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 1.23,
+      "end": 1.27,
+      "word_index": 1,
+      "word": "and"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 1.27,
+      "end": 1.3,
+      "word_index": 1,
+      "word": "and"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 1.3,
+      "end": 1.33,
+      "word_index": 2,
+      "word": "did"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "IH1",
+      "phone_base": "IH",
+      "start": 1.33,
+      "end": 1.39,
+      "word_index": 2,
+      "word": "did"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 1.39,
+      "end": 1.46,
+      "word_index": 2,
+      "word": "did"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "Y",
+      "phone_base": "Y",
+      "start": 1.46,
+      "end": 1.51,
+      "word_index": 3,
+      "word": "you"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "UW1",
+      "phone_base": "UW",
+      "start": 1.51,
+      "end": 1.55,
+      "word_index": 3,
+      "word": "you"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 1.55,
+      "end": 1.62,
+      "word_index": 4,
+      "word": "know"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "OW1",
+      "phone_base": "OW",
+      "start": 1.62,
+      "end": 1.75,
+      "word_index": 4,
+      "word": "know"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "IH0",
+      "phone_base": "IH",
+      "start": 1.75,
+      "end": 1.8,
+      "word_index": 5,
+      "word": "it's"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 1.8,
+      "end": 1.84,
+      "word_index": 5,
+      "word": "it's"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 1.84,
+      "end": 1.88,
+      "word_index": 5,
+      "word": "it's"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "AA1",
+      "phone_base": "AA",
+      "start": 1.88,
+      "end": 1.96,
+      "word_index": 6,
+      "word": "also"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 1.96,
+      "end": 2.06,
+      "word_index": 6,
+      "word": "also"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 2.06,
+      "end": 2.15,
+      "word_index": 6,
+      "word": "also"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "OW0",
+      "phone_base": "OW",
+      "start": 2.15,
+      "end": 2.23,
+      "word_index": 6,
+      "word": "also"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "DH",
+      "phone_base": "DH",
+      "start": 2.23,
+      "end": 2.29,
+      "word_index": 7,
+      "word": "the"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AH1",
+      "phone_base": "AH",
+      "start": 2.29,
+      "end": 2.34,
+      "word_index": 7,
+      "word": "the"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "B",
+      "phone_base": "B",
+      "start": 2.34,
+      "end": 2.42,
+      "word_index": 8,
+      "word": "birthplace"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "ER1",
+      "phone_base": "ER",
+      "start": 2.42,
+      "end": 2.53,
+      "word_index": 8,
+      "word": "birthplace"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "TH",
+      "phone_base": "TH",
+      "start": 2.53,
+      "end": 2.61,
+      "word_index": 8,
+      "word": "birthplace"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "P",
+      "phone_base": "P",
+      "start": 2.61,
+      "end": 2.66,
+      "word_index": 8,
+      "word": "birthplace"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 2.66,
+      "end": 2.7,
+      "word_index": 8,
+      "word": "birthplace"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "EY2",
+      "phone_base": "EY",
+      "start": 2.7,
+      "end": 2.77,
+      "word_index": 8,
+      "word": "birthplace"
+    },
+    {
+      "index_in_word": 6,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 2.77,
+      "end": 2.85,
+      "word_index": 8,
+      "word": "birthplace"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 2.85,
+      "end": 2.89,
+      "word_index": 9,
+      "word": "of"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "V",
+      "phone_base": "V",
+      "start": 2.89,
+      "end": 2.96,
+      "word_index": 9,
+      "word": "of"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 2.96,
+      "end": 3.03,
+      "word_index": 10,
+      "word": "tango"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AE1",
+      "phone_base": "AE",
+      "start": 3.03,
+      "end": 3.13,
+      "word_index": 10,
+      "word": "tango"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "NG",
+      "phone_base": "NG",
+      "start": 3.13,
+      "end": 3.19,
+      "word_index": 10,
+      "word": "tango"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "G",
+      "phone_base": "G",
+      "start": 3.19,
+      "end": 3.24,
+      "word_index": 10,
+      "word": "tango"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "OW0",
+      "phone_base": "OW",
+      "start": 3.24,
+      "end": 3.41,
+      "word_index": 10,
+      "word": "tango"
     }
   ],
   "planned_visemes": [
@@ -227,17 +641,19 @@
       "index": 0,
       "id": "03_Ee",
       "pose": "03_Ee",
-      "start": 0.3092,
-      "center": 0.3767,
-      "end": 0.4442,
+      "start": 0.31,
+      "center": 0.36,
+      "end": 0.41,
       "word": "indeed",
       "word_index": 0,
       "phrase_index": 0,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "IH",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -250,17 +666,19 @@
       "index": 1,
       "id": "07_Aa",
       "pose": "07_Aa",
-      "start": 1.1675,
-      "center": 1.235,
-      "end": 1.3025,
+      "start": 1.15,
+      "center": 1.19,
+      "end": 1.23,
       "word": "and",
       "word_index": 1,
       "phrase_index": 1,
       "sentence_index": 0,
-      "strength": 0.58,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_open",
+      "strength": 0.5,
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_source_phone_index_label_mismatch",
+      "source_phone": "AH",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -270,15 +688,15 @@
       "flags": [
         {
           "kind": "low_strength_viseme",
-          "start": 1.1675,
-          "end": 1.3025,
-          "note": "Viseme strength is low (0.580)."
+          "start": 1.15,
+          "end": 1.23,
+          "note": "Viseme strength is low (0.500)."
         },
         {
           "kind": "large_inter_event_gap",
-          "start": 1.1675,
-          "end": 1.3025,
-          "note": "Large gap from previous viseme center (0.858s)."
+          "start": 1.15,
+          "end": 1.23,
+          "note": "Large gap from previous viseme center (0.830s)."
         }
       ]
     },
@@ -286,17 +704,19 @@
       "index": 2,
       "id": "03_Ee",
       "pose": "03_Ee",
-      "start": 1.2175,
-      "center": 1.285,
-      "end": 1.3525,
+      "start": 1.33,
+      "center": 1.3599999999999999,
+      "end": 1.39,
       "word": "did",
       "word_index": 2,
       "phrase_index": 1,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "IH",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -309,17 +729,19 @@
       "index": 3,
       "id": "11_Oo",
       "pose": "11_Oo",
-      "start": 1.4165,
-      "center": 1.484,
-      "end": 1.5515,
+      "start": 1.51,
+      "center": 1.53,
+      "end": 1.55,
       "word": "you",
       "word_index": 3,
       "phrase_index": 1,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_round",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "UW",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -332,17 +754,19 @@
       "index": 4,
       "id": "09_Oh",
       "pose": "09_Oh",
-      "start": 1.5715,
-      "center": 1.639,
-      "end": 1.7065,
+      "start": 1.62,
+      "center": 1.685,
+      "end": 1.75,
       "word": "know",
       "word_index": 4,
       "phrase_index": 1,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_round",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "OW",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -355,17 +779,19 @@
       "index": 5,
       "id": "03_Ee",
       "pose": "03_Ee",
-      "start": 1.6465,
-      "center": 1.714,
-      "end": 1.7815,
+      "start": 1.75,
+      "center": 1.775,
+      "end": 1.8,
       "word": "it's",
       "word_index": 5,
       "phrase_index": 1,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "IH",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -378,17 +804,19 @@
       "index": 6,
       "id": "09_Oh",
       "pose": "09_Oh",
-      "start": 1.8565,
-      "center": 1.924,
-      "end": 1.9915,
+      "start": 1.88,
+      "center": 1.92,
+      "end": 1.96,
       "word": "also",
       "word_index": 6,
       "phrase_index": 1,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_round",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_source_phone_index_label_mismatch",
+      "source_phone": "AO",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -401,17 +829,19 @@
       "index": 7,
       "id": "07_Aa",
       "pose": "07_Aa",
-      "start": 2.2565,
-      "center": 2.324,
-      "end": 2.3915,
+      "start": 2.29,
+      "center": 2.315,
+      "end": 2.34,
       "word": "the",
       "word_index": 7,
       "phrase_index": 1,
       "sentence_index": 0,
-      "strength": 0.58,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_open",
+      "strength": 0.5,
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "AH",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -421,9 +851,9 @@
       "flags": [
         {
           "kind": "low_strength_viseme",
-          "start": 2.2565,
-          "end": 2.3915,
-          "note": "Viseme strength is low (0.580)."
+          "start": 2.29,
+          "end": 2.34,
+          "note": "Viseme strength is low (0.500)."
         }
       ]
     },
@@ -431,17 +861,19 @@
       "index": 8,
       "id": "22_MBP",
       "pose": "22_MBP",
-      "start": 2.3375,
-      "center": 2.39,
-      "end": 2.4425,
+      "start": 2.34,
+      "center": 2.38,
+      "end": 2.42,
       "word": "birthplace",
       "word_index": 8,
       "phrase_index": 1,
       "sentence_index": 0,
       "strength": 1.0,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "bilabial",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -454,17 +886,19 @@
       "index": 9,
       "id": "06_Eh",
       "pose": "06_Eh",
-      "start": 2.4115,
-      "center": 2.479,
-      "end": 2.5465,
+      "start": 2.42,
+      "center": 2.4749999999999996,
+      "end": 2.53,
       "word": "birthplace",
       "word_index": 8,
       "phrase_index": 1,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "ER",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -477,17 +911,19 @@
       "index": 10,
       "id": "07_Aa",
       "pose": "07_Aa",
-      "start": 2.8115,
-      "center": 2.879,
-      "end": 2.9465,
+      "start": 2.85,
+      "center": 2.87,
+      "end": 2.89,
       "word": "of",
       "word_index": 9,
       "phrase_index": 1,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_open",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "AH",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -501,16 +937,18 @@
       "id": "20_FV",
       "pose": "20_FV",
       "start": 2.89,
-      "center": 2.94,
-      "end": 2.99,
+      "center": 2.925,
+      "end": 2.96,
       "word": "of",
       "word_index": 9,
       "phrase_index": 1,
       "sentence_index": 0,
       "strength": 0.96,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "labiodental",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "V",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -523,17 +961,19 @@
       "index": 12,
       "id": "07_Aa",
       "pose": "07_Aa",
-      "start": 3.0415,
-      "center": 3.109,
-      "end": 3.1765,
+      "start": 3.03,
+      "center": 3.08,
+      "end": 3.13,
       "word": "tango",
       "word_index": 10,
       "phrase_index": 1,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_open",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "AE",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -546,17 +986,19 @@
       "index": 13,
       "id": "09_Oh",
       "pose": "09_Oh",
-      "start": 3.2465,
-      "center": 3.314,
-      "end": 3.3815,
+      "start": 3.24,
+      "center": 3.325,
+      "end": 3.41,
       "word": "tango",
       "word_index": 10,
       "phrase_index": 1,
       "sentence_index": 0,
-      "strength": 0.58,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_round",
+      "strength": 0.5,
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "OW",
+      "source_phone_index": 4,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -566,9 +1008,9 @@
       "flags": [
         {
           "kind": "low_strength_viseme",
-          "start": 3.2465,
-          "end": 3.3815,
-          "note": "Viseme strength is low (0.580)."
+          "start": 3.24,
+          "end": 3.41,
+          "note": "Viseme strength is low (0.500)."
         }
       ]
     }
@@ -576,27 +1018,27 @@
   "flags": [
     {
       "kind": "low_strength_viseme",
-      "start": 1.1675,
-      "end": 1.3025,
-      "note": "Viseme strength is low (0.580)."
+      "start": 1.15,
+      "end": 1.23,
+      "note": "Viseme strength is low (0.500)."
     },
     {
       "kind": "large_inter_event_gap",
-      "start": 1.1675,
-      "end": 1.3025,
-      "note": "Large gap from previous viseme center (0.858s)."
+      "start": 1.15,
+      "end": 1.23,
+      "note": "Large gap from previous viseme center (0.830s)."
     },
     {
       "kind": "low_strength_viseme",
-      "start": 2.2565,
-      "end": 2.3915,
-      "note": "Viseme strength is low (0.580)."
+      "start": 2.29,
+      "end": 2.34,
+      "note": "Viseme strength is low (0.500)."
     },
     {
       "kind": "low_strength_viseme",
-      "start": 3.2465,
-      "end": 3.3815,
-      "note": "Viseme strength is low (0.580)."
+      "start": 3.24,
+      "end": 3.41,
+      "note": "Viseme strength is low (0.500)."
     }
   ],
   "notes": [],
@@ -608,10 +1050,11 @@
       "large_inter_event_gap": 1
     },
     "commit_reasons": {
-      "streaming_forced_alignment": 14
+      "mfa_phone_alignment": 14
     },
     "alignment_reasons": {
-      "streaming_forced_alignment_viterbi": 14
+      "mfa_exact_source_phone_index": 12,
+      "mfa_source_phone_index_label_mismatch": 2
     },
     "mapped_to_observed_speech_count": 14
   }

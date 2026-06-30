@@ -1,11 +1,13 @@
 {
   "case_id": "case_0081_20260629_104056_615_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000080_00",
-  "created_utc": "2026-06-29T20:13:39.681994+00:00",
+  "created_utc": "2026-06-29T20:40:21.389737+00:00",
   "generator": {
-    "kind": "liplab_offline_full_wav",
+    "kind": "liplab_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
-    "source_run_dir": "outputs/offline_gold/latest/case_0081_20260629_104056_615_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000080_00"
+    "mfa_num_jobs": 4,
+    "source_run_dir": "outputs/offline_gold/latest/case_0081_20260629_104056_615_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000080_00",
+    "mfa_align_dir": "outputs/mfa_align/latest"
   },
   "approval": {
     "status": "draft",
@@ -36,6 +38,394 @@
       "last_speech": 5.04,
       "started": true,
       "ended": true
+    }
+  ],
+  "mfa_words": [
+    {
+      "word_index": 0,
+      "word": "indonesia's",
+      "start": 0.48,
+      "end": 1.4
+    },
+    {
+      "word_index": 1,
+      "word": "satay",
+      "start": 1.4,
+      "end": 1.84
+    },
+    {
+      "word_index": 2,
+      "word": "is",
+      "start": 1.84,
+      "end": 1.99
+    },
+    {
+      "word_index": 3,
+      "word": "flavorful",
+      "start": 1.99,
+      "end": 2.68
+    },
+    {
+      "word_index": 4,
+      "word": "want",
+      "start": 3.19,
+      "end": 3.47
+    },
+    {
+      "word_index": 5,
+      "word": "a",
+      "start": 3.47,
+      "end": 3.52
+    },
+    {
+      "word_index": 6,
+      "word": "sandwich",
+      "start": 3.52,
+      "end": 4.11
+    },
+    {
+      "word_index": 7,
+      "word": "with",
+      "start": 4.11,
+      "end": 4.29
+    },
+    {
+      "word_index": 8,
+      "word": "peanut",
+      "start": 4.29,
+      "end": 4.63
+    },
+    {
+      "word_index": 9,
+      "word": "sauce",
+      "start": 4.63,
+      "end": 5.07
+    }
+  ],
+  "mfa_phones": [
+    {
+      "index_in_word": 0,
+      "phone": "IH2",
+      "phone_base": "IH",
+      "start": 0.48,
+      "end": 0.59,
+      "word_index": 0,
+      "word": "indonesia's"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 0.59,
+      "end": 0.64,
+      "word_index": 0,
+      "word": "indonesia's"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 0.64,
+      "end": 0.7,
+      "word_index": 0,
+      "word": "indonesia's"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "OW0",
+      "phone_base": "OW",
+      "start": 0.7,
+      "end": 0.74,
+      "word_index": 0,
+      "word": "indonesia's"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 0.74,
+      "end": 0.82,
+      "word_index": 0,
+      "word": "indonesia's"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "IY1",
+      "phone_base": "IY",
+      "start": 0.82,
+      "end": 0.96,
+      "word_index": 0,
+      "word": "indonesia's"
+    },
+    {
+      "index_in_word": 6,
+      "phone": "ZH",
+      "phone_base": "ZH",
+      "start": 0.96,
+      "end": 1.06,
+      "word_index": 0,
+      "word": "indonesia's"
+    },
+    {
+      "index_in_word": 7,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 1.06,
+      "end": 1.26,
+      "word_index": 0,
+      "word": "indonesia's"
+    },
+    {
+      "index_in_word": 8,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 1.26,
+      "end": 1.4,
+      "word_index": 0,
+      "word": "indonesia's"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "spn",
+      "phone_base": "SPN",
+      "start": 1.4,
+      "end": 1.84,
+      "word_index": 1,
+      "word": "satay"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "IH1",
+      "phone_base": "IH",
+      "start": 1.84,
+      "end": 1.91,
+      "word_index": 2,
+      "word": "is"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "Z",
+      "phone_base": "Z",
+      "start": 1.91,
+      "end": 1.99,
+      "word_index": 2,
+      "word": "is"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "spn",
+      "phone_base": "SPN",
+      "start": 1.99,
+      "end": 2.68,
+      "word_index": 3,
+      "word": "flavorful"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 3.19,
+      "end": 3.32,
+      "word_index": 4,
+      "word": "want"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AA1",
+      "phone_base": "AA",
+      "start": 3.32,
+      "end": 3.39,
+      "word_index": 4,
+      "word": "want"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 3.39,
+      "end": 3.43,
+      "word_index": 4,
+      "word": "want"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 3.43,
+      "end": 3.47,
+      "word_index": 4,
+      "word": "want"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 3.47,
+      "end": 3.52,
+      "word_index": 5,
+      "word": "a"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 3.52,
+      "end": 3.66,
+      "word_index": 6,
+      "word": "sandwich"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AE1",
+      "phone_base": "AE",
+      "start": 3.66,
+      "end": 3.77,
+      "word_index": 6,
+      "word": "sandwich"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 3.77,
+      "end": 3.81,
+      "word_index": 6,
+      "word": "sandwich"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 3.81,
+      "end": 3.87,
+      "word_index": 6,
+      "word": "sandwich"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 3.87,
+      "end": 3.91,
+      "word_index": 6,
+      "word": "sandwich"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "IH0",
+      "phone_base": "IH",
+      "start": 3.91,
+      "end": 3.96,
+      "word_index": 6,
+      "word": "sandwich"
+    },
+    {
+      "index_in_word": 6,
+      "phone": "CH",
+      "phone_base": "CH",
+      "start": 3.96,
+      "end": 4.11,
+      "word_index": 6,
+      "word": "sandwich"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 4.11,
+      "end": 4.15,
+      "word_index": 7,
+      "word": "with"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "IH0",
+      "phone_base": "IH",
+      "start": 4.15,
+      "end": 4.19,
+      "word_index": 7,
+      "word": "with"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "TH",
+      "phone_base": "TH",
+      "start": 4.19,
+      "end": 4.29,
+      "word_index": 7,
+      "word": "with"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "P",
+      "phone_base": "P",
+      "start": 4.29,
+      "end": 4.39,
+      "word_index": 8,
+      "word": "peanut"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "IY1",
+      "phone_base": "IY",
+      "start": 4.39,
+      "end": 4.46,
+      "word_index": 8,
+      "word": "peanut"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 4.46,
+      "end": 4.5,
+      "word_index": 8,
+      "word": "peanut"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 4.5,
+      "end": 4.58,
+      "word_index": 8,
+      "word": "peanut"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 4.58,
+      "end": 4.63,
+      "word_index": 8,
+      "word": "peanut"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 4.63,
+      "end": 4.7,
+      "word_index": 9,
+      "word": "sauce"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AA1",
+      "phone_base": "AA",
+      "start": 4.7,
+      "end": 4.86,
+      "word_index": 9,
+      "word": "sauce"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 4.86,
+      "end": 5.07,
+      "word_index": 9,
+      "word": "sauce"
     }
   ],
   "planned_visemes": [
@@ -305,17 +695,19 @@
       "index": 0,
       "id": "03_Ee",
       "pose": "03_Ee",
-      "start": 0.4792,
-      "center": 0.5467,
-      "end": 0.6142,
+      "start": 0.48,
+      "center": 0.5349999999999999,
+      "end": 0.59,
       "word": "indonesia's",
       "word_index": 0,
       "phrase_index": 0,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "IH",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -328,17 +720,19 @@
       "index": 1,
       "id": "09_Oh",
       "pose": "09_Oh",
-      "start": 0.6765,
-      "center": 0.744,
-      "end": 0.8115,
+      "start": 0.7,
+      "center": 0.72,
+      "end": 0.74,
       "word": "indonesia's",
       "word_index": 0,
       "phrase_index": 0,
       "sentence_index": 0,
-      "strength": 0.58,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_round",
+      "strength": 0.5,
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "OW",
+      "source_phone_index": 3,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -348,9 +742,9 @@
       "flags": [
         {
           "kind": "low_strength_viseme",
-          "start": 0.6765,
-          "end": 0.8115,
-          "note": "Viseme strength is low (0.580)."
+          "start": 0.7,
+          "end": 0.74,
+          "note": "Viseme strength is low (0.500)."
         }
       ]
     },
@@ -358,17 +752,19 @@
       "index": 2,
       "id": "03_Ee",
       "pose": "03_Ee",
-      "start": 0.8515,
-      "center": 0.919,
-      "end": 0.9865,
+      "start": 0.82,
+      "center": 0.8899999999999999,
+      "end": 0.96,
       "word": "indonesia's",
       "word_index": 0,
       "phrase_index": 0,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "IY",
+      "source_phone_index": 5,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -381,17 +777,19 @@
       "index": 3,
       "id": "14_ChJjSh",
       "pose": "14_ChJjSh",
-      "start": 0.9495,
-      "center": 0.997,
-      "end": 1.0445,
+      "start": 0.96,
+      "center": 1.01,
+      "end": 1.06,
       "word": "indonesia's",
       "word_index": 0,
       "phrase_index": 0,
       "sentence_index": 0,
       "strength": 0.82,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "sibilant",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "ZH",
+      "source_phone_index": 6,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -411,11 +809,13 @@
       "word_index": 1,
       "phrase_index": 0,
       "sentence_index": 0,
-      "strength": 0.58,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_open",
-      "mapped_to_observed_speech": true,
+      "strength": 0.5,
+      "commit_reason": "offline_committed_fallback",
+      "alignment_reason": "no_phone_evidence",
+      "source_phone": "AE",
+      "source_phone_index": 1,
+      "source_phone_class": "",
+      "mapped_to_observed_speech": false,
       "approval": {
         "status": "draft",
         "reviewed": false
@@ -423,16 +823,22 @@
       "notes": [],
       "flags": [
         {
+          "kind": "no_observed_phone_evidence",
+          "start": 1.3965,
+          "end": 1.5315,
+          "note": "Draft timing was not anchored to observed phone evidence."
+        },
+        {
           "kind": "low_strength_viseme",
           "start": 1.3965,
           "end": 1.5315,
-          "note": "Viseme strength is low (0.580)."
+          "note": "Viseme strength is low (0.500)."
         },
         {
           "kind": "large_inter_event_gap",
           "start": 1.3965,
           "end": 1.5315,
-          "note": "Large gap from previous viseme center (0.467s)."
+          "note": "Large gap from previous viseme center (0.454s)."
         }
       ]
     },
@@ -448,32 +854,43 @@
       "phrase_index": 0,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
-      "mapped_to_observed_speech": true,
+      "commit_reason": "offline_committed_fallback",
+      "alignment_reason": "no_phone_evidence",
+      "source_phone": "EY",
+      "source_phone_index": 3,
+      "source_phone_class": "",
+      "mapped_to_observed_speech": false,
       "approval": {
         "status": "draft",
         "reviewed": false
       },
       "notes": [],
-      "flags": []
+      "flags": [
+        {
+          "kind": "no_observed_phone_evidence",
+          "start": 1.6115,
+          "end": 1.7465,
+          "note": "Draft timing was not anchored to observed phone evidence."
+        }
+      ]
     },
     {
       "index": 6,
       "id": "05_Ay",
       "pose": "05_Ay",
-      "start": 1.784,
-      "center": 1.839,
-      "end": 1.894,
+      "start": 1.84,
+      "center": 1.875,
+      "end": 1.91,
       "word": "is",
       "word_index": 2,
       "phrase_index": 0,
       "sentence_index": 0,
       "strength": 0.94,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_open",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_source_phone_index_label_mismatch",
+      "source_phone": "AY",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -486,24 +903,33 @@
       "index": 7,
       "id": "20_FV",
       "pose": "20_FV",
-      "start": 1.97,
-      "center": 2.02,
-      "end": 2.07,
+      "start": 1.99,
+      "center": 2.335,
+      "end": 2.68,
       "word": "flavorful",
       "word_index": 3,
       "phrase_index": 0,
       "sentence_index": 0,
       "strength": 0.96,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "labiodental",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_source_phone_index_label_mismatch",
+      "source_phone": "F",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
         "reviewed": false
       },
       "notes": [],
-      "flags": []
+      "flags": [
+        {
+          "kind": "large_inter_event_gap",
+          "start": 1.99,
+          "end": 2.68,
+          "note": "Large gap from previous viseme center (0.460s)."
+        }
+      ]
     },
     {
       "index": 8,
@@ -517,32 +943,43 @@
       "phrase_index": 0,
       "sentence_index": 0,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
-      "mapped_to_observed_speech": true,
+      "commit_reason": "offline_committed_fallback",
+      "alignment_reason": "no_phone_evidence",
+      "source_phone": "EY",
+      "source_phone_index": 2,
+      "source_phone_class": "",
+      "mapped_to_observed_speech": false,
       "approval": {
         "status": "draft",
         "reviewed": false
       },
       "notes": [],
-      "flags": []
+      "flags": [
+        {
+          "kind": "no_observed_phone_evidence",
+          "start": 2.1115,
+          "end": 2.2465,
+          "note": "Draft timing was not anchored to observed phone evidence."
+        }
+      ]
     },
     {
       "index": 9,
       "id": "12_Ww-Oo-",
       "pose": "12_Ww-Oo-",
-      "start": 3.2165,
-      "center": 3.284,
-      "end": 3.3515,
+      "start": 3.19,
+      "center": 3.255,
+      "end": 3.32,
       "word": "want",
       "word_index": 4,
       "phrase_index": 1,
       "sentence_index": 1,
       "strength": 0.88,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "glide",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -552,9 +989,9 @@
       "flags": [
         {
           "kind": "large_inter_event_gap",
-          "start": 3.2165,
-          "end": 3.3515,
-          "note": "Large gap from previous viseme center (1.105s)."
+          "start": 3.19,
+          "end": 3.32,
+          "note": "Large gap from previous viseme center (1.076s)."
         }
       ]
     },
@@ -562,17 +999,19 @@
       "index": 10,
       "id": "07_Aa",
       "pose": "07_Aa",
-      "start": 3.2665,
-      "center": 3.334,
-      "end": 3.4015,
+      "start": 3.32,
+      "center": 3.355,
+      "end": 3.39,
       "word": "want",
       "word_index": 4,
       "phrase_index": 1,
       "sentence_index": 1,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_open",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "AA",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -585,17 +1024,19 @@
       "index": 11,
       "id": "07_Aa",
       "pose": "07_Aa",
-      "start": 3.4315,
-      "center": 3.499,
-      "end": 3.5665,
+      "start": 3.47,
+      "center": 3.495,
+      "end": 3.52,
       "word": "a",
       "word_index": 5,
       "phrase_index": 1,
       "sentence_index": 1,
-      "strength": 0.58,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_open",
+      "strength": 0.5,
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "AH",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -605,9 +1046,9 @@
       "flags": [
         {
           "kind": "low_strength_viseme",
-          "start": 3.4315,
-          "end": 3.5665,
-          "note": "Viseme strength is low (0.580)."
+          "start": 3.47,
+          "end": 3.52,
+          "note": "Viseme strength is low (0.500)."
         }
       ]
     },
@@ -615,17 +1056,19 @@
       "index": 12,
       "id": "07_Aa",
       "pose": "07_Aa",
-      "start": 3.6065,
-      "center": 3.674,
-      "end": 3.7415,
+      "start": 3.66,
+      "center": 3.715,
+      "end": 3.77,
       "word": "sandwich",
       "word_index": 6,
       "phrase_index": 1,
       "sentence_index": 1,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_open",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "AE",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -638,17 +1081,19 @@
       "index": 13,
       "id": "12_Ww-Oo-",
       "pose": "12_Ww-Oo-",
-      "start": 3.7915,
-      "center": 3.859,
-      "end": 3.9265,
+      "start": 3.87,
+      "center": 3.89,
+      "end": 3.91,
       "word": "sandwich",
       "word_index": 6,
       "phrase_index": 1,
       "sentence_index": 1,
       "strength": 0.88,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "glide",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "W",
+      "source_phone_index": 4,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -661,17 +1106,19 @@
       "index": 14,
       "id": "14_ChJjSh",
       "pose": "14_ChJjSh",
-      "start": 3.9745,
-      "center": 4.022,
-      "end": 4.0695,
+      "start": 3.96,
+      "center": 4.035,
+      "end": 4.11,
       "word": "sandwich",
       "word_index": 6,
       "phrase_index": 1,
       "sentence_index": 1,
       "strength": 0.82,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "sibilant",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "CH",
+      "source_phone_index": 6,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -684,17 +1131,19 @@
       "index": 15,
       "id": "12_Ww-Oo-",
       "pose": "12_Ww-Oo-",
-      "start": 4.0215,
-      "center": 4.089,
-      "end": 4.1565,
+      "start": 4.11,
+      "center": 4.130000000000001,
+      "end": 4.15,
       "word": "with",
       "word_index": 7,
       "phrase_index": 1,
       "sentence_index": 1,
       "strength": 0.88,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "glide",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -707,17 +1156,19 @@
       "index": 16,
       "id": "03_Ee",
       "pose": "03_Ee",
-      "start": 4.0965,
-      "center": 4.164,
-      "end": 4.2315,
+      "start": 4.15,
+      "center": 4.17,
+      "end": 4.19,
       "word": "with",
       "word_index": 7,
       "phrase_index": 1,
       "sentence_index": 1,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "IH",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -730,17 +1181,19 @@
       "index": 17,
       "id": "22_MBP",
       "pose": "22_MBP",
-      "start": 4.1975,
-      "center": 4.25,
-      "end": 4.3025,
+      "start": 4.29,
+      "center": 4.34,
+      "end": 4.39,
       "word": "peanut",
       "word_index": 8,
       "phrase_index": 1,
       "sentence_index": 1,
       "strength": 1.0,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "bilabial",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "P",
+      "source_phone_index": 0,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -753,17 +1206,19 @@
       "index": 18,
       "id": "03_Ee",
       "pose": "03_Ee",
-      "start": 4.3065,
-      "center": 4.374,
-      "end": 4.4415,
+      "start": 4.39,
+      "center": 4.425,
+      "end": 4.46,
       "word": "peanut",
       "word_index": 8,
       "phrase_index": 1,
       "sentence_index": 1,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_front",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_exact_source_phone_index",
+      "source_phone": "IY",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -776,17 +1231,19 @@
       "index": 19,
       "id": "09_Oh",
       "pose": "09_Oh",
-      "start": 4.7215,
-      "center": 4.789,
-      "end": 4.8565,
+      "start": 4.7,
+      "center": 4.78,
+      "end": 4.86,
       "word": "sauce",
       "word_index": 9,
       "phrase_index": 1,
       "sentence_index": 1,
       "strength": 0.92,
-      "commit_reason": "streaming_forced_alignment",
-      "alignment_reason": "streaming_forced_alignment_viterbi",
-      "source_phone_class": "vowel_round",
+      "commit_reason": "mfa_phone_alignment",
+      "alignment_reason": "mfa_source_phone_index_label_mismatch",
+      "source_phone": "AO",
+      "source_phone_index": 1,
+      "source_phone_class": "",
       "mapped_to_observed_speech": true,
       "approval": {
         "status": "draft",
@@ -799,49 +1256,77 @@
   "flags": [
     {
       "kind": "low_strength_viseme",
-      "start": 0.6765,
-      "end": 0.8115,
-      "note": "Viseme strength is low (0.580)."
+      "start": 0.7,
+      "end": 0.74,
+      "note": "Viseme strength is low (0.500)."
+    },
+    {
+      "kind": "no_observed_phone_evidence",
+      "start": 1.3965,
+      "end": 1.5315,
+      "note": "Draft timing was not anchored to observed phone evidence."
     },
     {
       "kind": "low_strength_viseme",
       "start": 1.3965,
       "end": 1.5315,
-      "note": "Viseme strength is low (0.580)."
+      "note": "Viseme strength is low (0.500)."
     },
     {
       "kind": "large_inter_event_gap",
       "start": 1.3965,
       "end": 1.5315,
-      "note": "Large gap from previous viseme center (0.467s)."
+      "note": "Large gap from previous viseme center (0.454s)."
+    },
+    {
+      "kind": "no_observed_phone_evidence",
+      "start": 1.6115,
+      "end": 1.7465,
+      "note": "Draft timing was not anchored to observed phone evidence."
     },
     {
       "kind": "large_inter_event_gap",
-      "start": 3.2165,
-      "end": 3.3515,
-      "note": "Large gap from previous viseme center (1.105s)."
+      "start": 1.99,
+      "end": 2.68,
+      "note": "Large gap from previous viseme center (0.460s)."
+    },
+    {
+      "kind": "no_observed_phone_evidence",
+      "start": 2.1115,
+      "end": 2.2465,
+      "note": "Draft timing was not anchored to observed phone evidence."
+    },
+    {
+      "kind": "large_inter_event_gap",
+      "start": 3.19,
+      "end": 3.32,
+      "note": "Large gap from previous viseme center (1.076s)."
     },
     {
       "kind": "low_strength_viseme",
-      "start": 3.4315,
-      "end": 3.5665,
-      "note": "Viseme strength is low (0.580)."
+      "start": 3.47,
+      "end": 3.52,
+      "note": "Viseme strength is low (0.500)."
     }
   ],
   "notes": [],
   "summary": {
     "viseme_count": 20,
-    "flag_count": 5,
+    "flag_count": 9,
     "flags_by_kind": {
       "low_strength_viseme": 3,
-      "large_inter_event_gap": 2
+      "no_observed_phone_evidence": 3,
+      "large_inter_event_gap": 3
     },
     "commit_reasons": {
-      "streaming_forced_alignment": 20
+      "mfa_phone_alignment": 17,
+      "offline_committed_fallback": 3
     },
     "alignment_reasons": {
-      "streaming_forced_alignment_viterbi": 20
+      "mfa_exact_source_phone_index": 14,
+      "no_phone_evidence": 3,
+      "mfa_source_phone_index_label_mismatch": 3
     },
-    "mapped_to_observed_speech_count": 20
+    "mapped_to_observed_speech_count": 17
   }
 }

@@ -174,21 +174,29 @@ static float SegmentScore(const TArray<FAlignFrame>& Frames, int32 StartFrame, i
         - 0.045f; // small state-advance cost
 }
 
-static void BuildPhoneModels(const FOffgridAITextVisemePlan& Plan, const TArray<FAlignFrame>& Frames, TArray<FPhoneModel>& OutModels)
+static void BuildPhoneModels(
+    const FOffgridAITextVisemePlan& Plan,
+    const TArray<FAlignFrame>& Frames,
+    float SpeechRateScale,
+    TArray<FPhoneModel>& OutModels)
 {
     OutModels.Reset();
     const float FrameSec = SafeFrameSeconds(Frames);
     const int32 M = Frames.Num();
     const int32 N = Plan.ExpectedPhones.Num();
+    const float SafeSpeechRateScale = FMath::Clamp(SpeechRateScale, 0.80f, 1.30f);
+    const float ScaleAlpha = FMath::Clamp((SafeSpeechRateScale - 0.80f) / 0.50f, 0.0f, 1.0f);
 
     for (int32 PhoneIndex = 0; PhoneIndex < N; ++PhoneIndex)
     {
         const FOffgridAIExpectedPhone& Expected = Plan.ExpectedPhones[PhoneIndex];
         FPhoneModel Model;
         Model.Class = FOffgridAIOnlinePhoneAligner::ClassForPhoneBase(Expected.BasePhone);
-        Model.MinDuration = MinDurationForClass(Model.Class);
-        Model.ExpectedDuration = ExpectedDurationForPhone(Expected, Model.Class);
-        Model.MaxDuration = MaxDurationForClass(Model.Class);
+        Model.MinDuration = MinDurationForClass(Model.Class) * FMath::Lerp(0.92f, 1.05f, ScaleAlpha);
+        Model.ExpectedDuration = ExpectedDurationForPhone(Expected, Model.Class) * SafeSpeechRateScale;
+        Model.MaxDuration = MaxDurationForClass(Model.Class) * FMath::Lerp(0.90f, 1.10f, ScaleAlpha);
+        Model.MinDuration = FMath::Min(Model.MinDuration, Model.ExpectedDuration * 0.90f);
+        Model.MaxDuration = FMath::Max(Model.MaxDuration, Model.ExpectedDuration * 1.10f);
         Model.MinFrames = 1;
         Model.ExpectedFrames = FMath::Max(1, FMath::RoundToInt(Model.ExpectedDuration / FrameSec));
         Model.MaxFrames = FMath::Max(Model.MinFrames, FMath::RoundToInt(Model.MaxDuration / FrameSec));
@@ -343,6 +351,9 @@ FString FOffgridAIOnlinePhoneAligner::PhoneClassToString(EOffgridAIPhoneClass Ph
 int32 FOffgridAIOnlinePhoneAligner::FindPhoneForEvent(const FOffgridAITextVisemePlan& Plan, const FOffgridAITextVisemeEvent& Event)
 {
     int32 Fallback = INDEX_NONE;
+    int32 BaseMatch = INDEX_NONE;
+    int32 ClassMatch = INDEX_NONE;
+    const EOffgridAIPhoneClass EventClass = ClassForPhoneBase(Event.SourcePhoneBase);
     for (const FOffgridAIExpectedPhone& P : Plan.ExpectedPhones)
     {
         if (P.WordIndex == Event.WordIndex)
@@ -352,8 +363,20 @@ int32 FOffgridAIOnlinePhoneAligner::FindPhoneForEvent(const FOffgridAITextViseme
             {
                 return P.PhoneIndex;
             }
+            if (BaseMatch == INDEX_NONE
+                && !Event.SourcePhoneBase.IsEmpty()
+                && P.BasePhone.ToUpper() == Event.SourcePhoneBase.ToUpper())
+            {
+                BaseMatch = P.PhoneIndex;
+            }
+            if (ClassMatch == INDEX_NONE && EventClass != EOffgridAIPhoneClass::Unknown && ClassForPhoneBase(P.BasePhone) == EventClass)
+            {
+                ClassMatch = P.PhoneIndex;
+            }
         }
     }
+    if (BaseMatch != INDEX_NONE) return BaseMatch;
+    if (ClassMatch != INDEX_NONE) return ClassMatch;
     return Fallback;
 }
 
@@ -478,8 +501,18 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
         VisiblePlan.ExpectedPhones.SetNum(PhoneLimit);
     }
 
+    float VisibleExpectedSeconds = 0.0f;
+    for (int32 PhoneIndex = 0; PhoneIndex < PhoneLimit; ++PhoneIndex)
+    {
+        const FOffgridAIExpectedPhone& Expected = Plan.ExpectedPhones[PhoneIndex];
+        VisibleExpectedSeconds += ExpectedDurationForPhone(Expected, ClassForPhoneBase(Expected.BasePhone));
+    }
+    const float SpeechRateScale = VisibleExpectedSeconds > 0.010f
+        ? FMath::Clamp(ObservedSpeechSeconds / VisibleExpectedSeconds, 0.80f, 1.30f)
+        : 1.0f;
+
     TArray<FPhoneModel> Models;
-    BuildPhoneModels(VisiblePlan, Frames, Models);
+    BuildPhoneModels(VisiblePlan, Frames, SpeechRateScale, Models);
 
     const int32 N = PhoneLimit;
 
