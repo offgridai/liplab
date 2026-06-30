@@ -48,6 +48,12 @@ struct GradeReport
     double late_tail_rate = 0.0;
 };
 
+struct GradeMatch
+{
+    int label_index = -1;
+    int event_index = -1;
+};
+
 struct StreamConfig
 {
     float buffer_seconds = 0.350f;
@@ -291,6 +297,130 @@ static std::string alignment_csv(const FOffgridAITextVisemePlan& plan, const FOf
     return out.str();
 }
 
+struct MatchState
+{
+    int matched_count = -1;
+    int exact_word_matches = -1;
+    double total_center_error_ms = 0.0;
+    bool reachable = false;
+};
+
+static bool better_match_state(const MatchState& A, const MatchState& B)
+{
+    if (!A.reachable) return false;
+    if (!B.reachable) return true;
+    if (A.matched_count != B.matched_count) return A.matched_count > B.matched_count;
+    if (A.exact_word_matches != B.exact_word_matches) return A.exact_word_matches > B.exact_word_matches;
+    return A.total_center_error_ms < B.total_center_error_ms - 1e-9;
+}
+
+static std::vector<GradeMatch> compute_monotonic_matches(const FOffgridAIAlignedVisemeTrack& track, const std::vector<HandmadeLabel>& handmade)
+{
+    const int n = static_cast<int>(handmade.size());
+    const int m = track.Events.Num();
+    std::vector<MatchState> dp(static_cast<size_t>((n + 1) * (m + 1)));
+    std::vector<uint8_t> parent(static_cast<size_t>((n + 1) * (m + 1)), 0);
+    auto at = [&](int i, int j) -> MatchState& { return dp[static_cast<size_t>(i) * static_cast<size_t>(m + 1) + static_cast<size_t>(j)]; };
+    auto parent_at = [&](int i, int j) -> uint8_t& { return parent[static_cast<size_t>(i) * static_cast<size_t>(m + 1) + static_cast<size_t>(j)]; };
+
+    at(0, 0) = MatchState{0, 0, 0.0, true};
+    for (int i = 0; i <= n; ++i)
+    {
+        for (int j = 0; j <= m; ++j)
+        {
+            const MatchState current = at(i, j);
+            if (!current.reachable)
+            {
+                continue;
+            }
+
+            if (i < n)
+            {
+                MatchState candidate = current;
+                if (better_match_state(candidate, at(i + 1, j)))
+                {
+                    at(i + 1, j) = candidate;
+                    parent_at(i + 1, j) = 1;
+                }
+            }
+
+            if (j < m)
+            {
+                MatchState candidate = current;
+                if (better_match_state(candidate, at(i, j + 1)))
+                {
+                    at(i, j + 1) = candidate;
+                    parent_at(i, j + 1) = 2;
+                }
+            }
+
+            if (i < n && j < m)
+            {
+                const HandmadeLabel& label = handmade[static_cast<size_t>(i)];
+                const auto& event = track.Events[j];
+                if (to_std(event.PoseID) == label.pose)
+                {
+                    const double center = (label.start + label.end) * 0.5;
+                    const double err_ms = std::abs(static_cast<double>(event.FinalRenderCenterSeconds) - center) * 1000.0;
+                    if (err_ms <= 180.0)
+                    {
+                        MatchState candidate = current;
+                        candidate.matched_count += 1;
+                        candidate.total_center_error_ms += err_ms;
+                        if (!label.word.empty() && to_std(event.SourceWord) == label.word)
+                        {
+                            candidate.exact_word_matches += 1;
+                        }
+                        if (better_match_state(candidate, at(i + 1, j + 1)))
+                        {
+                            at(i + 1, j + 1) = candidate;
+                            parent_at(i + 1, j + 1) = 3;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    int best_j = 0;
+    for (int j = 1; j <= m; ++j)
+    {
+        if (better_match_state(at(n, j), at(n, best_j)))
+        {
+            best_j = j;
+        }
+    }
+
+    std::vector<GradeMatch> matches;
+    int i = n;
+    int j = best_j;
+    while (i > 0 || j > 0)
+    {
+        const uint8_t step = parent_at(i, j);
+        if (step == 3)
+        {
+            matches.push_back(GradeMatch{i - 1, j - 1});
+            --i;
+            --j;
+        }
+        else if (step == 2)
+        {
+            --j;
+        }
+        else if (step == 1)
+        {
+            --i;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    std::reverse(matches.begin(), matches.end());
+    return matches;
+}
+
 static GradeReport grade(const FOffgridAIAlignedVisemeTrack& track, const std::vector<HandmadeLabel>& handmade)
 {
     GradeReport report;
@@ -301,40 +431,31 @@ static GradeReport grade(const FOffgridAIAlignedVisemeTrack& track, const std::v
     std::vector<double> start_errors;
     std::vector<double> end_errors;
     std::vector<double> duration_errors;
-    std::vector<bool> used(static_cast<size_t>(track.Events.Num()), false);
-    int last_match = -1;
-
-    for (const auto& label : handmade)
+    for (int32 i = 1; i < track.Events.Num(); ++i)
     {
-        const double center = (label.start + label.end) * 0.5;
-        int best = -1;
-        double best_err = 1e9;
-        for (int32 i = 0; i < track.Events.Num(); ++i)
+        if (track.Events[i].EventIndex <= track.Events[i - 1].EventIndex
+            || track.Events[i].FinalRenderCenterSeconds + 1e-6f < track.Events[i - 1].FinalRenderCenterSeconds)
         {
-            if (used[static_cast<size_t>(i)] || to_std(track.Events[i].PoseID) != label.pose) continue;
-            const double err = std::abs(static_cast<double>(track.Events[i].FinalRenderCenterSeconds) - center);
-            if (err < best_err)
-            {
-                best_err = err;
-                best = i;
-            }
+            ++report.order_violations;
         }
+    }
 
-        if (best >= 0 && best_err <= 0.180)
-        {
-            used[static_cast<size_t>(best)] = true;
-            ++report.matched_count;
-            errors.push_back(best_err * 1000.0);
-            start_errors.push_back(std::abs(static_cast<double>(track.Events[best].RenderStartSeconds) - label.start) * 1000.0);
-            end_errors.push_back(std::abs(static_cast<double>(track.Events[best].RenderEndSeconds) - label.end) * 1000.0);
-            duration_errors.push_back(std::abs(
-                (static_cast<double>(track.Events[best].RenderEndSeconds) - static_cast<double>(track.Events[best].RenderStartSeconds))
-                - (label.end - label.start)) * 1000.0);
-            if (best < last_match) ++report.order_violations;
-            last_match = best;
-            if (track.Events[best].RenderStartSeconds + 0.050f < label.start) report.early_start_rate += 1.0;
-            if (track.Events[best].RenderEndSeconds - 0.050f > label.end) report.late_tail_rate += 1.0;
-        }
+    const std::vector<GradeMatch> matches = compute_monotonic_matches(track, handmade);
+    report.matched_count = static_cast<int>(matches.size());
+    for (const GradeMatch& match : matches)
+    {
+        const HandmadeLabel& label = handmade[static_cast<size_t>(match.label_index)];
+        const auto& event = track.Events[match.event_index];
+        const double center = (label.start + label.end) * 0.5;
+        const double err_ms = std::abs(static_cast<double>(event.FinalRenderCenterSeconds) - center) * 1000.0;
+        errors.push_back(err_ms);
+        start_errors.push_back(std::abs(static_cast<double>(event.RenderStartSeconds) - label.start) * 1000.0);
+        end_errors.push_back(std::abs(static_cast<double>(event.RenderEndSeconds) - label.end) * 1000.0);
+        duration_errors.push_back(std::abs(
+            (static_cast<double>(event.RenderEndSeconds) - static_cast<double>(event.RenderStartSeconds))
+            - (label.end - label.start)) * 1000.0);
+        if (event.RenderStartSeconds + 0.050f < label.start) report.early_start_rate += 1.0;
+        if (event.RenderEndSeconds - 0.050f > label.end) report.late_tail_rate += 1.0;
     }
 
     report.missing_count = report.reference_count - report.matched_count;
@@ -348,7 +469,7 @@ static GradeReport grade(const FOffgridAIAlignedVisemeTrack& track, const std::v
         report.mean_abs_end_error_ms = std::accumulate(end_errors.begin(), end_errors.end(), 0.0) / static_cast<double>(end_errors.size());
         report.mean_abs_duration_error_ms = std::accumulate(duration_errors.begin(), duration_errors.end(), 0.0) / static_cast<double>(duration_errors.size());
         std::sort(errors.begin(), errors.end());
-        const size_t p90_index = std::min(errors.size() - 1, static_cast<size_t>(std::floor(errors.size() * 0.9)));
+        const size_t p90_index = static_cast<size_t>(std::ceil(static_cast<double>(errors.size()) * 0.9)) - 1;
         report.p90_abs_center_error_ms = errors[p90_index];
         report.early_start_rate /= static_cast<double>(errors.size());
         report.late_tail_rate /= static_cast<double>(errors.size());
