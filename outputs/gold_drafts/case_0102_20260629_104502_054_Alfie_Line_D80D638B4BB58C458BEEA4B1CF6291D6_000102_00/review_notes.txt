@@ -1,0 +1,18 @@
+case: case_0102_20260629_104502_054_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000102_00
+transcript: Marshall Islands? Tiny islands, beautiful but remote. Want some chips?
+audio: 5.097s @ 24000 Hz
+speech regions: 3
+word heads: 10
+dense visemes: 21
+draft flags: 3
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading

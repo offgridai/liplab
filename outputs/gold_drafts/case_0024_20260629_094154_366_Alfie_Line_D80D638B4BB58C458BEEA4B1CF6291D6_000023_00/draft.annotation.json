@@ -1,0 +1,2209 @@
+﻿{
+    "schema_version":  1,
+    "case_id":  "case_0024_20260629_094154_366_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000023_00",
+    "created_utc":  "2026-07-01T16:51:36.262788+00:00",
+    "generator":  {
+                      "kind":  "liplab_gold_mfa_phase1",
+                      "buffer_ms":  600000,
+                      "chunk_ms":  600000,
+                      "mfa_num_jobs":  4,
+                      "speech_merge_gap_ms":  120,
+                      "source_run_dir":  "outputs/offline_gold/latest/case_0024_20260629_094154_366_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000023_00",
+                      "mfa_align_dir":  "outputs/mfa_align/latest"
+                  },
+    "approval":  {
+                     "status":  "approved_gold",
+                     "reviewed":  true,
+                     "reviewer":  "bulk_promote",
+                     "reviewed_utc":  "2026-07-01T16:53:34.1144044Z"
+                 },
+    "review_layers":  {
+                          "speech_regions":  {
+                                                 "status":  "reviewed_boundary",
+                                                 "reviewed":  true,
+                                                 "reviewer":  "bulk_promote"
+                                             },
+                          "word_heads":  {
+                                             "status":  "reviewed_boundary",
+                                             "reviewed":  true,
+                                             "reviewer":  "bulk_promote"
+                                         },
+                          "dense_visemes":  {
+                                                "status":  "reviewed_dense",
+                                                "reviewed":  true,
+                                                "reviewer":  "bulk_promote"
+                                            }
+                      },
+    "transcript":  "Maybe you meant buddhism? It\u0027s a religion with millions of followers worldwide.",
+    "audio":  {
+                  "path":  "inputs/wav/case_0024_20260629_094154_366_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000023_00.wav",
+                  "sample_rate_hz":  24000,
+                  "channels":  1,
+                  "frame_count":  128085,
+                  "duration_sec":  5.336875
+              },
+    "speech_regions":  [
+                           {
+                               "index":  0,
+                               "start":  0.0,
+                               "end":  1.66,
+                               "word_start_index":  0,
+                               "word_end_index":  3,
+                               "sentence_start_index":  0,
+                               "sentence_end_index":  0,
+                               "source":  "mfa_word_boundaries_with_occupancy_lull_splits",
+                               "approval":  {
+                                                "status":  "draft_auto",
+                                                "reviewed":  false
+                                            }
+                           },
+                           {
+                               "index":  1,
+                               "start":  2.18,
+                               "end":  5.19,
+                               "word_start_index":  4,
+                               "word_end_index":  11,
+                               "sentence_start_index":  1,
+                               "sentence_end_index":  1,
+                               "source":  "mfa_word_boundaries_with_occupancy_lull_splits",
+                               "approval":  {
+                                                "status":  "draft_auto",
+                                                "reviewed":  false
+                                            }
+                           }
+                       ],
+    "gold_words":  [
+                       {
+                           "word_index":  0,
+                           "word":  "maybe",
+                           "mfa_word":  "maybe",
+                           "start":  0.0,
+                           "end":  0.36,
+                           "phrase_index":  0,
+                           "sentence_index":  0,
+                           "source":  "mfa_word_interval",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  1,
+                           "word":  "you",
+                           "mfa_word":  "you",
+                           "start":  0.36,
+                           "end":  0.63,
+                           "phrase_index":  0,
+                           "sentence_index":  0,
+                           "source":  "mfa_word_interval",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  2,
+                           "word":  "meant",
+                           "mfa_word":  "meant",
+                           "start":  0.63,
+                           "end":  1.04,
+                           "phrase_index":  0,
+                           "sentence_index":  0,
+                           "source":  "mfa_word_interval",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  3,
+                           "word":  "buddhism",
+                           "mfa_word":  "buddhism",
+                           "start":  1.04,
+                           "end":  1.66,
+                           "phrase_index":  0,
+                           "sentence_index":  0,
+                           "source":  "mfa_word_interval",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  4,
+                           "word":  "it\u0027s",
+                           "mfa_word":  "it\u0027s",
+                           "start":  2.18,
+                           "end":  2.35,
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source":  "mfa_word_interval",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  5,
+                           "word":  "a",
+                           "mfa_word":  "a",
+                           "start":  2.35,
+                           "end":  2.41,
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source":  "mfa_word_interval",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  6,
+                           "word":  "religion",
+                           "mfa_word":  "religion",
+                           "start":  2.41,
+                           "end":  2.93,
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source":  "mfa_word_interval",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  7,
+                           "word":  "with",
+                           "mfa_word":  "with",
+                           "start":  2.93,
+                           "end":  3.09,
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source":  "mfa_word_interval",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  8,
+                           "word":  "millions",
+                           "mfa_word":  "millions",
+                           "start":  3.09,
+                           "end":  3.62,
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source":  "mfa_word_interval",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  9,
+                           "word":  "of",
+                           "mfa_word":  "of",
+                           "start":  3.62,
+                           "end":  3.74,
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source":  "mfa_word_interval",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  10,
+                           "word":  "followers",
+                           "mfa_word":  "followers",
+                           "start":  3.74,
+                           "end":  4.35,
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source":  "mfa_word_interval",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  11,
+                           "word":  "worldwide",
+                           "mfa_word":  "worldwide",
+                           "start":  4.35,
+                           "end":  5.19,
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source":  "mfa_word_interval",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       }
+                   ],
+    "word_heads":  [
+                       {
+                           "word_index":  0,
+                           "word":  "maybe",
+                           "start":  0.0,
+                           "end":  0.11,
+                           "pose":  "22_MBP",
+                           "phrase_index":  0,
+                           "sentence_index":  0,
+                           "source_phone":  "M",
+                           "source_phone_index":  0,
+                           "alignment_reason":  "mfa_exact_source_phone_index",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  1,
+                           "word":  "you",
+                           "start":  0.54,
+                           "end":  0.63,
+                           "pose":  "11_Oo",
+                           "phrase_index":  0,
+                           "sentence_index":  0,
+                           "source_phone":  "UW",
+                           "source_phone_index":  1,
+                           "alignment_reason":  "mfa_exact_source_phone_index",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  2,
+                           "word":  "meant",
+                           "start":  0.63,
+                           "end":  0.74,
+                           "pose":  "22_MBP",
+                           "phrase_index":  0,
+                           "sentence_index":  0,
+                           "source_phone":  "M",
+                           "source_phone_index":  0,
+                           "alignment_reason":  "mfa_exact_source_phone_index",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  3,
+                           "word":  "buddhism",
+                           "start":  1.04,
+                           "end":  1.18,
+                           "pose":  "22_MBP",
+                           "phrase_index":  0,
+                           "sentence_index":  0,
+                           "source_phone":  "B",
+                           "source_phone_index":  0,
+                           "alignment_reason":  "mfa_exact_source_phone_index",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  4,
+                           "word":  "it\u0027s",
+                           "start":  2.18,
+                           "end":  2.27,
+                           "pose":  "03_Ee",
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source_phone":  "IH",
+                           "source_phone_index":  0,
+                           "alignment_reason":  "mfa_exact_source_phone_index",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  5,
+                           "word":  "a",
+                           "start":  2.35,
+                           "end":  2.41,
+                           "pose":  "07_Aa",
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source_phone":  "AH",
+                           "source_phone_index":  0,
+                           "alignment_reason":  "mfa_exact_source_phone_index",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  6,
+                           "word":  "religion",
+                           "start":  2.64,
+                           "end":  2.71,
+                           "pose":  "03_Ee",
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source_phone":  "IH",
+                           "source_phone_index":  3,
+                           "alignment_reason":  "mfa_exact_source_phone_index",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  7,
+                           "word":  "with",
+                           "start":  2.93,
+                           "end":  2.98,
+                           "pose":  "12_Ww-Oo-",
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source_phone":  "W",
+                           "source_phone_index":  0,
+                           "alignment_reason":  "mfa_exact_source_phone_index",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  8,
+                           "word":  "millions",
+                           "start":  3.09,
+                           "end":  3.23,
+                           "pose":  "22_MBP",
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source_phone":  "M",
+                           "source_phone_index":  0,
+                           "alignment_reason":  "mfa_exact_source_phone_index",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  9,
+                           "word":  "of",
+                           "start":  3.62,
+                           "end":  3.68,
+                           "pose":  "07_Aa",
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source_phone":  "AH",
+                           "source_phone_index":  0,
+                           "alignment_reason":  "mfa_exact_source_phone_index",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  10,
+                           "word":  "followers",
+                           "start":  3.74,
+                           "end":  3.85,
+                           "pose":  "20_FV",
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source_phone":  "F",
+                           "source_phone_index":  0,
+                           "alignment_reason":  "mfa_exact_source_phone_index",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       },
+                       {
+                           "word_index":  11,
+                           "word":  "worldwide",
+                           "start":  4.35,
+                           "end":  4.49,
+                           "pose":  "12_Ww-Oo-",
+                           "phrase_index":  1,
+                           "sentence_index":  1,
+                           "source_phone":  "W",
+                           "source_phone_index":  0,
+                           "alignment_reason":  "mfa_exact_source_phone_index",
+                           "approval":  {
+                                            "status":  "draft_auto",
+                                            "reviewed":  false
+                                        }
+                       }
+                   ],
+    "mfa_words":  [
+                      {
+                          "word_index":  0,
+                          "word":  "maybe",
+                          "mfa_word":  "maybe",
+                          "start":  0.0,
+                          "end":  0.36,
+                          "phrase_index":  0,
+                          "sentence_index":  0,
+                          "source":  "mfa_word_interval",
+                          "approval":  {
+                                           "status":  "draft_auto",
+                                           "reviewed":  false
+                                       }
+                      },
+                      {
+                          "word_index":  1,
+                          "word":  "you",
+                          "mfa_word":  "you",
+                          "start":  0.36,
+                          "end":  0.63,
+                          "phrase_index":  0,
+                          "sentence_index":  0,
+                          "source":  "mfa_word_interval",
+                          "approval":  {
+                                           "status":  "draft_auto",
+                                           "reviewed":  false
+                                       }
+                      },
+                      {
+                          "word_index":  2,
+                          "word":  "meant",
+                          "mfa_word":  "meant",
+                          "start":  0.63,
+                          "end":  1.04,
+                          "phrase_index":  0,
+                          "sentence_index":  0,
+                          "source":  "mfa_word_interval",
+                          "approval":  {
+                                           "status":  "draft_auto",
+                                           "reviewed":  false
+                                       }
+                      },
+                      {
+                          "word_index":  3,
+                          "word":  "buddhism",
+                          "mfa_word":  "buddhism",
+                          "start":  1.04,
+                          "end":  1.66,
+                          "phrase_index":  0,
+                          "sentence_index":  0,
+                          "source":  "mfa_word_interval",
+                          "approval":  {
+                                           "status":  "draft_auto",
+                                           "reviewed":  false
+                                       }
+                      },
+                      {
+                          "word_index":  4,
+                          "word":  "it\u0027s",
+                          "mfa_word":  "it\u0027s",
+                          "start":  2.18,
+                          "end":  2.35,
+                          "phrase_index":  1,
+                          "sentence_index":  1,
+                          "source":  "mfa_word_interval",
+                          "approval":  {
+                                           "status":  "draft_auto",
+                                           "reviewed":  false
+                                       }
+                      },
+                      {
+                          "word_index":  5,
+                          "word":  "a",
+                          "mfa_word":  "a",
+                          "start":  2.35,
+                          "end":  2.41,
+                          "phrase_index":  1,
+                          "sentence_index":  1,
+                          "source":  "mfa_word_interval",
+                          "approval":  {
+                                           "status":  "draft_auto",
+                                           "reviewed":  false
+                                       }
+                      },
+                      {
+                          "word_index":  6,
+                          "word":  "religion",
+                          "mfa_word":  "religion",
+                          "start":  2.41,
+                          "end":  2.93,
+                          "phrase_index":  1,
+                          "sentence_index":  1,
+                          "source":  "mfa_word_interval",
+                          "approval":  {
+                                           "status":  "draft_auto",
+                                           "reviewed":  false
+                                       }
+                      },
+                      {
+                          "word_index":  7,
+                          "word":  "with",
+                          "mfa_word":  "with",
+                          "start":  2.93,
+                          "end":  3.09,
+                          "phrase_index":  1,
+                          "sentence_index":  1,
+                          "source":  "mfa_word_interval",
+                          "approval":  {
+                                           "status":  "draft_auto",
+                                           "reviewed":  false
+                                       }
+                      },
+                      {
+                          "word_index":  8,
+                          "word":  "millions",
+                          "mfa_word":  "millions",
+                          "start":  3.09,
+                          "end":  3.62,
+                          "phrase_index":  1,
+                          "sentence_index":  1,
+                          "source":  "mfa_word_interval",
+                          "approval":  {
+                                           "status":  "draft_auto",
+                                           "reviewed":  false
+                                       }
+                      },
+                      {
+                          "word_index":  9,
+                          "word":  "of",
+                          "mfa_word":  "of",
+                          "start":  3.62,
+                          "end":  3.74,
+                          "phrase_index":  1,
+                          "sentence_index":  1,
+                          "source":  "mfa_word_interval",
+                          "approval":  {
+                                           "status":  "draft_auto",
+                                           "reviewed":  false
+                                       }
+                      },
+                      {
+                          "word_index":  10,
+                          "word":  "followers",
+                          "mfa_word":  "followers",
+                          "start":  3.74,
+                          "end":  4.35,
+                          "phrase_index":  1,
+                          "sentence_index":  1,
+                          "source":  "mfa_word_interval",
+                          "approval":  {
+                                           "status":  "draft_auto",
+                                           "reviewed":  false
+                                       }
+                      },
+                      {
+                          "word_index":  11,
+                          "word":  "worldwide",
+                          "mfa_word":  "worldwide",
+                          "start":  4.35,
+                          "end":  5.19,
+                          "phrase_index":  1,
+                          "sentence_index":  1,
+                          "source":  "mfa_word_interval",
+                          "approval":  {
+                                           "status":  "draft_auto",
+                                           "reviewed":  false
+                                       }
+                      }
+                  ],
+    "mfa_phones":  [
+                       {
+                           "index_in_word":  0,
+                           "phone":  "M",
+                           "phone_base":  "M",
+                           "start":  0.0,
+                           "end":  0.11,
+                           "word_index":  0,
+                           "word":  "maybe"
+                       },
+                       {
+                           "index_in_word":  1,
+                           "phone":  "EY1",
+                           "phone_base":  "EY",
+                           "start":  0.11,
+                           "end":  0.26,
+                           "word_index":  0,
+                           "word":  "maybe"
+                       },
+                       {
+                           "index_in_word":  2,
+                           "phone":  "B",
+                           "phone_base":  "B",
+                           "start":  0.26,
+                           "end":  0.32,
+                           "word_index":  0,
+                           "word":  "maybe"
+                       },
+                       {
+                           "index_in_word":  3,
+                           "phone":  "IY0",
+                           "phone_base":  "IY",
+                           "start":  0.32,
+                           "end":  0.36,
+                           "word_index":  0,
+                           "word":  "maybe"
+                       },
+                       {
+                           "index_in_word":  0,
+                           "phone":  "Y",
+                           "phone_base":  "Y",
+                           "start":  0.36,
+                           "end":  0.54,
+                           "word_index":  1,
+                           "word":  "you"
+                       },
+                       {
+                           "index_in_word":  1,
+                           "phone":  "UW1",
+                           "phone_base":  "UW",
+                           "start":  0.54,
+                           "end":  0.63,
+                           "word_index":  1,
+                           "word":  "you"
+                       },
+                       {
+                           "index_in_word":  0,
+                           "phone":  "M",
+                           "phone_base":  "M",
+                           "start":  0.63,
+                           "end":  0.74,
+                           "word_index":  2,
+                           "word":  "meant"
+                       },
+                       {
+                           "index_in_word":  1,
+                           "phone":  "EH1",
+                           "phone_base":  "EH",
+                           "start":  0.74,
+                           "end":  0.84,
+                           "word_index":  2,
+                           "word":  "meant"
+                       },
+                       {
+                           "index_in_word":  2,
+                           "phone":  "N",
+                           "phone_base":  "N",
+                           "start":  0.84,
+                           "end":  0.92,
+                           "word_index":  2,
+                           "word":  "meant"
+                       },
+                       {
+                           "index_in_word":  3,
+                           "phone":  "T",
+                           "phone_base":  "T",
+                           "start":  0.92,
+                           "end":  1.04,
+                           "word_index":  2,
+                           "word":  "meant"
+                       },
+                       {
+                           "index_in_word":  0,
+                           "phone":  "B",
+                           "phone_base":  "B",
+                           "start":  1.04,
+                           "end":  1.18,
+                           "word_index":  3,
+                           "word":  "buddhism"
+                       },
+                       {
+                           "index_in_word":  1,
+                           "phone":  "UW1",
+                           "phone_base":  "UW",
+                           "start":  1.18,
+                           "end":  1.28,
+                           "word_index":  3,
+                           "word":  "buddhism"
+                       },
+                       {
+                           "index_in_word":  2,
+                           "phone":  "D",
+                           "phone_base":  "D",
+                           "start":  1.28,
+                           "end":  1.32,
+                           "word_index":  3,
+                           "word":  "buddhism"
+                       },
+                       {
+                           "index_in_word":  3,
+                           "phone":  "IH0",
+                           "phone_base":  "IH",
+                           "start":  1.32,
+                           "end":  1.39,
+                           "word_index":  3,
+                           "word":  "buddhism"
+                       },
+                       {
+                           "index_in_word":  4,
+                           "phone":  "Z",
+                           "phone_base":  "Z",
+                           "start":  1.39,
+                           "end":  1.45,
+                           "word_index":  3,
+                           "word":  "buddhism"
+                       },
+                       {
+                           "index_in_word":  5,
+                           "phone":  "AH0",
+                           "phone_base":  "AH",
+                           "start":  1.45,
+                           "end":  1.52,
+                           "word_index":  3,
+                           "word":  "buddhism"
+                       },
+                       {
+                           "index_in_word":  6,
+                           "phone":  "M",
+                           "phone_base":  "M",
+                           "start":  1.52,
+                           "end":  1.66,
+                           "word_index":  3,
+                           "word":  "buddhism"
+                       },
+                       {
+                           "index_in_word":  0,
+                           "phone":  "IH1",
+                           "phone_base":  "IH",
+                           "start":  2.18,
+                           "end":  2.27,
+                           "word_index":  4,
+                           "word":  "it\u0027s"
+                       },
+                       {
+                           "index_in_word":  1,
+                           "phone":  "T",
+                           "phone_base":  "T",
+                           "start":  2.27,
+                           "end":  2.32,
+                           "word_index":  4,
+                           "word":  "it\u0027s"
+                       },
+                       {
+                           "index_in_word":  2,
+                           "phone":  "S",
+                           "phone_base":  "S",
+                           "start":  2.32,
+                           "end":  2.35,
+                           "word_index":  4,
+                           "word":  "it\u0027s"
+                       },
+                       {
+                           "index_in_word":  0,
+                           "phone":  "AH0",
+                           "phone_base":  "AH",
+                           "start":  2.35,
+                           "end":  2.41,
+                           "word_index":  5,
+                           "word":  "a"
+                       },
+                       {
+                           "index_in_word":  0,
+                           "phone":  "R",
+                           "phone_base":  "R",
+                           "start":  2.41,
+                           "end":  2.49,
+                           "word_index":  6,
+                           "word":  "religion"
+                       },
+                       {
+                           "index_in_word":  1,
+                           "phone":  "IH0",
+                           "phone_base":  "IH",
+                           "start":  2.49,
+                           "end":  2.53,
+                           "word_index":  6,
+                           "word":  "religion"
+                       },
+                       {
+                           "index_in_word":  2,
+                           "phone":  "L",
+                           "phone_base":  "L",
+                           "start":  2.53,
+                           "end":  2.64,
+                           "word_index":  6,
+                           "word":  "religion"
+                       },
+                       {
+                           "index_in_word":  3,
+                           "phone":  "IH1",
+                           "phone_base":  "IH",
+                           "start":  2.64,
+                           "end":  2.71,
+                           "word_index":  6,
+                           "word":  "religion"
+                       },
+                       {
+                           "index_in_word":  4,
+                           "phone":  "JH",
+                           "phone_base":  "JH",
+                           "start":  2.71,
+                           "end":  2.8,
+                           "word_index":  6,
+                           "word":  "religion"
+                       },
+                       {
+                           "index_in_word":  5,
+                           "phone":  "AH0",
+                           "phone_base":  "AH",
+                           "start":  2.8,
+                           "end":  2.85,
+                           "word_index":  6,
+                           "word":  "religion"
+                       },
+                       {
+                           "index_in_word":  6,
+                           "phone":  "N",
+                           "phone_base":  "N",
+                           "start":  2.85,
+                           "end":  2.93,
+                           "word_index":  6,
+                           "word":  "religion"
+                       },
+                       {
+                           "index_in_word":  0,
+                           "phone":  "W",
+                           "phone_base":  "W",
+                           "start":  2.93,
+                           "end":  2.98,
+                           "word_index":  7,
+                           "word":  "with"
+                       },
+                       {
+                           "index_in_word":  1,
+                           "phone":  "IH0",
+                           "phone_base":  "IH",
+                           "start":  2.98,
+                           "end":  3.02,
+                           "word_index":  7,
+                           "word":  "with"
+                       },
+                       {
+                           "index_in_word":  2,
+                           "phone":  "TH",
+                           "phone_base":  "TH",
+                           "start":  3.02,
+                           "end":  3.09,
+                           "word_index":  7,
+                           "word":  "with"
+                       },
+                       {
+                           "index_in_word":  0,
+                           "phone":  "M",
+                           "phone_base":  "M",
+                           "start":  3.09,
+                           "end":  3.23,
+                           "word_index":  8,
+                           "word":  "millions"
+                       },
+                       {
+                           "index_in_word":  1,
+                           "phone":  "IH1",
+                           "phone_base":  "IH",
+                           "start":  3.23,
+                           "end":  3.3,
+                           "word_index":  8,
+                           "word":  "millions"
+                       },
+                       {
+                           "index_in_word":  2,
+                           "phone":  "L",
+                           "phone_base":  "L",
+                           "start":  3.3,
+                           "end":  3.39,
+                           "word_index":  8,
+                           "word":  "millions"
+                       },
+                       {
+                           "index_in_word":  3,
+                           "phone":  "Y",
+                           "phone_base":  "Y",
+                           "start":  3.39,
+                           "end":  3.47,
+                           "word_index":  8,
+                           "word":  "millions"
+                       },
+                       {
+                           "index_in_word":  4,
+                           "phone":  "AH0",
+                           "phone_base":  "AH",
+                           "start":  3.47,
+                           "end":  3.52,
+                           "word_index":  8,
+                           "word":  "millions"
+                       },
+                       {
+                           "index_in_word":  5,
+                           "phone":  "N",
+                           "phone_base":  "N",
+                           "start":  3.52,
+                           "end":  3.57,
+                           "word_index":  8,
+                           "word":  "millions"
+                       },
+                       {
+                           "index_in_word":  6,
+                           "phone":  "Z",
+                           "phone_base":  "Z",
+                           "start":  3.57,
+                           "end":  3.62,
+                           "word_index":  8,
+                           "word":  "millions"
+                       },
+                       {
+                           "index_in_word":  0,
+                           "phone":  "AH0",
+                           "phone_base":  "AH",
+                           "start":  3.62,
+                           "end":  3.68,
+                           "word_index":  9,
+                           "word":  "of"
+                       },
+                       {
+                           "index_in_word":  1,
+                           "phone":  "V",
+                           "phone_base":  "V",
+                           "start":  3.68,
+                           "end":  3.74,
+                           "word_index":  9,
+                           "word":  "of"
+                       },
+                       {
+                           "index_in_word":  0,
+                           "phone":  "F",
+                           "phone_base":  "F",
+                           "start":  3.74,
+                           "end":  3.85,
+                           "word_index":  10,
+                           "word":  "followers"
+                       },
+                       {
+                           "index_in_word":  1,
+                           "phone":  "AA1",
+                           "phone_base":  "AA",
+                           "start":  3.85,
+                           "end":  3.97,
+                           "word_index":  10,
+                           "word":  "followers"
+                       },
+                       {
+                           "index_in_word":  2,
+                           "phone":  "L",
+                           "phone_base":  "L",
+                           "start":  3.97,
+                           "end":  4.05,
+                           "word_index":  10,
+                           "word":  "followers"
+                       },
+                       {
+                           "index_in_word":  3,
+                           "phone":  "OW0",
+                           "phone_base":  "OW",
+                           "start":  4.05,
+                           "end":  4.17,
+                           "word_index":  10,
+                           "word":  "followers"
+                       },
+                       {
+                           "index_in_word":  4,
+                           "phone":  "ER0",
+                           "phone_base":  "ER",
+                           "start":  4.17,
+                           "end":  4.25,
+                           "word_index":  10,
+                           "word":  "followers"
+                       },
+                       {
+                           "index_in_word":  5,
+                           "phone":  "Z",
+                           "phone_base":  "Z",
+                           "start":  4.25,
+                           "end":  4.35,
+                           "word_index":  10,
+                           "word":  "followers"
+                       },
+                       {
+                           "index_in_word":  0,
+                           "phone":  "W",
+                           "phone_base":  "W",
+                           "start":  4.35,
+                           "end":  4.49,
+                           "word_index":  11,
+                           "word":  "worldwide"
+                       },
+                       {
+                           "index_in_word":  1,
+                           "phone":  "ER1",
+                           "phone_base":  "ER",
+                           "start":  4.49,
+                           "end":  4.6,
+                           "word_index":  11,
+                           "word":  "worldwide"
+                       },
+                       {
+                           "index_in_word":  2,
+                           "phone":  "L",
+                           "phone_base":  "L",
+                           "start":  4.6,
+                           "end":  4.66,
+                           "word_index":  11,
+                           "word":  "worldwide"
+                       },
+                       {
+                           "index_in_word":  3,
+                           "phone":  "D",
+                           "phone_base":  "D",
+                           "start":  4.66,
+                           "end":  4.7,
+                           "word_index":  11,
+                           "word":  "worldwide"
+                       },
+                       {
+                           "index_in_word":  4,
+                           "phone":  "W",
+                           "phone_base":  "W",
+                           "start":  4.7,
+                           "end":  4.83,
+                           "word_index":  11,
+                           "word":  "worldwide"
+                       },
+                       {
+                           "index_in_word":  5,
+                           "phone":  "AY1",
+                           "phone_base":  "AY",
+                           "start":  4.83,
+                           "end":  5.1,
+                           "word_index":  11,
+                           "word":  "worldwide"
+                       },
+                       {
+                           "index_in_word":  6,
+                           "phone":  "D",
+                           "phone_base":  "D",
+                           "start":  5.1,
+                           "end":  5.19,
+                           "word_index":  11,
+                           "word":  "worldwide"
+                       }
+                   ],
+    "planned_visemes":  [
+                            {
+                                "index":  0,
+                                "pose":  "22_MBP",
+                                "word":  "maybe",
+                                "word_index":  0,
+                                "phrase_index":  0,
+                                "sentence_index":  0,
+                                "text_center_norm":  0.009868,
+                                "strength":  1.0,
+                                "source_phone":  "M",
+                                "source_phone_index":  0,
+                                "generator":  "cmu_bilabial"
+                            },
+                            {
+                                "index":  1,
+                                "pose":  "06_Eh",
+                                "word":  "maybe",
+                                "word_index":  0,
+                                "phrase_index":  0,
+                                "sentence_index":  0,
+                                "text_center_norm":  0.029605,
+                                "strength":  0.92,
+                                "source_phone":  "EY",
+                                "source_phone_index":  1,
+                                "generator":  "cmu_eh_vowel"
+                            },
+                            {
+                                "index":  2,
+                                "pose":  "03_Ee",
+                                "word":  "maybe",
+                                "word_index":  0,
+                                "phrase_index":  0,
+                                "sentence_index":  0,
+                                "text_center_norm":  0.069079,
+                                "strength":  0.5,
+                                "source_phone":  "IY",
+                                "source_phone_index":  3,
+                                "generator":  "cmu_front_vowel"
+                            },
+                            {
+                                "index":  3,
+                                "pose":  "11_Oo",
+                                "word":  "you",
+                                "word_index":  1,
+                                "phrase_index":  0,
+                                "sentence_index":  0,
+                                "text_center_norm":  0.118421,
+                                "strength":  0.92,
+                                "source_phone":  "UW",
+                                "source_phone_index":  1,
+                                "generator":  "cmu_oo_vowel"
+                            },
+                            {
+                                "index":  4,
+                                "pose":  "22_MBP",
+                                "word":  "meant",
+                                "word_index":  2,
+                                "phrase_index":  0,
+                                "sentence_index":  0,
+                                "text_center_norm":  0.138158,
+                                "strength":  1.0,
+                                "source_phone":  "M",
+                                "source_phone_index":  0,
+                                "generator":  "cmu_bilabial"
+                            },
+                            {
+                                "index":  5,
+                                "pose":  "06_Eh",
+                                "word":  "meant",
+                                "word_index":  2,
+                                "phrase_index":  0,
+                                "sentence_index":  0,
+                                "text_center_norm":  0.151316,
+                                "strength":  0.92,
+                                "source_phone":  "EH",
+                                "source_phone_index":  1,
+                                "generator":  "cmu_eh_vowel"
+                            },
+                            {
+                                "index":  6,
+                                "pose":  "22_MBP",
+                                "word":  "buddhism",
+                                "word_index":  3,
+                                "phrase_index":  0,
+                                "sentence_index":  0,
+                                "text_center_norm":  0.193609,
+                                "strength":  1.0,
+                                "source_phone":  "B",
+                                "source_phone_index":  0,
+                                "generator":  "cmu_bilabial"
+                            },
+                            {
+                                "index":  7,
+                                "pose":  "11_Oo",
+                                "word":  "buddhism",
+                                "word_index":  3,
+                                "phrase_index":  0,
+                                "sentence_index":  0,
+                                "text_center_norm":  0.212406,
+                                "strength":  0.92,
+                                "source_phone":  "UW",
+                                "source_phone_index":  1,
+                                "generator":  "cmu_oo_vowel"
+                            },
+                            {
+                                "index":  8,
+                                "pose":  "03_Ee",
+                                "word":  "it\u0027s",
+                                "word_index":  4,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.324561,
+                                "strength":  0.92,
+                                "source_phone":  "IH",
+                                "source_phone_index":  0,
+                                "generator":  "cmu_front_vowel"
+                            },
+                            {
+                                "index":  9,
+                                "pose":  "07_Aa",
+                                "word":  "a",
+                                "word_index":  5,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.394737,
+                                "strength":  0.5,
+                                "source_phone":  "AH",
+                                "source_phone_index":  0,
+                                "generator":  "cmu_open_vowel"
+                            },
+                            {
+                                "index":  10,
+                                "pose":  "03_Ee",
+                                "word":  "religion",
+                                "word_index":  6,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.486842,
+                                "strength":  0.92,
+                                "source_phone":  "IH",
+                                "source_phone_index":  3,
+                                "generator":  "cmu_front_vowel"
+                            },
+                            {
+                                "index":  11,
+                                "pose":  "14_ChJjSh",
+                                "word":  "religion",
+                                "word_index":  6,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.505639,
+                                "strength":  0.82,
+                                "source_phone":  "JH",
+                                "source_phone_index":  4,
+                                "generator":  "cmu_affricate_sibilant"
+                            },
+                            {
+                                "index":  12,
+                                "pose":  "12_Ww-Oo-",
+                                "word":  "with",
+                                "word_index":  7,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.561404,
+                                "strength":  0.88,
+                                "source_phone":  "W",
+                                "source_phone_index":  0,
+                                "generator":  "cmu_w"
+                            },
+                            {
+                                "index":  13,
+                                "pose":  "03_Ee",
+                                "word":  "with",
+                                "word_index":  7,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.578947,
+                                "strength":  0.92,
+                                "source_phone":  "IH",
+                                "source_phone_index":  1,
+                                "generator":  "cmu_front_vowel"
+                            },
+                            {
+                                "index":  14,
+                                "pose":  "22_MBP",
+                                "word":  "millions",
+                                "word_index":  8,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.612782,
+                                "strength":  1.0,
+                                "source_phone":  "M",
+                                "source_phone_index":  0,
+                                "generator":  "cmu_bilabial"
+                            },
+                            {
+                                "index":  15,
+                                "pose":  "03_Ee",
+                                "word":  "millions",
+                                "word_index":  8,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.62782,
+                                "strength":  0.92,
+                                "source_phone":  "IH",
+                                "source_phone_index":  1,
+                                "generator":  "cmu_front_vowel"
+                            },
+                            {
+                                "index":  16,
+                                "pose":  "07_Aa",
+                                "word":  "of",
+                                "word_index":  9,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.723684,
+                                "strength":  0.92,
+                                "source_phone":  "AH",
+                                "source_phone_index":  0,
+                                "generator":  "cmu_open_vowel"
+                            },
+                            {
+                                "index":  17,
+                                "pose":  "20_FV",
+                                "word":  "of",
+                                "word_index":  9,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.75,
+                                "strength":  0.96,
+                                "source_phone":  "V",
+                                "source_phone_index":  1,
+                                "generator":  "cmu_fv"
+                            },
+                            {
+                                "index":  18,
+                                "pose":  "20_FV",
+                                "word":  "followers",
+                                "word_index":  10,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.774123,
+                                "strength":  0.96,
+                                "source_phone":  "F",
+                                "source_phone_index":  0,
+                                "generator":  "cmu_fv"
+                            },
+                            {
+                                "index":  19,
+                                "pose":  "07_Aa",
+                                "word":  "followers",
+                                "word_index":  10,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.796053,
+                                "strength":  0.92,
+                                "source_phone":  "AA",
+                                "source_phone_index":  1,
+                                "generator":  "cmu_open_vowel"
+                            },
+                            {
+                                "index":  20,
+                                "pose":  "09_Oh",
+                                "word":  "followers",
+                                "word_index":  10,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.839912,
+                                "strength":  0.5,
+                                "source_phone":  "OW",
+                                "source_phone_index":  3,
+                                "generator":  "cmu_oh_vowel"
+                            },
+                            {
+                                "index":  21,
+                                "pose":  "12_Ww-Oo-",
+                                "word":  "worldwide",
+                                "word_index":  11,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.902256,
+                                "strength":  0.88,
+                                "source_phone":  "W",
+                                "source_phone_index":  0,
+                                "generator":  "cmu_w"
+                            },
+                            {
+                                "index":  22,
+                                "pose":  "06_Eh",
+                                "word":  "worldwide",
+                                "word_index":  11,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.917293,
+                                "strength":  0.92,
+                                "source_phone":  "ER",
+                                "source_phone_index":  1,
+                                "generator":  "cmu_eh_vowel"
+                            },
+                            {
+                                "index":  23,
+                                "pose":  "12_Ww-Oo-",
+                                "word":  "worldwide",
+                                "word_index":  11,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.962406,
+                                "strength":  0.88,
+                                "source_phone":  "W",
+                                "source_phone_index":  4,
+                                "generator":  "cmu_w"
+                            },
+                            {
+                                "index":  24,
+                                "pose":  "05_Ay",
+                                "word":  "worldwide",
+                                "word_index":  11,
+                                "phrase_index":  1,
+                                "sentence_index":  1,
+                                "text_center_norm":  0.977444,
+                                "strength":  0.94,
+                                "source_phone":  "AY",
+                                "source_phone_index":  5,
+                                "generator":  "cmu_ay"
+                            }
+                        ],
+    "visemes":  [
+                    {
+                        "index":  0,
+                        "id":  "22_MBP",
+                        "pose":  "22_MBP",
+                        "start":  0.0,
+                        "center":  0.055,
+                        "end":  0.11,
+                        "word":  "maybe",
+                        "word_index":  0,
+                        "phrase_index":  0,
+                        "sentence_index":  0,
+                        "strength":  1.0,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "M",
+                        "source_phone_index":  0,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  1,
+                        "id":  "06_Eh",
+                        "pose":  "06_Eh",
+                        "start":  0.11,
+                        "center":  0.185,
+                        "end":  0.26,
+                        "word":  "maybe",
+                        "word_index":  0,
+                        "phrase_index":  0,
+                        "sentence_index":  0,
+                        "strength":  0.92,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "EY",
+                        "source_phone_index":  1,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  2,
+                        "id":  "03_Ee",
+                        "pose":  "03_Ee",
+                        "start":  0.32,
+                        "center":  0.33999999999999997,
+                        "end":  0.36,
+                        "word":  "maybe",
+                        "word_index":  0,
+                        "phrase_index":  0,
+                        "sentence_index":  0,
+                        "strength":  0.5,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "IY",
+                        "source_phone_index":  3,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+                                      {
+                                          "kind":  "low_strength_viseme",
+                                          "start":  0.32,
+                                          "end":  0.36,
+                                          "note":  "Viseme strength is low (0.500)."
+                                      }
+                                  ]
+                    },
+                    {
+                        "index":  3,
+                        "id":  "11_Oo",
+                        "pose":  "11_Oo",
+                        "start":  0.54,
+                        "center":  0.585,
+                        "end":  0.63,
+                        "word":  "you",
+                        "word_index":  1,
+                        "phrase_index":  0,
+                        "sentence_index":  0,
+                        "strength":  0.92,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "UW",
+                        "source_phone_index":  1,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  4,
+                        "id":  "22_MBP",
+                        "pose":  "22_MBP",
+                        "start":  0.63,
+                        "center":  0.685,
+                        "end":  0.74,
+                        "word":  "meant",
+                        "word_index":  2,
+                        "phrase_index":  0,
+                        "sentence_index":  0,
+                        "strength":  1.0,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "M",
+                        "source_phone_index":  0,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  5,
+                        "id":  "06_Eh",
+                        "pose":  "06_Eh",
+                        "start":  0.74,
+                        "center":  0.79,
+                        "end":  0.84,
+                        "word":  "meant",
+                        "word_index":  2,
+                        "phrase_index":  0,
+                        "sentence_index":  0,
+                        "strength":  0.92,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "EH",
+                        "source_phone_index":  1,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  6,
+                        "id":  "22_MBP",
+                        "pose":  "22_MBP",
+                        "start":  1.04,
+                        "center":  1.1099999999999999,
+                        "end":  1.18,
+                        "word":  "buddhism",
+                        "word_index":  3,
+                        "phrase_index":  0,
+                        "sentence_index":  0,
+                        "strength":  1.0,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "B",
+                        "source_phone_index":  0,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  7,
+                        "id":  "11_Oo",
+                        "pose":  "11_Oo",
+                        "start":  1.18,
+                        "center":  1.23,
+                        "end":  1.28,
+                        "word":  "buddhism",
+                        "word_index":  3,
+                        "phrase_index":  0,
+                        "sentence_index":  0,
+                        "strength":  0.92,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "UW",
+                        "source_phone_index":  1,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  8,
+                        "id":  "03_Ee",
+                        "pose":  "03_Ee",
+                        "start":  2.18,
+                        "center":  2.225,
+                        "end":  2.27,
+                        "word":  "it\u0027s",
+                        "word_index":  4,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.92,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "IH",
+                        "source_phone_index":  0,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+                                      {
+                                          "kind":  "large_inter_event_gap",
+                                          "start":  2.18,
+                                          "end":  2.27,
+                                          "note":  "Large gap from previous viseme center (0.995s)."
+                                      }
+                                  ]
+                    },
+                    {
+                        "index":  9,
+                        "id":  "07_Aa",
+                        "pose":  "07_Aa",
+                        "start":  2.35,
+                        "center":  2.38,
+                        "end":  2.41,
+                        "word":  "a",
+                        "word_index":  5,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.5,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "AH",
+                        "source_phone_index":  0,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+                                      {
+                                          "kind":  "low_strength_viseme",
+                                          "start":  2.35,
+                                          "end":  2.41,
+                                          "note":  "Viseme strength is low (0.500)."
+                                      }
+                                  ]
+                    },
+                    {
+                        "index":  10,
+                        "id":  "03_Ee",
+                        "pose":  "03_Ee",
+                        "start":  2.64,
+                        "center":  2.675,
+                        "end":  2.71,
+                        "word":  "religion",
+                        "word_index":  6,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.92,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "IH",
+                        "source_phone_index":  3,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  11,
+                        "id":  "14_ChJjSh",
+                        "pose":  "14_ChJjSh",
+                        "start":  2.71,
+                        "center":  2.755,
+                        "end":  2.8,
+                        "word":  "religion",
+                        "word_index":  6,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.82,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "JH",
+                        "source_phone_index":  4,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  12,
+                        "id":  "12_Ww-Oo-",
+                        "pose":  "12_Ww-Oo-",
+                        "start":  2.93,
+                        "center":  2.955,
+                        "end":  2.98,
+                        "word":  "with",
+                        "word_index":  7,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.88,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "W",
+                        "source_phone_index":  0,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  13,
+                        "id":  "03_Ee",
+                        "pose":  "03_Ee",
+                        "start":  2.98,
+                        "center":  3.0,
+                        "end":  3.02,
+                        "word":  "with",
+                        "word_index":  7,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.92,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "IH",
+                        "source_phone_index":  1,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  14,
+                        "id":  "22_MBP",
+                        "pose":  "22_MBP",
+                        "start":  3.09,
+                        "center":  3.16,
+                        "end":  3.23,
+                        "word":  "millions",
+                        "word_index":  8,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  1.0,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "M",
+                        "source_phone_index":  0,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  15,
+                        "id":  "03_Ee",
+                        "pose":  "03_Ee",
+                        "start":  3.23,
+                        "center":  3.2649999999999997,
+                        "end":  3.3,
+                        "word":  "millions",
+                        "word_index":  8,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.92,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "IH",
+                        "source_phone_index":  1,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  16,
+                        "id":  "07_Aa",
+                        "pose":  "07_Aa",
+                        "start":  3.62,
+                        "center":  3.6500000000000004,
+                        "end":  3.68,
+                        "word":  "of",
+                        "word_index":  9,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.92,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "AH",
+                        "source_phone_index":  0,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  17,
+                        "id":  "20_FV",
+                        "pose":  "20_FV",
+                        "start":  3.68,
+                        "center":  3.71,
+                        "end":  3.74,
+                        "word":  "of",
+                        "word_index":  9,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.96,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "V",
+                        "source_phone_index":  1,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  18,
+                        "id":  "20_FV",
+                        "pose":  "20_FV",
+                        "start":  3.74,
+                        "center":  3.795,
+                        "end":  3.85,
+                        "word":  "followers",
+                        "word_index":  10,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.96,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "F",
+                        "source_phone_index":  0,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  19,
+                        "id":  "07_Aa",
+                        "pose":  "07_Aa",
+                        "start":  3.85,
+                        "center":  3.91,
+                        "end":  3.97,
+                        "word":  "followers",
+                        "word_index":  10,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.92,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "AA",
+                        "source_phone_index":  1,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  20,
+                        "id":  "09_Oh",
+                        "pose":  "09_Oh",
+                        "start":  4.05,
+                        "center":  4.109999999999999,
+                        "end":  4.17,
+                        "word":  "followers",
+                        "word_index":  10,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.5,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "OW",
+                        "source_phone_index":  3,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+                                      {
+                                          "kind":  "low_strength_viseme",
+                                          "start":  4.05,
+                                          "end":  4.17,
+                                          "note":  "Viseme strength is low (0.500)."
+                                      }
+                                  ]
+                    },
+                    {
+                        "index":  21,
+                        "id":  "12_Ww-Oo-",
+                        "pose":  "12_Ww-Oo-",
+                        "start":  4.35,
+                        "center":  4.42,
+                        "end":  4.49,
+                        "word":  "worldwide",
+                        "word_index":  11,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.88,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "W",
+                        "source_phone_index":  0,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  22,
+                        "id":  "06_Eh",
+                        "pose":  "06_Eh",
+                        "start":  4.49,
+                        "center":  4.545,
+                        "end":  4.6,
+                        "word":  "worldwide",
+                        "word_index":  11,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.92,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "ER",
+                        "source_phone_index":  1,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  23,
+                        "id":  "12_Ww-Oo-",
+                        "pose":  "12_Ww-Oo-",
+                        "start":  4.7,
+                        "center":  4.765000000000001,
+                        "end":  4.83,
+                        "word":  "worldwide",
+                        "word_index":  11,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.88,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "W",
+                        "source_phone_index":  4,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    },
+                    {
+                        "index":  24,
+                        "id":  "05_Ay",
+                        "pose":  "05_Ay",
+                        "start":  4.83,
+                        "center":  4.965,
+                        "end":  5.1,
+                        "word":  "worldwide",
+                        "word_index":  11,
+                        "phrase_index":  1,
+                        "sentence_index":  1,
+                        "strength":  0.94,
+                        "commit_reason":  "mfa_phone_alignment",
+                        "alignment_reason":  "mfa_exact_source_phone_index",
+                        "source_phone":  "AY",
+                        "source_phone_index":  5,
+                        "source_phone_class":  "",
+                        "mapped_to_observed_speech":  true,
+                        "approval":  {
+                                         "status":  "draft_auto",
+                                         "reviewed":  false
+                                     },
+                        "notes":  [
+
+                                  ],
+                        "flags":  [
+
+                                  ]
+                    }
+                ],
+    "flags":  [
+                  {
+                      "kind":  "low_strength_viseme",
+                      "start":  0.32,
+                      "end":  0.36,
+                      "note":  "Viseme strength is low (0.500)."
+                  },
+                  {
+                      "kind":  "large_inter_event_gap",
+                      "start":  2.18,
+                      "end":  2.27,
+                      "note":  "Large gap from previous viseme center (0.995s)."
+                  },
+                  {
+                      "kind":  "low_strength_viseme",
+                      "start":  2.35,
+                      "end":  2.41,
+                      "note":  "Viseme strength is low (0.500)."
+                  },
+                  {
+                      "kind":  "low_strength_viseme",
+                      "start":  4.05,
+                      "end":  4.17,
+                      "note":  "Viseme strength is low (0.500)."
+                  }
+              ],
+    "notes":  [
+
+              ],
+    "summary":  {
+                    "word_count":  12,
+                    "speech_region_count":  2,
+                    "word_head_count":  12,
+                    "viseme_count":  25,
+                    "flag_count":  4,
+                    "flags_by_kind":  {
+                                          "low_strength_viseme":  3,
+                                          "large_inter_event_gap":  1
+                                      },
+                    "commit_reasons":  {
+                                           "mfa_phone_alignment":  25
+                                       },
+                    "alignment_reasons":  {
+                                              "mfa_exact_source_phone_index":  25
+                                          },
+                    "mapped_to_observed_speech_count":  25
+                }
+}

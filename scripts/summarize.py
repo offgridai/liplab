@@ -1,42 +1,55 @@
-import json, pathlib
-root = pathlib.Path(__file__).resolve().parents[1] / 'outputs' / 'runs' / 'latest'
-grades = []
-for grade in sorted(root.glob('*/grade.json')):
-    data = json.loads(grade.read_text())
-    pause = data.get('pause_alignment', {})
-    word_onset = data.get('word_onset_alignment', {})
-    intra_word = data.get('intra_word_alignment', {})
-    grades.append((grade.parent.name, data))
+import pathlib
+
+from grade_summary import compute_summary, load_case_grades
+
+root = pathlib.Path(__file__).resolve().parents[1] / "outputs" / "runs" / "latest"
+gold_root = pathlib.Path(__file__).resolve().parents[1] / "inputs" / "gold"
+rows, graded, ungraded = load_case_grades(root, gold_root)
+for row in rows:
     print(
-        f"{grade.parent.name}: matched={data['matched_count']}/{data['reference_count']} "
-        f"mean_ms={data['mean_abs_center_error_ms']} p90_ms={data['p90_abs_center_error_ms']} "
-        f"start_ms={data.get('mean_abs_start_error_ms', 0.0)} end_ms={data.get('mean_abs_end_error_ms', 0.0)} "
-        f"sentence_start_ms={pause.get('mean_abs_sentence_region_start_error_ms', 0.0)} "
-        f"word_onset_ms={word_onset.get('mean_abs_start_error_ms', 0.0)} "
-        f"intra_word_ms={intra_word.get('mean_abs_center_error_ms', 0.0)}"
+        f"{row['case']}: gold={'yes' if row['gold_available'] else 'no'} "
+        f"matched={row['matched_count']}/{row['reference_count']} "
+        f"mean_ms={row['mean_abs_center_error_ms']} p90_ms={row['p90_abs_center_error_ms']} "
+        f"start_ms={row['mean_abs_start_error_ms']} end_ms={row['mean_abs_end_error_ms']} "
+        f"sentence_start_ms={row['pause_alignment'].get('mean_abs_sentence_region_start_error_ms', 0.0)} "
+        f"word_onset_ms={row['word_onset_alignment'].get('mean_abs_start_error_ms', 0.0)} "
+        f"intra_word_ms={row['intra_word_alignment'].get('mean_abs_center_error_ms', 0.0)} "
+        f"speech_f1={row['layers']['speech']['f1']:.3f} "
+        f"word_f1={row['layers']['words']['f1']:.3f} "
+        f"phoneme_cov={row['layers']['phonemes']['coverage_rate']:.3f}"
     )
 
-if grades:
-    total_matched = sum(data['matched_count'] for _, data in grades)
-    total_reference = sum(data['reference_count'] for _, data in grades)
-    mean_center = sum(data['mean_abs_center_error_ms'] for _, data in grades) / len(grades)
-    mean_start = sum(data.get('mean_abs_start_error_ms', 0.0) for _, data in grades) / len(grades)
-    mean_end = sum(data.get('mean_abs_end_error_ms', 0.0) for _, data in grades) / len(grades)
-    mean_duration = sum(data.get('mean_abs_duration_error_ms', 0.0) for _, data in grades) / len(grades)
-    mean_sentence_start = sum(data.get('pause_alignment', {}).get('mean_abs_sentence_region_start_error_ms', 0.0) for _, data in grades) / len(grades)
-    mean_sentence_end = sum(data.get('pause_alignment', {}).get('mean_abs_sentence_region_end_error_ms', 0.0) for _, data in grades) / len(grades)
-    mean_clause_start = sum(data.get('pause_alignment', {}).get('mean_abs_clause_region_start_error_ms', 0.0) for _, data in grades) / len(grades)
-    mean_clause_end = sum(data.get('pause_alignment', {}).get('mean_abs_clause_region_end_error_ms', 0.0) for _, data in grades) / len(grades)
-    mean_word_onset = sum(data.get('word_onset_alignment', {}).get('mean_abs_start_error_ms', 0.0) for _, data in grades) / len(grades)
-    mean_intra_word = sum(data.get('intra_word_alignment', {}).get('mean_abs_center_error_ms', 0.0) for _, data in grades) / len(grades)
-    order_fail_cases = sum(1 for _, data in grades if data.get('order_violations', 0) > 0)
+if rows:
+    summary = compute_summary(rows, graded, ungraded)
     print(
-        f"SUMMARY cases={len(grades)} matched={total_matched}/{total_reference} "
-        f"match_rate={total_matched / max(total_reference, 1):.4f} "
-        f"mean_center_ms={mean_center:.3f} mean_start_ms={mean_start:.3f} "
-        f"mean_end_ms={mean_end:.3f} mean_duration_ms={mean_duration:.3f} "
-        f"mean_sentence_start_ms={mean_sentence_start:.3f} mean_sentence_end_ms={mean_sentence_end:.3f} "
-        f"mean_clause_start_ms={mean_clause_start:.3f} mean_clause_end_ms={mean_clause_end:.3f} "
-        f"mean_word_onset_ms={mean_word_onset:.3f} mean_intra_word_ms={mean_intra_word:.3f} "
-        f"order_fail_cases={order_fail_cases}"
+        f"SUMMARY cases={summary['cases']} graded_cases={summary['graded_cases']} "
+        f"ungraded_cases={summary['ungraded_cases']} "
+        f"matched={summary['matched_count']}/{summary['reference_count']} "
+        f"match_rate={summary['match_rate']:.4f} "
+        f"mean_center_ms={summary['mean_center_ms']:.3f} mean_start_ms={summary['mean_start_ms']:.3f} "
+        f"mean_end_ms={summary['mean_end_ms']:.3f} mean_duration_ms={summary['mean_duration_ms']:.3f} "
+        f"mean_sentence_start_ms={summary['mean_sentence_start_ms']:.3f} "
+        f"mean_sentence_end_ms={summary['mean_sentence_end_ms']:.3f} "
+        f"mean_clause_start_ms={summary['mean_clause_start_ms']:.3f} "
+        f"mean_clause_end_ms={summary['mean_clause_end_ms']:.3f} "
+        f"mean_word_onset_ms={summary['mean_word_onset_ms']:.3f} "
+        f"mean_intra_word_ms={summary['mean_intra_word_ms']:.3f} "
+        f"order_fail_cases={summary['order_fail_cases']}"
+    )
+    print(
+        f"HIERARCHY speech_precision={summary['speech_precision']:.4f} "
+        f"speech_recall={summary['speech_recall']:.4f} speech_f1={summary['speech_f1']:.4f} "
+        f"speech_boundary_start_ms={summary['speech_boundary_start_ms']:.3f} "
+        f"speech_boundary_end_ms={summary['speech_boundary_end_ms']:.3f} "
+        f"word_precision={summary['word_precision']:.4f} "
+        f"word_recall={summary['word_recall']:.4f} word_f1={summary['word_f1']:.4f} "
+        f"word_start_ms={summary['word_start_ms']:.3f} word_end_ms={summary['word_end_ms']:.3f} "
+        f"word_duration_ms={summary['word_duration_ms']:.3f} "
+        f"word_head_start_ms={summary['word_head_start_ms']:.3f} "
+        f"phoneme_coverage={summary['phoneme_coverage_rate']:.4f} "
+        f"phoneme_center_ms={summary['phoneme_center_ms']:.3f} "
+        f"phoneme_start_ms={summary['phoneme_start_ms']:.3f} "
+        f"phoneme_end_ms={summary['phoneme_end_ms']:.3f} "
+        f"intra_word_coverage={summary['intra_word_coverage_rate']:.4f} "
+        f"intra_word_center_ms={summary['intra_word_center_ms']:.3f}"
     )

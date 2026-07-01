@@ -105,6 +105,8 @@ struct TimeSpan
 
 struct GradeReport
 {
+    bool gold_available = true;
+    std::string gold_status = "approved";
     int reference_count = 0;
     int committed_count = 0;
     int matched_count = 0;
@@ -1027,6 +1029,8 @@ static std::string grade_json(const GradeReport& grade_report)
     std::ostringstream out;
     out << std::fixed << std::setprecision(3);
     out << "{\n"
+        << "  \"gold_available\": " << (grade_report.gold_available ? "true" : "false") << ",\n"
+        << "  \"gold_status\": \"" << grade_report.gold_status << "\",\n"
         << "  \"reference_count\": " << grade_report.reference_count << ",\n"
         << "  \"committed_count\": " << grade_report.committed_count << ",\n"
         << "  \"matched_count\": " << grade_report.matched_count << ",\n"
@@ -1255,16 +1259,33 @@ int main(int argc, char** argv)
             const auto final_alignment = FOffgridAIOnlinePhoneAligner::Compute(alignment_input);
             write_text(case_dir / "online_phone_alignment.csv", alignment_csv(plan, final_alignment));
 
-            const auto handmade = read_handmade_csv(root / "inputs" / "handmade" / (stem + ".csv"));
-            const auto gold_words = read_gold_words_csv(root / "inputs" / "handmade_words" / (stem + ".csv"));
-            const auto gold_speech = read_gold_speech_csv(root / "inputs" / "handmade_speech" / (stem + ".csv"));
-            const GradeReport report = grade(committed, handmade, gold_words, gold_speech);
+            GradeReport report;
+            const fs::path gold_case_dir = root / "inputs" / "gold" / stem;
+            const fs::path gold_visemes_path = gold_case_dir / "visemes.csv";
+            const fs::path gold_words_path = gold_case_dir / "words.csv";
+            const fs::path gold_speech_path = gold_case_dir / "speech.csv";
+            const bool gold_available = fs::exists(gold_visemes_path) && fs::exists(gold_words_path) && fs::exists(gold_speech_path);
+            size_t gold_viseme_count = 0;
+            if (gold_available)
+            {
+                const auto handmade = read_handmade_csv(gold_visemes_path);
+                const auto gold_words = read_gold_words_csv(gold_words_path);
+                const auto gold_speech = read_gold_speech_csv(gold_speech_path);
+                gold_viseme_count = handmade.size();
+                report = grade(committed, handmade, gold_words, gold_speech);
+            }
+            else
+            {
+                report.gold_available = false;
+                report.gold_status = "missing";
+                report.committed_count = committed.Events.Num();
+            }
             write_text(case_dir / "grade.json", grade_json(report));
 
             std::cout << stem
                       << ": planned=" << plan.Events.Num()
                       << " committed=" << committed.Events.Num()
-                      << " handmade=" << handmade.size()
+                      << " gold=" << gold_viseme_count
                       << " mean_ms=" << report.mean_abs_center_error_ms << "\n";
             ++cases;
         }

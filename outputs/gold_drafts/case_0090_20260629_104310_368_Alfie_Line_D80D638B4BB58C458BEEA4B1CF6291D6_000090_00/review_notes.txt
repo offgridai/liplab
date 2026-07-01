@@ -1,0 +1,18 @@
+case: case_0090_20260629_104310_368_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000090_00
+transcript: Maybe try the horse riding in Almaty or visit the Kokshetau Observatory. Want a sandwich?
+audio: 9.337s @ 24000 Hz
+speech regions: 2
+word heads: 15
+dense visemes: 28
+draft flags: 11
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading

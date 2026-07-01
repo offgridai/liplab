@@ -1,0 +1,18 @@
+case: case_0093_20260629_104341_467_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000093_00
+transcript: Check out the markets or the temples. Want a sandwich?
+audio: 2.777s @ 24000 Hz
+speech regions: 2
+word heads: 10
+dense visemes: 16
+draft flags: 4
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading

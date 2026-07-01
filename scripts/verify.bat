@@ -21,6 +21,9 @@ if errorlevel 1 exit /b 1
 "%CMAKE_EXE%" --build build --config Release
 if errorlevel 1 exit /b 1
 
+python scripts\check_gold.py --include-drafts
+if errorlevel 1 exit /b 1
+
 if exist build\Release\liplab_runner.exe (
     build\Release\liplab_runner.exe .
 ) else if exist build\liplab_runner.exe (
