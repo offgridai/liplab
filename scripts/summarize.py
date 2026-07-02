@@ -1,6 +1,6 @@
 import pathlib
 
-from grade_summary import compute_summary, load_case_grades
+from grade_summary import compute_summary, load_case_grades, analyze_audio_word_boundary_reasons, write_audio_word_boundary_reason_analysis
 
 root = pathlib.Path(__file__).resolve().parents[1] / "outputs" / "runs" / "latest"
 gold_root = pathlib.Path(__file__).resolve().parents[1] / "inputs" / "gold"
@@ -25,6 +25,14 @@ for row in rows:
         flags.append("clause_regions_mismatch")
     flag_text = f" flags={','.join(flags)}" if flags else ""
     direct = row.get("direct_aligner", {})
+    audio_boundary = row.get("audio_word_boundaries", {})
+    audio_boundary_text = ""
+    if audio_boundary.get("available", False):
+        audio_boundary_text = (
+            f" audio_word_boundary_selected={audio_boundary.get('selected_count', 0)}/{audio_boundary.get('reference_count', 0)}"
+            f" audio_word_boundary_f1_100={audio_boundary.get('f1_100', 0.0):.3f}"
+            f" audio_word_boundary_recall_100={audio_boundary.get('recall_100', 0.0):.3f}"
+        )
     direct_text = ""
     if direct.get("available", False):
         direct_text = (
@@ -58,6 +66,7 @@ for row in rows:
         f"speech_f1={row['layers']['speech']['f1']:.3f} "
         f"word_f1={row['layers']['words']['f1']:.3f} "
         f"phoneme_cov={row['layers']['phonemes']['coverage_rate']:.3f}"
+        f"{audio_boundary_text}"
         f"{flag_text}"
     )
 
@@ -144,3 +153,59 @@ if rows:
         f"intra_word_coverage={summary.get('direct_aligner_intra_word_coverage_rate', 0.0):.4f} "
         f"intra_word_center_ms={summary.get('direct_aligner_intra_word_center_ms', 0.0):.3f}"
     )
+
+if rows:
+    summary = compute_summary(rows, graded, ungraded)
+    print(
+        f"AUDIO_WORD_BOUNDARY cases={summary.get('audio_word_boundary_available_cases', 0)} "
+        f"refs={summary.get('audio_word_boundary_reference_count', 0)} "
+        f"candidates={summary.get('audio_word_boundary_candidate_count', 0)} "
+        f"selected={summary.get('audio_word_boundary_selected_count', 0)} "
+        f"precision_50={summary.get('audio_word_boundary_precision_50', 0.0):.4f} "
+        f"recall_50={summary.get('audio_word_boundary_recall_50', 0.0):.4f} "
+        f"f1_50={summary.get('audio_word_boundary_f1_50', 0.0):.4f} "
+        f"precision_100={summary.get('audio_word_boundary_precision_100', 0.0):.4f} "
+        f"recall_100={summary.get('audio_word_boundary_recall_100', 0.0):.4f} "
+        f"f1_100={summary.get('audio_word_boundary_f1_100', 0.0):.4f} "
+        f"precision_150={summary.get('audio_word_boundary_precision_150', 0.0):.4f} "
+        f"recall_150={summary.get('audio_word_boundary_recall_150', 0.0):.4f} "
+        f"f1_150={summary.get('audio_word_boundary_f1_150', 0.0):.4f} "
+        f"ref_nearest_median_ms={summary.get('audio_word_boundary_ref_nearest_median_ms', 0.0):.3f} "
+        f"ref_nearest_p90_ms={summary.get('audio_word_boundary_ref_nearest_p90_ms', 0.0):.3f} "
+        f"candidate_nearest_median_ms={summary.get('audio_word_boundary_candidate_nearest_median_ms', 0.0):.3f} "
+        f"candidate_nearest_p90_ms={summary.get('audio_word_boundary_candidate_nearest_p90_ms', 0.0):.3f} "
+        f"raw_recall_100={summary.get('audio_word_boundary_raw_recall_100', 0.0):.4f} "
+        f"top1_100={summary.get('audio_word_boundary_top1_recall_100', 0.0):.4f} "
+        f"top2_100={summary.get('audio_word_boundary_top2_recall_100', 0.0):.4f} "
+        f"top3_100={summary.get('audio_word_boundary_top3_recall_100', 0.0):.4f} "
+        f"top5_100={summary.get('audio_word_boundary_top5_recall_100', 0.0):.4f} "
+        f"score_sep={summary.get('audio_word_boundary_score_separation', 0.0):.4f}"
+    )
+
+
+if rows:
+    reason_analysis = analyze_audio_word_boundary_reasons(root)
+    if reason_analysis.get("candidate_count", 0) > 0:
+        csv_path, json_path = write_audio_word_boundary_reason_analysis(root, reason_analysis)
+        print(
+            f"AUDIO_WORD_BOUNDARY_REASON_ANALYSIS candidates={reason_analysis.get('candidate_count', 0)} "
+            f"refs={reason_analysis.get('reference_count', 0)} "
+            f"base_precision_100={reason_analysis.get('base_precision_100', 0.0):.4f} "
+            f"csv={csv_path.name} weights={json_path.name}"
+        )
+        top_single = reason_analysis.get("top_single", [])[:6]
+        if top_single:
+            parts = []
+            for row in top_single:
+                parts.append(
+                    f"{row['reason']}:p100={row['precision_100']:.3f},n={row['count']},w={row['log_odds_weight_100']:.2f}"
+                )
+            print("AUDIO_WORD_BOUNDARY_TOP_REASONS " + " | ".join(parts))
+        top_combo = reason_analysis.get("top_combo", [])[:6]
+        if top_combo:
+            parts = []
+            for row in top_combo:
+                parts.append(
+                    f"{row['reason']}:p100={row['precision_100']:.3f},n={row['count']},w={row['log_odds_weight_100']:.2f}"
+                )
+            print("AUDIO_WORD_BOUNDARY_TOP_COMBOS " + " | ".join(parts))

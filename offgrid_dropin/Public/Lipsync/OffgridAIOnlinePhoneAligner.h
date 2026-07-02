@@ -70,6 +70,11 @@ struct FOffgridAIOnlinePhoneAlignmentResult
     TArray<float> PhoneScoreGaps;
     TArray<float> PhoneObservedDurations;
     TArray<float> PhoneExpectedDurations;
+    // Diagnostic-only: audio-only lexical-transition salience observed near the
+    // transition into each aligned phone.  The aligner uses this as a weak
+    // reward when the expected transcript crosses a word boundary, never as a
+    // hard segmentation constraint.
+    TArray<float> PhoneWordBoundarySalience;
     TArray<FName> PhoneAdvanceReasons;
 
     EOffgridAIPhoneClass CurrentExpectedClass = EOffgridAIPhoneClass::Unknown;

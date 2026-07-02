@@ -94,6 +94,7 @@ struct FAlignFrame
     float ActiveStart = 0.0f;
     float ActiveEnd = 0.0f;
     float Speech = 0.0f;
+    float BoundarySalience = 0.0f;
     FOffgridAIPhoneClassScores Scores;
 };
 
@@ -172,6 +173,45 @@ static float SegmentActiveDurationSeconds(const TArray<FAlignFrame>& Frames, int
     return FMath::Max(Frames[EndFrame].ActiveEnd - Frames[StartFrame].ActiveStart, 0.0f);
 }
 
+static float LocalBoundarySalience(const TArray<FAlignFrame>& Frames, int32 BoundaryStartFrame)
+{
+    if (!Frames.IsValidIndex(BoundaryStartFrame))
+    {
+        return 0.0f;
+    }
+
+    float Best = 0.0f;
+    const int32 First = FMath::Max(0, BoundaryStartFrame - 2);
+    const int32 Last = FMath::Min(Frames.Num() - 1, BoundaryStartFrame + 2);
+    for (int32 Index = First; Index <= Last; ++Index)
+    {
+        Best = FMath::Max(Best, Frames[Index].BoundarySalience);
+    }
+    return Sat(Best);
+}
+
+static float WordBoundaryTransitionReward(
+    const TArray<FAlignFrame>& Frames,
+    int32 BoundaryStartFrame,
+    bool bCrossesExpectedWordBoundary)
+{
+    // Audio-only word-boundary salience is deliberately weak.  It is an independent
+    // observation stream, not a replacement for the CMU phone path.  When the text
+    // path crosses a word boundary, a nearby salience peak gets a small reward.  If
+    // the crossing is placed in acoustically flat speech, apply only a tiny penalty.
+    // Non-word phone transitions get a very small duplicate-peak penalty so strong
+    // intra-word bursts do not attract every state boundary.
+    const float S = LocalBoundarySalience(Frames, BoundaryStartFrame);
+    if (bCrossesExpectedWordBoundary)
+    {
+        const float Reward = 0.44f * Smooth01(S, 0.20f, 0.78f);
+        const float MissingPenalty = 0.07f * (1.0f - Smooth01(S, 0.08f, 0.28f));
+        return Reward - MissingPenalty;
+    }
+
+    return -0.025f * Smooth01(S, 0.46f, 0.88f);
+}
+
 static float SegmentScore(const TArray<FAlignFrame>& Frames, int32 StartFrame, int32 EndFrame, const FPhoneModel& Phone)
 {
     const float Emission = SegmentEmissionScore(Frames, StartFrame, EndFrame, Phone.Class);
@@ -192,6 +232,101 @@ static float SegmentScore(const TArray<FAlignFrame>& Frames, int32 StartFrame, i
         - TooShortPenalty * 1.05f
         - TooLongPenalty * 0.85f
         - 0.045f; // small state-advance cost
+}
+
+static float SourceBoundarySalienceAt(
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& SourceFrames,
+    const TArray<FOffgridAIStreamingSpeechIsland>* Islands,
+    int32 Index)
+{
+    const int32 N = SourceFrames.Num();
+    if (!SourceFrames.IsValidIndex(Index) || Index < 4 || Index + 4 >= N)
+    {
+        return 0.0f;
+    }
+
+    const FOffgridAIStreamingAudioFeatureFrame& F = SourceFrames[Index];
+    if (!IsConfirmedByIsland(Islands, F))
+    {
+        return 0.0f;
+    }
+
+    auto Avg = [&](int32 Lo, int32 Hi, auto Getter) -> float
+    {
+        Lo = FMath::Max(0, Lo);
+        Hi = FMath::Min(N - 1, Hi);
+        if (Hi < Lo) return 0.0f;
+        float Sum = 0.0f;
+        int32 Count = 0;
+        for (int32 I = Lo; I <= Hi; ++I)
+        {
+            Sum += Getter(SourceFrames[I]);
+            ++Count;
+        }
+        return Count > 0 ? Sum / static_cast<float>(Count) : 0.0f;
+    };
+
+    auto MaxV = [&](int32 Lo, int32 Hi, auto Getter) -> float
+    {
+        Lo = FMath::Max(0, Lo);
+        Hi = FMath::Min(N - 1, Hi);
+        float Best = 0.0f;
+        for (int32 I = Lo; I <= Hi; ++I)
+        {
+            Best = FMath::Max(Best, Getter(SourceFrames[I]));
+        }
+        return Best;
+    };
+
+    auto BandDistance = [](const FOffgridAIStreamingAudioFeatureFrame& A, const FOffgridAIStreamingAudioFeatureFrame& B) -> float
+    {
+        const float Dot = A.LowBandNorm * B.LowBandNorm + A.MidBandNorm * B.MidBandNorm + A.HighBandNorm * B.HighBandNorm + A.SpectralCentroidNorm * B.SpectralCentroidNorm;
+        const float NA = FMath::Sqrt(A.LowBandNorm * A.LowBandNorm + A.MidBandNorm * A.MidBandNorm + A.HighBandNorm * A.HighBandNorm + A.SpectralCentroidNorm * A.SpectralCentroidNorm);
+        const float NB = FMath::Sqrt(B.LowBandNorm * B.LowBandNorm + B.MidBandNorm * B.MidBandNorm + B.HighBandNorm * B.HighBandNorm + B.SpectralCentroidNorm * B.SpectralCentroidNorm);
+        const float CosineDistance = (NA > 1e-6f && NB > 1e-6f) ? (1.0f - Dot / (NA * NB)) : 0.0f;
+        const float L1 = FMath::Abs(A.LowBandNorm - B.LowBandNorm)
+            + FMath::Abs(A.MidBandNorm - B.MidBandNorm)
+            + FMath::Abs(A.HighBandNorm - B.HighBandNorm)
+            + FMath::Abs(A.SpectralCentroidNorm - B.SpectralCentroidNorm);
+        return Sat(0.58f * CosineDistance + 0.42f * L1);
+    };
+
+    const float PreRMS = Avg(Index - 4, Index - 1, [](const auto& X) { return X.RMSNorm; });
+    const float PostRMS = Avg(Index + 1, Index + 4, [](const auto& X) { return X.RMSNorm; });
+    const float PreSpeech = Avg(Index - 4, Index - 1, [](const auto& X) { return SpeechScore(X); });
+    const float PostSpeech = Avg(Index + 1, Index + 4, [](const auto& X) { return SpeechScore(X); });
+    const float PrePeriodic = Avg(Index - 4, Index - 1, [](const auto& X) { return X.Periodicity; });
+    const float PostPeriodic = Avg(Index + 1, Index + 4, [](const auto& X) { return X.Periodicity; });
+    const float LocalFlux = MaxV(Index - 2, Index + 2, [](const auto& X) { return X.Flux; });
+
+    const float NeighbourEnergy = FMath::Max(PreRMS, PostRMS);
+    const float EnergyValley = Sat((NeighbourEnergy - F.RMSNorm) / FMath::Max(NeighbourEnergy, 0.035f));
+    const float LowEvidence = Sat(1.0f - SpeechScore(F) * 1.35f);
+    const float SpectralNovelty = BandDistance(SourceFrames[Index - 3], SourceFrames[Index + 3]);
+    const float VoicingChange = Sat(FMath::Abs(PostPeriodic - PrePeriodic) * 1.40f);
+    const float Reengagement = Sat((PostSpeech - FMath::Min(PreSpeech, SpeechScore(F))) * 1.10f);
+    const float FluxNovelty = Sat(LocalFlux * 0.75f + FMath::Max(0.0f, F.DeltaRMS) * 0.35f);
+
+    const bool bMultiCue = ((EnergyValley > 0.22f) ? 1 : 0)
+        + ((SpectralNovelty > 0.20f) ? 1 : 0)
+        + ((VoicingChange > 0.22f) ? 1 : 0)
+        + ((Reengagement > 0.18f) ? 1 : 0) >= 2;
+
+    float Score = 0.0f;
+    Score += EnergyValley * 0.26f;
+    Score += SpectralNovelty * 0.30f;
+    Score += VoicingChange * 0.18f;
+    Score += Reengagement * 0.20f;
+    Score += FluxNovelty * 0.10f;
+    Score += LowEvidence * EnergyValley * 0.12f;
+    Score += bMultiCue ? 0.08f : 0.0f;
+
+    // Stable high-energy vowels create many spectral micro-events that are usually
+    // intra-word.  Penalize them but do not zero them out; some fluent word joins
+    // have no true energy valley.
+    const float StableVoiced = Sat(F.Periodicity * 0.75f + F.RMSNorm * 0.45f - F.Flux * 0.30f);
+    Score -= StableVoiced * (1.0f - EnergyValley) * 0.10f;
+    return Sat(Score);
 }
 
 static void BuildPhoneModels(
@@ -426,6 +561,7 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
     Out.PhoneScoreGaps.Init(0.0f, PhoneCount);
     Out.PhoneObservedDurations.Init(0.0f, PhoneCount);
     Out.PhoneExpectedDurations.Init(0.0f, PhoneCount);
+    Out.PhoneWordBoundarySalience.Init(0.0f, PhoneCount);
     Out.PhoneAdvanceReasons.Init(NAME_None, PhoneCount);
 
     if (!Input.AudioFeatureFrames || Input.AudioFeatureFrames->Num() == 0)
@@ -440,10 +576,18 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
         ? VisibleEnd
         : FMath::Max(0.0f, VisibleEnd - FMath::Clamp(Input.CommitLagSec, 0.020f, 0.250f));
 
+    TArray<float> SourceBoundarySalience;
+    SourceBoundarySalience.SetNum(Input.AudioFeatureFrames->Num());
+    for (int32 SourceIndex = 0; SourceIndex < Input.AudioFeatureFrames->Num(); ++SourceIndex)
+    {
+        SourceBoundarySalience[SourceIndex] = SourceBoundarySalienceAt(*Input.AudioFeatureFrames, Input.SpeechIslands, SourceIndex);
+    }
+
     TArray<FAlignFrame> Frames;
     float ActiveCursor = 0.0f;
-    for (const FOffgridAIStreamingAudioFeatureFrame& SourceFrame : *Input.AudioFeatureFrames)
+    for (int32 SourceIndex = 0; SourceIndex < Input.AudioFeatureFrames->Num(); ++SourceIndex)
     {
+        const FOffgridAIStreamingAudioFeatureFrame& SourceFrame = (*Input.AudioFeatureFrames)[SourceIndex];
         if (SourceFrame.AudioBufferEndSec > VisibleEnd)
         {
             break;
@@ -461,6 +605,7 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
         Frame.ActiveStart = ActiveCursor;
         Frame.ActiveEnd = ActiveCursor + Frame.Duration;
         Frame.Speech = SpeechScore(SourceFrame);
+        Frame.BoundarySalience = SourceBoundarySalience.IsValidIndex(SourceIndex) ? SourceBoundarySalience[SourceIndex] : 0.0f;
         Frame.Scores = ScoreFramePhoneClasses(SourceFrame);
         Frames.Add(Frame);
         ActiveCursor = Frame.ActiveEnd;
@@ -594,7 +739,14 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
                     continue;
                 }
 
-                const float Candidate = PrevScore + SegmentScore(Frames, StartFrame, EndFrame, Model);
+                const bool bCrossesExpectedWordBoundary = PhoneIndex > 0
+                    && VisiblePlan.ExpectedPhones.IsValidIndex(PhoneIndex - 1)
+                    && VisiblePlan.ExpectedPhones.IsValidIndex(PhoneIndex)
+                    && VisiblePlan.ExpectedPhones[PhoneIndex - 1].WordIndex != VisiblePlan.ExpectedPhones[PhoneIndex].WordIndex;
+                const float BoundaryReward = PhoneIndex > 0
+                    ? WordBoundaryTransitionReward(Frames, StartFrame, bCrossesExpectedWordBoundary)
+                    : 0.0f;
+                const float Candidate = PrevScore + SegmentScore(Frames, StartFrame, EndFrame, Model) + BoundaryReward;
                 if (Candidate > DP[PhoneIndex][EndFrame].Score)
                 {
                     DP[PhoneIndex][EndFrame].Score = Candidate;
@@ -677,7 +829,11 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
         Out.PhoneScoreGaps[PhoneIndex] = Match - Alternate;
         Out.PhoneObservedDurations[PhoneIndex] = Duration;
         Out.PhoneExpectedDurations[PhoneIndex] = Models[PhoneIndex].ExpectedDuration;
-        Out.PhoneAdvanceReasons[PhoneIndex] = FName(TEXT("streaming_forced_alignment_viterbi"));
+        Out.PhoneWordBoundarySalience[PhoneIndex] = PhoneIndex > 0 ? LocalBoundarySalience(Frames, S) : 0.0f;
+        const bool bCrossesWordBoundary = PhoneIndex > 0 && Plan.ExpectedPhones[PhoneIndex - 1].WordIndex != Plan.ExpectedPhones[PhoneIndex].WordIndex;
+        Out.PhoneAdvanceReasons[PhoneIndex] = (bCrossesWordBoundary && Out.PhoneWordBoundarySalience[PhoneIndex] >= 0.24f)
+            ? FName(TEXT("streaming_forced_alignment_boundary_prior"))
+            : FName(TEXT("streaming_forced_alignment_viterbi"));
         Out.HighestAlignedPhoneIndex = PhoneIndex;
         Out.HighestAlignedWordIndex = Plan.ExpectedPhones[PhoneIndex].WordIndex;
     }

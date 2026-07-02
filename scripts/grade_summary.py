@@ -513,6 +513,15 @@ def load_direct_aligner_grade(case_dir: pathlib.Path):
     data["coverage_rate"] = matched / max(reference, 1)
     return data
 
+
+def load_audio_word_boundary_grade(case_dir: pathlib.Path):
+    path = case_dir / "audio_word_boundary_grade.json"
+    if not path.exists():
+        return {"available": False}
+    data = json.loads(path.read_text())
+    data["available"] = True
+    return data
+
 def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
     rows = []
     graded = []
@@ -540,6 +549,7 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "intra_word_alignment": intra_word,
             "raw": data,
             "direct_aligner": load_direct_aligner_grade(grade.parent),
+            "audio_word_boundaries": load_audio_word_boundary_grade(grade.parent),
         }
         row["layers"] = build_case_layers(
             grade.parent,
@@ -589,6 +599,18 @@ def _empty_summary(cases=0, graded_cases=0, ungraded_cases=0):
         "direct_aligner_duration_ms", "direct_aligner_word_onset_ms",
         "direct_aligner_intra_word_coverage_rate", "direct_aligner_intra_word_center_ms",
         "direct_aligner_available_cases",
+        "audio_word_boundary_available_cases", "audio_word_boundary_reference_count",
+        "audio_word_boundary_selected_count", "audio_word_boundary_candidate_count",
+        "audio_word_boundary_precision_50", "audio_word_boundary_recall_50", "audio_word_boundary_f1_50",
+        "audio_word_boundary_precision_100", "audio_word_boundary_recall_100", "audio_word_boundary_f1_100",
+        "audio_word_boundary_precision_150", "audio_word_boundary_recall_150", "audio_word_boundary_f1_150",
+        "audio_word_boundary_ref_nearest_median_ms", "audio_word_boundary_ref_nearest_p90_ms",
+        "audio_word_boundary_candidate_nearest_median_ms", "audio_word_boundary_candidate_nearest_p90_ms",
+        "audio_word_boundary_raw_recall_50", "audio_word_boundary_raw_recall_100", "audio_word_boundary_raw_recall_150",
+        "audio_word_boundary_top1_recall_100", "audio_word_boundary_top2_recall_100",
+        "audio_word_boundary_top3_recall_100", "audio_word_boundary_top5_recall_100",
+        "audio_word_boundary_positive_mean_score", "audio_word_boundary_negative_mean_score",
+        "audio_word_boundary_score_separation",
     ]
     out = {"cases": cases, "graded_cases": graded_cases, "ungraded_cases": ungraded_cases}
     out.update({key: 0.0 for key in keys})
@@ -692,6 +714,25 @@ def compute_summary(rows, graded, ungraded):
         * int(item.get("intra_word_alignment", {}).get("matched_count", 0))
         for item in direct_available
     )
+
+    audio_boundary_available = [row.get("audio_word_boundaries", {}) for row in graded if row.get("audio_word_boundaries", {}).get("available", False)]
+    audio_boundary_reference_total = sum(int(item.get("reference_count", 0)) for item in audio_boundary_available)
+    audio_boundary_selected_total = sum(int(item.get("selected_count", 0)) for item in audio_boundary_available)
+    audio_boundary_candidate_total = sum(int(item.get("candidate_count", 0)) for item in audio_boundary_available)
+    audio_boundary_positive_total = sum(int(item.get("candidate_positive_count", 0)) for item in audio_boundary_available)
+    audio_boundary_negative_total = sum(int(item.get("candidate_negative_count", 0)) for item in audio_boundary_available)
+
+    def boundary_weighted(metric_name, denom_total):
+        total = 0.0
+        for item in audio_boundary_available:
+            if "precision" in metric_name:
+                weight = int(item.get("selected_count", 0))
+            elif "recall" in metric_name:
+                weight = int(item.get("reference_count", 0))
+            else:
+                weight = int(item.get("reference_count", 0))
+            total += float(item.get(metric_name, 0.0)) * weight
+        return total / max(denom_total, 1)
 
     return {
         "cases": len(rows),
@@ -807,4 +848,234 @@ def compute_summary(rows, graded, ungraded):
         ),
         "direct_aligner_intra_word_coverage_rate": direct_intra_matched_total / max(direct_intra_reference_total, 1),
         "direct_aligner_intra_word_center_ms": direct_intra_center_sum_ms / max(direct_intra_matched_total, 1),
+        "audio_word_boundary_available_cases": len(audio_boundary_available),
+        "audio_word_boundary_reference_count": audio_boundary_reference_total,
+        "audio_word_boundary_selected_count": audio_boundary_selected_total,
+        "audio_word_boundary_candidate_count": audio_boundary_candidate_total,
+        "audio_word_boundary_precision_50": boundary_weighted("precision_50", audio_boundary_selected_total),
+        "audio_word_boundary_recall_50": boundary_weighted("recall_50", audio_boundary_reference_total),
+        "audio_word_boundary_f1_50": _mean(item.get("f1_50", 0.0) for item in audio_boundary_available),
+        "audio_word_boundary_precision_100": boundary_weighted("precision_100", audio_boundary_selected_total),
+        "audio_word_boundary_recall_100": boundary_weighted("recall_100", audio_boundary_reference_total),
+        "audio_word_boundary_f1_100": _mean(item.get("f1_100", 0.0) for item in audio_boundary_available),
+        "audio_word_boundary_precision_150": boundary_weighted("precision_150", audio_boundary_selected_total),
+        "audio_word_boundary_recall_150": boundary_weighted("recall_150", audio_boundary_reference_total),
+        "audio_word_boundary_f1_150": _mean(item.get("f1_150", 0.0) for item in audio_boundary_available),
+        "audio_word_boundary_ref_nearest_median_ms": _median(item.get("reference_nearest_candidate_median_ms", 0.0) for item in audio_boundary_available),
+        "audio_word_boundary_ref_nearest_p90_ms": _percentile((item.get("reference_nearest_candidate_p90_ms", 0.0) for item in audio_boundary_available), 0.90),
+        "audio_word_boundary_candidate_nearest_median_ms": _median(item.get("candidate_nearest_reference_median_ms", 0.0) for item in audio_boundary_available),
+        "audio_word_boundary_candidate_nearest_p90_ms": _percentile((item.get("candidate_nearest_reference_p90_ms", 0.0) for item in audio_boundary_available), 0.90),
+        "audio_word_boundary_raw_recall_50": boundary_weighted("raw_candidate_recall_50", audio_boundary_reference_total),
+        "audio_word_boundary_raw_recall_100": boundary_weighted("raw_candidate_recall_100", audio_boundary_reference_total),
+        "audio_word_boundary_raw_recall_150": boundary_weighted("raw_candidate_recall_150", audio_boundary_reference_total),
+        "audio_word_boundary_top1_recall_100": boundary_weighted("top1_recall_100", audio_boundary_reference_total),
+        "audio_word_boundary_top2_recall_100": boundary_weighted("top2_recall_100", audio_boundary_reference_total),
+        "audio_word_boundary_top3_recall_100": boundary_weighted("top3_recall_100", audio_boundary_reference_total),
+        "audio_word_boundary_top5_recall_100": boundary_weighted("top5_recall_100", audio_boundary_reference_total),
+        "audio_word_boundary_positive_mean_score": (
+            sum(float(item.get("candidate_positive_mean_score", 0.0)) * int(item.get("candidate_positive_count", 0)) for item in audio_boundary_available)
+            / max(audio_boundary_positive_total, 1)
+        ),
+        "audio_word_boundary_negative_mean_score": (
+            sum(float(item.get("candidate_negative_mean_score", 0.0)) * int(item.get("candidate_negative_count", 0)) for item in audio_boundary_available)
+            / max(audio_boundary_negative_total, 1)
+        ),
+        "audio_word_boundary_score_separation": (
+            (sum(float(item.get("candidate_positive_mean_score", 0.0)) * int(item.get("candidate_positive_count", 0)) for item in audio_boundary_available) / max(audio_boundary_positive_total, 1))
+            - (sum(float(item.get("candidate_negative_mean_score", 0.0)) * int(item.get("candidate_negative_count", 0)) for item in audio_boundary_available) / max(audio_boundary_negative_total, 1))
+        ),
     }
+
+
+def _float_field(row, key, default=0.0):
+    try:
+        return float(row.get(key, default) or default)
+    except (TypeError, ValueError):
+        return default
+
+
+def _int_field(row, key, default=0):
+    try:
+        return int(float(row.get(key, default) or default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _derive_reason_codes(row):
+    """Backward-compatible reason code derivation for candidate CSVs before reason_codes existed."""
+    codes = []
+    if _float_field(row, "energy_valley_score") >= 0.28:
+        codes.append("energy_valley")
+    if _float_field(row, "trough_score") >= 0.55:
+        codes.append("short_trough")
+    if _float_field(row, "low_evidence_score") >= 0.55:
+        codes.append("low_evidence")
+    if _float_field(row, "spectral_change_score") >= 0.25:
+        codes.append("spectral_change")
+    if _float_field(row, "spectral_novelty_score") >= 0.25:
+        codes.append("spectral_novelty")
+    if _float_field(row, "voicing_change_score") >= 0.28:
+        codes.append("voicing_change")
+    if _float_field(row, "flux_recovery_score") >= 0.28:
+        codes.append("flux_recovery")
+    if _float_field(row, "reengagement_score") >= 0.28:
+        codes.append("reengagement")
+    if _float_field(row, "slope_score") >= 0.25:
+        codes.append("slope_change")
+    if _float_field(row, "island_adaptive_score") >= 0.25:
+        codes.append("island_adaptive_peak")
+    if _float_field(row, "stable_voicing_penalty") >= 0.32:
+        codes.append("stable_voicing_penalty")
+    return codes or ["weak_salience_only"]
+
+
+def _reason_stats_empty(scope, key):
+    return {
+        "scope": scope,
+        "reason": key,
+        "count": 0,
+        "selected_count": 0,
+        "true_50": 0,
+        "true_100": 0,
+        "true_150": 0,
+        "selected_true_100": 0,
+        "score_sum": 0.0,
+        "positive_score_sum_100": 0.0,
+        "negative_score_sum_100": 0.0,
+        "nearest_error_sum_ms": 0.0,
+    }
+
+
+def analyze_audio_word_boundary_reasons(root: pathlib.Path):
+    """Aggregate reason-code reliability for audio-only word-boundary candidates.
+
+    This is intentionally diagnostic-only. It treats MFA proximity as the label and asks:
+    which reason codes or reason combinations make a candidate more likely to be a true
+    lexical word boundary? The output is suitable for hand inspection or for later baking
+    dependency-free log-odds coefficients into C++.
+    """
+    candidates = []
+    reference_count = 0
+    for case_dir in sorted(root.glob("*")):
+        if not case_dir.is_dir():
+            continue
+        grade_path = case_dir / "audio_word_boundary_grade.json"
+        if grade_path.exists():
+            try:
+                reference_count += int(json.loads(grade_path.read_text()).get("reference_count", 0))
+            except Exception:
+                pass
+        path = case_dir / "audio_word_boundary_candidates.csv"
+        for row in read_csv_rows(path):
+            codes_text = (row.get("reason_codes") or "").strip()
+            codes = [c for c in codes_text.split("|") if c] if codes_text else _derive_reason_codes(row)
+            if not codes:
+                codes = ["weak_salience_only"]
+            nearest = _float_field(row, "nearest_mfa_error_ms")
+            selected = _int_field(row, "selected") != 0
+            score = _float_field(row, "lexical_boundary_score")
+            candidates.append({
+                "case": case_dir.name,
+                "codes": sorted(set(codes)),
+                "combo": "+".join(sorted(set(codes))),
+                "selected": selected,
+                "true_50": nearest <= 50.0,
+                "true_100": nearest <= 100.0,
+                "true_150": nearest <= 150.0,
+                "nearest_ms": nearest,
+                "score": score,
+            })
+
+    total = len(candidates)
+    true100 = sum(1 for c in candidates if c["true_100"])
+    false100 = total - true100
+    base_odds = (true100 + 0.5) / (false100 + 0.5) if total else 1.0
+
+    buckets = {}
+    def add(scope, key, c):
+        stat = buckets.setdefault((scope, key), _reason_stats_empty(scope, key))
+        stat["count"] += 1
+        stat["selected_count"] += 1 if c["selected"] else 0
+        stat["true_50"] += 1 if c["true_50"] else 0
+        stat["true_100"] += 1 if c["true_100"] else 0
+        stat["true_150"] += 1 if c["true_150"] else 0
+        stat["selected_true_100"] += 1 if (c["selected"] and c["true_100"]) else 0
+        stat["score_sum"] += c["score"]
+        if c["true_100"]:
+            stat["positive_score_sum_100"] += c["score"]
+        else:
+            stat["negative_score_sum_100"] += c["score"]
+        stat["nearest_error_sum_ms"] += c["nearest_ms"]
+
+    for c in candidates:
+        for code in c["codes"]:
+            add("single_reason", code, c)
+        add("reason_combo", c["combo"], c)
+
+    rows = []
+    reason_weights = {}
+    for (_, _), stat in sorted(buckets.items()):
+        count = stat["count"]
+        if count <= 0:
+            continue
+        t100 = stat["true_100"]
+        f100 = count - t100
+        odds = (t100 + 0.5) / (f100 + 0.5)
+        log_odds_lift = math.log(max(1e-9, odds / max(base_odds, 1e-9)))
+        precision100 = t100 / count
+        row = {
+            **stat,
+            "precision_50": stat["true_50"] / count,
+            "precision_100": precision100,
+            "precision_150": stat["true_150"] / count,
+            "recall_contribution_100": t100 / max(reference_count, 1),
+            "selected_precision_100": stat["selected_true_100"] / max(stat["selected_count"], 1),
+            "mean_score": stat["score_sum"] / count,
+            "positive_mean_score_100": stat["positive_score_sum_100"] / max(t100, 1),
+            "negative_mean_score_100": stat["negative_score_sum_100"] / max(f100, 1),
+            "mean_nearest_error_ms": stat["nearest_error_sum_ms"] / count,
+            "odds_ratio_lift_100": math.exp(log_odds_lift),
+            "log_odds_weight_100": log_odds_lift,
+        }
+        rows.append(row)
+        if stat["scope"] == "single_reason":
+            reason_weights[stat["reason"]] = log_odds_lift
+
+    rows.sort(key=lambda r: (r["scope"], -r["precision_100"], -r["count"], r["reason"]))
+    top_single = [r for r in rows if r["scope"] == "single_reason" and r["count"] >= 10]
+    top_combo = [r for r in rows if r["scope"] == "reason_combo" and r["count"] >= 10]
+    return {
+        "candidate_count": total,
+        "reference_count": reference_count,
+        "base_precision_100": true100 / max(total, 1),
+        "base_true_100": true100,
+        "rows": rows,
+        "reason_weights": reason_weights,
+        "top_single": sorted(top_single, key=lambda r: (-r["precision_100"], -r["count"]))[:12],
+        "top_combo": sorted(top_combo, key=lambda r: (-r["precision_100"], -r["count"]))[:12],
+    }
+
+
+def write_audio_word_boundary_reason_analysis(root: pathlib.Path, analysis):
+    csv_path = root / "audio_word_boundary_reason_analysis.csv"
+    json_path = root / "audio_word_boundary_reason_weights.json"
+    rows = analysis.get("rows", [])
+    fields = [
+        "scope", "reason", "count", "selected_count", "true_50", "true_100", "true_150",
+        "precision_50", "precision_100", "precision_150", "recall_contribution_100",
+        "selected_precision_100", "mean_score", "positive_mean_score_100", "negative_mean_score_100",
+        "mean_nearest_error_ms", "odds_ratio_lift_100", "log_odds_weight_100",
+    ]
+    with csv_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+    json_path.write_text(json.dumps({
+        "schema": "offgrid_audio_word_boundary_reason_weights_v1",
+        "candidate_count": analysis.get("candidate_count", 0),
+        "reference_count": analysis.get("reference_count", 0),
+        "base_precision_100": analysis.get("base_precision_100", 0.0),
+        "weights": analysis.get("reason_weights", {}),
+    }, indent=2, sort_keys=True))
+    return csv_path, json_path
