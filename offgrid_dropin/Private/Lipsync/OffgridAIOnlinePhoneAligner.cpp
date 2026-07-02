@@ -370,6 +370,15 @@ FString FOffgridAIOnlinePhoneAligner::PhoneClassToString(EOffgridAIPhoneClass Ph
 
 int32 FOffgridAIOnlinePhoneAligner::FindPhoneForEvent(const FOffgridAITextVisemePlan& Plan, const FOffgridAITextVisemeEvent& Event)
 {
+    if (Plan.ExpectedPhones.IsValidIndex(Event.SourcePhoneGlobalIndex))
+    {
+        const FOffgridAIExpectedPhone& Expected = Plan.ExpectedPhones[Event.SourcePhoneGlobalIndex];
+        if (Expected.WordIndex == Event.WordIndex)
+        {
+            return Expected.PhoneIndex;
+        }
+    }
+
     int32 Fallback = INDEX_NONE;
     int32 BaseMatch = INDEX_NONE;
     int32 ClassMatch = INDEX_NONE;

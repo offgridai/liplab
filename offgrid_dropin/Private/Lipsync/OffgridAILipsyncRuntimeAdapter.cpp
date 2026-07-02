@@ -429,6 +429,311 @@ static bool HasVisibleAlignedPhone(const FOffgridAIOnlinePhoneAlignmentResult& A
 {
     return A.PhoneCenterSeconds.IsValidIndex(PhoneIndex) && A.PhoneCenterSeconds[PhoneIndex] >= 0.0f;
 }
+
+static bool TryGetObservedSpeechEnvelope(
+    const TArray<FOffgridAIStreamingSpeechIsland>* Islands,
+    float ObservedAudioEndSec,
+    float& OutStartSec,
+    float& OutEndSec)
+{
+    if (!Islands || Islands->Num() == 0)
+    {
+        return false;
+    }
+
+    float Start = TNumericLimits<float>::Max();
+    float End = -1.0f;
+    for (const FOffgridAIStreamingSpeechIsland& Island : *Islands)
+    {
+        const float IslandStart = Island.AudioBufferStartSec;
+        float IslandEnd = FMath::Max(Island.AudioBufferLastSpeechSec, Island.AudioBufferEndSec);
+        if (ObservedAudioEndSec > 0.0f)
+        {
+            IslandEnd = FMath::Min(IslandEnd, ObservedAudioEndSec);
+        }
+        if (IslandEnd <= IslandStart + 0.020f)
+        {
+            continue;
+        }
+
+        Start = FMath::Min(Start, IslandStart);
+        End = FMath::Max(End, IslandEnd);
+    }
+
+    if (End <= Start || Start == TNumericLimits<float>::Max())
+    {
+        return false;
+    }
+
+    OutStartSec = Start;
+    OutEndSec = End;
+    return true;
+}
+
+
+static bool PhoneSpanOverlapsObservedSpeech(
+    const TArray<FOffgridAIStreamingSpeechIsland>* Islands,
+    float PhoneStartSec,
+    float PhoneEndSec,
+    float MarginSec)
+{
+    if (!Islands || Islands->Num() == 0 || PhoneEndSec <= PhoneStartSec)
+    {
+        return false;
+    }
+
+    for (const FOffgridAIStreamingSpeechIsland& Island : *Islands)
+    {
+        const float IslandStart = Island.AudioBufferStartSec - MarginSec;
+        const float IslandEnd = FMath::Max(Island.AudioBufferLastSpeechSec, Island.AudioBufferEndSec) + MarginSec;
+        if (IslandEnd <= IslandStart)
+        {
+            continue;
+        }
+        if (PhoneEndSec >= IslandStart && PhoneStartSec <= IslandEnd)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+struct FOffgridAIRegionWordSpan
+{
+    int32 WordIndex = INDEX_NONE;
+    float StartSec = 0.0f;
+    float EndSec = 0.0f;
+};
+
+static bool TryGetObservedSpeechRegionForSentence(
+    const TArray<FOffgridAIStreamingSpeechIsland>* Islands,
+    int32 SentenceCount,
+    int32 SentenceIndex,
+    float ObservedAudioEndSec,
+    float& OutStartSec,
+    float& OutEndSec)
+{
+    if (!Islands || SentenceIndex < 0 || SentenceCount <= 0 || Islands->Num() == 0)
+    {
+        return false;
+    }
+
+    int32 IslandIndex = INDEX_NONE;
+    if (Islands->Num() == 1 && SentenceCount == 1)
+    {
+        IslandIndex = 0;
+    }
+    else if (Islands->Num() == SentenceCount)
+    {
+        IslandIndex = SentenceIndex;
+    }
+    else
+    {
+        return false;
+    }
+
+    const FOffgridAIStreamingSpeechIsland& Island = (*Islands)[IslandIndex];
+    const float Start = Island.AudioBufferStartSec;
+    float End = FMath::Max(Island.AudioBufferLastSpeechSec, Island.AudioBufferEndSec);
+    if (ObservedAudioEndSec > 0.0f)
+    {
+        End = FMath::Min(End, ObservedAudioEndSec);
+    }
+    if (End <= Start + 0.080f)
+    {
+        return false;
+    }
+
+    OutStartSec = Start;
+    OutEndSec = End;
+    return true;
+}
+
+static float WordExpectedWeight(const FOffgridAITextVisemePlan& Plan, int32 WordIndex)
+{
+    float Weight = 0.0f;
+    for (const FOffgridAIExpectedPhone& P : Plan.ExpectedPhones)
+    {
+        if (P.WordIndex == WordIndex)
+        {
+            Weight += FMath::Max(P.WeightSeconds, 0.030f);
+        }
+    }
+    return FMath::Max(Weight, 0.080f);
+}
+
+static float BoundaryValleyEvidence(
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>* Frames,
+    float WindowStartSec,
+    float WindowEndSec,
+    float& OutValleySec,
+    bool& bOutFound)
+{
+    bOutFound = false;
+    OutValleySec = 0.5f * (WindowStartSec + WindowEndSec);
+    if (!Frames || WindowEndSec <= WindowStartSec)
+    {
+        return 1.0f;
+    }
+
+    float BestScore = TNumericLimits<float>::Max();
+    float BestTime = OutValleySec;
+    for (const FOffgridAIStreamingAudioFeatureFrame& F : *Frames)
+    {
+        if (F.AudioBufferCenterSec < WindowStartSec)
+        {
+            continue;
+        }
+        if (F.AudioBufferCenterSec > WindowEndSec)
+        {
+            break;
+        }
+
+        const float Evidence = RuntimeSpeechEvidenceScore(F);
+        // Use energy as a soft valley cue, but add a small preference for the
+        // detector's local valley flag and for places with spectral/voicing change.
+        float Score = Evidence;
+        if (F.bLocalRMSValley)
+        {
+            Score -= 0.040f;
+        }
+        if (F.bLocalFluxPeak)
+        {
+            Score -= 0.018f;
+        }
+        if (Score < BestScore)
+        {
+            BestScore = Score;
+            BestTime = F.AudioBufferCenterSec;
+            bOutFound = true;
+        }
+    }
+
+    OutValleySec = BestTime;
+    return bOutFound ? FMath::Clamp(BestScore, 0.0f, 1.0f) : 1.0f;
+}
+
+static void BuildObservedRegionWordSpans(
+    const FOffgridAITextVisemePlan& Plan,
+    const TArray<FOffgridAIStreamingSpeechIsland>* Islands,
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>* Frames,
+    int32 SentenceIndex,
+    float ObservedAudioEndSec,
+    int32 SentenceCount,
+    TMap<int32, FOffgridAIRegionWordSpan>& OutSpans)
+{
+    float RegionStart = 0.0f;
+    float RegionEnd = 0.0f;
+    if (!TryGetObservedSpeechRegionForSentence(Islands, SentenceCount, SentenceIndex, ObservedAudioEndSec, RegionStart, RegionEnd))
+    {
+        return;
+    }
+
+    TArray<int32> Words;
+    for (int32 W = 0; W < Plan.WordSentenceIslandIndices.Num(); ++W)
+    {
+        if (Plan.WordSentenceIslandIndices[W] == SentenceIndex)
+        {
+            Words.Add(W);
+        }
+    }
+    if (Words.Num() == 0)
+    {
+        return;
+    }
+
+    TArray<float> Weights;
+    float TotalWeight = 0.0f;
+    for (int32 WordIndex : Words)
+    {
+        const float Weight = WordExpectedWeight(Plan, WordIndex);
+        Weights.Add(Weight);
+        TotalWeight += Weight;
+    }
+    if (TotalWeight <= 0.001f)
+    {
+        return;
+    }
+
+    const float RegionDuration = FMath::Max(RegionEnd - RegionStart, 0.001f);
+    TArray<float> Boundaries;
+    Boundaries.SetNum(Words.Num() + 1);
+    Boundaries[0] = RegionStart;
+    Boundaries.Last() = RegionEnd;
+
+    float Cumulative = 0.0f;
+    for (int32 I = 1; I < Words.Num(); ++I)
+    {
+        Cumulative += Weights[I - 1];
+        const float Prior = RegionStart + RegionDuration * (Cumulative / TotalWeight);
+
+        const float SearchRadius = FMath::Clamp(RegionDuration * 0.060f, 0.070f, 0.160f);
+        const float WindowStart = FMath::Max(RegionStart + 0.025f, Prior - SearchRadius);
+        const float WindowEnd = FMath::Min(RegionEnd - 0.025f, Prior + SearchRadius);
+
+        float ValleySec = Prior;
+        bool bFoundValley = false;
+        const float ValleyEvidence = BoundaryValleyEvidence(Frames, WindowStart, WindowEnd, ValleySec, bFoundValley);
+
+        // Valleys are hints, not boundaries. They only attract the transcript
+        // prior when local evidence is genuinely low. This budgeter uses the
+        // observed region so far; it does not assume future sentence duration.
+        float Attraction = 0.0f;
+        if (bFoundValley)
+        {
+            Attraction = FMath::Clamp((0.145f - ValleyEvidence) / 0.145f, 0.0f, 0.42f);
+        }
+        Boundaries[I] = FMath::Lerp(Prior, ValleySec, Attraction);
+    }
+
+    // Preserve order and a small minimum word span. This is a monotonic time
+    // allocation inside the currently observed speech region, not a valley detector.
+    const float MinWordSpan = FMath::Clamp(RegionDuration / FMath::Max(static_cast<float>(Words.Num()) * 10.0f, 1.0f), 0.025f, 0.070f);
+    for (int32 I = 1; I < Boundaries.Num(); ++I)
+    {
+        Boundaries[I] = FMath::Max(Boundaries[I], Boundaries[I - 1] + MinWordSpan);
+    }
+    for (int32 I = Boundaries.Num() - 2; I >= 0; --I)
+    {
+        Boundaries[I] = FMath::Min(Boundaries[I], Boundaries[I + 1] - MinWordSpan);
+    }
+    Boundaries[0] = RegionStart;
+    Boundaries.Last() = RegionEnd;
+
+    for (int32 I = 0; I < Words.Num(); ++I)
+    {
+        FOffgridAIRegionWordSpan Span;
+        Span.WordIndex = Words[I];
+        Span.StartSec = FMath::Clamp(Boundaries[I], RegionStart, RegionEnd);
+        Span.EndSec = FMath::Clamp(Boundaries[I + 1], RegionStart, RegionEnd);
+        if (Span.EndSec > Span.StartSec + 0.015f)
+        {
+            OutSpans.Add(Span.WordIndex, Span);
+        }
+    }
+}
+
+static bool TryGetObservedRegionEventCenter(
+    const FOffgridAITextVisemePlan& Plan,
+    const FOffgridAITextVisemeEvent& Event,
+    const TMap<int32, FOffgridAIRegionWordSpan>& WordSpans,
+    float& OutCenterSec,
+    float& OutWordStartSec,
+    float& OutWordEndSec)
+{
+    const FOffgridAIRegionWordSpan* Span = WordSpans.Find(Event.WordIndex);
+    if (!Span)
+    {
+        return false;
+    }
+
+    const float Local = FMath::Clamp(Event.PhoneLocalNorm, 0.10f, 0.90f);
+    OutWordStartSec = Span->StartSec;
+    OutWordEndSec = Span->EndSec;
+    OutCenterSec = FMath::Lerp(Span->StartSec, Span->EndSec, Local);
+    return true;
+}
+
 }
 
 void FOffgridAILipsyncRuntimeSession::Reset()
@@ -599,6 +904,15 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
     const FOffgridAITextVisemePlan& Plan = *Input.TextPlan;
     InOutTrack.NPCID = Input.NPCID;
     InOutTrack.LineID = Input.LineID;
+    if (InOutTrack.RuntimeFirstAlignedObservedEndSeconds.Num() != Plan.ExpectedPhones.Num())
+    {
+        InOutTrack.RuntimeFirstAlignedObservedEndSeconds.Init(-1.0f, Plan.ExpectedPhones.Num());
+    }
+    if (InOutTrack.RuntimeObservedPhoneStartSeconds.Num() != Plan.ExpectedPhones.Num())
+    {
+        InOutTrack.RuntimeObservedPhoneStartSeconds.Init(-1.0f, Plan.ExpectedPhones.Num());
+        InOutTrack.RuntimeObservedPhoneEndSeconds.Init(-1.0f, Plan.ExpectedPhones.Num());
+    }
     if (Plan.Events.Num() == 0)
     {
         bInOutTrackBuilt = true;
@@ -618,6 +932,29 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
     // under-resolved acoustic evidence never suppresses planned visemes.
     AlignmentInput.bFinal = Input.bInputStreamClosed || Input.bPlaybackFinalized;
     const FOffgridAIOnlinePhoneAlignmentResult Alignment = FOffgridAIOnlinePhoneAligner::Compute(AlignmentInput);
+
+    for (int32 PhoneIndex = 0; PhoneIndex < Plan.ExpectedPhones.Num(); ++PhoneIndex)
+    {
+        if (!Alignment.PhoneStartSeconds.IsValidIndex(PhoneIndex)
+            || !Alignment.PhoneEndSeconds.IsValidIndex(PhoneIndex)
+            || Alignment.PhoneEndSeconds[PhoneIndex] <= Alignment.PhoneStartSeconds[PhoneIndex])
+        {
+            continue;
+        }
+
+        const FName AdvanceReason = Alignment.PhoneAdvanceReasons.IsValidIndex(PhoneIndex)
+            ? Alignment.PhoneAdvanceReasons[PhoneIndex]
+            : NAME_None;
+        const float PhoneStart = Alignment.PhoneStartSeconds[PhoneIndex];
+        const float PhoneEnd = Alignment.PhoneEndSeconds[PhoneIndex];
+        const bool bAcousticPhoneEvidence = AdvanceReason != FName(TEXT("final_duration_drain"))
+            && PhoneSpanOverlapsObservedSpeech(Input.SpeechIslands, PhoneStart, PhoneEnd, 0.120f);
+        if (bAcousticPhoneEvidence)
+        {
+            InOutTrack.RuntimeObservedPhoneStartSeconds[PhoneIndex] = PhoneStart;
+            InOutTrack.RuntimeObservedPhoneEndSeconds[PhoneIndex] = PhoneEnd;
+        }
+    }
 
     const int32 FirstNewIndex = FirstUncommittedEventIndex(InOutTrack);
     float LastCenter = LastCommittedCenter(InOutTrack);
@@ -648,11 +985,61 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         }
     }
 
+    // Observed-region pacing: once a detector speech island exists for a
+    // transcript sentence, allocate the currently observed region across the
+    // known word sequence using transcript duration priors. Local energy
+    // valleys can nudge likely boundaries, but they cannot create, delete,
+    // or reorder words.
+    TMap<int32, FOffgridAIRegionWordSpan> ObservedRegionWordSpans;
+    ObservedRegionWordSpans.Reset();
+    {
+        TArray<int32> SentenceIndices;
+        for (const FOffgridAITextVisemeEvent& E : Plan.Events)
+        {
+            if (E.SentenceIslandIndex == INDEX_NONE)
+            {
+                continue;
+            }
+
+            bool bAlreadySeen = false;
+            for (int32 ExistingSentenceIndex : SentenceIndices)
+            {
+                if (ExistingSentenceIndex == E.SentenceIslandIndex)
+                {
+                    bAlreadySeen = true;
+                    break;
+                }
+            }
+            if (!bAlreadySeen)
+            {
+                SentenceIndices.Add(E.SentenceIslandIndex);
+            }
+        }
+        for (int32 SentenceIndex : SentenceIndices)
+        {
+            BuildObservedRegionWordSpans(
+                Plan,
+                Input.SpeechIslands,
+                Input.AudioFeatureFrames,
+                SentenceIndex,
+                Input.ObservedAudioBufferEndSec,
+                SentenceIndices.Num(),
+                ObservedRegionWordSpans);
+        }
+    }
+
     for (int32 EventIndex = FirstNewIndex; EventIndex < Plan.Events.Num(); ++EventIndex)
     {
         const FOffgridAITextVisemeEvent& T = Plan.Events[EventIndex];
         const int32 PhoneIndex = FOffgridAIOnlinePhoneAligner::FindPhoneForEvent(Plan, T);
-        const bool bHasPhoneEvidence = PhoneIndex != INDEX_NONE && HasVisibleAlignedPhone(Alignment, PhoneIndex);
+        const bool bRawPhoneEvidence = PhoneIndex != INDEX_NONE && HasVisibleAlignedPhone(Alignment, PhoneIndex);
+        const float EvidencePhoneStart = (bRawPhoneEvidence && Alignment.PhoneStartSeconds.IsValidIndex(PhoneIndex)) ? Alignment.PhoneStartSeconds[PhoneIndex] : -1.0f;
+        const float EvidencePhoneEnd = (bRawPhoneEvidence && Alignment.PhoneEndSeconds.IsValidIndex(PhoneIndex)) ? Alignment.PhoneEndSeconds[PhoneIndex] : -1.0f;
+        const FName EvidenceAdvanceReason = (bRawPhoneEvidence && Alignment.PhoneAdvanceReasons.IsValidIndex(PhoneIndex)) ? Alignment.PhoneAdvanceReasons[PhoneIndex] : NAME_None;
+        const bool bPhoneHasAcousticOwnership = bRawPhoneEvidence
+            && EvidenceAdvanceReason != FName(TEXT("final_duration_drain"))
+            && PhoneSpanOverlapsObservedSpeech(Input.SpeechIslands, EvidencePhoneStart, EvidencePhoneEnd, 0.120f);
+        const bool bHasPhoneEvidence = bPhoneHasAcousticOwnership;
         if (bHasPhoneEvidence
             && InOutTrack.RuntimeFirstAlignedObservedEndSeconds.IsValidIndex(PhoneIndex)
             && InOutTrack.RuntimeFirstAlignedObservedEndSeconds[PhoneIndex] < 0.0f)
@@ -665,13 +1052,56 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             ? FOffgridAIOnlinePhoneAligner::ClassForPhoneBase(Plan.ExpectedPhones[PhoneIndex].BasePhone)
             : EOffgridAIPhoneClass::Unknown;
         float Center = EventCenterNorm(T) * FMath::Max(Plan.EstimatedDurationSeconds, 0.001f);
+        float RegionWordStartSec = 0.0f;
+        float RegionWordEndSec = 0.0f;
+        float RegionPacedCenter = 0.0f;
+        const bool bHasRegionPacing = TryGetObservedRegionEventCenter(
+            Plan,
+            T,
+            ObservedRegionWordSpans,
+            RegionPacedCenter,
+            RegionWordStartSec,
+            RegionWordEndSec);
+
         FName PlacementReason = FName(TEXT("duration_fallback"));
+        bool bRegionPacingUsedForPlacement = false;
+
         if (bHasPhoneEvidence)
         {
             const float PhoneStart = Alignment.PhoneStartSeconds[PhoneIndex];
             const float PhoneEnd = Alignment.PhoneEndSeconds[PhoneIndex];
-            Center = CenterForAlignedPhone(Pose, PhoneClass, PhoneStart, PhoneEnd);
+            const float PhoneCenter = CenterForAlignedPhone(Pose, PhoneClass, PhoneStart, PhoneEnd);
+            Center = PhoneCenter;
             PlacementReason = FName(TEXT("streaming_forced_alignment"));
+
+            // Region/word pacing is only a soft prior in the live streaming path.
+            // It may gently regularize a phone that already has acoustic evidence,
+            // but it must not create streaming commits by itself.  The previous
+            // experiment made region pacing primary, which preserved speech onset
+            // while destroying word/phone coverage because text allocation was
+            // allowed to outrank the online aligner.
+            if (bHasRegionPacing)
+            {
+                const float GuardStart = RegionWordStartSec - 0.160f;
+                const float GuardEnd = RegionWordEndSec + 0.160f;
+                if (PhoneCenter >= GuardStart && PhoneCenter <= GuardEnd)
+                {
+                    Center = FMath::Lerp(PhoneCenter, RegionPacedCenter, 0.18f);
+                    PlacementReason = FName(TEXT("streaming_forced_alignment_region_prior"));
+                    bRegionPacingUsedForPlacement = true;
+                }
+            }
+        }
+        else if (bHasRegionPacing && (Input.bInputStreamClosed || Input.bPlaybackFinalized))
+        {
+            // Final drain only: after no more audio can arrive, region pacing is a
+            // deterministic recovery path for weak phones that never received
+            // usable phone evidence.  It is deliberately disabled for live
+            // streaming so offline batch generation cannot masquerade as the
+            // realtime algorithm.
+            Center = RegionPacedCenter;
+            PlacementReason = FName(TEXT("final_region_word_drain"));
+            bRegionPacingUsedForPlacement = true;
         }
 
         // The first visible state must not pre-open before confirmed speech.
@@ -802,10 +1232,12 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             }
         }
 
-        // Streaming forced alignment owns timing.  The transcript-derived phone
-        // path is segmented over observed speech frames by the aligner; runtime
-        // guards only preserve phrase ownership and monotonic commit safety.
+        // Streaming ownership remains with the online forced-alignment path.
+        // Region pacing is visible here only as a bounded prior on phones that
+        // already have acoustic evidence, plus an end-of-line final drain.
         const bool bUsedForcedAlignment = bHasPhoneEvidence;
+        const bool bUsedRegionPacing = bRegionPacingUsedForPlacement;
+        const bool bUsedObservedPlacement = bUsedForcedAlignment || bUsedRegionPacing;
         const float Confidence = Alignment.PhoneMatchScores.IsValidIndex(PhoneIndex) ? Alignment.PhoneMatchScores[PhoneIndex] : 0.0f;
         const float PhoneStart = Alignment.PhoneStartSeconds.IsValidIndex(PhoneIndex) ? Alignment.PhoneStartSeconds[PhoneIndex] : 0.0f;
         const float PhoneEnd = Alignment.PhoneEndSeconds.IsValidIndex(PhoneIndex) ? Alignment.PhoneEndSeconds[PhoneIndex] : 0.0f;
@@ -842,14 +1274,15 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             }
         }
 
-        if (!bUsedForcedAlignment && !Input.bInputStreamClosed && !Input.bPlaybackFinalized)
+        if (!bUsedObservedPlacement && !Input.bInputStreamClosed && !Input.bPlaybackFinalized)
         {
-            // Streaming-safe: wait until the online Viterbi path has enough
-            // stable audio evidence to expose this phone.
+            // Streaming-safe: wait until the online Viterbi path exposes this phone.
+            // Detector speech regions and word-pacing priors do not create live
+            // commits on their own; they only shape already-observed phones.
             break;
         }
 
-        if (!bUsedForcedAlignment && (Input.bInputStreamClosed || Input.bPlaybackFinalized))
+        if (!bUsedObservedPlacement && (Input.bInputStreamClosed || Input.bPlaybackFinalized))
         {
             // End-of-line drain: only after the stream is closed, use the
             // transcript duration model so weak/under-resolved audio cannot
@@ -890,7 +1323,7 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         const float MinOrderedCenter = LastCenter + 0.050f;
         Center = FMath::Max(Center, MinOrderedCenter);
 
-        if (!bUsedForcedAlignment && SameSentenceAsLast(InOutTrack, T))
+        if (!bUsedObservedPlacement && SameSentenceAsLast(InOutTrack, T))
         {
             const float MaxGap = MaxWallClockGapForPose(Pose);
             const float MaxSameSentenceCenter = LastCenter + MaxGap;
@@ -943,8 +1376,12 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         E.SourcePhoneIndex = PhoneIndex;
         E.SourcePhoneBase = Plan.ExpectedPhones.IsValidIndex(PhoneIndex) ? Plan.ExpectedPhones[PhoneIndex].BasePhone : T.SourcePhoneBase;
         E.SourcePhoneClass = FName(*FOffgridAIOnlinePhoneAligner::PhoneClassToString(PhoneClass));
-        E.AlignedPhoneStartSeconds = Alignment.PhoneStartSeconds.IsValidIndex(PhoneIndex) ? Alignment.PhoneStartSeconds[PhoneIndex] : 0.0f;
-        E.AlignedPhoneEndSeconds = Alignment.PhoneEndSeconds.IsValidIndex(PhoneIndex) ? Alignment.PhoneEndSeconds[PhoneIndex] : 0.0f;
+        E.AlignedPhoneStartSeconds = Alignment.PhoneStartSeconds.IsValidIndex(PhoneIndex)
+            ? Alignment.PhoneStartSeconds[PhoneIndex]
+            : (bUsedRegionPacing ? RegionWordStartSec : 0.0f);
+        E.AlignedPhoneEndSeconds = Alignment.PhoneEndSeconds.IsValidIndex(PhoneIndex)
+            ? Alignment.PhoneEndSeconds[PhoneIndex]
+            : (bUsedRegionPacing ? RegionWordEndSec : 0.0f);
         E.AlignmentConfidence = Confidence;
         E.AlignmentScoreGap = Alignment.PhoneScoreGaps.IsValidIndex(PhoneIndex) ? Alignment.PhoneScoreGaps[PhoneIndex] : 0.0f;
         E.AlignmentObservedDurationSeconds = Alignment.PhoneObservedDurations.IsValidIndex(PhoneIndex) ? Alignment.PhoneObservedDurations[PhoneIndex] : 0.0f;
@@ -953,7 +1390,7 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             ? (Alignment.PhoneAdvanceReasons.IsValidIndex(PhoneIndex) && !Alignment.PhoneAdvanceReasons[PhoneIndex].IsNone()
                 ? Alignment.PhoneAdvanceReasons[PhoneIndex]
                 : FName(TEXT("streaming_forced_alignment")))
-            : FName(TEXT("no_phone_evidence"));
+            : (bUsedRegionPacing ? FName(TEXT("final_region_word_drain")) : FName(TEXT("no_phone_evidence")));
         E.CommitPlaybackSeconds = Input.CurrentPlaybackSec;
         E.CommitLeadSeconds = Center - Input.CurrentPlaybackSec;
         E.CommitReason = PlacementReason;
@@ -967,12 +1404,12 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         E.RequiredActiveElapsedSeconds = static_cast<float>(EventIndex + 1);
         E.ObservedActiveElapsedSeconds = bUsedForcedAlignment
             ? static_cast<float>(FMath::Max(Alignment.HighestAlignedPhoneIndex + 1, 0))
-            : 0.0f;
+            : (bUsedRegionPacing ? static_cast<float>(EventIndex + 1) : 0.0f);
         E.ActiveProgressDeficitSeconds = FMath::Max(0.0f, E.RequiredActiveElapsedSeconds - E.ObservedActiveElapsedSeconds);
         E.RequiredProgressNorm = E.RequiredActiveElapsedSeconds;
         E.ObservedProgressNorm = E.ObservedActiveElapsedSeconds;
         E.ActiveProgressRatio = E.RequiredActiveElapsedSeconds > 0.001f ? E.ObservedActiveElapsedSeconds / E.RequiredActiveElapsedSeconds : 1.0f;
-        E.bMappedToObservedSpeech = bUsedForcedAlignment;
+        E.bMappedToObservedSpeech = bUsedObservedPlacement;
         E.SentenceIndex = T.SentenceIslandIndex;
 
         InOutTrack.Events.Add(E);
@@ -981,8 +1418,18 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
 
     if (InOutTrack.Events.Num() > 0)
     {
-        InOutTrack.SpeechStartSeconds = FirstSpeechStart >= 0.0f ? FirstSpeechStart : InOutTrack.Events[0].RenderStartSeconds;
-        InOutTrack.SpeechEndSeconds = InOutTrack.Events.Last().RenderEndSeconds;
+        float ObservedSpeechStart = 0.0f;
+        float ObservedSpeechEnd = 0.0f;
+        if (TryGetObservedSpeechEnvelope(Input.SpeechIslands, Input.ObservedAudioBufferEndSec, ObservedSpeechStart, ObservedSpeechEnd))
+        {
+            InOutTrack.SpeechStartSeconds = ObservedSpeechStart;
+            InOutTrack.SpeechEndSeconds = ObservedSpeechEnd;
+        }
+        else
+        {
+            InOutTrack.SpeechStartSeconds = FirstSpeechStart >= 0.0f ? FirstSpeechStart : InOutTrack.Events[0].RenderStartSeconds;
+            InOutTrack.SpeechEndSeconds = InOutTrack.Events.Last().RenderEndSeconds;
+        }
     }
     bInOutTrackBuilt = InOutTrack.Events.Num() > 0 || Input.bInputStreamClosed || Input.bPlaybackFinalized;
 }

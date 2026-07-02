@@ -10,6 +10,16 @@ struct FOffgridAIStreamingSpeechIsland
     float AudioBufferEndSec = 0.0f;
     bool bStarted = false;
     bool bEnded = false;
+
+    // Endpoint diagnostics. ProvisionalEndSec is the first quiet frame that
+    // eventually closed or nearly closed this island; EndDecisionSec is when
+    // the detector had enough trailing evidence to commit the close. ReopenCount
+    // increments when speech resumes inside the reopen window and the island is
+    // merged instead of split.
+    float ProvisionalEndSec = -1.0f;
+    float EndDecisionSec = -1.0f;
+    int32 ReopenCount = 0;
+    FName EndReason = NAME_None;
 };
 
 struct FOffgridAIStreamingAudioFeatureFrame
@@ -58,8 +68,11 @@ private:
     bool bSpeechCandidateActive = false;
     float SpeechCandidateStartSeconds = 0.0f;
     float SpeechCandidateAccumSeconds = 0.0f;
+    float SpeechCandidatePeakEvidence = 0.0f;
     float SilenceAccumSeconds = 0.0f;
     float SilenceStartSeconds = 0.0f;
+    bool bEndpointCandidateActive = false;
+    float EndpointCandidateStartSeconds = 0.0f;
     float ActiveIslandPeakRMS = 0.0001f;
     float ActiveIslandSpeechSeconds = 0.0f;
     float ActiveLowEnergyAccumSeconds = 0.0f;

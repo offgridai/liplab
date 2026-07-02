@@ -1,5 +1,26 @@
 #include "Lipsync/OffgridAIStreamingSpeechDetector.h"
 
+namespace
+{
+constexpr float DetectorGapBridgeMaxSec = 0.180f;
+constexpr float DetectorEndpointBaseHangoverSec = 0.140f;
+constexpr float DetectorEndpointStrongQuietHangoverSec = 0.100f;
+
+static float DetectorSpeechEvidence(float RMSNorm, float Flux, float Periodicity, float MidBandNorm, float HighBandNorm, float SpectralCentroidNorm)
+{
+    const float Voiced = Periodicity * 0.42f + RMSNorm * 0.24f + MidBandNorm * 0.10f;
+    const float Unvoiced = Flux * 0.26f + HighBandNorm * 0.12f + SpectralCentroidNorm * 0.10f;
+    return FMath::Clamp(Voiced + Unvoiced, 0.0f, 1.0f);
+}
+
+static bool DetectorStrongOnsetAnchor(float Evidence, float RMS, float NoiseFloorRMS, float Periodicity, float Flux)
+{
+    return Evidence >= 0.23f
+        || (Periodicity >= 0.42f && RMS >= NoiseFloorRMS * 2.2f)
+        || (Flux >= 0.18f && RMS >= NoiseFloorRMS * 2.8f);
+}
+}
+
 void FOffgridAIStreamingSpeechDetector::Reset()
 {
     Islands.Reset();
@@ -8,8 +29,11 @@ void FOffgridAIStreamingSpeechDetector::Reset()
     bSpeechCandidateActive = false;
     SpeechCandidateStartSeconds = 0.0f;
     SpeechCandidateAccumSeconds = 0.0f;
+    SpeechCandidatePeakEvidence = 0.0f;
     SilenceAccumSeconds = 0.0f;
     SilenceStartSeconds = 0.0f;
+    bEndpointCandidateActive = false;
+    EndpointCandidateStartSeconds = 0.0f;
     ActiveIslandPeakRMS = 0.0001f;
     ActiveIslandSpeechSeconds = 0.0f;
     ActiveLowEnergyAccumSeconds = 0.0f;
@@ -165,8 +189,14 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
     Frame.Periodicity = Periodicity;
     FeatureFrames.Add(Frame);
 
-    const bool bOpen = RMS >= OpenThreshold;
-    const bool bKeepOpen = RMS >= CloseThreshold;
+    const float Evidence = DetectorSpeechEvidence(Frame.RMSNorm, Frame.Flux, Frame.Periodicity, MidBandNorm, HighBandNorm, SpectralCentroidNorm);
+    const bool bStrongOnsetAnchor = DetectorStrongOnsetAnchor(Evidence, RMS, NoiseFloorRMS, Periodicity, Frame.Flux);
+    const bool bOpen = (RMS >= OpenThreshold && Evidence >= 0.16f) || bStrongOnsetAnchor;
+    const bool bKeepOpen = (RMS >= CloseThreshold && Evidence >= 0.10f)
+        || Evidence >= 0.14f
+        || (Periodicity >= 0.36f && RMS >= NoiseFloorRMS * 1.8f);
+    const bool bLowEvidence = Evidence < 0.08f && RMS < CloseThreshold * 0.92f;
+
     if (!bInSpeech)
     {
         if (bOpen)
@@ -176,22 +206,43 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                 bSpeechCandidateActive = true;
                 SpeechCandidateStartSeconds = FrameStartSeconds;
                 SpeechCandidateAccumSeconds = 0.0f;
+                SpeechCandidatePeakEvidence = 0.0f;
             }
             SpeechCandidateAccumSeconds += FrameEndSeconds - FrameStartSeconds;
-            if (SpeechCandidateAccumSeconds >= 0.025f)
+            SpeechCandidatePeakEvidence = FMath::Max(SpeechCandidatePeakEvidence, Evidence);
+            if (SpeechCandidateAccumSeconds >= 0.035f && (bStrongOnsetAnchor || SpeechCandidatePeakEvidence >= 0.21f))
             {
-                FOffgridAIStreamingSpeechIsland Island;
-                Island.IslandIndex = Islands.Num();
-                Island.AudioBufferStartSec = SpeechCandidateStartSeconds;
-                Island.AudioBufferLastSpeechSec = FrameEndSeconds;
-                Island.AudioBufferEndSec = FrameEndSeconds;
-                Island.bStarted = true;
-                Islands.Add(Island);
+                if (Islands.Num() > 0
+                    && Islands.Last().bEnded
+                    && SpeechCandidateStartSeconds - Islands.Last().AudioBufferEndSec <= DetectorGapBridgeMaxSec)
+                {
+                    FOffgridAIStreamingSpeechIsland& Island = Islands.Last();
+                    Island.AudioBufferLastSpeechSec = FrameEndSeconds;
+                    Island.AudioBufferEndSec = FrameEndSeconds;
+                    Island.bEnded = false;
+                    Island.EndReason = FName(TEXT("reopened"));
+                    Island.ReopenCount += 1;
+                    Island.ProvisionalEndSec = -1.0f;
+                    Island.EndDecisionSec = -1.0f;
+                }
+                else
+                {
+                    FOffgridAIStreamingSpeechIsland Island;
+                    Island.IslandIndex = Islands.Num();
+                    Island.AudioBufferStartSec = SpeechCandidateStartSeconds;
+                    Island.AudioBufferLastSpeechSec = FrameEndSeconds;
+                    Island.AudioBufferEndSec = FrameEndSeconds;
+                    Island.bStarted = true;
+                    Islands.Add(Island);
+                }
                 bInSpeech = true;
                 bSpeechCandidateActive = false;
+                SpeechCandidatePeakEvidence = 0.0f;
                 ActiveIslandPeakRMS = RMS;
                 ActiveIslandSpeechSeconds = 0.0f;
                 SilenceAccumSeconds = 0.0f;
+                bEndpointCandidateActive = false;
+                EndpointCandidateStartSeconds = 0.0f;
                 if (!bHasObservedFirstSpeechStart)
                 {
                     bHasObservedFirstSpeechStart = true;
@@ -201,8 +252,15 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
         }
         else
         {
-            bSpeechCandidateActive = false;
-            SpeechCandidateAccumSeconds = 0.0f;
+            if (bSpeechCandidateActive)
+            {
+                SpeechCandidateAccumSeconds = FMath::Max(0.0f, SpeechCandidateAccumSeconds - (FrameEndSeconds - FrameStartSeconds) * 0.5f);
+                if (SpeechCandidateAccumSeconds <= 0.0f)
+                {
+                    bSpeechCandidateActive = false;
+                    SpeechCandidatePeakEvidence = 0.0f;
+                }
+            }
         }
     }
     else
@@ -214,18 +272,37 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
         {
             Island.AudioBufferLastSpeechSec = FrameEndSeconds;
             ActiveIslandSpeechSeconds += FrameEndSeconds - FrameStartSeconds;
+            if (bEndpointCandidateActive)
+            {
+                Island.ReopenCount += 1;
+            }
             SilenceAccumSeconds = 0.0f;
+            bEndpointCandidateActive = false;
+            EndpointCandidateStartSeconds = 0.0f;
+            Island.ProvisionalEndSec = -1.0f;
         }
         else
         {
-            if (SilenceAccumSeconds <= 0.0f) SilenceStartSeconds = FrameStartSeconds;
-            SilenceAccumSeconds += FrameEndSeconds - FrameStartSeconds;
-            if (SilenceAccumSeconds >= 0.090f)
+            if (SilenceAccumSeconds <= 0.0f)
             {
-                Island.AudioBufferEndSec = SilenceStartSeconds;
+                SilenceStartSeconds = FrameStartSeconds;
+                bEndpointCandidateActive = true;
+                EndpointCandidateStartSeconds = FrameStartSeconds;
+                Island.ProvisionalEndSec = FrameStartSeconds;
+            }
+            const float Dt = FrameEndSeconds - FrameStartSeconds;
+            SilenceAccumSeconds += bLowEvidence ? Dt : Dt * 0.50f;
+            const float Hangover = bLowEvidence ? DetectorEndpointStrongQuietHangoverSec : DetectorEndpointBaseHangoverSec;
+            if (SilenceAccumSeconds >= Hangover)
+            {
+                Island.AudioBufferEndSec = EndpointCandidateStartSeconds;
+                Island.EndDecisionSec = FrameEndSeconds;
+                Island.EndReason = bLowEvidence ? FName(TEXT("strong_quiet_hangover")) : FName(TEXT("weak_evidence_hangover"));
                 Island.bEnded = true;
                 bInSpeech = false;
                 SilenceAccumSeconds = 0.0f;
+                bEndpointCandidateActive = false;
+                EndpointCandidateStartSeconds = 0.0f;
             }
         }
     }
@@ -250,8 +327,36 @@ void FOffgridAIStreamingSpeechDetector::Finalize(float FinalObservedAudioBufferE
 {
     if (Islands.Num() > 0 && bInSpeech)
     {
-        Islands.Last().bEnded = true;
-        Islands.Last().AudioBufferEndSec = FinalObservedAudioBufferEndSec >= 0.0f ? FinalObservedAudioBufferEndSec : ObservedAudioBufferEndSec;
+        FOffgridAIStreamingSpeechIsland& Island = Islands.Last();
+        Island.bEnded = true;
+
+        // Finalization is not fresh acoustic speech. If an endpoint candidate is
+        // already active, close at the first quiet frame. Otherwise close at the
+        // last frame that actually met the keep-open speech criteria. This keeps
+        // trailing buffering/final-drain mechanics out of detector speech-region
+        // scoring.
+        if (bEndpointCandidateActive && EndpointCandidateStartSeconds > Island.AudioBufferStartSec)
+        {
+            Island.AudioBufferEndSec = EndpointCandidateStartSeconds;
+            Island.ProvisionalEndSec = EndpointCandidateStartSeconds;
+            Island.EndDecisionSec = FinalObservedAudioBufferEndSec >= 0.0f ? FinalObservedAudioBufferEndSec : ObservedAudioBufferEndSec;
+            Island.EndReason = FName(TEXT("finalize_at_provisional_end"));
+        }
+        else if (Island.AudioBufferLastSpeechSec > Island.AudioBufferStartSec)
+        {
+            Island.AudioBufferEndSec = Island.AudioBufferLastSpeechSec;
+            Island.EndDecisionSec = FinalObservedAudioBufferEndSec >= 0.0f ? FinalObservedAudioBufferEndSec : ObservedAudioBufferEndSec;
+            Island.EndReason = FName(TEXT("finalize_at_last_speech"));
+        }
+        else
+        {
+            Island.AudioBufferEndSec = FinalObservedAudioBufferEndSec >= 0.0f ? FinalObservedAudioBufferEndSec : ObservedAudioBufferEndSec;
+            Island.EndDecisionSec = Island.AudioBufferEndSec;
+            Island.EndReason = FName(TEXT("finalize_no_candidate"));
+        }
     }
     bInSpeech = false;
+    bEndpointCandidateActive = false;
+    EndpointCandidateStartSeconds = 0.0f;
+    SilenceAccumSeconds = 0.0f;
 }

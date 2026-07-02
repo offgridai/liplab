@@ -221,6 +221,7 @@ static void AddEvent(TArray<FOffgridAITextVisemeEvent>& Events, EOffgridAITextVi
     E.PhraseIndex = PhraseIndex;
     E.SentenceIslandIndex = SentenceIsland;
     E.SourcePhoneIndex = SourcePhoneIndex;
+    E.SourcePhoneGlobalIndex = INDEX_NONE;
     E.SourcePhone = SourcePhone;
     E.SourcePhoneBase = SourcePhoneBase;
     E.PhoneLocalNorm = LocalOrder;
@@ -546,6 +547,24 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
                 Expected.BoundaryAfterWord = Boundaries.IsValidIndex(W) ? Boundaries[W] : TCHAR(0);
                 Expected.WeightSeconds = ExpectedPhoneWeightSeconds(Base);
                 Plan.ExpectedPhones.Add(Expected);
+            }
+
+            for (int32 EIdx = FirstEventIndex; EIdx < Plan.Events.Num(); ++EIdx)
+            {
+                FOffgridAITextVisemeEvent& Event = Plan.Events[EIdx];
+                if (Event.WordIndex != W || Event.SourcePhoneIndex == INDEX_NONE)
+                {
+                    continue;
+                }
+
+                for (const FOffgridAIExpectedPhone& Expected : Plan.ExpectedPhones)
+                {
+                    if (Expected.WordIndex == W && Expected.WordPhoneIndex == Event.SourcePhoneIndex)
+                    {
+                        Event.SourcePhoneGlobalIndex = Expected.PhoneIndex;
+                        break;
+                    }
+                }
             }
         }
         else

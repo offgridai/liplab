@@ -31,6 +31,7 @@ struct FOffgridAITextVisemeEvent
     // Text phrase/sentence metadata for diagnostics and weak boundary metadata only; runtime audio occupancy remains the timing authority.
     int32 SentenceIslandIndex = 0;
     int32 SourcePhoneIndex = INDEX_NONE;
+    int32 SourcePhoneGlobalIndex = INDEX_NONE;
     FString SourcePhone;
     FString SourcePhoneBase;
     float PhoneLocalNorm = 0.5f;

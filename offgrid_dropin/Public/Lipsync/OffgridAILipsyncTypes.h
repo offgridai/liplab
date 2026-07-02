@@ -63,6 +63,10 @@ struct FOffgridAIAlignedVisemeTrack
     // the observed stream. This lets the streaming harness keep a short
     // movable suffix before freezing a phone into the committed prefix.
     TArray<float> RuntimeFirstAlignedObservedEndSeconds;
+    // Runtime phone occupancy diagnostics for the full transcript phone stream,
+    // not just committed visible visemes.
+    TArray<float> RuntimeObservedPhoneStartSeconds;
+    TArray<float> RuntimeObservedPhoneEndSeconds;
 };
 
 struct FOffgridAIPerformedVisemeFrame

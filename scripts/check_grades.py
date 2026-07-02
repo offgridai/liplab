@@ -12,12 +12,19 @@ baseline_path = root / "docs" / "grade_baseline.json"
 
 thresholds = {
     "max_order_violations": 0,
+    "max_degenerate_cases": 0,
+    "max_speech_region_count_mismatch_cases": 999999,
+    "max_visible_speech_region_count_mismatch_cases": 999999,
+    "max_sentence_region_count_mismatch_cases": 999999,
+    "max_clause_region_count_mismatch_cases": 999999,
     "max_speech_f1_drop": 0.0,
     "max_speech_boundary_start_ms_increase": 0.0,
     "max_speech_boundary_end_ms_increase": 0.0,
     "max_word_f1_drop": 0.0,
     "max_word_start_ms_increase": 0.0,
     "max_word_end_ms_increase": 0.0,
+    "max_word_duration_ms_increase": 0.0,
+    "max_word_duration_l1_norm_increase": 0.0,
     "max_word_head_start_ms_increase": 0.0,
     "max_phoneme_coverage_drop": 0.0,
     "max_phoneme_center_ms_increase": 0.0,
@@ -41,7 +48,10 @@ if not baseline_path.exists():
 summary = compute_summary(rows, graded, ungraded)
 baseline = json.loads(baseline_path.read_text())
 
+
 def at_most(metric_name, threshold_name):
+    if metric_name not in baseline:
+        return (True, metric_name, summary.get(metric_name, 0.0), "no baseline")
     return (
         summary[metric_name] <= baseline[metric_name] + thresholds[threshold_name],
         metric_name,
@@ -51,6 +61,8 @@ def at_most(metric_name, threshold_name):
 
 
 def at_least(metric_name, threshold_name):
+    if metric_name not in baseline:
+        return (True, metric_name, summary.get(metric_name, 0.0), "no baseline")
     return (
         summary[metric_name] >= baseline[metric_name] - thresholds[threshold_name],
         metric_name,
@@ -67,12 +79,44 @@ checks = [
         summary["order_fail_cases"],
         thresholds["max_order_violations"],
     ),
+    (
+        summary["degenerate_cases"] <= thresholds["max_degenerate_cases"],
+        "degenerate_cases",
+        summary["degenerate_cases"],
+        thresholds["max_degenerate_cases"],
+    ),
+    (
+        summary["speech_region_count_mismatch_cases"] <= thresholds["max_speech_region_count_mismatch_cases"],
+        "speech_region_count_mismatch_cases",
+        summary["speech_region_count_mismatch_cases"],
+        thresholds["max_speech_region_count_mismatch_cases"],
+    ),
+    (
+        summary["visible_speech_region_count_mismatch_cases"] <= thresholds["max_visible_speech_region_count_mismatch_cases"],
+        "visible_speech_region_count_mismatch_cases",
+        summary["visible_speech_region_count_mismatch_cases"],
+        thresholds["max_visible_speech_region_count_mismatch_cases"],
+    ),
+    (
+        summary["sentence_region_count_mismatch_cases"] <= thresholds["max_sentence_region_count_mismatch_cases"],
+        "sentence_region_count_mismatch_cases",
+        summary["sentence_region_count_mismatch_cases"],
+        thresholds["max_sentence_region_count_mismatch_cases"],
+    ),
+    (
+        summary["clause_region_count_mismatch_cases"] <= thresholds["max_clause_region_count_mismatch_cases"],
+        "clause_region_count_mismatch_cases",
+        summary["clause_region_count_mismatch_cases"],
+        thresholds["max_clause_region_count_mismatch_cases"],
+    ),
     at_least("speech_f1", "max_speech_f1_drop"),
     at_most("speech_boundary_start_ms", "max_speech_boundary_start_ms_increase"),
     at_most("speech_boundary_end_ms", "max_speech_boundary_end_ms_increase"),
     at_least("word_f1", "max_word_f1_drop"),
     at_most("word_start_ms", "max_word_start_ms_increase"),
     at_most("word_end_ms", "max_word_end_ms_increase"),
+    at_most("word_duration_ms", "max_word_duration_ms_increase"),
+    at_most("word_duration_l1_norm", "max_word_duration_l1_norm_increase"),
     at_most("word_head_start_ms", "max_word_head_start_ms_increase"),
     at_least("phoneme_coverage_rate", "max_phoneme_coverage_drop"),
     at_most("phoneme_center_ms", "max_phoneme_center_ms_increase"),
@@ -81,12 +125,39 @@ checks = [
     at_least("intra_word_coverage_rate", "max_intra_word_coverage_drop"),
     at_most("intra_word_center_ms", "max_intra_word_center_ms_increase"),
 ]
+
 for ok, name, actual, limit in checks:
     if not ok:
         print(f"FAIL summary: {name}={actual} limit={limit}")
         failed = True
 
 if failed:
+    print(
+        "Summary diagnostics: "
+        f"graded={summary['graded_cases']} degenerate={summary['degenerate_cases']} "
+        f"speech_region_mismatch={summary['speech_region_count_mismatch_cases']} "
+        f"phone_occupancy_region_mismatch={summary['phone_occupancy_region_count_mismatch_cases']} "
+        f"visible_speech_region_mismatch={summary['visible_speech_region_count_mismatch_cases']} "
+        f"sentence_region_mismatch={summary['sentence_region_count_mismatch_cases']} "
+        f"clause_region_mismatch={summary['clause_region_count_mismatch_cases']} "
+        f"speech_boundary_start_ms={summary['speech_boundary_start_ms']:.3f} "
+        f"speech_tail_leakage_ms={summary.get('speech_tail_leakage_ms', 0.0):.3f} "
+        f"phone_occupancy_end_ms={summary.get('phone_occupancy_boundary_end_ms', 0.0):.3f} "
+        f"visible_speech_end_ms={summary.get('visible_speech_boundary_end_ms', 0.0):.3f} "
+        f"word_duration_ms={summary.get('word_duration_ms', 0.0):.3f} "
+        f"word_duration_l1_norm={summary.get('word_duration_l1_norm', 0.0):.4f} "
+        f"word_stretch_abs_log2={summary.get('word_stretch_abs_log2', 0.0):.4f} "
+        f"word_head_start_ms={summary['word_head_start_ms']:.3f} "
+        f"word_head_start_median_ms={summary['word_head_start_median_ms']:.3f} "
+        f"phoneme_center_ms={summary['phoneme_center_ms']:.3f} "
+        f"direct_aligner_match_rate={summary.get('direct_aligner_match_rate', 0.0):.3f} "
+        f"direct_aligner_center_ms={summary.get('direct_aligner_center_ms', 0.0):.3f} "
+    )
+    print(
+        "Note: speech_boundary_start_ms/end_ms now use detector-owned speech regions. "
+        "phone_occupancy_* and visible_speech_* remain diagnostic layers for runtime pacing behavior. "
+        "Regenerate grade_baseline.json after accepting this evaluator update."
+    )
     sys.exit(1)
 
 if summary["graded_cases"] == 0:
@@ -94,3 +165,21 @@ if summary["graded_cases"] == 0:
     sys.exit(0)
 
 print(f"Grade thresholds passed for {summary['graded_cases']} graded case(s).")
+print(
+    f"Diagnostics: degenerate={summary['degenerate_cases']} "
+    f"speech_region_mismatch={summary['speech_region_count_mismatch_cases']} "
+    f"phone_occupancy_region_mismatch={summary['phone_occupancy_region_count_mismatch_cases']} "
+    f"visible_speech_region_mismatch={summary['visible_speech_region_count_mismatch_cases']} "
+    f"sentence_region_mismatch={summary['sentence_region_count_mismatch_cases']} "
+    f"clause_region_mismatch={summary['clause_region_count_mismatch_cases']} "
+    f"speech_tail_leakage_ms={summary.get('speech_tail_leakage_ms', 0.0):.3f} "
+    f"phone_occupancy_end_ms={summary.get('phone_occupancy_boundary_end_ms', 0.0):.3f} "
+    f"visible_speech_end_ms={summary.get('visible_speech_boundary_end_ms', 0.0):.3f} "
+    f"word_duration_ms={summary.get('word_duration_ms', 0.0):.3f} "
+    f"word_duration_l1_norm={summary.get('word_duration_l1_norm', 0.0):.4f} "
+    f"word_stretch_abs_log2={summary.get('word_stretch_abs_log2', 0.0):.4f} "
+    f"word_head_start_ms={summary['word_head_start_ms']:.3f} "
+    f"word_head_start_median_ms={summary['word_head_start_median_ms']:.3f} "
+    f"direct_aligner_match_rate={summary.get('direct_aligner_match_rate', 0.0):.3f} "
+    f"direct_aligner_center_ms={summary.get('direct_aligner_center_ms', 0.0):.3f} "
+)
