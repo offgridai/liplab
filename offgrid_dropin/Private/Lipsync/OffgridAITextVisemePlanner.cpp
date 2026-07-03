@@ -225,7 +225,7 @@ static void AddEvent(TArray<FOffgridAITextVisemeEvent>& Events, EOffgridAITextVi
     E.SourcePhone = SourcePhone;
     E.SourcePhoneBase = SourcePhoneBase;
     E.PhoneLocalNorm = LocalOrder;
-    E.bIsStrongVisibleEvent = (V == EOffgridAITextViseme::MBP || V == EOffgridAITextViseme::WUH || ResolvedPose == FName(TEXT("20_FV")) || (ResolvedPose == FName(TEXT("14_ChJjSh")) && Strength >= 0.70f));
+    E.bIsStrongVisibleEvent = (V == EOffgridAITextViseme::MBP || V == EOffgridAITextViseme::WUH || ResolvedPose == FName(TEXT("20_FV")));
     E.Generator = Generator;
     E.StartNorm = LocalOrder; // Overwritten by the final normalized timing pass.
     E.EndNorm = 0.0f;
@@ -324,22 +324,24 @@ static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FStr
         AddEvent(Events, EOffgridAITextViseme::WUH, TEXT("12_Ww-Oo-"), WordIndex, Phrase, Sentence, Word, 0.88f, TEXT("cmu_w"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
-    if (Base == TEXT("CH") || Base == TEXT("JH") || Base == TEXT("SH") || Base == TEXT("ZH"))
+
+    // Sibilants/affricates/dentals are lower-salience than vowels and bilabials,
+    // but they still move the mouth and should remain available when they are
+    // the only local articulation cue.
+    if (Base == TEXT("S") || Base == TEXT("Z"))
     {
-        if (!WordAlreadyHasPose(Events, WordIndex, TEXT("14_ChJjSh")))
-        {
-            AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("14_ChJjSh"), WordIndex, Phrase, Sentence, Word, 0.82f, TEXT("cmu_affricate_sibilant"), LocalOrder, PhoneIndex, Phone, Base);
-        }
+        AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("20_FV"), WordIndex, Phrase, Sentence, Word, 0.36f, TEXT("cmu_sibilant_teeth"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
-
-    // Do not render S/Z/TH/DH as independent visemes. This was the main source
-    // of nonsense plans such as can->Ch, there->FV, sounds->Ch/Aa/Ch, and the
-    // extra Ch spam in sandwiches. Keep them in the CMU syllable/timing count,
-    // but do not create a visible event.
-    if (Base == TEXT("S") || Base == TEXT("Z") || Base == TEXT("TH") || Base == TEXT("DH"))
+    if (Base == TEXT("TH") || Base == TEXT("DH"))
     {
-        return false;
+        AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("20_FV"), WordIndex, Phrase, Sentence, Word, 0.32f, TEXT("cmu_dental_teeth"), LocalOrder, PhoneIndex, Phone, Base);
+        return true;
+    }
+    if (Base == TEXT("CH") || Base == TEXT("JH") || Base == TEXT("SH") || Base == TEXT("ZH"))
+    {
+        AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("14_ChJjSh"), WordIndex, Phrase, Sentence, Word, 0.42f, TEXT("cmu_affricate_sibilant"), LocalOrder, PhoneIndex, Phone, Base);
+        return true;
     }
 
     if (IsReducedVowelToSuppress(Base, Phone, WordPhones))
@@ -403,7 +405,7 @@ static float ExpectedPhoneWeightSeconds(const FString& Base)
     if (IsVowelPhonemeBase(Base)) return 0.105f;
     if (Base == TEXT("M") || Base == TEXT("B") || Base == TEXT("P")) return 0.080f;
     if (Base == TEXT("F") || Base == TEXT("V") || Base == TEXT("CH") || Base == TEXT("JH") || Base == TEXT("SH") || Base == TEXT("ZH")) return 0.085f;
-    if (Base == TEXT("S") || Base == TEXT("Z") || Base == TEXT("TH") || Base == TEXT("DH")) return 0.060f;
+    if (Base == TEXT("S") || Base == TEXT("Z") || Base == TEXT("TH") || Base == TEXT("DH") || Base == TEXT("CH") || Base == TEXT("JH") || Base == TEXT("SH") || Base == TEXT("ZH")) return 0.060f;
     return 0.055f;
 }
 
