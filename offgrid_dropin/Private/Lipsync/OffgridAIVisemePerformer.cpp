@@ -88,20 +88,9 @@ static bool SameContinuousPhrase(const FOffgridAIAlignedVisemeEvent* A, const FO
     if (A->PhraseIndex != B->PhraseIndex) return false;
     if (A->SentenceIndex != INDEX_NONE && B->SentenceIndex != INDEX_NONE && A->SentenceIndex != B->SentenceIndex) return false;
 
-    // Continuous phone-state rendering must not erase real acoustic pauses.
-    // We only bridge adjacent states when the alignment itself says their
-    // source phone intervals are close. Sentence/terminal boundaries are
-    // already rejected above by SentenceIndex.
-    if (FMath::IsFinite(A->AlignedPhoneEndSeconds) && FMath::IsFinite(B->AlignedPhoneStartSeconds)
-        && A->AlignedPhoneEndSeconds > 0.0f && B->AlignedPhoneStartSeconds > 0.0f)
-    {
-        const float AcousticGap = B->AlignedPhoneStartSeconds - A->AlignedPhoneEndSeconds;
-        if (AcousticGap > 0.115f)
-        {
-            return false;
-        }
-    }
-
+    // Occupancy-committed events are already split by speech islands; do not
+    // add any phone-alignment continuity test here. Sentence/terminal
+    // boundaries are already rejected above by SentenceIndex.
     const float CenterGap = B->FinalRenderCenterSeconds - A->FinalRenderCenterSeconds;
     if (CenterGap > 0.420f)
     {
@@ -124,7 +113,7 @@ static float EventWeightAt(const FOffgridAIAlignedVisemeEvent& E, const FOffgrid
     float ReleaseEnd = PeakEnd + Release;
 
     // Treat aligned visemes as states over a continuous phrase, not as
-    // isolated impulses. Forced alignment assigns each frame to a phone/state;
+    // isolated impulses. The occupancy runtime commits a monotonic text-viseme prefix;
     // the performer should therefore keep a mouth state alive until the next
     // same-phrase state takes over. This fixes perceptual dead zones without
     // moving the committed alignment centers or adding a scheduler.

@@ -24,25 +24,11 @@ struct FOffgridAIAlignedVisemeEvent
     int32 SourcePhoneIndex = INDEX_NONE;
     FString SourcePhoneBase;
     FName SourcePhoneClass = NAME_None;
-    float AlignedPhoneStartSeconds = 0.0f;
-    float AlignedPhoneEndSeconds = 0.0f;
-    float AlignmentConfidence = 0.0f;
-    float AlignmentScoreGap = 0.0f;
-    float AlignmentObservedDurationSeconds = 0.0f;
-    float AlignmentExpectedDurationSeconds = 0.0f;
-    FName AlignmentReason = NAME_None;
     bool bMappedToObservedSpeech = false;
 
     float CommitPlaybackSeconds = 0.0f;
     float CommitLeadSeconds = 0.0f;
     FName CommitReason = FName(TEXT("unknown"));
-    bool bCommitStableByConfidence = false;
-    bool bCommitStableByBoundary = false;
-    bool bCommitStableByDuration = false;
-    bool bCommitStableByLead = false;
-    bool bCommitStableByLag = false;
-    float CommitConfidenceThreshold = 0.0f;
-    float CommitAlignableLagSeconds = 0.0f;
 
     float RequiredActiveElapsedSeconds = 0.0f;
     float ObservedActiveElapsedSeconds = 0.0f;
@@ -59,14 +45,6 @@ struct FOffgridAIAlignedVisemeTrack
     float SpeechStartSeconds = 0.0f;
     float SpeechEndSeconds = 0.0f;
     TArray<FOffgridAIAlignedVisemeEvent> Events;
-    // Runtime-only state: when each transcript phone first became alignable in
-    // the observed stream. This lets the streaming harness keep a short
-    // movable suffix before freezing a phone into the committed prefix.
-    TArray<float> RuntimeFirstAlignedObservedEndSeconds;
-    // Runtime phone occupancy diagnostics for the full transcript phone stream,
-    // not just committed visible visemes.
-    TArray<float> RuntimeObservedPhoneStartSeconds;
-    TArray<float> RuntimeObservedPhoneEndSeconds;
 };
 
 struct FOffgridAIPerformedVisemeFrame

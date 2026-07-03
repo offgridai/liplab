@@ -60,6 +60,7 @@ public:
 
     bool IsNone() const { return value_.empty(); }
     const std::string& Str() const { return value_; }
+    FString ToString() const;
     const char* c_str() const { return value_.c_str(); }
 
     friend bool operator==(const FName& lhs, const FName& rhs) { return lhs.value_ == rhs.value_; }
@@ -295,6 +296,7 @@ private:
 };
 
 inline FName::FName(const FString& value) : value_(value.Str()) {}
+inline FString FName::ToString() const { return FString(value_); }
 
 class FText
 {

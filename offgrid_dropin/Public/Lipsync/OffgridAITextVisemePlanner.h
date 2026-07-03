@@ -36,7 +36,6 @@ struct FOffgridAITextVisemeEvent
     FString SourcePhoneBase;
     float PhoneLocalNorm = 0.5f;
     bool bIsStrongVisibleEvent = false;
-    bool bIsDominant = false;
     FName Generator = NAME_None;
 };
 
@@ -63,7 +62,7 @@ struct FOffgridAITextVisemePlan
     TArray<FOffgridAITextVisemeEvent> Events;
     TArray<FOffgridAIExpectedPhone> ExpectedPhones;
     float EstimatedDurationSeconds = 0.0f;
-    // Word metadata used by the online aligner for soft text boundary metadata and diagnostics.
+    // Word metadata used for text planning, phrase/sentence diagnostics, and soft boundary metadata.
     TArray<int32> WordSentenceIslandIndices;
     TArray<int32> WordPhraseIndices;
     TArray<int32> WordSyllableCounts;

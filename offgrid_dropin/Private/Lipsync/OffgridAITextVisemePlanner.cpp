@@ -226,7 +226,6 @@ static void AddEvent(TArray<FOffgridAITextVisemeEvent>& Events, EOffgridAITextVi
     E.SourcePhoneBase = SourcePhoneBase;
     E.PhoneLocalNorm = LocalOrder;
     E.bIsStrongVisibleEvent = (V == EOffgridAITextViseme::MBP || V == EOffgridAITextViseme::WUH || ResolvedPose == FName(TEXT("20_FV")) || (ResolvedPose == FName(TEXT("14_ChJjSh")) && Strength >= 0.70f));
-    E.bIsDominant = E.bIsStrongVisibleEvent || Strength >= 0.85f;
     E.Generator = Generator;
     E.StartNorm = LocalOrder; // Overwritten by the final normalized timing pass.
     E.EndNorm = 0.0f;
