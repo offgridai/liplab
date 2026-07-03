@@ -22,13 +22,101 @@ static float LeadForPose(const FName& PoseID)
     return 0.0f;
 }
 
-// Deliberately index-based rather than phone-duration/text-normalized.
-// This is the simplified experiment: once speech occupancy is detected,
-// advance monotonically through the planned visible poses at an even pace.
-static float EventOrderNorm(int32 EventIndex, int32 EventCount)
+static float FallbackEventWeight(const FOffgridAITextVisemeEvent& Event)
 {
-    if (EventCount <= 0) return 1.0f;
-    return FMath::Clamp((static_cast<float>(EventIndex) + 0.5f) / static_cast<float>(EventCount), 0.0f, 1.0f);
+    const FString Pose = Event.PoseID.ToString();
+    if (Pose.Contains(TEXT("22_MBP"))) return 0.080f;
+    if (Pose.Contains(TEXT("20_FV")) || Pose.Contains(TEXT("14_ChJjSh"))) return 0.085f;
+    if (Pose.Contains(TEXT("12_Ww")) || Pose.Contains(TEXT("11_Oo")) || Pose.Contains(TEXT("09_Oh"))) return 0.105f;
+    if (Pose.Contains(TEXT("03_Ee")) || Pose.Contains(TEXT("05_Ay"))) return 0.095f;
+    return 0.100f;
+}
+
+static void BuildEventProgressNorms(const FOffgridAITextVisemePlan& Plan, TArray<float>& OutCenterNorms, float& OutTotalWeight)
+{
+    const int32 EventCount = Plan.Events.Num();
+    OutCenterNorms.Init(0.0f, EventCount);
+    OutTotalWeight = 0.0f;
+    if (EventCount <= 0)
+    {
+        return;
+    }
+
+    TArray<int32> WordPhoneBegin;
+    TArray<int32> WordPhoneEnd;
+    WordPhoneBegin.Init(INDEX_NONE, Plan.WordSyllableCounts.Num());
+    WordPhoneEnd.Init(INDEX_NONE, Plan.WordSyllableCounts.Num());
+    for (int32 PhoneIndex = 0; PhoneIndex < Plan.ExpectedPhones.Num(); ++PhoneIndex)
+    {
+        const FOffgridAIExpectedPhone& Phone = Plan.ExpectedPhones[PhoneIndex];
+        if (!WordPhoneBegin.IsValidIndex(Phone.WordIndex))
+        {
+            continue;
+        }
+        int32& Begin = WordPhoneBegin[Phone.WordIndex];
+        int32& End = WordPhoneEnd[Phone.WordIndex];
+        if (Begin == INDEX_NONE) Begin = PhoneIndex;
+        End = PhoneIndex + 1;
+    }
+
+    TArray<float> EventWeights;
+    EventWeights.Init(0.0f, EventCount);
+    for (int32 EventIndex = 0; EventIndex < EventCount; ++EventIndex)
+    {
+        const FOffgridAITextVisemeEvent& Event = Plan.Events[EventIndex];
+        const int32 WordIndex = Event.WordIndex;
+        int32 RangeStart = Event.SourcePhoneGlobalIndex;
+        int32 RangeEnd = INDEX_NONE;
+
+        for (int32 NextIndex = EventIndex + 1; NextIndex < EventCount; ++NextIndex)
+        {
+            const FOffgridAITextVisemeEvent& NextEvent = Plan.Events[NextIndex];
+            if (NextEvent.WordIndex != WordIndex)
+            {
+                continue;
+            }
+            if (NextEvent.SourcePhoneGlobalIndex != INDEX_NONE)
+            {
+                RangeEnd = NextEvent.SourcePhoneGlobalIndex;
+                break;
+            }
+        }
+
+        if (RangeStart != INDEX_NONE && RangeEnd == INDEX_NONE && WordPhoneEnd.IsValidIndex(WordIndex))
+        {
+            RangeEnd = WordPhoneEnd[WordIndex];
+        }
+
+        float Weight = 0.0f;
+        if (RangeStart != INDEX_NONE && RangeEnd != INDEX_NONE && RangeEnd > RangeStart)
+        {
+            for (int32 PhoneIndex = RangeStart; PhoneIndex < RangeEnd && Plan.ExpectedPhones.IsValidIndex(PhoneIndex); ++PhoneIndex)
+            {
+                Weight += FMath::Max(Plan.ExpectedPhones[PhoneIndex].WeightSeconds, 0.020f);
+            }
+        }
+
+        if (Weight <= KINDA_SMALL_NUMBER)
+        {
+            const float FallbackWord = Plan.WordSyllableCounts.IsValidIndex(WordIndex)
+                ? 0.075f * FMath::Max(Plan.WordSyllableCounts[WordIndex], 1)
+                : 0.0f;
+            Weight = FMath::Max(FallbackEventWeight(Event), FallbackWord);
+        }
+
+        EventWeights[EventIndex] = Weight;
+        OutTotalWeight += Weight;
+    }
+
+    OutTotalWeight = FMath::Max(OutTotalWeight, 0.001f);
+    float CumulativeWeight = 0.0f;
+    for (int32 EventIndex = 0; EventIndex < EventCount; ++EventIndex)
+    {
+        const float Weight = EventWeights[EventIndex];
+        const float CenterWeight = CumulativeWeight + Weight * 0.5f;
+        OutCenterNorms[EventIndex] = FMath::Clamp(CenterWeight / OutTotalWeight, 0.0f, 1.0f);
+        CumulativeWeight += Weight;
+    }
 }
 
 struct FEffectiveSpeechRegion
@@ -353,6 +441,10 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         return;
     }
 
+    TArray<float> EventCenterNorms;
+    float EventTotalWeight = 0.0f;
+    BuildEventProgressNorms(Plan, EventCenterNorms, EventTotalWeight);
+
     const bool bFinal = Input.bInputStreamClosed || Input.bPlaybackFinalized;
     const float ObservedEnd = FMath::Max(Input.ObservedAudioBufferEndSec, 0.0f);
 
@@ -389,7 +481,9 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
     while (Plan.Events.IsValidIndex(NextEventIndex))
     {
         const FOffgridAITextVisemeEvent& T = Plan.Events[NextEventIndex];
-        const float OrderNorm = EventOrderNorm(NextEventIndex, EventCount);
+        const float OrderNorm = EventCenterNorms.IsValidIndex(NextEventIndex)
+            ? EventCenterNorms[NextEventIndex]
+            : 1.0f;
         const float RequiredActiveSec = OrderNorm * TotalPlannedActiveSec;
 
         if (RequiredActiveSec > CommitSafeActiveSec && !bFinal)
