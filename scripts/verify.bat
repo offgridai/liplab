@@ -84,12 +84,16 @@ python scripts\check_gold.py --include-drafts
 if errorlevel 1 exit /b 1
 
 echo [phase] run_corpus
+set "LIPLAB_PREROLL_MS=350"
+if not "%~1"=="" set "LIPLAB_PREROLL_MS=%~1"
+echo Using preroll !LIPLAB_PREROLL_MS! ms
+
 if exist "!BUILD_DIR!\liplab_runner.exe" (
-    "!BUILD_DIR!\liplab_runner.exe" .
+    "!BUILD_DIR!\liplab_runner.exe" . --preroll-ms !LIPLAB_PREROLL_MS!
 ) else if exist build\Release\liplab_runner.exe (
-    build\Release\liplab_runner.exe .
+    build\Release\liplab_runner.exe . --preroll-ms !LIPLAB_PREROLL_MS!
 ) else if exist build\liplab_runner.exe (
-    build\liplab_runner.exe .
+    build\liplab_runner.exe . --preroll-ms !LIPLAB_PREROLL_MS!
 ) else (
     echo liplab_runner.exe not found under !BUILD_DIR!, build\Release, or build\
     exit /b 1

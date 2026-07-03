@@ -2,1080 +2,550 @@ import csv
 import json
 import pathlib
 import statistics
-import math
-from typing import Iterable
+from typing import Any
 
 
-def read_csv_rows(path: pathlib.Path):
-    if not path.exists():
-        return []
-    with path.open(newline="", encoding="utf-8") as handle:
-        return list(csv.DictReader(handle))
-
-
-def span_duration_seconds(spans):
-    return sum(max(0.0, end - start) for start, end in spans)
-
-
-def merge_spans(spans, gap_seconds=0.120):
-    merged = []
-    for start, end in sorted(spans):
-        if not merged or start > merged[-1][1] + gap_seconds:
-            merged.append([start, end])
-        else:
-            merged[-1][1] = max(merged[-1][1], end)
-    return [(start, end) for start, end in merged]
-
-
-def overlap_duration_seconds(lhs, rhs):
-    total = 0.0
-    i = 0
-    j = 0
-    while i < len(lhs) and j < len(rhs):
-        start = max(lhs[i][0], rhs[j][0])
-        end = min(lhs[i][1], rhs[j][1])
-        if end > start:
-            total += end - start
-        if lhs[i][1] <= rhs[j][1]:
-            i += 1
-        else:
-            j += 1
-    return total
-
-
-
-def span_boundary_metrics(reference_spans, predicted_spans, gap_seconds=0.120):
-    """Return occupancy and boundary metrics for two span sets.
-
-    Boundary errors are computed only for temporally-overlapping matched regions.
-    This prevents one split/merge from poisoning every later region by index.
-    Count mismatch remains explicit via missing_count/extra_count/count_mismatch.
-    """
-    reference_spans = merge_spans(reference_spans, gap_seconds)
-    predicted_spans = merge_spans(predicted_spans, gap_seconds)
-    reference_ms = span_duration_seconds(reference_spans) * 1000.0
-    predicted_ms = span_duration_seconds(predicted_spans) * 1000.0
-    overlap_ms = overlap_duration_seconds(reference_spans, predicted_spans) * 1000.0
-    precision = overlap_ms / predicted_ms if predicted_ms > 0.0 else 0.0
-    recall = overlap_ms / reference_ms if reference_ms > 0.0 else 0.0
-    f1 = 2.0 * precision * recall / (precision + recall) if (precision > 0.0 or recall > 0.0) else 0.0
-
-    used_pred = set()
-    start_errors = []
-    end_errors = []
-    for ref_start, ref_end in reference_spans:
-        best_i = None
-        best_overlap = 0.0
-        for i, (pred_start, pred_end) in enumerate(predicted_spans):
-            if i in used_pred:
-                continue
-            ov = max(0.0, min(ref_end, pred_end) - max(ref_start, pred_start))
-            if ov > best_overlap:
-                best_overlap = ov
-                best_i = i
-        if best_i is None or best_overlap <= 0.0:
-            continue
-        used_pred.add(best_i)
-        pred_start, pred_end = predicted_spans[best_i]
-        start_errors.append(abs(pred_start - ref_start) * 1000.0)
-        end_errors.append(abs(pred_end - ref_end) * 1000.0)
-
-    matched_count = len(start_errors)
-    return {
-        "reference_count": len(reference_spans),
-        "predicted_count": len(predicted_spans),
-        "matched_count": matched_count,
-        "missing_count": max(0, len(reference_spans) - matched_count),
-        "extra_count": max(0, len(predicted_spans) - matched_count),
-        "count_mismatch": len(reference_spans) != len(predicted_spans),
-        "reference_ms": reference_ms,
-        "predicted_ms": predicted_ms,
-        "overlap_ms": overlap_ms,
-        "precision": precision,
-        "recall": recall,
-        "f1": f1,
-        "start_errors_ms": start_errors,
-        "end_errors_ms": end_errors,
-        "region_start_error_sum_ms": sum(start_errors),
-        "region_end_error_sum_ms": sum(end_errors),
-        "mean_abs_start_error_ms": _mean(start_errors),
-        "median_abs_start_error_ms": _median(start_errors),
-        "p90_abs_start_error_ms": _percentile(start_errors, 0.90),
-        "mean_abs_end_error_ms": _mean(end_errors),
-        "median_abs_end_error_ms": _median(end_errors),
-        "p90_abs_end_error_ms": _percentile(end_errors, 0.90),
-        "tail_leakage_ms": tail_leakage_ms(reference_spans, predicted_spans),
-    }
-
-
-def empty_speech_layer():
-    return span_boundary_metrics([], [])
-
-
-def tail_leakage_ms(reference_spans, predicted_spans, gap_seconds=0.120):
-    reference_spans = merge_spans(reference_spans, gap_seconds)
-    predicted_spans = merge_spans(predicted_spans, gap_seconds)
-    if not reference_spans or not predicted_spans:
-        return 0.0
-
-    total_ms = 0.0
-    last_reference_end = reference_spans[-1][1]
-    for pred_start, pred_end in predicted_spans:
-        best_ref = None
-        best_overlap = 0.0
-        for ref_start, ref_end in reference_spans:
-            overlap = max(0.0, min(ref_end, pred_end) - max(ref_start, pred_start))
-            if overlap > best_overlap:
-                best_overlap = overlap
-                best_ref = (ref_start, ref_end)
-
-        if best_ref is not None and best_overlap > 0.0:
-            total_ms += max(0.0, pred_end - best_ref[1]) * 1000.0
-        elif pred_start >= last_reference_end:
-            total_ms += max(0.0, pred_end - pred_start) * 1000.0
-
-    return total_ms
-
-
-def _mean(values: Iterable[float]) -> float:
-    values = list(values)
+def _mean(values):
+    values = [float(v) for v in values if v is not None]
     return sum(values) / len(values) if values else 0.0
 
 
-def _median(values: Iterable[float]) -> float:
-    values = list(values)
-    return float(statistics.median(values)) if values else 0.0
+def _median(values):
+    values = sorted(float(v) for v in values if v is not None)
+    return statistics.median(values) if values else 0.0
 
 
-def _percentile(values: Iterable[float], q: float) -> float:
-    values = sorted(float(v) for v in values)
+def _p90(values):
+    values = sorted(float(v) for v in values if v is not None)
     if not values:
         return 0.0
-    if len(values) == 1:
-        return values[0]
-    q = max(0.0, min(1.0, q))
-    pos = q * (len(values) - 1)
-    lo = int(pos)
-    hi = min(lo + 1, len(values) - 1)
-    t = pos - lo
-    return values[lo] * (1.0 - t) + values[hi] * t
+    return values[int(0.9 * (len(values) - 1))]
 
 
-def _safe_float(value, default=0.0):
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return default
+def _max(values):
+    values = [float(v) for v in values if v is not None]
+    return max(values) if values else 0.0
 
 
-def _valid_span(item, start_key="start", end_key="end"):
-    start = _safe_float(item.get(start_key), -1.0)
-    end = _safe_float(item.get(end_key), -1.0)
-    if start < 0.0 or end <= start:
-        return None
-    return (start, end)
+def _stddev(values):
+    values = [float(v) for v in values if v is not None]
+    return statistics.pstdev(values) if len(values) > 1 else 0.0
 
 
-def extract_runtime_phone_spans(rows):
-    spans = []
-    for item in rows:
-        observed = _valid_span(item, "observed_start", "observed_end")
-        if observed is not None:
-            spans.append(observed)
-            continue
-
-        span = _valid_span(item, "start", "end")
-        if span is None:
-            continue
-
-        # Older harness exports included fallback-paced phone timings in start/end
-        # plus a mapped_to_observed_speech bit. Prefer acoustic/observed spans only.
-        if ("observed_start" in item or "observed_end" in item) and _safe_float(item.get("mapped_to_observed_speech"), 0.0) <= 0.5:
-            continue
-
-        spans.append(span)
-    return spans
-
-
-def build_case_layers(case_dir: pathlib.Path, gold_case_dir: pathlib.Path | None, row):
-    layers = {
-        # Primary speech layer is detector-owned speech occupancy. Phone-derived
-        # and visible-viseme envelopes remain separate diagnostics.
-        "speech": empty_speech_layer(),
-        "phone_occupancy": empty_speech_layer(),
-        "speech_visible": empty_speech_layer(),
-        "words": {
-            "reference_count": 0,
-            "matched_count": 0,
-            "missing_count": 0,
-            "coverage_rate": 0.0,
-            "reference_ms": 0.0,
-            "predicted_ms": 0.0,
-            "overlap_ms": 0.0,
-            "precision": 0.0,
-            "recall": 0.0,
-            "f1": 0.0,
-            "start_error_sum_ms": 0.0,
-            "end_error_sum_ms": 0.0,
-            "duration_error_sum_ms": 0.0,
-            "start_errors_ms": [],
-            "end_errors_ms": [],
-            "duration_errors_ms": [],
-            "duration_norm_errors": [],
-            "stretch_abs_log2_errors": [],
-            "duration_l1_all_ms": 0.0,
-            "duration_l1_norm": 0.0,
-            "matched_reference_ms": 0.0,
-            "matched_predicted_ms": 0.0,
-            "missing_reference_ms": 0.0,
-            "extra_predicted_ms": 0.0,
-            "mean_abs_start_error_ms": 0.0,
-            "median_abs_start_error_ms": 0.0,
-            "p90_abs_start_error_ms": 0.0,
-            "mean_abs_end_error_ms": 0.0,
-            "median_abs_end_error_ms": 0.0,
-            "p90_abs_end_error_ms": 0.0,
-            "mean_abs_duration_error_ms": 0.0,
-            "median_abs_duration_error_ms": 0.0,
-            "p90_abs_duration_error_ms": 0.0,
-            "mean_abs_duration_error_norm": 0.0,
-            "median_abs_duration_error_norm": 0.0,
-            "p90_abs_duration_error_norm": 0.0,
-            "mean_abs_stretch_log2": 0.0,
-            "median_abs_stretch_log2": 0.0,
-            "p90_abs_stretch_log2": 0.0,
-            "head_reference_count": 0,
-            "head_matched_count": 0,
-            "head_start_error_sum_ms": 0.0,
-            "head_start_errors_ms": [],
-            "mean_head_start_error_ms": 0.0,
-            "median_head_start_error_ms": 0.0,
-            "p90_head_start_error_ms": 0.0,
-        },
-        "phonemes": {
-            "reference_count": row["reference_count"],
-            "matched_count": row["matched_count"],
-            "missing_count": row["raw"].get("missing_count", 0),
-            "extra_count": row["raw"].get("extra_count", 0),
-            "coverage_rate": row["matched_count"] / max(row["reference_count"], 1),
-            "center_error_sum_ms": row["mean_abs_center_error_ms"] * row["matched_count"],
-            "start_error_sum_ms": row["mean_abs_start_error_ms"] * row["matched_count"],
-            "end_error_sum_ms": row["mean_abs_end_error_ms"] * row["matched_count"],
-            "mean_abs_center_error_ms": row["mean_abs_center_error_ms"],
-            "median_abs_center_error_ms": row["median_abs_center_error_ms"],
-            "p90_abs_center_error_ms": row["p90_abs_center_error_ms"],
-            "mean_abs_start_error_ms": row["mean_abs_start_error_ms"],
-            "mean_abs_end_error_ms": row["mean_abs_end_error_ms"],
-            "intra_reference_count": row["intra_word_alignment"].get("reference_count", 0),
-            "intra_matched_count": row["intra_word_alignment"].get("matched_count", 0),
-            "intra_missing_count": row["intra_word_alignment"].get("missing_count", 0),
-            "intra_extra_count": row["intra_word_alignment"].get("extra_count", 0),
-            "intra_coverage_rate": row["intra_word_alignment"].get("matched_count", 0) / max(row["intra_word_alignment"].get("reference_count", 0), 1),
-            "intra_center_error_sum_ms": row["intra_word_alignment"].get("mean_abs_center_error_ms", 0.0) * row["intra_word_alignment"].get("matched_count", 0),
-            "intra_mean_abs_center_error_ms": row["intra_word_alignment"].get("mean_abs_center_error_ms", 0.0),
-            "intra_median_abs_center_error_ms": row["intra_word_alignment"].get("median_abs_center_error_ms", 0.0),
-            "intra_p90_abs_center_error_ms": row["intra_word_alignment"].get("p90_abs_center_error_ms", 0.0),
-        },
+def _stats(prefix: str, values):
+    vals = [float(v) for v in values if v is not None]
+    return {
+        f"{prefix}_mean_ms": _mean(vals),
+        f"{prefix}_median_ms": _median(vals),
+        f"{prefix}_p90_ms": _p90(vals),
+        f"{prefix}_max_ms": _max(vals),
+        f"{prefix}_stddev_ms": _stddev(vals),
     }
 
-    words = layers["words"]
-    word_onset = row["word_onset_alignment"]
-    words["head_reference_count"] = word_onset.get("reference_count", 0)
-    words["head_matched_count"] = word_onset.get("matched_count", 0)
-    words["head_start_error_sum_ms"] = word_onset.get("mean_abs_start_error_ms", 0.0) * words["head_matched_count"]
-    # Per-case median/p90 are diagnostic only; pooled median is computed from CSV below when possible.
-    words["mean_head_start_error_ms"] = word_onset.get("mean_abs_start_error_ms", 0.0)
-    words["median_head_start_error_ms"] = word_onset.get("median_abs_start_error_ms", words["mean_head_start_error_ms"])
-    words["p90_head_start_error_ms"] = word_onset.get("p90_abs_start_error_ms", words["mean_head_start_error_ms"])
 
-    if gold_case_dir is None or not gold_case_dir.exists():
-        return layers
-
-    gold_speech_rows = read_csv_rows(gold_case_dir / "speech.csv")
-    gold_word_rows = read_csv_rows(gold_case_dir / "words.csv")
-    committed_rows = read_csv_rows(case_dir / "committed.csv")
-    runtime_alignment_rows = read_csv_rows(case_dir / "runtime_phone_alignment.csv")
-    speech_region_rows = read_csv_rows(case_dir / "speech_regions.csv")
-    onset_rows = read_csv_rows(case_dir / "word_onset_diagnostics.csv")
-
-    gold_speech = [
-        (_safe_float(item.get("start")), _safe_float(item.get("end")))
-        for item in gold_speech_rows
-    ]
-    visible_speech = [
-        (_safe_float(item.get("start")), _safe_float(item.get("end")))
-        for item in committed_rows
-        if _safe_float(item.get("end")) > _safe_float(item.get("start"))
-    ]
-    runtime_phone_speech = extract_runtime_phone_spans(runtime_alignment_rows)
-    detector_speech = [
-        (_safe_float(item.get("start")), _safe_float(item.get("end")))
-        for item in speech_region_rows
-        if _safe_float(item.get("end")) > _safe_float(item.get("start"))
-    ]
-
-    layers["phone_occupancy"] = span_boundary_metrics(gold_speech, runtime_phone_speech)
-    layers["speech_visible"] = span_boundary_metrics(gold_speech, visible_speech)
-    if detector_speech:
-        layers["speech"] = span_boundary_metrics(gold_speech, detector_speech)
-    elif runtime_phone_speech:
-        # Backward compatibility for older runs before speech_regions.csv existed.
-        layers["speech"] = layers["phone_occupancy"]
-    else:
-        # Oldest runs may only have committed viseme spans.
-        layers["speech"] = layers["speech_visible"]
-
-    predicted_word_spans = {}
-    for item in committed_rows:
-        word_index = int(item.get("word_index", -1))
-        if word_index < 0:
-            continue
-        start = _safe_float(item.get("start"))
-        end = _safe_float(item.get("end"))
-        if word_index not in predicted_word_spans:
-            predicted_word_spans[word_index] = [start, end]
-        else:
-            predicted_word_spans[word_index][0] = min(predicted_word_spans[word_index][0], start)
-            predicted_word_spans[word_index][1] = max(predicted_word_spans[word_index][1], end)
-
-    words["reference_count"] = len(gold_word_rows)
-    gold_word_indices = set()
-    word_duration_diag_rows = []
-    for item in gold_word_rows:
-        word_index = int(item.get("word_index", -1))
-        if word_index >= 0:
-            gold_word_indices.add(word_index)
-        gold_start = _safe_float(item.get("start"))
-        gold_end = _safe_float(item.get("end"))
-        gold_duration_ms = max(0.0, gold_end - gold_start) * 1000.0
-        words["reference_ms"] += gold_duration_ms
-        predicted = predicted_word_spans.get(word_index)
-        diag = {
-            "word_index": word_index,
-            "word": item.get("word") or item.get("text") or item.get("label") or "",
-            "gold_start": gold_start,
-            "gold_end": gold_end,
-            "gold_duration_ms": gold_duration_ms,
-            "predicted_start": "",
-            "predicted_end": "",
-            "predicted_duration_ms": 0.0,
-            "overlap_ms": 0.0,
-            "start_error_ms": "",
-            "end_error_ms": "",
-            "duration_error_ms": gold_duration_ms,
-            "duration_error_norm": 1.0 if gold_duration_ms > 0.0 else 0.0,
-            "stretch_factor": "",
-            "stretch_abs_log2": "",
-            "missing_predicted": 1,
-            "extra_predicted": 0,
-        }
-        if predicted is None:
-            words["missing_reference_ms"] += gold_duration_ms
-            words["duration_l1_all_ms"] += gold_duration_ms
-            word_duration_diag_rows.append(diag)
-            continue
-        words["matched_count"] += 1
-        predicted_duration_ms = max(0.0, predicted[1] - predicted[0]) * 1000.0
-        overlap_ms = max(0.0, min(predicted[1], gold_end) - max(predicted[0], gold_start)) * 1000.0
-        start_error = abs(predicted[0] - gold_start) * 1000.0
-        end_error = abs(predicted[1] - gold_end) * 1000.0
-        duration_error = abs(predicted_duration_ms - gold_duration_ms)
-        duration_norm = duration_error / gold_duration_ms if gold_duration_ms > 0.0 else 0.0
-        stretch_factor = predicted_duration_ms / gold_duration_ms if gold_duration_ms > 0.0 else 0.0
-        stretch_abs_log2 = abs(math.log(stretch_factor, 2.0)) if stretch_factor > 0.0 else 0.0
-        words["predicted_ms"] += predicted_duration_ms
-        words["matched_reference_ms"] += gold_duration_ms
-        words["matched_predicted_ms"] += predicted_duration_ms
-        words["overlap_ms"] += overlap_ms
-        words["start_error_sum_ms"] += start_error
-        words["end_error_sum_ms"] += end_error
-        words["duration_error_sum_ms"] += duration_error
-        words["duration_l1_all_ms"] += duration_error
-        words["start_errors_ms"].append(start_error)
-        words["end_errors_ms"].append(end_error)
-        words["duration_errors_ms"].append(duration_error)
-        words["duration_norm_errors"].append(duration_norm)
-        words["stretch_abs_log2_errors"].append(stretch_abs_log2)
-        diag.update({
-            "predicted_start": predicted[0],
-            "predicted_end": predicted[1],
-            "predicted_duration_ms": predicted_duration_ms,
-            "overlap_ms": overlap_ms,
-            "start_error_ms": start_error,
-            "end_error_ms": end_error,
-            "duration_error_ms": duration_error,
-            "duration_error_norm": duration_norm,
-            "stretch_factor": stretch_factor,
-            "stretch_abs_log2": stretch_abs_log2,
-            "missing_predicted": 0,
-        })
-        word_duration_diag_rows.append(diag)
-
-    for word_index, predicted in sorted(predicted_word_spans.items()):
-        if word_index in gold_word_indices:
-            continue
-        predicted_duration_ms = max(0.0, predicted[1] - predicted[0]) * 1000.0
-        words["predicted_ms"] += predicted_duration_ms
-        words["extra_predicted_ms"] += predicted_duration_ms
-        words["duration_l1_all_ms"] += predicted_duration_ms
-        word_duration_diag_rows.append({
-            "word_index": word_index,
-            "word": "",
-            "gold_start": "",
-            "gold_end": "",
-            "gold_duration_ms": 0.0,
-            "predicted_start": predicted[0],
-            "predicted_end": predicted[1],
-            "predicted_duration_ms": predicted_duration_ms,
-            "overlap_ms": 0.0,
-            "start_error_ms": "",
-            "end_error_ms": "",
-            "duration_error_ms": predicted_duration_ms,
-            "duration_error_norm": "",
-            "stretch_factor": "",
-            "stretch_abs_log2": "",
-            "missing_predicted": 0,
-            "extra_predicted": 1,
-        })
-
-    if word_duration_diag_rows:
-        diag_path = case_dir / "word_duration_diagnostics.csv"
-        with diag_path.open("w", newline="", encoding="utf-8") as handle:
-            fieldnames = list(word_duration_diag_rows[0].keys())
-            writer = csv.DictWriter(handle, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(word_duration_diag_rows)
-
-    if onset_rows:
-        words["head_start_errors_ms"] = [
-            _safe_float(item.get("error_ms"))
-            for item in onset_rows
-            if str(item.get("missing_event", "")).lower() != "true"
-        ]
-        words["head_start_error_sum_ms"] = sum(words["head_start_errors_ms"])
-        words["head_matched_count"] = len(words["head_start_errors_ms"])
-
-    words["missing_count"] = max(0, words["reference_count"] - words["matched_count"])
-    words["coverage_rate"] = words["matched_count"] / max(words["reference_count"], 1)
-    if words["predicted_ms"] > 0.0:
-        words["precision"] = words["overlap_ms"] / words["predicted_ms"]
-    if words["reference_ms"] > 0.0:
-        words["recall"] = words["overlap_ms"] / words["reference_ms"]
-    if words["precision"] > 0.0 or words["recall"] > 0.0:
-        words["f1"] = 2.0 * words["precision"] * words["recall"] / (words["precision"] + words["recall"])
-    if words["matched_count"] > 0:
-        words["mean_abs_start_error_ms"] = words["start_error_sum_ms"] / words["matched_count"]
-        words["mean_abs_end_error_ms"] = words["end_error_sum_ms"] / words["matched_count"]
-        words["mean_abs_duration_error_ms"] = words["duration_error_sum_ms"] / words["matched_count"]
-        words["median_abs_start_error_ms"] = _median(words["start_errors_ms"])
-        words["p90_abs_start_error_ms"] = _percentile(words["start_errors_ms"], 0.90)
-        words["median_abs_end_error_ms"] = _median(words["end_errors_ms"])
-        words["p90_abs_end_error_ms"] = _percentile(words["end_errors_ms"], 0.90)
-        words["median_abs_duration_error_ms"] = _median(words["duration_errors_ms"])
-        words["p90_abs_duration_error_ms"] = _percentile(words["duration_errors_ms"], 0.90)
-        words["mean_abs_duration_error_norm"] = _mean(words["duration_norm_errors"])
-        words["median_abs_duration_error_norm"] = _median(words["duration_norm_errors"])
-        words["p90_abs_duration_error_norm"] = _percentile(words["duration_norm_errors"], 0.90)
-        words["mean_abs_stretch_log2"] = _mean(words["stretch_abs_log2_errors"])
-        words["median_abs_stretch_log2"] = _median(words["stretch_abs_log2_errors"])
-        words["p90_abs_stretch_log2"] = _percentile(words["stretch_abs_log2_errors"], 0.90)
-    words["duration_l1_norm"] = words["duration_l1_all_ms"] / words["reference_ms"] if words["reference_ms"] > 0.0 else 0.0
-    if words["head_matched_count"] > 0:
-        words["mean_head_start_error_ms"] = words["head_start_error_sum_ms"] / words["head_matched_count"]
-        words["median_head_start_error_ms"] = _median(words["head_start_errors_ms"])
-        words["p90_head_start_error_ms"] = _percentile(words["head_start_errors_ms"], 0.90)
-    return layers
+def read_json(path: pathlib.Path) -> dict[str, Any]:
+    try:
+        return json.loads(path.read_text())
+    except Exception:
+        return {}
 
 
-
-def load_direct_aligner_grade(case_dir: pathlib.Path):
-    path = case_dir / "direct_aligner_grade.json"
+def read_csv_rows(path: pathlib.Path) -> list[dict[str, str]]:
     if not path.exists():
-        return {
-            "available": False,
-            "reference_count": 0,
-            "matched_count": 0,
-            "committed_count": 0,
-            "coverage_rate": 0.0,
-            "mean_abs_center_error_ms": 0.0,
-            "median_abs_center_error_ms": 0.0,
-            "p90_abs_center_error_ms": 0.0,
-            "mean_abs_start_error_ms": 0.0,
-            "mean_abs_end_error_ms": 0.0,
-            "mean_abs_duration_error_ms": 0.0,
-            "word_onset_alignment": {},
-            "intra_word_alignment": {},
-        }
-    data = json.loads(path.read_text())
-    reference = int(data.get("reference_count", 0))
-    matched = int(data.get("matched_count", 0))
-    data["available"] = bool(data.get("gold_available", True))
-    data["coverage_rate"] = matched / max(reference, 1)
-    return data
+        return []
+    try:
+        with path.open(newline="") as f:
+            return list(csv.DictReader(f))
+    except Exception:
+        return []
 
-
-def load_audio_word_boundary_grade(case_dir: pathlib.Path):
-    path = case_dir / "audio_word_boundary_grade.json"
-    if not path.exists():
-        return {"available": False}
-    data = json.loads(path.read_text())
-    data["available"] = True
-    return data
 
 def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
     rows = []
     graded = []
-    ungraded = 0
-    for grade in sorted(root.glob("*/grade.json")):
-        data = json.loads(grade.read_text())
-        gold_available = data.get("gold_available", True)
-        pause = data.get("pause_alignment", {})
-        word_onset = data.get("word_onset_alignment", {})
-        intra_word = data.get("intra_word_alignment", {})
+    ungraded = []
+    if not root.exists():
+        return rows, graded, ungraded
+    for grade_path in sorted(root.glob("*/grade.json")):
+        grade = read_json(grade_path)
+        case_dir = grade_path.parent
+        direct = read_json(case_dir / "direct_aligner_grade.json")
+        runtime_phone_rows = read_csv_rows(case_dir / "runtime_phone_alignment.csv")
+        progress_rows = read_csv_rows(case_dir / "audio_progress_measurements.csv")
+        boundary_filter_rows = read_csv_rows(case_dir / "boundary_filter_training.csv")
+        committed_rows = read_csv_rows(case_dir / "committed.csv")
+        gold_speech_rows = read_csv_rows(gold_root / case_dir.name / "speech.csv") if gold_root else []
+        gold_viseme_rows = _gold_viseme_rows_for_case(gold_root, case_dir.name)
         row = {
-            "case": grade.parent.name,
-            "gold_available": gold_available,
-            "reference_count": data.get("reference_count", 0),
-            "matched_count": data.get("matched_count", 0),
-            "mean_abs_center_error_ms": data.get("mean_abs_center_error_ms", 0.0),
-            "median_abs_center_error_ms": data.get("median_abs_center_error_ms", data.get("mean_abs_center_error_ms", 0.0)),
-            "p90_abs_center_error_ms": data.get("p90_abs_center_error_ms", 0.0),
-            "mean_abs_start_error_ms": data.get("mean_abs_start_error_ms", 0.0),
-            "mean_abs_end_error_ms": data.get("mean_abs_end_error_ms", 0.0),
-            "mean_abs_duration_error_ms": data.get("mean_abs_duration_error_ms", 0.0),
-            "order_violations": data.get("order_violations", 0),
-            "pause_alignment": pause,
-            "word_onset_alignment": word_onset,
-            "intra_word_alignment": intra_word,
-            "raw": data,
-            "direct_aligner": load_direct_aligner_grade(grade.parent),
-            "audio_word_boundaries": load_audio_word_boundary_grade(grade.parent),
+            "case": case_dir.name,
+            "grade": grade,
+            "direct_aligner": direct,
+            "runtime_phone_rows": runtime_phone_rows,
+            "audio_progress_rows": progress_rows,
+            "boundary_filter_rows": boundary_filter_rows,
+            "committed_rows": committed_rows,
+            "gold_speech_rows": gold_speech_rows,
+            "gold_viseme_rows": gold_viseme_rows,
         }
-        row["layers"] = build_case_layers(
-            grade.parent,
-            None if gold_root is None else gold_root / grade.parent.name,
-            row,
-        )
+        row["audio_progress_summary"] = summarize_audio_progress(row)
+        row["boundary_filter_summary"] = summarize_boundary_filter(row)
+        row["phone_class_summary"] = summarize_phone_classes(row)
         rows.append(row)
-        if gold_available:
+        if grade.get("gold_available", True):
             graded.append(row)
         else:
-            ungraded += 1
+            ungraded.append(row)
     return rows, graded, ungraded
 
 
-def _empty_summary(cases=0, graded_cases=0, ungraded_cases=0):
-    keys = [
-        "matched_count", "reference_count", "match_rate",
-        "mean_center_ms", "median_center_ms", "p90_center_ms",
-        "mean_start_ms", "mean_end_ms", "mean_duration_ms",
-        "mean_sentence_start_ms", "median_sentence_start_ms", "p90_sentence_start_ms",
-        "mean_sentence_end_ms", "mean_clause_start_ms", "median_clause_start_ms", "p90_clause_start_ms",
-        "mean_clause_end_ms", "mean_word_onset_ms", "median_word_onset_ms", "p90_word_onset_ms",
-        "mean_intra_word_ms", "median_intra_word_ms", "p90_intra_word_ms",
-        "order_fail_cases", "degenerate_cases", "speech_region_count_mismatch_cases",
-        "sentence_region_count_mismatch_cases", "clause_region_count_mismatch_cases",
-        "speech_precision", "speech_recall", "speech_f1",
-        "speech_boundary_start_ms", "speech_boundary_start_median_ms", "speech_boundary_start_p90_ms",
-        "speech_boundary_end_ms", "speech_boundary_end_median_ms", "speech_boundary_end_p90_ms",
-        "speech_tail_leakage_ms",
-        "phone_occupancy_precision", "phone_occupancy_recall", "phone_occupancy_f1",
-        "phone_occupancy_boundary_start_ms", "phone_occupancy_boundary_end_ms",
-        "phone_occupancy_tail_leakage_ms",
-        "visible_speech_precision", "visible_speech_recall", "visible_speech_f1",
-        "visible_speech_boundary_start_ms", "visible_speech_boundary_end_ms",
-        "visible_speech_tail_leakage_ms",
-        "word_coverage_rate", "word_precision", "word_recall", "word_f1",
-        "word_start_ms", "word_start_median_ms", "word_start_p90_ms",
-        "word_end_ms", "word_duration_ms", "word_duration_median_ms", "word_duration_p90_ms",
-        "word_duration_norm", "word_duration_norm_median", "word_duration_norm_p90",
-        "word_duration_l1_norm", "word_missing_duration_ms", "word_extra_duration_ms",
-        "word_stretch_abs_log2", "word_stretch_abs_log2_p90",
-        "word_head_start_ms", "word_head_start_median_ms", "word_head_start_p90_ms",
-        "phoneme_coverage_rate", "phoneme_center_ms", "phoneme_center_median_ms", "phoneme_center_p90_ms",
-        "phoneme_start_ms", "phoneme_end_ms", "intra_word_coverage_rate", "intra_word_center_ms",
-        "direct_aligner_match_rate", "direct_aligner_center_ms", "direct_aligner_center_median_ms",
-        "direct_aligner_center_p90_ms", "direct_aligner_start_ms", "direct_aligner_end_ms",
-        "direct_aligner_duration_ms", "direct_aligner_word_onset_ms",
-        "direct_aligner_intra_word_coverage_rate", "direct_aligner_intra_word_center_ms",
-        "direct_aligner_available_cases",
-        "audio_word_boundary_available_cases", "audio_word_boundary_reference_count",
-        "audio_word_boundary_selected_count", "audio_word_boundary_candidate_count",
-        "audio_word_boundary_precision_50", "audio_word_boundary_recall_50", "audio_word_boundary_f1_50",
-        "audio_word_boundary_precision_100", "audio_word_boundary_recall_100", "audio_word_boundary_f1_100",
-        "audio_word_boundary_precision_150", "audio_word_boundary_recall_150", "audio_word_boundary_f1_150",
-        "audio_word_boundary_ref_nearest_median_ms", "audio_word_boundary_ref_nearest_p90_ms",
-        "audio_word_boundary_candidate_nearest_median_ms", "audio_word_boundary_candidate_nearest_p90_ms",
-        "audio_word_boundary_raw_recall_50", "audio_word_boundary_raw_recall_100", "audio_word_boundary_raw_recall_150",
-        "audio_word_boundary_top1_recall_100", "audio_word_boundary_top2_recall_100",
-        "audio_word_boundary_top3_recall_100", "audio_word_boundary_top5_recall_100",
-        "audio_word_boundary_positive_mean_score", "audio_word_boundary_negative_mean_score",
-        "audio_word_boundary_score_separation",
-    ]
-    out = {"cases": cases, "graded_cases": graded_cases, "ungraded_cases": ungraded_cases}
-    out.update({key: 0.0 for key in keys})
-    out["matched_count"] = 0
-    out["reference_count"] = 0
-    out["order_fail_cases"] = 0
-    out["degenerate_cases"] = 0
-    out["speech_region_count_mismatch_cases"] = 0
-    out["phone_occupancy_region_count_mismatch_cases"] = 0
-    out["visible_speech_region_count_mismatch_cases"] = 0
-    out["sentence_region_count_mismatch_cases"] = 0
-    out["clause_region_count_mismatch_cases"] = 0
+def _metric(row: dict[str, Any], name: str, default: float = 0.0) -> float:
+    try:
+        return float(row.get("grade", {}).get(name, default))
+    except Exception:
+        return default
+
+
+def _nested(row: dict[str, Any], *keys: str, default: float = 0.0) -> float:
+    cur: Any = row.get("grade", {})
+    try:
+        for key in keys:
+            cur = cur.get(key, {})
+        return float(cur)
+    except Exception:
+        return default
+
+
+def _direct(row: dict[str, Any], name: str, default: float = 0.0) -> float:
+    try:
+        return float(row.get("direct_aligner", {}).get(name, default))
+    except Exception:
+        return default
+
+
+
+def _safe_float(row: dict[str, Any], key: str, default: float = 0.0) -> float:
+    try:
+        value = row.get(key, default)
+        if value in (None, ""):
+            return default
+        return float(value)
+    except Exception:
+        return default
+
+
+def _safe_int(row: dict[str, Any], key: str, default: int = 0) -> int:
+    try:
+        value = row.get(key, default)
+        if value in (None, ""):
+            return default
+        return int(float(value))
+    except Exception:
+        return default
+
+
+def _find_gold_speech_progress(gold_speech_rows: list[dict[str, str]], t: float):
+    best = None
+    best_dist = float("inf")
+    for r in gold_speech_rows:
+        start = _safe_float(r, "start")
+        end = _safe_float(r, "end")
+        if end <= start:
+            continue
+        if start <= t <= end:
+            return ((t - start) / (end - start), end - start)
+        dist = min(abs(t - start), abs(t - end))
+        if dist < best_dist:
+            best_dist = dist
+            best = (start, end)
+    if best and best[1] > best[0] and best_dist <= 0.200:
+        start, end = best
+        return (max(0.0, min(1.0, (t - start) / (end - start))), end - start)
+    return None
+
+
+def _corr(xs: list[float], ys: list[float]) -> float:
+    if len(xs) < 2 or len(xs) != len(ys):
+        return 0.0
+    mx = sum(xs) / len(xs)
+    my = sum(ys) / len(ys)
+    vx = sum((x - mx) ** 2 for x in xs)
+    vy = sum((y - my) ** 2 for y in ys)
+    if vx <= 1e-12 or vy <= 1e-12:
+        return 0.0
+    return sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / ((vx * vy) ** 0.5)
+
+
+def summarize_audio_progress(row: dict[str, Any]) -> dict[str, Any]:
+    gold_speech = row.get("gold_speech_rows", [])
+    progress_rows = row.get("audio_progress_rows", [])
+    errors01 = []
+    errors_ms = []
+    signed_errors01 = []
+    ests = []
+    mfas = []
+    by_component: dict[str, list[float]] = {
+        "time_prior": [],
+        "audio_density": [],
+        "boundary": [],
+        "phone_expectation": [],
+    }
+    playrates = []
+    confidences = []
+    anchor_phone = []
+    anchor_boundary = []
+    anchor_speech = []
+    micro_pause_50 = []
+    micro_pause_75 = []
+    micro_pause_120 = []
+    retrospective_drift_abs01 = []
+    retrospective_drift_abs_ms = []
+    retrospective_drift_signed01 = []
+    retrospective_drift_confidence = []
+    drift_playrates = []
+    filtered_pll_rates = []
+    filtered_pll_conf = []
+    pll_tempo_rates = []
+    pll_tempo_conf = []
+    pll_phase_rates = []
+    timing_warp_rates = []
+    timing_warp_conf = []
+    timing_warp_error_ms = []
+    for r in progress_rows:
+        t = _safe_float(r, "current_playback", _safe_float(r, "CurrentPlaybackSec"))
+        mfa = _find_gold_speech_progress(gold_speech, t)
+        if not mfa:
+            continue
+        mfa_progress, region_duration = mfa
+        est = _safe_float(r, "estimated_region_progress_01")
+        err = est - mfa_progress
+        errors01.append(abs(err))
+        errors_ms.append(abs(err) * region_duration * 1000.0)
+        signed_errors01.append(err)
+        ests.append(est)
+        mfas.append(mfa_progress)
+        components = {
+            "time_prior": _safe_float(r, "time_prior_progress_01"),
+            "audio_density": _safe_float(r, "audio_density_progress_01"),
+            "boundary": _safe_float(r, "boundary_evidence_progress_01"),
+            "phone_expectation": _safe_float(r, "phone_expectation_progress_01"),
+        }
+        for k, v in components.items():
+            by_component[k].append(abs(v - mfa_progress))
+        playrates.append(_safe_float(r, "suggested_play_rate", 1.0))
+        confidences.append(_safe_float(r, "progress_confidence"))
+        anchor_phone.append(_safe_float(r, "anchor_mean_phone_probability", 0.0))
+        anchor_boundary.append(_safe_float(r, "anchor_mean_boundary_probability", 0.0))
+        anchor_speech.append(_safe_float(r, "anchor_mean_speech_probability", 0.0))
+        micro_pause_50.append(_safe_float(r, "micro_pause_count_50ms", 0.0))
+        micro_pause_75.append(_safe_float(r, "micro_pause_count_75ms", 0.0))
+        micro_pause_120.append(_safe_float(r, "micro_pause_count_120ms", 0.0))
+        drift01 = _safe_float(r, "retrospective_drift_01", 0.0)
+        retrospective_drift_abs01.append(abs(drift01))
+        retrospective_drift_abs_ms.append(abs(_safe_float(r, "retrospective_drift_sec", 0.0)) * 1000.0)
+        retrospective_drift_signed01.append(drift01)
+        retrospective_drift_confidence.append(_safe_float(r, "retrospective_drift_confidence", 0.0))
+        drift_playrates.append(_safe_float(r, "drift_suggested_play_rate", 1.0))
+        filtered_pll_rates.append(_safe_float(r, "filtered_pll_play_rate", 1.0))
+        filtered_pll_conf.append(_safe_float(r, "filtered_pll_confidence", 0.0))
+        pll_tempo_rates.append(_safe_float(r, "pll_tempo_rate", 1.0))
+        pll_tempo_conf.append(_safe_float(r, "pll_tempo_confidence", 0.0))
+        pll_phase_rates.append(_safe_float(r, "pll_phase_rate", 1.0))
+        timing_warp_rates.append(_safe_float(r, "timing_warp_rate", 1.0))
+        timing_warp_conf.append(_safe_float(r, "timing_warp_confidence", 0.0))
+        timing_warp_error_ms.append(abs(_safe_float(r, "timing_warp_error_sec", 0.0)) * 1000.0)
+    return {
+        "rows": len(errors01),
+        "mae01": _mean(errors01),
+        "median01": _median(errors01),
+        "p90_ms": sorted(errors_ms)[int(0.9 * (len(errors_ms) - 1))] if errors_ms else 0.0,
+        "mae_ms": _mean(errors_ms),
+        "bias01": _mean(signed_errors01),
+        "corr": _corr(ests, mfas),
+        "time_prior_mae01": _mean(by_component["time_prior"]),
+        "audio_density_mae01": _mean(by_component["audio_density"]),
+        "boundary_mae01": _mean(by_component["boundary"]),
+        "phone_expectation_mae01": _mean(by_component["phone_expectation"]),
+        "mean_playrate": _mean(playrates),
+        "mean_confidence": _mean(confidences),
+        "anchor_mean_phone_probability": _mean(anchor_phone),
+        "anchor_mean_boundary_probability": _mean(anchor_boundary),
+        "anchor_mean_speech_probability": _mean(anchor_speech),
+        "micro_pause_50_count": _mean(micro_pause_50),
+        "micro_pause_75_count": _mean(micro_pause_75),
+        "micro_pause_120_count": _mean(micro_pause_120),
+        "retrospective_drift_abs01": _mean(retrospective_drift_abs01),
+        "retrospective_drift_abs_ms": _mean(retrospective_drift_abs_ms),
+        "retrospective_drift_bias01": _mean(retrospective_drift_signed01),
+        "retrospective_drift_confidence": _mean(retrospective_drift_confidence),
+        "drift_mean_playrate": _mean(drift_playrates),
+        "filtered_pll_playrate": _mean(filtered_pll_rates),
+        "filtered_pll_confidence": _mean(filtered_pll_conf),
+        "pll_tempo_playrate": _mean(pll_tempo_rates),
+        "pll_tempo_confidence": _mean(pll_tempo_conf),
+        "pll_phase_playrate": _mean(pll_phase_rates),
+        "timing_warp_rate": _mean(timing_warp_rates),
+        "timing_warp_confidence": _mean(timing_warp_conf),
+        "timing_warp_error_ms": _mean(timing_warp_error_ms),
+    }
+
+
+def summarize_boundary_filter(row: dict[str, Any], threshold: float = 0.35) -> dict[str, Any]:
+    rows = row.get("boundary_filter_rows", [])
+    expected = 0
+    for r in rows:
+        expected = max(expected, _safe_int(r, "expected_boundary_count"))
+    raw_tp = raw_fp = filt_tp = filt_fp = 0
+    raw_matched = set()
+    filt_matched = set()
+    fp_sustained = fp_flux_only = fp_flat = 0
+    for r in rows:
+        label = _safe_int(r, "label_true") == 1
+        nearest = round(_safe_float(r, "nearest_mfa_boundary"), 3)
+        raw_on = _safe_float(r, "raw_confidence") >= threshold
+        filt_on = _safe_float(r, "filtered_confidence") >= threshold
+        if raw_on and label:
+            raw_tp += 1; raw_matched.add(nearest)
+        elif raw_on:
+            raw_fp += 1
+        if filt_on and label:
+            filt_tp += 1; filt_matched.add(nearest)
+        elif filt_on:
+            filt_fp += 1
+            red = _safe_float(r, "red_herring_probability")
+            rms = _safe_float(r, "rms_norm")
+            flux = _safe_float(r, "flux")
+            valley = _safe_int(r, "local_rms_valley") == 1
+            periodic = _safe_float(r, "periodicity")
+            if rms > 0.20 and red > 0.35:
+                fp_sustained += 1
+            elif flux > 0.30 and not valley:
+                fp_flux_only += 1
+            elif periodic < 0.20 and rms < 0.08:
+                fp_flat += 1
+    raw_p = raw_tp / max(raw_tp + raw_fp, 1)
+    filt_p = filt_tp / max(filt_tp + filt_fp, 1)
+    return {
+        "candidates": len(rows),
+        "expected": expected,
+        "raw_precision": raw_p,
+        "raw_recall": len(raw_matched) / max(expected, 1),
+        "raw_tp": raw_tp,
+        "raw_fp": raw_fp,
+        "filtered_precision": filt_p,
+        "filtered_recall": len(filt_matched) / max(expected, 1),
+        "filtered_tp": filt_tp,
+        "filtered_fp": filt_fp,
+        "filtered_fp_sustained": fp_sustained,
+        "filtered_fp_flux_only": fp_flux_only,
+        "filtered_fp_flat": fp_flat,
+    }
+
+
+def _gold_viseme_rows_for_case(gold_root: pathlib.Path | None, case_name: str) -> list[dict[str, str]]:
+    if not gold_root:
+        return []
+    return read_csv_rows(gold_root / case_name / "visemes.csv")
+
+
+def summarize_phone_classes(row: dict[str, Any]) -> dict[str, Any]:
+    committed = row.get("committed_rows", [])
+    gold = row.get("gold_viseme_rows", [])
+    by_class: dict[str, dict[str, Any]] = {}
+    used_gold: set[int] = set()
+    for c in committed:
+        klass = c.get("source_phone_class") or c.get("pose") or "Unknown"
+        c_center = _safe_float(c, "center", _safe_float(c, "render_center"))
+        c_start = _safe_float(c, "start", _safe_float(c, "render_start"))
+        c_end = _safe_float(c, "end", _safe_float(c, "render_end"))
+        c_pose = c.get("pose", "")
+        c_word_index = _safe_int(c, "word_index", -9999)
+        best_i = -1
+        best_d = float("inf")
+        for i, g in enumerate(gold):
+            if i in used_gold:
+                continue
+            if c_pose and g.get("pose", "") and c_pose != g.get("pose", ""):
+                continue
+            if c_word_index != -9999 and "word_index" in g and _safe_int(g, "word_index", -9998) != c_word_index:
+                continue
+            g_center = (_safe_float(g, "start") + _safe_float(g, "end")) * 0.5
+            d = abs(c_center - g_center)
+            if d < best_d:
+                best_d = d
+                best_i = i
+        bucket = by_class.setdefault(klass, {"n": 0, "matched": 0, "center": [], "start": [], "end": [], "unmapped": 0})
+        bucket["n"] += 1
+        if str(c.get("mapped_to_observed_speech", "1")) != "1":
+            bucket["unmapped"] += 1
+        if best_i >= 0 and best_d <= 0.250:
+            used_gold.add(best_i)
+            g = gold[best_i]
+            bucket["matched"] += 1
+            bucket["center"].append(best_d * 1000.0)
+            bucket["start"].append(abs(c_start - _safe_float(g, "start")) * 1000.0)
+            bucket["end"].append(abs(c_end - _safe_float(g, "end")) * 1000.0)
+    out = {}
+    for klass, b in by_class.items():
+        out[klass] = {
+            "n": b["n"],
+            "matched": b["matched"],
+            "unmapped": b["unmapped"],
+            "center_ms": _mean(b["center"]),
+            "start_ms": _mean(b["start"]),
+            "end_ms": _mean(b["end"]),
+        }
     return out
 
-
-
-def aggregate_speech_layer(graded, layer_name):
-    reference_ms = sum(row["layers"].get(layer_name, empty_speech_layer())["reference_ms"] for row in graded)
-    predicted_ms = sum(row["layers"].get(layer_name, empty_speech_layer())["predicted_ms"] for row in graded)
-    overlap_ms = sum(row["layers"].get(layer_name, empty_speech_layer())["overlap_ms"] for row in graded)
-    matched = sum(row["layers"].get(layer_name, empty_speech_layer())["matched_count"] for row in graded)
-    start_errors = [v for row in graded for v in row["layers"].get(layer_name, empty_speech_layer()).get("start_errors_ms", [])]
-    end_errors = [v for row in graded for v in row["layers"].get(layer_name, empty_speech_layer()).get("end_errors_ms", [])]
-    precision = overlap_ms / predicted_ms if predicted_ms > 0.0 else 0.0
-    recall = overlap_ms / reference_ms if reference_ms > 0.0 else 0.0
-    f1 = 2.0 * precision * recall / (precision + recall) if (precision > 0.0 or recall > 0.0) else 0.0
-    return {
-        "reference_ms": reference_ms,
-        "predicted_ms": predicted_ms,
-        "overlap_ms": overlap_ms,
-        "matched_count": matched,
-        "precision": precision,
-        "recall": recall,
-        "f1": f1,
-        "boundary_start_ms": _mean(start_errors),
-        "boundary_start_median_ms": _median(start_errors),
-        "boundary_start_p90_ms": _percentile(start_errors, 0.90),
-        "boundary_end_ms": _mean(end_errors),
-        "boundary_end_median_ms": _median(end_errors),
-        "boundary_end_p90_ms": _percentile(end_errors, 0.90),
-        "tail_leakage_ms": _mean(
-            row["layers"].get(layer_name, empty_speech_layer()).get("tail_leakage_ms", 0.0)
-            for row in graded
-        ),
-        "count_mismatch_cases": sum(1 for row in graded if row["layers"].get(layer_name, empty_speech_layer()).get("count_mismatch", False)),
-    }
-
-
 def compute_summary(rows, graded, ungraded):
-    if not rows:
-        return _empty_summary()
-    if not graded:
-        return _empty_summary(len(rows), 0, ungraded)
+    graded_cases = len(graded)
+    phoneme_coverage = []
+    for row in rows:
+        phone_rows = row.get("runtime_phone_rows", [])
+        if phone_rows:
+            mapped = sum(1 for r in phone_rows if str(r.get("mapped_to_observed_speech", "0")) == "1")
+            phoneme_coverage.append(mapped / max(len(phone_rows), 1))
 
-    total_matched = sum(row["matched_count"] for row in graded)
-    total_reference = sum(row["reference_count"] for row in graded)
-    graded_count = len(graded)
+    direct_refs = sum(int(row.get("direct_aligner", {}).get("reference_count", 0)) for row in graded)
+    direct_matches = sum(int(row.get("direct_aligner", {}).get("matched_count", 0)) for row in graded)
 
-    speech_stats = aggregate_speech_layer(graded, "speech")
-    phone_occupancy_stats = aggregate_speech_layer(graded, "phone_occupancy")
-    visible_speech_stats = aggregate_speech_layer(graded, "speech_visible")
-
-    word_reference_total = sum(row["layers"]["words"]["reference_count"] for row in graded)
-    word_matched_total = sum(row["layers"]["words"]["matched_count"] for row in graded)
-    word_reference_ms = sum(row["layers"]["words"]["reference_ms"] for row in graded)
-    word_predicted_ms = sum(row["layers"]["words"]["predicted_ms"] for row in graded)
-    word_overlap_ms = sum(row["layers"]["words"]["overlap_ms"] for row in graded)
-    word_start_sum_ms = sum(row["layers"]["words"]["start_error_sum_ms"] for row in graded)
-    word_end_sum_ms = sum(row["layers"]["words"]["end_error_sum_ms"] for row in graded)
-    word_duration_sum_ms = sum(row["layers"]["words"]["duration_error_sum_ms"] for row in graded)
-    word_duration_l1_all_ms = sum(row["layers"]["words"].get("duration_l1_all_ms", 0.0) for row in graded)
-    word_missing_reference_ms = sum(row["layers"]["words"].get("missing_reference_ms", 0.0) for row in graded)
-    word_extra_predicted_ms = sum(row["layers"]["words"].get("extra_predicted_ms", 0.0) for row in graded)
-    word_head_matched_total = sum(row["layers"]["words"]["head_matched_count"] for row in graded)
-    word_head_start_sum_ms = sum(row["layers"]["words"]["head_start_error_sum_ms"] for row in graded)
-
-    phoneme_matched_total = sum(row["layers"]["phonemes"]["matched_count"] for row in graded)
-    phoneme_start_sum_ms = sum(row["layers"]["phonemes"]["start_error_sum_ms"] for row in graded)
-    phoneme_end_sum_ms = sum(row["layers"]["phonemes"]["end_error_sum_ms"] for row in graded)
-    intra_reference_total = sum(row["layers"]["phonemes"]["intra_reference_count"] for row in graded)
-    intra_matched_total = sum(row["layers"]["phonemes"]["intra_matched_count"] for row in graded)
-    intra_center_sum_ms = sum(row["layers"]["phonemes"]["intra_center_error_sum_ms"] for row in graded)
-
-    word_precision = word_overlap_ms / word_predicted_ms if word_predicted_ms > 0.0 else 0.0
-    word_recall = word_overlap_ms / word_reference_ms if word_reference_ms > 0.0 else 0.0
-    word_f1 = 2.0 * word_precision * word_recall / (word_precision + word_recall) if (word_precision > 0.0 or word_recall > 0.0) else 0.0
-
-    word_start_errors = [v for row in graded for v in row["layers"]["words"]["start_errors_ms"]]
-    word_duration_errors = [v for row in graded for v in row["layers"]["words"].get("duration_errors_ms", [])]
-    word_duration_norm_errors = [v for row in graded for v in row["layers"]["words"].get("duration_norm_errors", [])]
-    word_stretch_abs_log2_errors = [v for row in graded for v in row["layers"]["words"].get("stretch_abs_log2_errors", [])]
-    word_head_errors = [v for row in graded for v in row["layers"]["words"]["head_start_errors_ms"]]
-
-    direct_available = [row.get("direct_aligner", {}) for row in graded if row.get("direct_aligner", {}).get("available", False)]
-    direct_reference_total = sum(int(item.get("reference_count", 0)) for item in direct_available)
-    direct_matched_total = sum(int(item.get("matched_count", 0)) for item in direct_available)
-    direct_intra_reference_total = sum(int(item.get("intra_word_alignment", {}).get("reference_count", 0)) for item in direct_available)
-    direct_intra_matched_total = sum(int(item.get("intra_word_alignment", {}).get("matched_count", 0)) for item in direct_available)
-    direct_intra_center_sum_ms = sum(
-        float(item.get("intra_word_alignment", {}).get("mean_abs_center_error_ms", 0.0))
-        * int(item.get("intra_word_alignment", {}).get("matched_count", 0))
-        for item in direct_available
-    )
-
-    audio_boundary_available = [row.get("audio_word_boundaries", {}) for row in graded if row.get("audio_word_boundaries", {}).get("available", False)]
-    audio_boundary_reference_total = sum(int(item.get("reference_count", 0)) for item in audio_boundary_available)
-    audio_boundary_selected_total = sum(int(item.get("selected_count", 0)) for item in audio_boundary_available)
-    audio_boundary_candidate_total = sum(int(item.get("candidate_count", 0)) for item in audio_boundary_available)
-    audio_boundary_positive_total = sum(int(item.get("candidate_positive_count", 0)) for item in audio_boundary_available)
-    audio_boundary_negative_total = sum(int(item.get("candidate_negative_count", 0)) for item in audio_boundary_available)
-
-    def boundary_weighted(metric_name, denom_total):
-        total = 0.0
-        for item in audio_boundary_available:
-            if "precision" in metric_name:
-                weight = int(item.get("selected_count", 0))
-            elif "recall" in metric_name:
-                weight = int(item.get("reference_count", 0))
-            else:
-                weight = int(item.get("reference_count", 0))
-            total += float(item.get(metric_name, 0.0)) * weight
-        return total / max(denom_total, 1)
-
-    return {
-        "cases": len(rows),
-        "graded_cases": graded_count,
-        "ungraded_cases": ungraded,
-        "matched_count": total_matched,
-        "reference_count": total_reference,
-        "match_rate": total_matched / max(total_reference, 1),
-        "mean_center_ms": sum(row["mean_abs_center_error_ms"] for row in graded) / graded_count,
-        "median_center_ms": _median(row["median_abs_center_error_ms"] for row in graded),
-        "p90_center_ms": _percentile((row["p90_abs_center_error_ms"] for row in graded), 0.90),
-        "mean_start_ms": sum(row["mean_abs_start_error_ms"] for row in graded) / graded_count,
-        "mean_end_ms": sum(row["mean_abs_end_error_ms"] for row in graded) / graded_count,
-        "mean_duration_ms": sum(row["mean_abs_duration_error_ms"] for row in graded) / graded_count,
-        "mean_sentence_start_ms": _mean(row["pause_alignment"].get("mean_abs_sentence_region_start_error_ms", 0.0) for row in graded),
-        "median_sentence_start_ms": _median(row["pause_alignment"].get("median_abs_sentence_region_start_error_ms", row["pause_alignment"].get("mean_abs_sentence_region_start_error_ms", 0.0)) for row in graded),
-        "p90_sentence_start_ms": _percentile((row["pause_alignment"].get("p90_abs_sentence_region_start_error_ms", row["pause_alignment"].get("mean_abs_sentence_region_start_error_ms", 0.0)) for row in graded), 0.90),
-        "mean_sentence_end_ms": _mean(row["pause_alignment"].get("mean_abs_sentence_region_end_error_ms", 0.0) for row in graded),
-        "mean_clause_start_ms": _mean(row["pause_alignment"].get("mean_abs_clause_region_start_error_ms", 0.0) for row in graded),
-        "median_clause_start_ms": _median(row["pause_alignment"].get("median_abs_clause_region_start_error_ms", row["pause_alignment"].get("mean_abs_clause_region_start_error_ms", 0.0)) for row in graded),
-        "p90_clause_start_ms": _percentile((row["pause_alignment"].get("p90_abs_clause_region_start_error_ms", row["pause_alignment"].get("mean_abs_clause_region_start_error_ms", 0.0)) for row in graded), 0.90),
-        "mean_clause_end_ms": _mean(row["pause_alignment"].get("mean_abs_clause_region_end_error_ms", 0.0) for row in graded),
-        "mean_word_onset_ms": _mean(row["word_onset_alignment"].get("mean_abs_start_error_ms", 0.0) for row in graded),
-        "median_word_onset_ms": _median(row["word_onset_alignment"].get("median_abs_start_error_ms", row["word_onset_alignment"].get("mean_abs_start_error_ms", 0.0)) for row in graded),
-        "p90_word_onset_ms": _percentile((row["word_onset_alignment"].get("p90_abs_start_error_ms", row["word_onset_alignment"].get("mean_abs_start_error_ms", 0.0)) for row in graded), 0.90),
-        "mean_intra_word_ms": _mean(row["intra_word_alignment"].get("mean_abs_center_error_ms", 0.0) for row in graded),
-        "median_intra_word_ms": _median(row["intra_word_alignment"].get("median_abs_center_error_ms", row["intra_word_alignment"].get("mean_abs_center_error_ms", 0.0)) for row in graded),
-        "p90_intra_word_ms": _percentile((row["intra_word_alignment"].get("p90_abs_center_error_ms", row["intra_word_alignment"].get("mean_abs_center_error_ms", 0.0)) for row in graded), 0.90),
-        "order_fail_cases": sum(1 for row in graded if row["order_violations"] > 0),
-        "degenerate_cases": sum(1 for row in graded if row["reference_count"] > 0 and row["matched_count"] == 0),
-        "speech_region_count_mismatch_cases": speech_stats["count_mismatch_cases"],
-        "phone_occupancy_region_count_mismatch_cases": phone_occupancy_stats["count_mismatch_cases"],
-        "visible_speech_region_count_mismatch_cases": visible_speech_stats["count_mismatch_cases"],
-        "sentence_region_count_mismatch_cases": sum(1 for row in graded if row["pause_alignment"].get("sentence_region_count_mismatch", False)),
-        "clause_region_count_mismatch_cases": sum(1 for row in graded if row["pause_alignment"].get("clause_region_count_mismatch", False)),
-        # Primary speech metrics come from detector-owned speech occupancy.
-        "speech_precision": speech_stats["precision"],
-        "speech_recall": speech_stats["recall"],
-        "speech_f1": speech_stats["f1"],
-        "speech_boundary_start_ms": speech_stats["boundary_start_ms"],
-        "speech_boundary_start_median_ms": speech_stats["boundary_start_median_ms"],
-        "speech_boundary_start_p90_ms": speech_stats["boundary_start_p90_ms"],
-        "speech_boundary_end_ms": speech_stats["boundary_end_ms"],
-        "speech_boundary_end_median_ms": speech_stats["boundary_end_median_ms"],
-        "speech_boundary_end_p90_ms": speech_stats["boundary_end_p90_ms"],
-        "speech_tail_leakage_ms": speech_stats["tail_leakage_ms"],
-        # Diagnostic occupancy layers.
-        "phone_occupancy_precision": phone_occupancy_stats["precision"],
-        "phone_occupancy_recall": phone_occupancy_stats["recall"],
-        "phone_occupancy_f1": phone_occupancy_stats["f1"],
-        "phone_occupancy_boundary_start_ms": phone_occupancy_stats["boundary_start_ms"],
-        "phone_occupancy_boundary_end_ms": phone_occupancy_stats["boundary_end_ms"],
-        "phone_occupancy_tail_leakage_ms": phone_occupancy_stats["tail_leakage_ms"],
-        "visible_speech_precision": visible_speech_stats["precision"],
-        "visible_speech_recall": visible_speech_stats["recall"],
-        "visible_speech_f1": visible_speech_stats["f1"],
-        "visible_speech_boundary_start_ms": visible_speech_stats["boundary_start_ms"],
-        "visible_speech_boundary_end_ms": visible_speech_stats["boundary_end_ms"],
-        "visible_speech_tail_leakage_ms": visible_speech_stats["tail_leakage_ms"],
-        "word_coverage_rate": word_matched_total / max(word_reference_total, 1),
-        "word_precision": word_precision,
-        "word_recall": word_recall,
-        "word_f1": word_f1,
-        "word_start_ms": word_start_sum_ms / max(word_matched_total, 1),
-        "word_start_median_ms": _median(word_start_errors),
-        "word_start_p90_ms": _percentile(word_start_errors, 0.90),
-        "word_end_ms": word_end_sum_ms / max(word_matched_total, 1),
-        "word_duration_ms": word_duration_sum_ms / max(word_matched_total, 1),
-        "word_duration_median_ms": _median(word_duration_errors),
-        "word_duration_p90_ms": _percentile(word_duration_errors, 0.90),
-        "word_duration_norm": _mean(word_duration_norm_errors),
-        "word_duration_norm_median": _median(word_duration_norm_errors),
-        "word_duration_norm_p90": _percentile(word_duration_norm_errors, 0.90),
-        "word_duration_l1_norm": word_duration_l1_all_ms / max(word_reference_ms, 1.0),
-        "word_missing_duration_ms": word_missing_reference_ms,
-        "word_extra_duration_ms": word_extra_predicted_ms,
-        "word_stretch_abs_log2": _mean(word_stretch_abs_log2_errors),
-        "word_stretch_abs_log2_p90": _percentile(word_stretch_abs_log2_errors, 0.90),
-        "word_head_start_ms": word_head_start_sum_ms / max(word_head_matched_total, 1),
-        "word_head_start_median_ms": _median(word_head_errors),
-        "word_head_start_p90_ms": _percentile(word_head_errors, 0.90),
-        "phoneme_coverage_rate": total_matched / max(total_reference, 1),
-        "phoneme_center_ms": sum(row["layers"]["phonemes"]["center_error_sum_ms"] for row in graded) / max(phoneme_matched_total, 1),
-        "phoneme_center_median_ms": _median(row["layers"]["phonemes"].get("median_abs_center_error_ms", 0.0) for row in graded),
-        "phoneme_center_p90_ms": _percentile((row["layers"]["phonemes"].get("p90_abs_center_error_ms", 0.0) for row in graded), 0.90),
-        "phoneme_start_ms": phoneme_start_sum_ms / max(phoneme_matched_total, 1),
-        "phoneme_end_ms": phoneme_end_sum_ms / max(phoneme_matched_total, 1),
-        "intra_word_coverage_rate": intra_matched_total / max(intra_reference_total, 1),
-        "intra_word_center_ms": intra_center_sum_ms / max(intra_matched_total, 1),
-        "direct_aligner_available_cases": len(direct_available),
-        "direct_aligner_match_rate": direct_matched_total / max(direct_reference_total, 1),
-        "direct_aligner_center_ms": (
-            sum(float(item.get("mean_abs_center_error_ms", 0.0)) * int(item.get("matched_count", 0)) for item in direct_available)
-            / max(direct_matched_total, 1)
-        ),
-        "direct_aligner_center_median_ms": _median(item.get("median_abs_center_error_ms", 0.0) for item in direct_available),
-        "direct_aligner_center_p90_ms": _percentile((item.get("p90_abs_center_error_ms", 0.0) for item in direct_available), 0.90),
-        "direct_aligner_start_ms": (
-            sum(float(item.get("mean_abs_start_error_ms", 0.0)) * int(item.get("matched_count", 0)) for item in direct_available)
-            / max(direct_matched_total, 1)
-        ),
-        "direct_aligner_end_ms": (
-            sum(float(item.get("mean_abs_end_error_ms", 0.0)) * int(item.get("matched_count", 0)) for item in direct_available)
-            / max(direct_matched_total, 1)
-        ),
-        "direct_aligner_duration_ms": (
-            sum(float(item.get("mean_abs_duration_error_ms", 0.0)) * int(item.get("matched_count", 0)) for item in direct_available)
-            / max(direct_matched_total, 1)
-        ),
-        "direct_aligner_word_onset_ms": _mean(
-            item.get("word_onset_alignment", {}).get("mean_abs_start_error_ms", 0.0)
-            for item in direct_available
-        ),
-        "direct_aligner_intra_word_coverage_rate": direct_intra_matched_total / max(direct_intra_reference_total, 1),
-        "direct_aligner_intra_word_center_ms": direct_intra_center_sum_ms / max(direct_intra_matched_total, 1),
-        "audio_word_boundary_available_cases": len(audio_boundary_available),
-        "audio_word_boundary_reference_count": audio_boundary_reference_total,
-        "audio_word_boundary_selected_count": audio_boundary_selected_total,
-        "audio_word_boundary_candidate_count": audio_boundary_candidate_total,
-        "audio_word_boundary_precision_50": boundary_weighted("precision_50", audio_boundary_selected_total),
-        "audio_word_boundary_recall_50": boundary_weighted("recall_50", audio_boundary_reference_total),
-        "audio_word_boundary_f1_50": _mean(item.get("f1_50", 0.0) for item in audio_boundary_available),
-        "audio_word_boundary_precision_100": boundary_weighted("precision_100", audio_boundary_selected_total),
-        "audio_word_boundary_recall_100": boundary_weighted("recall_100", audio_boundary_reference_total),
-        "audio_word_boundary_f1_100": _mean(item.get("f1_100", 0.0) for item in audio_boundary_available),
-        "audio_word_boundary_precision_150": boundary_weighted("precision_150", audio_boundary_selected_total),
-        "audio_word_boundary_recall_150": boundary_weighted("recall_150", audio_boundary_reference_total),
-        "audio_word_boundary_f1_150": _mean(item.get("f1_150", 0.0) for item in audio_boundary_available),
-        "audio_word_boundary_ref_nearest_median_ms": _median(item.get("reference_nearest_candidate_median_ms", 0.0) for item in audio_boundary_available),
-        "audio_word_boundary_ref_nearest_p90_ms": _percentile((item.get("reference_nearest_candidate_p90_ms", 0.0) for item in audio_boundary_available), 0.90),
-        "audio_word_boundary_candidate_nearest_median_ms": _median(item.get("candidate_nearest_reference_median_ms", 0.0) for item in audio_boundary_available),
-        "audio_word_boundary_candidate_nearest_p90_ms": _percentile((item.get("candidate_nearest_reference_p90_ms", 0.0) for item in audio_boundary_available), 0.90),
-        "audio_word_boundary_raw_recall_50": boundary_weighted("raw_candidate_recall_50", audio_boundary_reference_total),
-        "audio_word_boundary_raw_recall_100": boundary_weighted("raw_candidate_recall_100", audio_boundary_reference_total),
-        "audio_word_boundary_raw_recall_150": boundary_weighted("raw_candidate_recall_150", audio_boundary_reference_total),
-        "audio_word_boundary_top1_recall_100": boundary_weighted("top1_recall_100", audio_boundary_reference_total),
-        "audio_word_boundary_top2_recall_100": boundary_weighted("top2_recall_100", audio_boundary_reference_total),
-        "audio_word_boundary_top3_recall_100": boundary_weighted("top3_recall_100", audio_boundary_reference_total),
-        "audio_word_boundary_top5_recall_100": boundary_weighted("top5_recall_100", audio_boundary_reference_total),
-        "audio_word_boundary_positive_mean_score": (
-            sum(float(item.get("candidate_positive_mean_score", 0.0)) * int(item.get("candidate_positive_count", 0)) for item in audio_boundary_available)
-            / max(audio_boundary_positive_total, 1)
-        ),
-        "audio_word_boundary_negative_mean_score": (
-            sum(float(item.get("candidate_negative_mean_score", 0.0)) * int(item.get("candidate_negative_count", 0)) for item in audio_boundary_available)
-            / max(audio_boundary_negative_total, 1)
-        ),
-        "audio_word_boundary_score_separation": (
-            (sum(float(item.get("candidate_positive_mean_score", 0.0)) * int(item.get("candidate_positive_count", 0)) for item in audio_boundary_available) / max(audio_boundary_positive_total, 1))
-            - (sum(float(item.get("candidate_negative_mean_score", 0.0)) * int(item.get("candidate_negative_count", 0)) for item in audio_boundary_available) / max(audio_boundary_negative_total, 1))
-        ),
-    }
-
-
-def _float_field(row, key, default=0.0):
-    try:
-        return float(row.get(key, default) or default)
-    except (TypeError, ValueError):
-        return default
-
-
-def _int_field(row, key, default=0):
-    try:
-        return int(float(row.get(key, default) or default))
-    except (TypeError, ValueError):
-        return default
-
-
-def _derive_reason_codes(row):
-    """Backward-compatible reason code derivation for candidate CSVs before reason_codes existed."""
-    codes = []
-    if _float_field(row, "energy_valley_score") >= 0.28:
-        codes.append("energy_valley")
-    if _float_field(row, "trough_score") >= 0.55:
-        codes.append("short_trough")
-    if _float_field(row, "low_evidence_score") >= 0.55:
-        codes.append("low_evidence")
-    if _float_field(row, "spectral_change_score") >= 0.25:
-        codes.append("spectral_change")
-    if _float_field(row, "spectral_novelty_score") >= 0.25:
-        codes.append("spectral_novelty")
-    if _float_field(row, "voicing_change_score") >= 0.28:
-        codes.append("voicing_change")
-    if _float_field(row, "flux_recovery_score") >= 0.28:
-        codes.append("flux_recovery")
-    if _float_field(row, "reengagement_score") >= 0.28:
-        codes.append("reengagement")
-    if _float_field(row, "slope_score") >= 0.25:
-        codes.append("slope_change")
-    if _float_field(row, "island_adaptive_score") >= 0.25:
-        codes.append("island_adaptive_peak")
-    if _float_field(row, "stable_voicing_penalty") >= 0.32:
-        codes.append("stable_voicing_penalty")
-    return codes or ["weak_salience_only"]
-
-
-def _reason_stats_empty(scope, key):
-    return {
-        "scope": scope,
-        "reason": key,
-        "count": 0,
-        "selected_count": 0,
-        "true_50": 0,
-        "true_100": 0,
-        "true_150": 0,
-        "selected_true_100": 0,
-        "score_sum": 0.0,
-        "positive_score_sum_100": 0.0,
-        "negative_score_sum_100": 0.0,
-        "nearest_error_sum_ms": 0.0,
-    }
-
-
-def analyze_audio_word_boundary_reasons(root: pathlib.Path):
-    """Aggregate reason-code reliability for audio-only word-boundary candidates.
-
-    This is intentionally diagnostic-only. It treats MFA proximity as the label and asks:
-    which reason codes or reason combinations make a candidate more likely to be a true
-    lexical word boundary? The output is suitable for hand inspection or for later baking
-    dependency-free log-odds coefficients into C++.
-    """
-    candidates = []
-    reference_count = 0
-    for case_dir in sorted(root.glob("*")):
-        if not case_dir.is_dir():
-            continue
-        grade_path = case_dir / "audio_word_boundary_grade.json"
-        if grade_path.exists():
-            try:
-                reference_count += int(json.loads(grade_path.read_text()).get("reference_count", 0))
-            except Exception:
-                pass
-        path = case_dir / "audio_word_boundary_candidates.csv"
-        for row in read_csv_rows(path):
-            codes_text = (row.get("reason_codes") or "").strip()
-            codes = [c for c in codes_text.split("|") if c] if codes_text else _derive_reason_codes(row)
-            if not codes:
-                codes = ["weak_salience_only"]
-            nearest = _float_field(row, "nearest_mfa_error_ms")
-            selected = _int_field(row, "selected") != 0
-            score = _float_field(row, "lexical_boundary_score")
-            candidates.append({
-                "case": case_dir.name,
-                "codes": sorted(set(codes)),
-                "combo": "+".join(sorted(set(codes))),
-                "selected": selected,
-                "true_50": nearest <= 50.0,
-                "true_100": nearest <= 100.0,
-                "true_150": nearest <= 150.0,
-                "nearest_ms": nearest,
-                "score": score,
-            })
-
-    total = len(candidates)
-    true100 = sum(1 for c in candidates if c["true_100"])
-    false100 = total - true100
-    base_odds = (true100 + 0.5) / (false100 + 0.5) if total else 1.0
-
-    buckets = {}
-    def add(scope, key, c):
-        stat = buckets.setdefault((scope, key), _reason_stats_empty(scope, key))
-        stat["count"] += 1
-        stat["selected_count"] += 1 if c["selected"] else 0
-        stat["true_50"] += 1 if c["true_50"] else 0
-        stat["true_100"] += 1 if c["true_100"] else 0
-        stat["true_150"] += 1 if c["true_150"] else 0
-        stat["selected_true_100"] += 1 if (c["selected"] and c["true_100"]) else 0
-        stat["score_sum"] += c["score"]
-        if c["true_100"]:
-            stat["positive_score_sum_100"] += c["score"]
-        else:
-            stat["negative_score_sum_100"] += c["score"]
-        stat["nearest_error_sum_ms"] += c["nearest_ms"]
-
-    for c in candidates:
-        for code in c["codes"]:
-            add("single_reason", code, c)
-        add("reason_combo", c["combo"], c)
-
-    rows = []
-    reason_weights = {}
-    for (_, _), stat in sorted(buckets.items()):
-        count = stat["count"]
-        if count <= 0:
-            continue
-        t100 = stat["true_100"]
-        f100 = count - t100
-        odds = (t100 + 0.5) / (f100 + 0.5)
-        log_odds_lift = math.log(max(1e-9, odds / max(base_odds, 1e-9)))
-        precision100 = t100 / count
-        row = {
-            **stat,
-            "precision_50": stat["true_50"] / count,
-            "precision_100": precision100,
-            "precision_150": stat["true_150"] / count,
-            "recall_contribution_100": t100 / max(reference_count, 1),
-            "selected_precision_100": stat["selected_true_100"] / max(stat["selected_count"], 1),
-            "mean_score": stat["score_sum"] / count,
-            "positive_mean_score_100": stat["positive_score_sum_100"] / max(t100, 1),
-            "negative_mean_score_100": stat["negative_score_sum_100"] / max(f100, 1),
-            "mean_nearest_error_ms": stat["nearest_error_sum_ms"] / count,
-            "odds_ratio_lift_100": math.exp(log_odds_lift),
-            "log_odds_weight_100": log_odds_lift,
+    progress_summaries = [row.get("audio_progress_summary", {}) for row in graded]
+    boundary_summaries = [row.get("boundary_filter_summary", {}) for row in graded]
+    phone_class_rollup: dict[str, dict[str, Any]] = {}
+    for row in graded:
+        for klass, stats in row.get("phone_class_summary", {}).items():
+            bucket = phone_class_rollup.setdefault(klass, {"n": 0, "matched": 0, "unmapped": 0, "center": [], "start": [], "end": []})
+            n = int(stats.get("n", 0))
+            matched = int(stats.get("matched", 0))
+            bucket["n"] += n
+            bucket["matched"] += matched
+            bucket["unmapped"] += int(stats.get("unmapped", 0))
+            if matched > 0:
+                bucket["center"].extend([float(stats.get("center_ms", 0.0))] * matched)
+                bucket["start"].extend([float(stats.get("start_ms", 0.0))] * matched)
+                bucket["end"].extend([float(stats.get("end_ms", 0.0))] * matched)
+    phone_class_errors = {
+        klass: {
+            "n": b["n"],
+            "matched": b["matched"],
+            "unmapped": b["unmapped"],
+            "center_ms": _mean(b["center"]),
+            "start_ms": _mean(b["start"]),
+            "end_ms": _mean(b["end"]),
         }
-        rows.append(row)
-        if stat["scope"] == "single_reason":
-            reason_weights[stat["reason"]] = log_odds_lift
-
-    rows.sort(key=lambda r: (r["scope"], -r["precision_100"], -r["count"], r["reason"]))
-    top_single = [r for r in rows if r["scope"] == "single_reason" and r["count"] >= 10]
-    top_combo = [r for r in rows if r["scope"] == "reason_combo" and r["count"] >= 10]
-    return {
-        "candidate_count": total,
-        "reference_count": reference_count,
-        "base_precision_100": true100 / max(total, 1),
-        "base_true_100": true100,
-        "rows": rows,
-        "reason_weights": reason_weights,
-        "top_single": sorted(top_single, key=lambda r: (-r["precision_100"], -r["count"]))[:12],
-        "top_combo": sorted(top_combo, key=lambda r: (-r["precision_100"], -r["count"]))[:12],
+        for klass, b in sorted(phone_class_rollup.items())
     }
 
+    word_start_values = [_nested(row, "word_onset_alignment", "mean_abs_start_error_ms") for row in graded]
+    word_start_event_medians = [_nested(row, "word_onset_alignment", "median_abs_start_error_ms") for row in graded]
+    word_duration_values = [_metric(row, "mean_abs_duration_error_ms") for row in graded]
+    phoneme_center_values = [_metric(row, "mean_abs_center_error_ms") for row in graded]
+    phoneme_start_values = [_metric(row, "mean_abs_start_error_ms") for row in graded]
+    phoneme_end_values = [_metric(row, "mean_abs_end_error_ms") for row in graded]
+    intra_word_center_values = [_nested(row, "intra_word_alignment", "mean_abs_center_error_ms") for row in graded]
+    direct_center_values = [_direct(row, "mean_abs_center_error_ms") for row in graded]
 
-def write_audio_word_boundary_reason_analysis(root: pathlib.Path, analysis):
-    csv_path = root / "audio_word_boundary_reason_analysis.csv"
-    json_path = root / "audio_word_boundary_reason_weights.json"
-    rows = analysis.get("rows", [])
-    fields = [
-        "scope", "reason", "count", "selected_count", "true_50", "true_100", "true_150",
-        "precision_50", "precision_100", "precision_150", "recall_contribution_100",
-        "selected_precision_100", "mean_score", "positive_mean_score_100", "negative_mean_score_100",
-        "mean_nearest_error_ms", "odds_ratio_lift_100", "log_odds_weight_100",
-    ]
-    with csv_path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
-        writer.writeheader()
-        for row in rows:
-            writer.writerow(row)
-    json_path.write_text(json.dumps({
-        "schema": "offgrid_audio_word_boundary_reason_weights_v1",
-        "candidate_count": analysis.get("candidate_count", 0),
-        "reference_count": analysis.get("reference_count", 0),
-        "base_precision_100": analysis.get("base_precision_100", 0.0),
-        "weights": analysis.get("reason_weights", {}),
-    }, indent=2, sort_keys=True))
-    return csv_path, json_path
+    summary = {
+        "total_cases": len(rows),
+        "graded_cases": graded_cases,
+        "ungraded_cases": len(ungraded),
+        "degenerate_cases": sum(1 for row in graded if _metric(row, "committed_count") <= 0),
+        "order_fail_cases": sum(1 for row in graded if _metric(row, "order_violations") > 0),
+        "speech_region_count_mismatch_cases": sum(1 for row in graded if bool(row.get("grade", {}).get("pause_alignment", {}).get("speech_regions", {}).get("count_mismatch", False))),
+        "phone_occupancy_region_count_mismatch_cases": 0,
+        "visible_speech_region_count_mismatch_cases": 0,
+        "sentence_region_count_mismatch_cases": sum(1 for row in graded if bool(row.get("grade", {}).get("pause_alignment", {}).get("sentence_regions", {}).get("count_mismatch", False))),
+        "clause_region_count_mismatch_cases": sum(1 for row in graded if bool(row.get("grade", {}).get("pause_alignment", {}).get("clause_regions", {}).get("count_mismatch", False))),
+        "speech_f1": _mean((_nested(row, "pause_alignment", "speech_regions", "matched_count") / max(_nested(row, "pause_alignment", "speech_regions", "reference_count"), 1.0)) for row in graded),
+        "speech_boundary_start_ms": _mean(_nested(row, "pause_alignment", "speech_regions", "mean_abs_start_error_ms") for row in graded),
+        "speech_boundary_end_ms": _mean(_nested(row, "pause_alignment", "speech_regions", "mean_abs_end_error_ms") for row in graded),
+        "speech_tail_leakage_ms": _mean(_nested(row, "pause_alignment", "speech_regions", "mean_tail_out_ms") for row in graded),
+        "phone_occupancy_boundary_end_ms": 0.0,
+        "visible_speech_boundary_end_ms": 0.0,
+        "word_f1": _mean((_nested(row, "word_onset_alignment", "matched_count") / max(_nested(row, "word_onset_alignment", "reference_count"), 1.0)) for row in graded),
+        "word_start_ms": _mean(_nested(row, "word_onset_alignment", "mean_abs_start_error_ms") for row in graded),
+        "word_end_ms": 0.0,
+        "word_duration_ms": _mean(_metric(row, "mean_abs_duration_error_ms") for row in graded),
+        "word_duration_l1_norm": 0.0,
+        "word_stretch_abs_log2": 0.0,
+        "word_head_start_ms": _mean(_nested(row, "word_onset_alignment", "mean_abs_start_error_ms") for row in graded),
+        "word_head_start_median_ms": _median(_nested(row, "word_onset_alignment", "median_abs_start_error_ms") for row in graded),
+        "phoneme_coverage_rate": _mean(phoneme_coverage),
+        "phoneme_center_ms": _mean(_metric(row, "mean_abs_center_error_ms") for row in graded),
+        "phoneme_start_ms": _mean(_metric(row, "mean_abs_start_error_ms") for row in graded),
+        "phoneme_end_ms": _mean(_metric(row, "mean_abs_end_error_ms") for row in graded),
+        "intra_word_coverage_rate": _mean((_nested(row, "intra_word_alignment", "matched_count") / max(_nested(row, "intra_word_alignment", "reference_count"), 1.0)) for row in graded),
+        "intra_word_center_ms": _mean(_nested(row, "intra_word_alignment", "mean_abs_center_error_ms") for row in graded),
+        "direct_aligner_match_rate": direct_matches / max(direct_refs, 1),
+        "direct_aligner_center_ms": _mean(_direct(row, "mean_abs_center_error_ms") for row in graded),
+        "audio_progress_rows": sum(len(row.get("audio_progress_rows", [])) for row in rows),
+        "audio_progress_mfa_rows": sum(int(s.get("rows", 0)) for s in progress_summaries),
+        "audio_progress_mfa_mae01": _mean(s.get("mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_mfa_median01": _median(s.get("median01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_mfa_mae_ms": _mean(s.get("mae_ms", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_mfa_p90_ms": _mean(s.get("p90_ms", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_mfa_bias01": _mean(s.get("bias01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_mfa_corr": _mean(s.get("corr", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_time_prior_mae01": _mean(s.get("time_prior_mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_density_mae01": _mean(s.get("audio_density_mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_boundary_mae01": _mean(s.get("boundary_mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_phone_mae01": _mean(s.get("phone_expectation_mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_anchor_mean_phone_probability": _mean(s.get("anchor_mean_phone_probability", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_anchor_mean_boundary_probability": _mean(s.get("anchor_mean_boundary_probability", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_anchor_mean_speech_probability": _mean(s.get("anchor_mean_speech_probability", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_micro_pause_50_count": _mean(s.get("micro_pause_50_count", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_micro_pause_75_count": _mean(s.get("micro_pause_75_count", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_micro_pause_120_count": _mean(s.get("micro_pause_120_count", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_retrospective_drift_abs01": _mean(s.get("retrospective_drift_abs01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_retrospective_drift_abs_ms": _mean(s.get("retrospective_drift_abs_ms", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_retrospective_drift_bias01": _mean(s.get("retrospective_drift_bias01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_retrospective_drift_confidence": _mean(s.get("retrospective_drift_confidence", 0.0) for s in progress_summaries if s.get("rows", 0)),
+        "audio_progress_drift_mean_playrate": _mean(s.get("drift_mean_playrate", 1.0) for s in progress_summaries if s.get("rows", 0)),
+        "boundary_filter_candidates": sum(int(s.get("candidates", 0)) for s in boundary_summaries),
+        "boundary_filter_expected": sum(int(s.get("expected", 0)) for s in boundary_summaries),
+        "boundary_filter_raw_precision": _mean(s.get("raw_precision", 0.0) for s in boundary_summaries if s.get("candidates", 0)),
+        "boundary_filter_raw_recall": _mean(s.get("raw_recall", 0.0) for s in boundary_summaries if s.get("candidates", 0)),
+        "boundary_filter_filtered_precision": _mean(s.get("filtered_precision", 0.0) for s in boundary_summaries if s.get("candidates", 0)),
+        "boundary_filter_filtered_recall": _mean(s.get("filtered_recall", 0.0) for s in boundary_summaries if s.get("candidates", 0)),
+        "boundary_filter_filtered_fp": sum(int(s.get("filtered_fp", 0)) for s in boundary_summaries),
+        "boundary_filter_filtered_fp_sustained": sum(int(s.get("filtered_fp_sustained", 0)) for s in boundary_summaries),
+        "boundary_filter_filtered_fp_flux_only": sum(int(s.get("filtered_fp_flux_only", 0)) for s in boundary_summaries),
+        "boundary_filter_filtered_fp_flat": sum(int(s.get("filtered_fp_flat", 0)) for s in boundary_summaries),
+        "phone_class_errors": phone_class_errors,
+    }
+    summary.update(_stats("word_start", word_start_values))
+    summary.update(_stats("word_start_event_median", word_start_event_medians))
+    summary.update(_stats("word_duration", word_duration_values))
+    summary.update(_stats("phoneme_center", phoneme_center_values))
+    summary.update(_stats("phoneme_start", phoneme_start_values))
+    summary.update(_stats("phoneme_end", phoneme_end_values))
+    summary.update(_stats("intra_word_center", intra_word_center_values))
+    summary.update(_stats("direct_aligner_center", direct_center_values))
+    # Keep legacy headline names stable for existing scripts/checks.
+    summary["word_start_ms"] = summary["word_start_mean_ms"]
+    summary["word_head_start_ms"] = summary["word_start_mean_ms"]
+    summary["word_head_start_median_ms"] = summary["word_start_event_median_median_ms"]
+    summary["word_duration_ms"] = summary["word_duration_mean_ms"]
+    summary["phoneme_center_ms"] = summary["phoneme_center_mean_ms"]
+    summary["phoneme_start_ms"] = summary["phoneme_start_mean_ms"]
+    summary["phoneme_end_ms"] = summary["phoneme_end_mean_ms"]
+    summary["intra_word_center_ms"] = summary["intra_word_center_mean_ms"]
+    summary["direct_aligner_center_ms"] = summary["direct_aligner_center_mean_ms"]
+    return summary
+
+
+def write_summary(root: pathlib.Path, summary: dict[str, Any]) -> pathlib.Path:
+    path = root / "summary.json"
+    path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    return path
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("root", type=pathlib.Path)
+    parser.add_argument("--gold-root", type=pathlib.Path, default=None)
+    args = parser.parse_args()
+    rows, graded, ungraded = load_case_grades(args.root, args.gold_root)
+    summary = compute_summary(rows, graded, ungraded)
+    write_summary(args.root, summary)
+    print(json.dumps(summary, indent=2, sort_keys=True))

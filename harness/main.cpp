@@ -56,63 +56,6 @@ struct GoldSpeechRegion
     double last_speech = 0.0;
 };
 
-struct AudioWordBoundaryCandidate
-{
-    double time = 0.0;
-    double salience = 0.0;
-    double energy_valley_score = 0.0;
-    double trough_score = 0.0;
-    double low_evidence_score = 0.0;
-    double spectral_change_score = 0.0;
-    double spectral_novelty_score = 0.0;
-    double voicing_change_score = 0.0;
-    double flux_recovery_score = 0.0;
-    double reengagement_score = 0.0;
-    double slope_score = 0.0;
-    double island_adaptive_score = 0.0;
-    double stable_voicing_penalty = 0.0;
-    double lexical_boundary_score = 0.0;
-    double false_positive_score = 0.0;
-    int salience_rank = 0;
-    int lexical_rank = 0;
-    std::string diagnostic_label;
-    double nearest_mfa_boundary_ms = 0.0;
-    double nearest_mfa_error_ms = 0.0;
-    int nearest_mfa_index = -1;
-    bool selected = false;
-};
-
-struct AudioWordBoundaryEval
-{
-    int reference_count = 0;
-    int candidate_count = 0;
-    int selected_count = 0;
-    double selected_precision_50 = 0.0;
-    double selected_recall_50 = 0.0;
-    double selected_f1_50 = 0.0;
-    double selected_precision_100 = 0.0;
-    double selected_recall_100 = 0.0;
-    double selected_f1_100 = 0.0;
-    double selected_precision_150 = 0.0;
-    double selected_recall_150 = 0.0;
-    double selected_f1_150 = 0.0;
-    double reference_nearest_candidate_median_ms = 0.0;
-    double reference_nearest_candidate_p90_ms = 0.0;
-    double candidate_nearest_reference_median_ms = 0.0;
-    double candidate_nearest_reference_p90_ms = 0.0;
-    double raw_candidate_recall_50 = 0.0;
-    double raw_candidate_recall_100 = 0.0;
-    double raw_candidate_recall_150 = 0.0;
-    double top1_recall_100 = 0.0;
-    double top2_recall_100 = 0.0;
-    double top3_recall_100 = 0.0;
-    double top5_recall_100 = 0.0;
-    double candidate_positive_mean_score = 0.0;
-    double candidate_negative_mean_score = 0.0;
-    int candidate_positive_count = 0;
-    int candidate_negative_count = 0;
-};
-
 struct BoundaryAlignmentReport
 {
     int reference_count = 0;
@@ -293,722 +236,6 @@ static double mean_ms(const std::vector<double>& values)
 {
     if (values.empty()) return 0.0;
     return std::accumulate(values.begin(), values.end(), 0.0) / static_cast<double>(values.size());
-}
-
-static bool time_inside_any_island(double time_sec, const TArray<FOffgridAIStreamingSpeechIsland>& islands, double margin_sec = 0.060)
-{
-    for (const auto& island : islands)
-    {
-        const double start = static_cast<double>(island.AudioBufferStartSec) + margin_sec;
-        const double end = static_cast<double>(island.AudioBufferEndSec) - margin_sec;
-        if (end > start && time_sec >= start && time_sec <= end)
-        {
-            return true;
-        }
-    }
-    return islands.Num() == 0;
-}
-
-static double detector_evidence_for_frame(const FOffgridAIStreamingAudioFeatureFrame& frame)
-{
-    const double voiced = static_cast<double>(frame.Periodicity) * 0.42
-        + static_cast<double>(frame.RMSNorm) * 0.24
-        + static_cast<double>(frame.MidBandNorm) * 0.10;
-    const double unvoiced = static_cast<double>(frame.Flux) * 0.26
-        + static_cast<double>(frame.HighBandNorm) * 0.12
-        + static_cast<double>(frame.SpectralCentroidNorm) * 0.10;
-    return std::clamp(voiced + unvoiced, 0.0, 1.0);
-}
-
-static std::vector<double> gold_internal_word_boundary_times(const std::vector<GoldWordTiming>& words)
-{
-    std::vector<double> out;
-    for (size_t i = 1; i < words.size(); ++i)
-    {
-        const GoldWordTiming& prev = words[i - 1];
-        const GoldWordTiming& cur = words[i];
-        if (cur.start < 0.0 || cur.end <= cur.start) continue;
-        if (prev.sentence_index >= 0 && cur.sentence_index >= 0 && prev.sentence_index != cur.sentence_index)
-        {
-            continue;
-        }
-        out.push_back(cur.start);
-    }
-    return out;
-}
-
-static double nearest_error_ms(double time_sec, const std::vector<double>& refs, int* out_index = nullptr)
-{
-    double best = std::numeric_limits<double>::infinity();
-    int best_index = -1;
-    for (size_t i = 0; i < refs.size(); ++i)
-    {
-        const double err = std::abs(time_sec - refs[i]) * 1000.0;
-        if (err < best)
-        {
-            best = err;
-            best_index = static_cast<int>(i);
-        }
-    }
-    if (out_index) *out_index = best_index;
-    return std::isfinite(best) ? best : 0.0;
-}
-
-
-static double lexical_boundary_classifier_score(const AudioWordBoundaryCandidate& c)
-{
-    // Lightweight supervised-classifier proxy. The features and coefficients are intentionally
-    // explicit and dependency-free so the CSV can later be used to fit/replace them. True lexical
-    // boundaries tend to have multiple independent cues: a short trough or valley, spectral novelty,
-    // re-engagement, and a clean local peak. Intra-word false positives often have only one cue and
-    // stable voiced energy on both sides.
-    const bool multi_cue =
-        ((c.energy_valley_score > 0.22) ? 1 : 0) +
-        ((c.spectral_novelty_score > 0.20) ? 1 : 0) +
-        ((c.reengagement_score > 0.20) ? 1 : 0) +
-        ((c.voicing_change_score > 0.22) ? 1 : 0) +
-        ((c.slope_score > 0.18) ? 1 : 0) >= 2;
-
-    double score = 0.0;
-    score += 0.30 * c.salience;
-    score += 0.18 * c.spectral_novelty_score;
-    score += 0.14 * c.energy_valley_score;
-    score += 0.11 * c.reengagement_score;
-    score += 0.09 * c.voicing_change_score;
-    score += 0.08 * c.slope_score;
-    score += 0.07 * c.trough_score;
-    score += 0.05 * c.island_adaptive_score;
-    score += multi_cue ? 0.08 : -0.04;
-    score -= 0.16 * c.stable_voicing_penalty;
-    // Very high flux without a valley/novelty combination is often a plosive/fricative event inside
-    // a word rather than a word boundary.
-    const double burst_only = std::clamp(c.flux_recovery_score - std::max(c.energy_valley_score, c.spectral_novelty_score), 0.0, 1.0);
-    score -= 0.08 * burst_only;
-    return std::clamp(score, 0.0, 1.0);
-}
-
-
-static std::string audio_boundary_reason_codes(const AudioWordBoundaryCandidate& c)
-{
-    std::vector<std::string> reasons;
-    if (c.energy_valley_score >= 0.28) reasons.push_back("energy_valley");
-    if (c.trough_score >= 0.55) reasons.push_back("short_trough");
-    if (c.low_evidence_score >= 0.55) reasons.push_back("low_evidence");
-    if (c.spectral_change_score >= 0.25) reasons.push_back("spectral_change");
-    if (c.spectral_novelty_score >= 0.25) reasons.push_back("spectral_novelty");
-    if (c.voicing_change_score >= 0.28) reasons.push_back("voicing_change");
-    if (c.flux_recovery_score >= 0.28) reasons.push_back("flux_recovery");
-    if (c.reengagement_score >= 0.28) reasons.push_back("reengagement");
-    if (c.slope_score >= 0.25) reasons.push_back("slope_change");
-    if (c.island_adaptive_score >= 0.25) reasons.push_back("island_adaptive_peak");
-    if (c.stable_voicing_penalty >= 0.32) reasons.push_back("stable_voicing_penalty");
-    if (reasons.empty()) reasons.push_back("weak_salience_only");
-    std::ostringstream out;
-    for (size_t i = 0; i < reasons.size(); ++i)
-    {
-        if (i > 0) out << '|';
-        out << reasons[i];
-    }
-    return out.str();
-}
-
-static std::string audio_boundary_diagnostic_label(const AudioWordBoundaryCandidate& c)
-{
-    if (c.nearest_mfa_error_ms <= 50.0) return "mfa_boundary_50";
-    if (c.nearest_mfa_error_ms <= 100.0) return "mfa_boundary_100";
-    if (c.nearest_mfa_error_ms <= 150.0) return "mfa_boundary_150";
-    if (c.low_evidence_score > 0.70 && c.trough_score > 0.55) return "pause_or_phrase_event";
-    if (c.flux_recovery_score > 0.55 && c.energy_valley_score < 0.18 && c.spectral_novelty_score < 0.20) return "burst_or_release";
-    if (c.stable_voicing_penalty > 0.35) return "stable_voiced_internal";
-    if (c.spectral_novelty_score > 0.35 || c.voicing_change_score > 0.35) return "spectral_or_voicing_change";
-    return "unclassified_false_candidate";
-}
-
-static std::vector<AudioWordBoundaryCandidate> detect_audio_word_boundary_candidates(
-    const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames,
-    const TArray<FOffgridAIStreamingSpeechIsland>& islands,
-    const std::vector<double>& gold_boundaries)
-{
-    std::vector<AudioWordBoundaryCandidate> raw;
-    const int32 n = frames.Num();
-    if (n < 13) return raw;
-
-    auto avg = [&](int32 lo, int32 hi, auto getter) -> double
-    {
-        lo = std::max(0, lo);
-        hi = std::min(n - 1, hi);
-        if (hi < lo) return 0.0;
-        double sum = 0.0;
-        int count = 0;
-        for (int32 i = lo; i <= hi; ++i)
-        {
-            sum += getter(frames[i]);
-            ++count;
-        }
-        return count > 0 ? sum / static_cast<double>(count) : 0.0;
-    };
-
-    auto maxv = [&](int32 lo, int32 hi, auto getter) -> double
-    {
-        lo = std::max(0, lo);
-        hi = std::min(n - 1, hi);
-        double best = 0.0;
-        for (int32 i = lo; i <= hi; ++i) best = std::max(best, getter(frames[i]));
-        return best;
-    };
-
-    auto minv = [&](int32 lo, int32 hi, auto getter) -> double
-    {
-        lo = std::max(0, lo);
-        hi = std::min(n - 1, hi);
-        double best = 1.0;
-        for (int32 i = lo; i <= hi; ++i) best = std::min(best, getter(frames[i]));
-        return best;
-    };
-
-    auto band_dist = [](double a0, double a1, double a2, double a3, double b0, double b1, double b2, double b3) -> double
-    {
-        const double dot = a0*b0 + a1*b1 + a2*b2 + a3*b3;
-        const double na = std::sqrt(a0*a0 + a1*a1 + a2*a2 + a3*a3);
-        const double nb = std::sqrt(b0*b0 + b1*b1 + b2*b2 + b3*b3);
-        const double cosine_distance = (na > 1e-6 && nb > 1e-6) ? (1.0 - dot / (na * nb)) : 0.0;
-        const double l1 = std::abs(a0-b0) + std::abs(a1-b1) + std::abs(a2-b2) + std::abs(a3-b3);
-        return std::clamp(0.60 * cosine_distance + 0.45 * l1, 0.0, 1.0);
-    };
-
-    std::vector<double> salience(static_cast<size_t>(n), 0.0);
-    std::vector<double> base_salience(static_cast<size_t>(n), 0.0);
-    std::vector<AudioWordBoundaryCandidate> per_frame(static_cast<size_t>(n));
-
-    for (int32 i = 5; i + 5 < n; ++i)
-    {
-        const auto& f = frames[i];
-        const double t = static_cast<double>(f.AudioBufferCenterSec);
-        if (!time_inside_any_island(t, islands, 0.045)) continue;
-
-        // Multiscale context windows. Word boundaries may be short closures or spectral changes
-        // with little silence, so use both near and wider windows.
-        const double pre_rms_near = avg(i - 4, i - 1, [](const auto& x) { return static_cast<double>(x.RMSNorm); });
-        const double post_rms_near = avg(i + 1, i + 4, [](const auto& x) { return static_cast<double>(x.RMSNorm); });
-        const double pre_rms_wide = maxv(i - 8, i - 3, [](const auto& x) { return static_cast<double>(x.RMSNorm); });
-        const double post_rms_wide = maxv(i + 3, i + 8, [](const auto& x) { return static_cast<double>(x.RMSNorm); });
-        const double local_rms = minv(i - 1, i + 1, [](const auto& x) { return static_cast<double>(x.RMSNorm); });
-        const double context_rms = std::max(0.05, 0.5 * (std::max(pre_rms_near, pre_rms_wide) + std::max(post_rms_near, post_rms_wide)));
-        const double valley_depth = std::max(0.0, (context_rms - local_rms) / context_rms);
-        const double energy_valley = std::clamp(valley_depth, 0.0, 1.0);
-
-        const double evidence = detector_evidence_for_frame(f);
-        const double pre_evidence = avg(i - 5, i - 2, [](const auto& x) { return detector_evidence_for_frame(x); });
-        const double post_evidence = avg(i + 2, i + 5, [](const auto& x) { return detector_evidence_for_frame(x); });
-        const double low_evidence = std::clamp(1.0 - evidence / 0.22, 0.0, 1.0);
-        const double context_evidence = std::min(pre_evidence, post_evidence);
-        const double reengagement = std::clamp(context_evidence * low_evidence * 2.7, 0.0, 1.0);
-
-        int trough_frames = 1;
-        for (int32 j = i - 1; j >= 0; --j)
-        {
-            if (detector_evidence_for_frame(frames[j]) > 0.15 && frames[j].RMSNorm > 0.19f) break;
-            ++trough_frames;
-            if (trough_frames >= 14) break;
-        }
-        for (int32 j = i + 1; j < n; ++j)
-        {
-            if (detector_evidence_for_frame(frames[j]) > 0.15 && frames[j].RMSNorm > 0.19f) break;
-            ++trough_frames;
-            if (trough_frames >= 14) break;
-        }
-        const double trough_ms = trough_frames * 10.0;
-        // Lexical boundaries are usually short: closures/brief troughs help, very long troughs are more phrase/sentence-like.
-        const double trough_score = std::clamp(1.0 - std::abs(trough_ms - 55.0) / 95.0, 0.0, 1.0);
-
-        const double pre_low = avg(i - 5, i - 2, [](const auto& x) { return static_cast<double>(x.LowBandNorm); });
-        const double post_low = avg(i + 2, i + 5, [](const auto& x) { return static_cast<double>(x.LowBandNorm); });
-        const double pre_mid = avg(i - 5, i - 2, [](const auto& x) { return static_cast<double>(x.MidBandNorm); });
-        const double post_mid = avg(i + 2, i + 5, [](const auto& x) { return static_cast<double>(x.MidBandNorm); });
-        const double pre_high = avg(i - 5, i - 2, [](const auto& x) { return static_cast<double>(x.HighBandNorm); });
-        const double post_high = avg(i + 2, i + 5, [](const auto& x) { return static_cast<double>(x.HighBandNorm); });
-        const double pre_cent = avg(i - 5, i - 2, [](const auto& x) { return static_cast<double>(x.SpectralCentroidNorm); });
-        const double post_cent = avg(i + 2, i + 5, [](const auto& x) { return static_cast<double>(x.SpectralCentroidNorm); });
-        const double spectral_change = std::clamp(
-            std::abs(pre_low - post_low) * 0.85 + std::abs(pre_mid - post_mid) * 0.95 + std::abs(pre_high - post_high) * 0.95 + std::abs(pre_cent - post_cent) * 2.1,
-            0.0,
-            1.0);
-
-        // Spectral novelty: compare the band vector before and after the candidate. This catches
-        // word transitions with continuous energy but a sharp phonetic/spectral change.
-        const double novelty_near = band_dist(pre_low, pre_mid, pre_high, pre_cent, post_low, post_mid, post_high, post_cent);
-        const double pre_low_w = avg(i - 9, i - 4, [](const auto& x) { return static_cast<double>(x.LowBandNorm); });
-        const double post_low_w = avg(i + 4, i + 9, [](const auto& x) { return static_cast<double>(x.LowBandNorm); });
-        const double pre_mid_w = avg(i - 9, i - 4, [](const auto& x) { return static_cast<double>(x.MidBandNorm); });
-        const double post_mid_w = avg(i + 4, i + 9, [](const auto& x) { return static_cast<double>(x.MidBandNorm); });
-        const double pre_high_w = avg(i - 9, i - 4, [](const auto& x) { return static_cast<double>(x.HighBandNorm); });
-        const double post_high_w = avg(i + 4, i + 9, [](const auto& x) { return static_cast<double>(x.HighBandNorm); });
-        const double pre_cent_w = avg(i - 9, i - 4, [](const auto& x) { return static_cast<double>(x.SpectralCentroidNorm); });
-        const double post_cent_w = avg(i + 4, i + 9, [](const auto& x) { return static_cast<double>(x.SpectralCentroidNorm); });
-        const double novelty_wide = band_dist(pre_low_w, pre_mid_w, pre_high_w, pre_cent_w, post_low_w, post_mid_w, post_high_w, post_cent_w);
-        const double spectral_novelty = std::clamp(0.60 * novelty_near + 0.40 * novelty_wide, 0.0, 1.0);
-
-        const double pre_voicing = avg(i - 5, i - 2, [](const auto& x) { return static_cast<double>(x.Periodicity); });
-        const double post_voicing = avg(i + 2, i + 5, [](const auto& x) { return static_cast<double>(x.Periodicity); });
-        const double voicing_change = std::clamp(std::abs(pre_voicing - post_voicing) * 1.8, 0.0, 1.0);
-        const double flux_recovery = std::clamp(maxv(i + 1, i + 6, [](const auto& x) { return static_cast<double>(x.Flux); }) * 4.3, 0.0, 1.0);
-        const double pre_slope = avg(i - 2, i - 1, [](const auto& x) { return static_cast<double>(x.RMSNorm); }) - avg(i - 5, i - 4, [](const auto& x) { return static_cast<double>(x.RMSNorm); });
-        const double post_slope = avg(i + 4, i + 5, [](const auto& x) { return static_cast<double>(x.RMSNorm); }) - avg(i + 1, i + 2, [](const auto& x) { return static_cast<double>(x.RMSNorm); });
-        const double slope_score = std::clamp((-pre_slope * 4.0) + (post_slope * 4.0), 0.0, 1.0);
-        const double stable_voicing_penalty = std::clamp(std::min(pre_voicing, post_voicing) * std::min(pre_rms_near, post_rms_near) * (1.0 - std::max(spectral_change, spectral_novelty)), 0.0, 1.0);
-
-        AudioWordBoundaryCandidate c;
-        c.time = t;
-        c.energy_valley_score = energy_valley;
-        c.trough_score = trough_score;
-        c.low_evidence_score = low_evidence;
-        c.spectral_change_score = spectral_change;
-        c.spectral_novelty_score = spectral_novelty;
-        c.voicing_change_score = voicing_change;
-        c.flux_recovery_score = flux_recovery;
-        c.reengagement_score = reengagement;
-        c.slope_score = slope_score;
-        c.stable_voicing_penalty = stable_voicing_penalty;
-        c.salience = std::clamp(
-            0.18 * energy_valley
-            + 0.13 * low_evidence
-            + 0.09 * trough_score
-            + 0.16 * spectral_change
-            + 0.18 * spectral_novelty
-            + 0.08 * voicing_change
-            + 0.07 * flux_recovery
-            + 0.13 * reengagement
-            + 0.06 * slope_score
-            - 0.22 * stable_voicing_penalty,
-            0.0,
-            1.0);
-        base_salience[static_cast<size_t>(i)] = c.salience;
-        per_frame[static_cast<size_t>(i)] = c;
-    }
-
-    // Per-island robust normalization. This makes the detector less sensitive to absolute speaker volume
-    // and line loudness, and follows the novelty-detection practice of picking peaks above a local floor.
-    for (int32 island_idx = 0; island_idx < islands.Num() || (islands.Num() == 0 && island_idx == 0); ++island_idx)
-    {
-        const double island_start = islands.Num() > 0 ? static_cast<double>(islands[island_idx].AudioBufferStartSec) : static_cast<double>(frames[0].AudioBufferCenterSec);
-        const double island_end = islands.Num() > 0 ? static_cast<double>(islands[island_idx].AudioBufferEndSec) : static_cast<double>(frames[n - 1].AudioBufferCenterSec);
-        std::vector<double> values;
-        for (int32 i = 0; i < n; ++i)
-        {
-            const double t = static_cast<double>(frames[i].AudioBufferCenterSec);
-            if (t < island_start + 0.045 || t > island_end - 0.045) continue;
-            if (base_salience[static_cast<size_t>(i)] > 0.0) values.push_back(base_salience[static_cast<size_t>(i)]);
-        }
-        if (values.empty()) continue;
-        const double med = percentile_ms(values, 0.50);
-        std::vector<double> deviations;
-        deviations.reserve(values.size());
-        for (double v : values) deviations.push_back(std::abs(v - med));
-        const double mad = std::max(0.025, percentile_ms(deviations, 0.50));
-        const double p85 = percentile_ms(values, 0.85);
-
-        for (int32 i = 0; i < n; ++i)
-        {
-            const double t = static_cast<double>(frames[i].AudioBufferCenterSec);
-            if (t < island_start + 0.045 || t > island_end - 0.045) continue;
-            if (base_salience[static_cast<size_t>(i)] <= 0.0) continue;
-            AudioWordBoundaryCandidate c = per_frame[static_cast<size_t>(i)];
-            const double robust_z01 = std::clamp((c.salience - med) / (3.0 * mad), 0.0, 1.0);
-            const double percentile_boost = c.salience >= p85 ? 0.10 : 0.0;
-            c.island_adaptive_score = robust_z01;
-            c.salience = std::clamp(0.78 * c.salience + 0.22 * robust_z01 + percentile_boost, 0.0, 1.0);
-            salience[static_cast<size_t>(i)] = c.salience;
-            per_frame[static_cast<size_t>(i)] = c;
-        }
-    }
-
-    std::vector<AudioWordBoundaryCandidate> local_maxima;
-    for (int32 frame_index = 5; frame_index + 5 < n; ++frame_index)
-    {
-        AudioWordBoundaryCandidate c = per_frame[static_cast<size_t>(frame_index)];
-        if (c.salience <= 0.0) continue;
-        bool is_peak = true;
-        for (int32 j = std::max(0, frame_index - 4); j <= std::min(n - 1, frame_index + 4); ++j)
-        {
-            if (j != frame_index && salience[static_cast<size_t>(j)] > c.salience)
-            {
-                is_peak = false;
-                break;
-            }
-        }
-        if (is_peak && c.salience >= 0.31)
-        {
-            int nearest = -1;
-            c.nearest_mfa_error_ms = nearest_error_ms(c.time, gold_boundaries, &nearest);
-            c.nearest_mfa_index = nearest;
-            c.nearest_mfa_boundary_ms = nearest >= 0 ? gold_boundaries[static_cast<size_t>(nearest)] * 1000.0 : 0.0;
-            local_maxima.push_back(c);
-        }
-    }
-
-    // Stage 1: local peak thinning. Keep a salience field, but avoid returning clusters of
-    // adjacent local maxima around the same acoustic event. This is deliberately looser than
-    // final selection: it preserves a candidate set for the sequence optimizer below.
-    std::sort(local_maxima.begin(), local_maxima.end(), [](const auto& a, const auto& b) { return a.salience > b.salience; });
-    std::vector<AudioWordBoundaryCandidate> peak_candidates_by_score;
-    for (auto c : local_maxima)
-    {
-        bool too_close = false;
-        for (const auto& kept : peak_candidates_by_score)
-        {
-            if (std::abs(kept.time - c.time) < 0.075)
-            {
-                too_close = true;
-                break;
-            }
-        }
-        if (too_close) continue;
-        const bool complementary = (c.energy_valley_score > 0.28 && c.spectral_novelty_score > 0.22) ||
-                                   (c.reengagement_score > 0.28 && c.spectral_change_score > 0.18) ||
-                                   (c.voicing_change_score > 0.30 && c.spectral_novelty_score > 0.18);
-        if (c.salience >= 0.32 || complementary)
-        {
-            c.selected = false;
-            peak_candidates_by_score.push_back(c);
-        }
-    }
-    std::sort(peak_candidates_by_score.begin(), peak_candidates_by_score.end(), [](const auto& a, const auto& b) { return a.time < b.time; });
-
-    auto feature_reward = [](const AudioWordBoundaryCandidate& c) -> double
-    {
-        const bool complementary = (c.energy_valley_score > 0.28 && c.spectral_novelty_score > 0.22) ||
-                                   (c.reengagement_score > 0.28 && c.spectral_change_score > 0.18) ||
-                                   (c.voicing_change_score > 0.30 && c.spectral_novelty_score > 0.18);
-        // Selection reward deliberately has a fixed cost. Greedy local maxima tended to
-        // over-select acoustically interesting intra-word events. A candidate now needs either
-        // strong salience or multiple independent cues to survive the global optimizer.
-        double r = 1.35 * c.salience - 0.62;
-        r += complementary ? 0.10 : 0.0;
-        r += 0.08 * c.island_adaptive_score;
-        r += 0.05 * c.trough_score;
-        r -= 0.18 * c.stable_voicing_penalty;
-        return r;
-    };
-
-    auto gap_score = [](double gap_sec) -> double
-    {
-        // Audio-only lexical-boundary candidates should usually be separated by at least a
-        // short syllabic interval. Very small gaps are duplicate peaks. Moderate gaps are
-        // plausible word spacing. Long gaps are allowed but not especially rewarded.
-        const double gap_ms = gap_sec * 1000.0;
-        if (gap_ms < 95.0) return -2.00;
-        if (gap_ms < 135.0) return -0.55;
-        if (gap_ms < 210.0) return 0.02;
-        if (gap_ms < 620.0) return 0.09;
-        if (gap_ms < 950.0) return 0.01;
-        return -0.10;
-    };
-
-    std::vector<AudioWordBoundaryCandidate> sequence_selected;
-
-    // Stage 2: per-island sequence optimization. This borrows from onset/beat tracking and
-    // change-point decoding: select a coherent subset of peaks rather than accepting every
-    // local maximum independently. It remains audio-only; no transcript or MFA count is used.
-    for (int32 island_idx = 0; island_idx < islands.Num() || (islands.Num() == 0 && island_idx == 0); ++island_idx)
-    {
-        const double island_start = islands.Num() > 0 ? static_cast<double>(islands[island_idx].AudioBufferStartSec) : static_cast<double>(frames[0].AudioBufferCenterSec);
-        const double island_end = islands.Num() > 0 ? static_cast<double>(islands[island_idx].AudioBufferEndSec) : static_cast<double>(frames[n - 1].AudioBufferCenterSec);
-        const double island_duration = std::max(0.0, island_end - island_start);
-
-        std::vector<AudioWordBoundaryCandidate> peaks;
-        for (const auto& c : peak_candidates_by_score)
-        {
-            if (c.time >= island_start + 0.055 && c.time <= island_end - 0.055)
-            {
-                peaks.push_back(c);
-            }
-        }
-        if (peaks.empty()) continue;
-
-        const int m = static_cast<int>(peaks.size());
-        std::vector<double> dp(static_cast<size_t>(m), -1e9);
-        std::vector<int> prev(static_cast<size_t>(m), -1);
-        for (int i = 0; i < m; ++i)
-        {
-            const double edge_penalty = (peaks[i].time - island_start < 0.11 || island_end - peaks[i].time < 0.11) ? -0.12 : 0.0;
-            dp[static_cast<size_t>(i)] = feature_reward(peaks[i]) + edge_penalty;
-            for (int j = 0; j < i; ++j)
-            {
-                const double gap = peaks[i].time - peaks[j].time;
-                if (gap < 0.095) continue;
-                const double score = dp[static_cast<size_t>(j)] + feature_reward(peaks[i]) + gap_score(gap);
-                if (score > dp[static_cast<size_t>(i)])
-                {
-                    dp[static_cast<size_t>(i)] = score;
-                    prev[static_cast<size_t>(i)] = j;
-                }
-            }
-        }
-
-        int best_i = -1;
-        double best_score = 0.0; // allow selecting no boundaries in very short/flat islands
-        for (int i = 0; i < m; ++i)
-        {
-            if (dp[static_cast<size_t>(i)] > best_score)
-            {
-                best_score = dp[static_cast<size_t>(i)];
-                best_i = i;
-            }
-        }
-
-        std::vector<int> path;
-        while (best_i >= 0)
-        {
-            path.push_back(best_i);
-            best_i = prev[static_cast<size_t>(best_i)];
-        }
-        std::reverse(path.begin(), path.end());
-
-        // Density guard. The optimizer is still audio-only, but spoken lexical/prosodic
-        // transitions have a plausible upper density. Keep the strongest path members if a
-        // noisy island tries to emit far more candidates than a human speaking rate permits.
-        const int soft_cap = std::max(1, static_cast<int>(std::ceil(island_duration * 4.2)) + 1);
-        if (static_cast<int>(path.size()) > soft_cap)
-        {
-            std::sort(path.begin(), path.end(), [&](int a, int b) {
-                return feature_reward(peaks[static_cast<size_t>(a)]) > feature_reward(peaks[static_cast<size_t>(b)]);
-            });
-            path.resize(static_cast<size_t>(soft_cap));
-            std::sort(path.begin(), path.end(), [&](int a, int b) { return peaks[static_cast<size_t>(a)].time < peaks[static_cast<size_t>(b)].time; });
-        }
-
-        for (int idx : path)
-        {
-            auto c = peaks[static_cast<size_t>(idx)];
-            c.selected = true;
-            sequence_selected.push_back(c);
-        }
-    }
-
-    // Return the full candidate stream, with only the sequence-optimized subset marked selected.
-    // This keeps diagnostics useful: CSV rows show rejected peaks as well as final observations.
-    std::vector<AudioWordBoundaryCandidate> result = peak_candidates_by_score;
-    for (auto& c : result)
-    {
-        c.selected = false;
-        for (const auto& kept : sequence_selected)
-        {
-            if (std::abs(kept.time - c.time) < 0.001)
-            {
-                c.selected = true;
-                break;
-            }
-        }
-        c.lexical_boundary_score = lexical_boundary_classifier_score(c);
-        c.false_positive_score = std::clamp(1.0 - c.lexical_boundary_score + 0.20 * c.stable_voicing_penalty, 0.0, 1.0);
-        c.diagnostic_label = audio_boundary_diagnostic_label(c);
-    }
-
-    std::vector<size_t> by_salience(result.size());
-    std::iota(by_salience.begin(), by_salience.end(), static_cast<size_t>(0));
-    std::sort(by_salience.begin(), by_salience.end(), [&](size_t a, size_t b) { return result[a].salience > result[b].salience; });
-    for (size_t rank = 0; rank < by_salience.size(); ++rank) result[by_salience[rank]].salience_rank = static_cast<int>(rank + 1);
-
-    std::vector<size_t> by_lexical(result.size());
-    std::iota(by_lexical.begin(), by_lexical.end(), static_cast<size_t>(0));
-    std::sort(by_lexical.begin(), by_lexical.end(), [&](size_t a, size_t b) { return result[a].lexical_boundary_score > result[b].lexical_boundary_score; });
-    for (size_t rank = 0; rank < by_lexical.size(); ++rank) result[by_lexical[rank]].lexical_rank = static_cast<int>(rank + 1);
-
-    std::sort(result.begin(), result.end(), [](const auto& a, const auto& b) { return a.time < b.time; });
-    return result;
-}
-
-
-static AudioWordBoundaryEval evaluate_audio_word_boundary_candidates(
-    const std::vector<AudioWordBoundaryCandidate>& candidates,
-    const std::vector<double>& gold_boundaries)
-{
-    AudioWordBoundaryEval eval;
-    eval.reference_count = static_cast<int>(gold_boundaries.size());
-    eval.candidate_count = static_cast<int>(candidates.size());
-    for (const auto& c : candidates) if (c.selected) ++eval.selected_count;
-
-    std::vector<double> candidate_errors;
-    std::vector<double> selected_errors;
-    double pos_score_sum = 0.0;
-    double neg_score_sum = 0.0;
-    for (const auto& c : candidates)
-    {
-        candidate_errors.push_back(c.nearest_mfa_error_ms);
-        if (c.selected) selected_errors.push_back(c.nearest_mfa_error_ms);
-        if (c.nearest_mfa_error_ms <= 100.0)
-        {
-            ++eval.candidate_positive_count;
-            pos_score_sum += c.lexical_boundary_score;
-        }
-        else
-        {
-            ++eval.candidate_negative_count;
-            neg_score_sum += c.lexical_boundary_score;
-        }
-    }
-    eval.candidate_positive_mean_score = eval.candidate_positive_count > 0 ? pos_score_sum / static_cast<double>(eval.candidate_positive_count) : 0.0;
-    eval.candidate_negative_mean_score = eval.candidate_negative_count > 0 ? neg_score_sum / static_cast<double>(eval.candidate_negative_count) : 0.0;
-
-    std::vector<double> reference_errors;
-    for (double ref : gold_boundaries)
-    {
-        double best = std::numeric_limits<double>::infinity();
-        for (const auto& c : candidates)
-        {
-            if (!c.selected) continue;
-            best = std::min(best, std::abs(c.time - ref) * 1000.0);
-        }
-        if (std::isfinite(best)) reference_errors.push_back(best);
-    }
-
-    auto pr_at = [&](double threshold_ms, double& precision, double& recall, double& f1)
-    {
-        int selected_hits = 0;
-        int ref_hits = 0;
-        for (double err : selected_errors) if (err <= threshold_ms) ++selected_hits;
-        for (double err : reference_errors) if (err <= threshold_ms) ++ref_hits;
-        precision = eval.selected_count > 0 ? static_cast<double>(selected_hits) / static_cast<double>(eval.selected_count) : 0.0;
-        recall = eval.reference_count > 0 ? static_cast<double>(ref_hits) / static_cast<double>(eval.reference_count) : 0.0;
-        f1 = (precision > 0.0 || recall > 0.0) ? (2.0 * precision * recall / (precision + recall)) : 0.0;
-    };
-    pr_at(50.0, eval.selected_precision_50, eval.selected_recall_50, eval.selected_f1_50);
-    pr_at(100.0, eval.selected_precision_100, eval.selected_recall_100, eval.selected_f1_100);
-    pr_at(150.0, eval.selected_precision_150, eval.selected_recall_150, eval.selected_f1_150);
-    eval.reference_nearest_candidate_median_ms = percentile_ms(reference_errors, 0.50);
-    eval.reference_nearest_candidate_p90_ms = percentile_ms(reference_errors, 0.90);
-    eval.candidate_nearest_reference_median_ms = percentile_ms(candidate_errors, 0.50);
-    eval.candidate_nearest_reference_p90_ms = percentile_ms(candidate_errors, 0.90);
-    auto raw_recall_at = [&](double threshold_ms) -> double
-    {
-        if (eval.reference_count <= 0) return 0.0;
-        int hits = 0;
-        for (double ref : gold_boundaries)
-        {
-            bool found = false;
-            for (const auto& c : candidates)
-            {
-                if (std::abs(c.time - ref) * 1000.0 <= threshold_ms)
-                {
-                    found = true;
-                    break;
-                }
-            }
-            if (found) ++hits;
-        }
-        return static_cast<double>(hits) / static_cast<double>(eval.reference_count);
-    };
-    eval.raw_candidate_recall_50 = raw_recall_at(50.0);
-    eval.raw_candidate_recall_100 = raw_recall_at(100.0);
-    eval.raw_candidate_recall_150 = raw_recall_at(150.0);
-
-    auto topk_recall_at_100 = [&](int k) -> double
-    {
-        if (eval.reference_count <= 0) return 0.0;
-        int hits = 0;
-        for (double ref : gold_boundaries)
-        {
-            std::vector<const AudioWordBoundaryCandidate*> nearby;
-            for (const auto& c : candidates)
-            {
-                if (std::abs(c.time - ref) * 1000.0 <= 250.0) nearby.push_back(&c);
-            }
-            std::sort(nearby.begin(), nearby.end(), [](const auto* a, const auto* b) { return a->lexical_boundary_score > b->lexical_boundary_score; });
-            const int limit = std::min(k, static_cast<int>(nearby.size()));
-            bool found = false;
-            for (int i = 0; i < limit; ++i)
-            {
-                if (std::abs(nearby[static_cast<size_t>(i)]->time - ref) * 1000.0 <= 100.0)
-                {
-                    found = true;
-                    break;
-                }
-            }
-            if (found) ++hits;
-        }
-        return static_cast<double>(hits) / static_cast<double>(eval.reference_count);
-    };
-    eval.top1_recall_100 = topk_recall_at_100(1);
-    eval.top2_recall_100 = topk_recall_at_100(2);
-    eval.top3_recall_100 = topk_recall_at_100(3);
-    eval.top5_recall_100 = topk_recall_at_100(5);
-
-    return eval;
-}
-
-static std::string audio_word_boundary_candidates_csv(const std::vector<AudioWordBoundaryCandidate>& candidates)
-{
-    std::ostringstream out;
-    out << "candidate_index,time_ms,salience,lexical_boundary_score,false_positive_score,salience_rank,lexical_rank,diagnostic_label,reason_codes,selected,energy_valley_score,trough_score,low_evidence_score,spectral_change_score,spectral_novelty_score,voicing_change_score,flux_recovery_score,reengagement_score,slope_score,island_adaptive_score,stable_voicing_penalty,nearest_mfa_boundary_ms,nearest_mfa_error_ms,nearest_mfa_index,within_50ms,within_100ms,within_150ms\n";
-    out << std::fixed << std::setprecision(6);
-    for (size_t i = 0; i < candidates.size(); ++i)
-    {
-        const auto& c = candidates[i];
-        out << i << ','
-            << c.time * 1000.0 << ','
-            << c.salience << ','
-            << c.lexical_boundary_score << ','
-            << c.false_positive_score << ','
-            << c.salience_rank << ','
-            << c.lexical_rank << ','
-            << c.diagnostic_label << ','
-            << audio_boundary_reason_codes(c) << ','
-            << (c.selected ? 1 : 0) << ','
-            << c.energy_valley_score << ','
-            << c.trough_score << ','
-            << c.low_evidence_score << ','
-            << c.spectral_change_score << ','
-            << c.spectral_novelty_score << ','
-            << c.voicing_change_score << ','
-            << c.flux_recovery_score << ','
-            << c.reengagement_score << ','
-            << c.slope_score << ','
-            << c.island_adaptive_score << ','
-            << c.stable_voicing_penalty << ','
-            << c.nearest_mfa_boundary_ms << ','
-            << c.nearest_mfa_error_ms << ','
-            << c.nearest_mfa_index << ','
-            << (c.nearest_mfa_error_ms <= 50.0 ? 1 : 0) << ','
-            << (c.nearest_mfa_error_ms <= 100.0 ? 1 : 0) << ','
-            << (c.nearest_mfa_error_ms <= 150.0 ? 1 : 0) << '\n';
-    }
-    return out.str();
-}
-
-static std::string audio_word_boundary_grade_json(const AudioWordBoundaryEval& eval)
-{
-    std::ostringstream out;
-    out << std::fixed << std::setprecision(6);
-    out << "{\n"
-        << "  \"reference_count\": " << eval.reference_count << ",\n"
-        << "  \"candidate_count\": " << eval.candidate_count << ",\n"
-        << "  \"selected_count\": " << eval.selected_count << ",\n"
-        << "  \"precision_50\": " << eval.selected_precision_50 << ",\n"
-        << "  \"recall_50\": " << eval.selected_recall_50 << ",\n"
-        << "  \"f1_50\": " << eval.selected_f1_50 << ",\n"
-        << "  \"precision_100\": " << eval.selected_precision_100 << ",\n"
-        << "  \"recall_100\": " << eval.selected_recall_100 << ",\n"
-        << "  \"f1_100\": " << eval.selected_f1_100 << ",\n"
-        << "  \"precision_150\": " << eval.selected_precision_150 << ",\n"
-        << "  \"recall_150\": " << eval.selected_recall_150 << ",\n"
-        << "  \"f1_150\": " << eval.selected_f1_150 << ",\n"
-        << "  \"reference_nearest_candidate_median_ms\": " << eval.reference_nearest_candidate_median_ms << ",\n"
-        << "  \"reference_nearest_candidate_p90_ms\": " << eval.reference_nearest_candidate_p90_ms << ",\n"
-        << "  \"candidate_nearest_reference_median_ms\": " << eval.candidate_nearest_reference_median_ms << ",\n"
-        << "  \"candidate_nearest_reference_p90_ms\": " << eval.candidate_nearest_reference_p90_ms << ",\n"
-        << "  \"raw_candidate_recall_50\": " << eval.raw_candidate_recall_50 << ",\n"
-        << "  \"raw_candidate_recall_100\": " << eval.raw_candidate_recall_100 << ",\n"
-        << "  \"raw_candidate_recall_150\": " << eval.raw_candidate_recall_150 << ",\n"
-        << "  \"top1_recall_100\": " << eval.top1_recall_100 << ",\n"
-        << "  \"top2_recall_100\": " << eval.top2_recall_100 << ",\n"
-        << "  \"top3_recall_100\": " << eval.top3_recall_100 << ",\n"
-        << "  \"top5_recall_100\": " << eval.top5_recall_100 << ",\n"
-        << "  \"candidate_positive_count\": " << eval.candidate_positive_count << ",\n"
-        << "  \"candidate_negative_count\": " << eval.candidate_negative_count << ",\n"
-        << "  \"candidate_positive_mean_score\": " << eval.candidate_positive_mean_score << ",\n"
-        << "  \"candidate_negative_mean_score\": " << eval.candidate_negative_mean_score << "\n"
-        << "}\n";
-    return out.str();
 }
 
 template <class T>
@@ -1306,35 +533,36 @@ static std::string alignment_csv(const FOffgridAITextVisemePlan& plan, const FOf
     return out.str();
 }
 
-static std::string runtime_phone_alignment_csv(const FOffgridAITextVisemePlan& plan, const FOffgridAIAlignedVisemeTrack& track)
+
+static std::string audio_progress_measurements_csv(const TArray<FOffgridAIAudioProgressMeasurementRow>& rows)
 {
     std::ostringstream out;
-    out << "phone_index,word_index,word_phone_index,word,phone_base,phone_class,start,center,end,mapped_to_observed_speech\n";
+    out << "line_id,update_ordinal,current_playback,observed_audio_end,current_word_index,current_word,next_word_index,next_word,word_start,word_end,expected_duration,elapsed_in_word,duration_ratio,boundary_time,boundary_confidence,filtered_boundary_confidence,boundary_red_herring_probability,duration_advance_prior,time_prior_progress_01,audio_density_progress_01,boundary_evidence_progress_01,phone_expectation_progress_01,anchor_best_phone_probability,anchor_mean_phone_probability,anchor_best_boundary_probability,anchor_mean_boundary_probability,anchor_mean_speech_probability,estimated_region_progress_01,estimator_disagreement_01,transcript_progress,prior_transcript_progress,progress_word_float,region_start,region_end,region_progress_01,region_prior_progress_01,animation_progress_01,progress_error_01,estimated_velocity_01_per_sec,suggested_play_rate,progress_confidence,micro_pause_count_50ms,micro_pause_count_75ms,micro_pause_count_120ms,nearest_micro_pause_time,nearest_micro_pause_duration,nearest_micro_pause_progress_01,retrospective_drift_01,retrospective_drift_sec,retrospective_drift_confidence,drift_suggested_play_rate,filtered_pll_play_rate,filtered_pll_confidence,pll_tempo_rate,pll_tempo_confidence,pll_phase_rate,timing_warp_rate,timing_warp_confidence,timing_warp_anchor_canonical,timing_warp_anchor_observed,timing_warp_error_sec,still_current_probability,next_word_probability,would_advance,advance_reason\n";
     out << std::fixed << std::setprecision(6);
-    for (int32 i = 0; i < plan.ExpectedPhones.Num(); ++i)
+    for (const auto& r : rows)
     {
-        const auto& phone = plan.ExpectedPhones[i];
-        const float start = track.RuntimeObservedPhoneStartSeconds.IsValidIndex(i)
-            ? track.RuntimeObservedPhoneStartSeconds[i]
-            : -1.0f;
-        const float end = track.RuntimeObservedPhoneEndSeconds.IsValidIndex(i)
-            ? track.RuntimeObservedPhoneEndSeconds[i]
-            : -1.0f;
-        const bool bObserved = start >= 0.0f && end > start;
-        const float center = (start >= 0.0f && end > start) ? (start + end) * 0.5f : -1.0f;
-        out << i << ','
-            << phone.WordIndex << ','
-            << phone.WordPhoneIndex << ','
-            << to_std(phone.SourceWord) << ','
-            << to_std(phone.BasePhone) << ','
-            << to_std(FOffgridAIOnlinePhoneAligner::PhoneClassToString(FOffgridAIOnlinePhoneAligner::ClassForPhoneBase(phone.BasePhone))) << ','
-            << start << ','
-            << center << ','
-            << end << ','
-            << (bObserved ? 1 : 0) << '\n';
+        out << to_std(r.LineID) << ',' << r.UpdateOrdinal << ',' << r.CurrentPlaybackSec << ',' << r.ObservedAudioEndSec << ','
+            << r.CurrentWordIndex << ',' << to_std(r.CurrentWord) << ',' << r.NextWordIndex << ',' << to_std(r.NextWord) << ','
+            << r.WordStartSec << ',' << r.WordEndSec << ',' << r.ExpectedDurationSec << ',' << r.ElapsedInWordSec << ',' << r.DurationRatio << ','
+            << r.BoundaryTimeSec << ',' << r.BoundaryConfidence << ',' << r.FilteredBoundaryConfidence << ',' << r.BoundaryRedHerringProbability << ',' << r.DurationAdvancePrior << ','
+            << r.TimePriorProgress01 << ',' << r.AudioDensityProgress01 << ',' << r.BoundaryEvidenceProgress01 << ',' << r.PhoneExpectationProgress01 << ','
+            << r.PrerollWindowBestPhoneProbability << ',' << r.PrerollWindowMeanPhoneProbability << ',' << r.PrerollWindowBestBoundaryProbability << ',' << r.PrerollWindowMeanBoundaryProbability << ',' << r.PrerollWindowMeanSpeechProbability << ','
+            << r.EstimatedRegionProgress01 << ',' << r.EstimatorDisagreement01 << ','
+            << r.TranscriptProgress << ',' << r.PriorTranscriptProgress << ',' << r.ProgressWordFloat << ','
+            << r.RegionStartSec << ',' << r.RegionEndSec << ',' << r.RegionProgress01 << ',' << r.RegionPriorProgress01 << ','
+            << r.AnimationProgress01 << ',' << r.ProgressError01 << ',' << r.EstimatedVelocity01PerSec << ',' << r.SuggestedPlayRate << ',' << r.ProgressConfidence << ','
+            << r.MicroPauseCount50ms << ',' << r.MicroPauseCount75ms << ',' << r.MicroPauseCount120ms << ','
+            << r.NearestMicroPauseTimeSec << ',' << r.NearestMicroPauseDurationSec << ',' << r.NearestMicroPauseProgress01 << ','
+            << r.RetrospectiveDrift01 << ',' << r.RetrospectiveDriftSec << ',' << r.RetrospectiveDriftConfidence << ',' << r.DriftSuggestedPlayRate << ','
+            << r.FilteredPLLPlayRate << ',' << r.FilteredPLLConfidence << ','
+            << r.PLLTempoRate << ',' << r.PLLTempoConfidence << ',' << r.PLLPhaseRate << ','
+            << r.TimingWarpRate << ',' << r.TimingWarpConfidence << ','
+            << r.TimingWarpAnchorCanonicalSec << ',' << r.TimingWarpAnchorObservedSec << ',' << r.TimingWarpErrorSec << ','
+            << r.StillCurrentProbability << ',' << r.NextWordProbability << ',' << (r.bWouldAdvance ? 1 : 0) << ',' << to_std(r.AdvanceReason) << '\n';
     }
     return out.str();
 }
+
 
 static FName ResolvePlannedPoseForHarness(const FOffgridAITextVisemeEvent& event)
 {
@@ -1407,42 +635,7 @@ static FOffgridAIAlignedVisemeTrack build_direct_aligner_track(
     return out;
 }
 
-static std::string occupancy_diagnostics_csv(const TArray<FOffgridAIAudioOccupancyDiagnosticRow>& rows)
-{
-    std::ostringstream out;
-    out << "line_id,update_ordinal,final_replay,current_playback,preroll,event_index,word,pose,planned_center,committed_center,render_start,render_end,commit_reason,playback_mode,aligned_phone_start,aligned_phone_end,audio_active,text_playhead,required_active_elapsed,observed_active_elapsed,active_progress_deficit,required_progress_norm,observed_progress_norm,active_progress_ratio,mapped_to_observed_speech,diagnostic_kind\n";
-    out << std::fixed << std::setprecision(6);
-    for (const auto& row : rows)
-    {
-        out << to_std(row.LineID) << ','
-            << row.UpdateOrdinal << ','
-            << (row.bFinalReplay ? 1 : 0) << ','
-            << row.CurrentPlaybackSec << ','
-            << row.PrerollSec << ','
-            << row.SourceEventIndex << ','
-            << to_std(row.Word) << ','
-            << to_std(row.PoseID) << ','
-            << row.PlannedCenterSec << ','
-            << row.CommittedCenterSec << ','
-            << row.RenderStartSec << ','
-            << row.RenderEndSec << ','
-            << to_std(row.CommitReason) << ','
-            << to_std(row.PlaybackMode) << ','
-            << row.AlignedPhoneStartSec << ','
-            << row.AlignedPhoneEndSec << ','
-            << row.AudioActiveSec << ','
-            << row.TextPlayheadSec << ','
-            << row.RequiredActiveElapsedSec << ','
-            << row.ObservedActiveElapsedSec << ','
-            << row.ActiveProgressDeficitSec << ','
-            << row.RequiredProgressNorm << ','
-            << row.ObservedProgressNorm << ','
-            << row.ActiveProgressRatio << ','
-            << (row.bMappedToObservedSpeech ? 1 : 0) << ','
-            << to_std(row.DiagnosticKind) << '\n';
-    }
-    return out.str();
-}
+
 
 static std::string stream_tail_csv(const FOffgridAIStreamTailDiagnosticRow& row)
 {
@@ -2106,30 +1299,70 @@ static float wav_duration_seconds(const Wav& wav)
     return static_cast<float>(wav.samples.size()) / static_cast<float>(wav.sample_rate * wav.channels);
 }
 
-static StreamConfig parse_stream_config(int argc, char** argv)
+struct RunnerCliConfig
 {
-    StreamConfig config;
-    for (int i = 2; i < argc; ++i)
+    fs::path root = fs::current_path();
+    StreamConfig stream;
+};
+
+static RunnerCliConfig parse_cli_config(int argc, char** argv)
+{
+    RunnerCliConfig cli;
+    bool root_set = false;
+
+    auto parse_ms = [](const std::string& value, const char* flag) {
+        const double parsed = std::stod(value);
+        if (parsed < 0.0)
+        {
+            throw std::runtime_error(std::string(flag) + " must be non-negative");
+        }
+        return static_cast<float>(parsed / 1000.0);
+    };
+
+    auto starts_with = [](const std::string& s, const char* prefix) {
+        const std::string p(prefix);
+        return s.size() >= p.size() && s.compare(0, p.size(), p) == 0;
+    };
+
+    for (int i = 1; i < argc; ++i)
     {
         const std::string arg = argv[i];
-        auto parse_ms = [&](const std::string& value, const char* flag) {
-            const double parsed = std::stod(value);
-            if (parsed < 0.0)
-            {
-                throw std::runtime_error(std::string(flag) + " must be non-negative");
-            }
-            return static_cast<float>(parsed / 1000.0);
-        };
 
-        if (arg == "--buffer-ms")
+        if (arg == "--root")
         {
-            if (i + 1 >= argc) throw std::runtime_error("--buffer-ms requires a value");
-            config.buffer_seconds = parse_ms(argv[++i], "--buffer-ms");
+            if (i + 1 >= argc) throw std::runtime_error("--root requires a value");
+            cli.root = fs::path(argv[++i]);
+            root_set = true;
+        }
+        else if (starts_with(arg, "--root="))
+        {
+            cli.root = fs::path(arg.substr(std::string("--root=").size()));
+            root_set = true;
+        }
+        else if (arg == "--buffer-ms" || arg == "--preroll-ms" || arg == "--preroll")
+        {
+            if (i + 1 >= argc) throw std::runtime_error(arg + " requires a value");
+            cli.stream.buffer_seconds = parse_ms(argv[++i], arg.c_str());
+        }
+        else if (starts_with(arg, "--buffer-ms=") || starts_with(arg, "--preroll-ms=") || starts_with(arg, "--preroll="))
+        {
+            const size_t eq = arg.find('=');
+            const std::string flag = arg.substr(0, eq);
+            cli.stream.buffer_seconds = parse_ms(arg.substr(eq + 1), flag.c_str());
         }
         else if (arg == "--chunk-ms")
         {
             if (i + 1 >= argc) throw std::runtime_error("--chunk-ms requires a value");
-            config.chunk_seconds = parse_ms(argv[++i], "--chunk-ms");
+            cli.stream.chunk_seconds = parse_ms(argv[++i], "--chunk-ms");
+        }
+        else if (starts_with(arg, "--chunk-ms="))
+        {
+            cli.stream.chunk_seconds = parse_ms(arg.substr(std::string("--chunk-ms=").size()), "--chunk-ms");
+        }
+        else if (!starts_with(arg, "--") && !root_set)
+        {
+            cli.root = fs::path(arg);
+            root_set = true;
         }
         else
         {
@@ -2137,11 +1370,11 @@ static StreamConfig parse_stream_config(int argc, char** argv)
         }
     }
 
-    if (config.chunk_seconds <= 0.0f)
+    if (cli.stream.chunk_seconds <= 0.0f)
     {
         throw std::runtime_error("--chunk-ms must be greater than zero");
     }
-    return config;
+    return cli;
 }
 
 static int32 stream_chunk_frames(int sample_rate, float chunk_seconds)
@@ -2206,8 +1439,9 @@ int main(int argc, char** argv)
     try
     {
         using clock = std::chrono::steady_clock;
-        fs::path root = argc > 1 ? argv[1] : fs::current_path();
-        const StreamConfig stream = parse_stream_config(argc, argv);
+        const RunnerCliConfig cli = parse_cli_config(argc, argv);
+        const fs::path root = cli.root;
+        const StreamConfig stream = cli.stream;
         fs::path out_root = root / "outputs" / "runs" / "latest";
         fs::remove_all(out_root);
         fs::create_directories(out_root);
@@ -2262,9 +1496,8 @@ int main(int argc, char** argv)
             write_text(case_dir / "speech_regions.csv", speech_csv(speech));
             write_text(case_dir / "committed.csv", committed_csv(committed));
             write_text(case_dir / "commit_decisions.csv", commit_decisions_csv(committed));
-            write_text(case_dir / "occupancy_diagnostics.csv", occupancy_diagnostics_csv(session.GetAudioOccupancyDiagnosticRows()));
             write_text(case_dir / "stream_tail.csv", stream_tail_csv(session.GetStreamTailDiagnosticRow()));
-            write_text(case_dir / "runtime_phone_alignment.csv", runtime_phone_alignment_csv(plan, committed));
+            write_text(case_dir / "audio_progress_measurements.csv", audio_progress_measurements_csv(session.GetAudioProgressMeasurementRows()));
 
             FOffgridAIOnlinePhoneAlignmentInput alignment_input;
             alignment_input.Plan = &plan;
@@ -2292,11 +1525,6 @@ int main(int argc, char** argv)
                 const auto handmade = read_handmade_csv(gold_visemes_path);
                 const auto gold_words = read_gold_words_csv(gold_words_path);
                 const auto gold_speech = read_gold_speech_csv(gold_speech_path);
-                const auto gold_word_boundaries = gold_internal_word_boundary_times(gold_words);
-                const auto audio_boundary_candidates = detect_audio_word_boundary_candidates(session.GetAudioFeatureFrames(), speech, gold_word_boundaries);
-                const auto audio_boundary_eval = evaluate_audio_word_boundary_candidates(audio_boundary_candidates, gold_word_boundaries);
-                write_text(case_dir / "audio_word_boundary_candidates.csv", audio_word_boundary_candidates_csv(audio_boundary_candidates));
-                write_text(case_dir / "audio_word_boundary_grade.json", audio_word_boundary_grade_json(audio_boundary_eval));
                 gold_viseme_count = handmade.size();
                 report = grade(committed, handmade, gold_words, gold_speech);
                 const GradeReport direct_aligner_report = grade(direct_aligner_track, handmade, gold_words, gold_speech);

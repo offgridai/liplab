@@ -1,5 +1,7 @@
 #include "Lipsync/OffgridAIOnlinePhoneAligner.h"
 
+#include <cfloat>
+
 namespace
 {
 static float Sat(float X)
@@ -433,34 +435,69 @@ EOffgridAIPhoneClass FOffgridAIOnlinePhoneAligner::ClassForPhoneBase(const FStri
     return EOffgridAIPhoneClass::Unknown;
 }
 
+FOffgridAIArticulatoryProbabilityField FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(const FOffgridAIStreamingAudioFeatureFrame& F)
+{
+    FOffgridAIArticulatoryProbabilityField A;
+
+    const float Speech = SpeechScore(F);
+    const float Low = Sat(F.LowBandNorm);
+    const float Mid = Sat(F.MidBandNorm);
+    const float High = Sat(F.HighBandNorm);
+    const float Centroid = Sat(F.SpectralCentroidNorm);
+    const float LowCentroid = 1.0f - Centroid;
+    const float HighCentroid = Centroid;
+    const float LowHighTilt = Sat(Low - High + 0.42f);
+    const float HighLowTilt = Sat(High - Low + 0.42f);
+
+    const float PositiveEnergySlope = Sat(FMath::Max(F.DeltaRMS, 0.0f) * 1.65f);
+    const float NegativeEnergySlope = Sat(FMath::Max(-F.DeltaRMS, 0.0f) * 1.65f);
+    const float FluxPeak = Sat(F.Flux * 1.65f + (F.bLocalFluxPeak ? 0.28f : 0.0f));
+    const float Valley = Sat((F.bLocalRMSValley ? 0.42f : 0.0f) + Smooth01(0.22f - F.RMSNorm, 0.0f, 0.22f) * 0.44f);
+
+    A.Speech = Speech;
+    A.Silence = Sat((1.0f - Speech) * 0.86f + (F.RMSNorm < 0.025f ? 0.25f : 0.0f));
+    A.Voiced = Sat(F.Periodicity * 1.20f + F.RMSNorm * 0.30f - F.Flux * 0.16f - High * 0.08f);
+    A.Fricative = Sat(((1.0f - F.Periodicity) * 0.48f + F.ZCR * 0.36f + High * 0.28f) * 0.64f + HighCentroid * 0.28f + F.Flux * 0.18f);
+    A.Closure = Sat(Valley * 0.68f + NegativeEnergySlope * 0.18f + LowHighTilt * 0.16f - High * 0.10f);
+    A.Release = Sat(FluxPeak * 0.70f + PositiveEnergySlope * 0.30f + High * 0.10f);
+    A.Vowel = Sat(A.Voiced * 0.68f + F.RMSNorm * 0.36f - F.Flux * 0.24f - F.ZCR * 0.12f);
+    A.Sonorant = Sat(A.Voiced * 0.56f + Low * 0.18f + Mid * 0.18f - A.Fricative * 0.12f - A.Closure * 0.08f);
+    A.LowTilt = LowHighTilt;
+    A.HighTilt = HighLowTilt;
+    A.SpectralChange = Sat(F.Flux * 0.44f + F.ZCR * 0.22f + FMath::Abs(High - Low) * 0.16f + FMath::Abs(Centroid - 0.5f) * 0.10f);
+    A.EnergyChange = Sat(PositiveEnergySlope * 0.55f + NegativeEnergySlope * 0.45f + (F.bLocalRMSValley ? 0.12f : 0.0f));
+
+    // Transition probability is deliberately generic: it means "the articulatory
+    // state is changing here", not "this exact frame is a word boundary".  The
+    // runtime adapter aggregates this field over a window and combines it with
+    // CMU-derived priors before it becomes a lexical-transition hint.
+    A.Transition = Sat(0.30f * A.Closure + 0.26f * A.Release + 0.20f * A.SpectralChange + 0.14f * A.EnergyChange + 0.10f * FMath::Abs(A.Voiced - A.Fricative));
+
+    const float SustainedVowel = Sat((F.RMSNorm - 0.18f) / 0.34f) * Sat((A.Vowel - 0.48f) / 0.36f) * Sat((0.38f - A.Transition) / 0.38f);
+    const float FluxOnly = Sat(A.Release - 0.48f) * Sat((0.34f - A.Closure) / 0.34f) * Sat((0.34f - A.SpectralChange) / 0.34f);
+    const float Flat = Sat((0.12f - A.EnergyChange) / 0.12f) * Sat((0.12f - A.SpectralChange) / 0.12f) * Sat((0.14f - A.Release) / 0.14f);
+    A.RedHerring = Sat(0.48f * SustainedVowel + 0.34f * FluxOnly + 0.18f * Flat);
+
+    FOffgridAIPhoneClassScores& S = A.PhoneScores;
+    S.Silence = A.Silence;
+    S.VowelOpen = Sat(A.Vowel * (0.48f + Low * 0.28f + Mid * 0.30f + F.RMSNorm * 0.12f - High * 0.08f));
+    S.VowelFront = Sat(A.Vowel * (0.42f + Mid * 0.34f + Centroid * 0.26f + High * 0.10f - LowHighTilt * 0.08f));
+    S.VowelRound = Sat(A.Vowel * (0.46f + LowCentroid * 0.32f + Low * 0.28f + LowHighTilt * 0.16f - High * 0.10f));
+    S.Bilabial = Sat(A.Closure * 0.66f + A.Release * 0.18f + LowHighTilt * 0.16f + LowCentroid * 0.10f - A.Fricative * 0.18f);
+    S.Labiodental = Sat(A.Fricative * 0.48f + Mid * 0.24f + LowHighTilt * 0.18f + LowCentroid * 0.10f - High * 0.10f);
+    S.Dental = Sat(A.Fricative * 0.42f + Mid * 0.20f + F.ZCR * 0.22f + A.Release * 0.10f);
+    S.Sibilant = Sat(A.Fricative * 0.78f + High * 0.34f + HighCentroid * 0.26f - Low * 0.10f);
+    S.StopBurst = Sat(A.Release * 0.78f + Mid * 0.16f + High * 0.14f + A.Closure * 0.08f);
+    S.Liquid = Sat(A.Voiced * 0.50f + Mid * 0.24f + Centroid * 0.14f + F.RMSNorm * 0.10f - A.Closure * 0.10f);
+    S.Glide = Sat(A.Voiced * 0.48f + LowCentroid * 0.18f + Mid * 0.18f + F.RMSNorm * 0.08f - A.Release * 0.10f);
+    S.Nasal = Sat(A.Voiced * 0.54f + Low * 0.34f + LowCentroid * 0.22f - High * 0.18f - A.Fricative * 0.08f);
+    S.Unknown = Sat(Speech * 0.22f + 0.035f);
+    return A;
+}
+
 FOffgridAIPhoneClassScores FOffgridAIOnlinePhoneAligner::ScoreFramePhoneClasses(const FOffgridAIStreamingAudioFeatureFrame& F)
 {
-    FOffgridAIPhoneClassScores S;
-    const float Speech = SpeechScore(F);
-    const float Voiced = Sat(F.Periodicity * 1.15f + F.RMSNorm * 0.35f - F.Flux * 0.18f);
-    const float Frication = Sat(F.HighBandNorm * 0.65f + F.ZCR * 0.55f + F.SpectralCentroidNorm * 0.45f + F.Flux * 0.25f);
-    const float Burst = Sat(F.Flux * 0.75f + (F.bLocalFluxPeak ? 0.30f : 0.0f) + F.DeltaRMS * 0.25f);
-    const float LowCentroid = 1.0f - Sat(F.SpectralCentroidNorm);
-    const float LowHighBand = 1.0f - Sat(F.HighBandNorm);
-    const float Valley = (F.bLocalRMSValley ? 0.45f : 0.0f) + Smooth01(0.18f - F.RMSNorm, 0.0f, 0.18f) * 0.35f;
-
-    S.Silence = Sat((1.0f - Speech) * 0.85f + (F.RMSNorm < 0.025f ? 0.25f : 0.0f));
-
-    const float VowelBase = Sat(Voiced * 0.72f + F.RMSNorm * 0.45f + LowHighBand * 0.20f - F.Flux * 0.20f);
-    S.VowelOpen = Sat(VowelBase * (0.65f + F.LowBandNorm * 0.30f + F.MidBandNorm * 0.20f));
-    S.VowelFront = Sat(VowelBase * (0.52f + F.MidBandNorm * 0.32f + F.SpectralCentroidNorm * 0.22f));
-    S.VowelRound = Sat(VowelBase * (0.56f + LowCentroid * 0.34f + F.LowBandNorm * 0.20f));
-
-    S.Bilabial = Sat(Valley + Burst * 0.32f + LowCentroid * 0.18f);
-    S.Labiodental = Sat(Frication * 0.55f + F.MidBandNorm * 0.25f + LowCentroid * 0.18f - F.HighBandNorm * 0.12f);
-    S.Dental = Sat(Frication * 0.45f + F.MidBandNorm * 0.22f + F.ZCR * 0.20f);
-    S.Sibilant = Sat(Frication * 0.78f + F.HighBandNorm * 0.32f + F.SpectralCentroidNorm * 0.30f);
-    S.StopBurst = Sat(Burst * 0.78f + F.MidBandNorm * 0.18f + F.HighBandNorm * 0.12f);
-    S.Liquid = Sat(Voiced * 0.52f + F.MidBandNorm * 0.22f + F.SpectralCentroidNorm * 0.16f);
-    S.Glide = Sat(Voiced * 0.48f + LowCentroid * 0.18f + F.MidBandNorm * 0.16f);
-    S.Nasal = Sat(Voiced * 0.56f + F.LowBandNorm * 0.32f + LowCentroid * 0.22f - F.HighBandNorm * 0.16f);
-    S.Unknown = Sat(Speech * 0.35f + 0.05f);
-    return S;
+    return BuildArticulatoryProbabilityField(F).PhoneScores;
 }
 
 float FOffgridAIOnlinePhoneAligner::ScoreForClass(const FOffgridAIPhoneClassScores& Scores, EOffgridAIPhoneClass PhoneClass)
@@ -688,9 +725,25 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
         const FOffgridAIExpectedPhone& Expected = Plan.ExpectedPhones[PhoneIndex];
         VisibleExpectedSeconds += ExpectedDurationForPhone(Expected, ClassForPhoneBase(Expected.BasePhone));
     }
-    const float SpeechRateScale = VisibleExpectedSeconds > 0.010f
+    const float AcousticSpeechRateScale = VisibleExpectedSeconds > 0.010f
         ? FMath::Clamp(ObservedSpeechSeconds / VisibleExpectedSeconds, 0.80f, 1.30f)
         : 1.0f;
+
+    // v17 monotonic-warp duration prior.  The runtime carries a conservative
+    // canonical->observed time warp.  A visual rate below 1.0 means future
+    // visemes should be stretched, which corresponds to a larger duration
+    // scale here.  Local acoustic evidence and monotonic DP still own the
+    // alignment; the warp only biases expected phone durations.
+    const float WarpVisualRate = FMath::Clamp(
+        Input.TimingWarpConfidence > 0.001f ? Input.TimingWarpRate : Input.TimingPLLPlayRate,
+        0.88f, 1.12f);
+    const float WarpConfidence = FMath::Clamp(FMath::Max(Input.TimingWarpConfidence, Input.TimingPLLConfidence), 0.0f, 1.0f);
+    const float WarpDurationScale = FMath::Clamp(1.0f / WarpVisualRate, 0.86f, 1.16f);
+    const float WarpBlend = FMath::Clamp(WarpConfidence * 0.55f, 0.0f, 0.55f);
+    const float SpeechRateScale = FMath::Clamp(
+        AcousticSpeechRateScale * (1.0f - WarpBlend) + WarpDurationScale * WarpBlend,
+        0.80f,
+        1.30f);
     Out.VisibleExpectedSeconds = VisibleExpectedSeconds;
     Out.SpeechRateScale = SpeechRateScale;
 

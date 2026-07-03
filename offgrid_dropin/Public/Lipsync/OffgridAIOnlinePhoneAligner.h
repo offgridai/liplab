@@ -41,6 +41,34 @@ struct FOffgridAIPhoneClassScores
     float Unknown = 0.0f;
 };
 
+// One frame-level evidence field for all advisory acoustic reasoning.
+//
+// The runtime still treats the CMU transcript plan as authoritative; this field
+// only describes how the current audio frame *sounds*.  Phone scoring, lexical
+// transition hints, and progress-density diagnostics are all derived from this
+// one probability field so the code does not contain competing acoustic
+// detectors with slightly different meanings.
+struct FOffgridAIArticulatoryProbabilityField
+{
+    float Speech = 0.0f;
+    float Silence = 0.0f;
+    float Voiced = 0.0f;
+    float Vowel = 0.0f;
+    float Fricative = 0.0f;
+    float Closure = 0.0f;
+    float Release = 0.0f;
+    float Sonorant = 0.0f;
+    float Transition = 0.0f;
+    float RedHerring = 0.0f;
+
+    float LowTilt = 0.0f;
+    float HighTilt = 0.0f;
+    float SpectralChange = 0.0f;
+    float EnergyChange = 0.0f;
+
+    FOffgridAIPhoneClassScores PhoneScores;
+};
+
 struct FOffgridAIOnlinePhoneAlignmentInput
 {
     const FOffgridAITextVisemePlan* Plan = nullptr;
@@ -50,6 +78,13 @@ struct FOffgridAIOnlinePhoneAlignmentInput
     float PlaybackSec = 0.0f;
     float LookaheadSec = 0.350f;
     float CommitLagSec = 0.120f;
+    // v17: bounded monotonic time-warp hint from retrospective timing anchors.
+    // Values below 1.0 mean future visual timing should slow down; the aligner
+    // consumes the inverse as a weak duration prior, never as a hard override.
+    float TimingPLLPlayRate = 1.0f;
+    float TimingPLLConfidence = 0.0f;
+    float TimingWarpRate = 1.0f;
+    float TimingWarpConfidence = 0.0f;
     int32 BeamWidth = 18;
     bool bFinal = false;
 };
@@ -96,6 +131,7 @@ public:
     static int32 FindPhoneForEvent(const FOffgridAITextVisemePlan& Plan, const FOffgridAITextVisemeEvent& Event);
 
     static EOffgridAIPhoneClass ClassForPhoneBase(const FString& PhoneBase);
+    static FOffgridAIArticulatoryProbabilityField BuildArticulatoryProbabilityField(const FOffgridAIStreamingAudioFeatureFrame& Frame);
     static FOffgridAIPhoneClassScores ScoreFramePhoneClasses(const FOffgridAIStreamingAudioFeatureFrame& Frame);
     static float ScoreForClass(const FOffgridAIPhoneClassScores& Scores, EOffgridAIPhoneClass PhoneClass);
     static FString PhoneClassToString(EOffgridAIPhoneClass PhoneClass);
