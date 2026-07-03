@@ -575,11 +575,19 @@ def summarize_phone_classes(row: dict[str, Any]) -> dict[str, Any]:
 def compute_summary(rows, graded, ungraded):
     graded_cases = len(graded)
     phoneme_coverage = []
+    runtime_phone_available = any(row.get("runtime_phone_rows") for row in rows)
+    direct_aligner_available = any(bool(row.get("direct_aligner")) for row in rows)
+    audio_progress_available = any(row.get("audio_progress_rows") for row in rows)
     for row in rows:
         phone_rows = row.get("runtime_phone_rows", [])
         if phone_rows:
             mapped = sum(1 for r in phone_rows if str(r.get("mapped_to_observed_speech", "0")) == "1")
             phoneme_coverage.append(mapped / max(len(phone_rows), 1))
+        else:
+            reference_count = _metric(row, "reference_count")
+            matched_count = _metric(row, "matched_count")
+            if reference_count > 0.0:
+                phoneme_coverage.append(matched_count / reference_count)
 
     direct_refs = sum(int(row.get("direct_aligner", {}).get("reference_count", 0)) for row in graded)
     direct_matches = sum(int(row.get("direct_aligner", {}).get("matched_count", 0)) for row in graded)
@@ -625,7 +633,7 @@ def compute_summary(rows, graded, ungraded):
     phoneme_start_values = [_metric(row, "mean_abs_start_error_ms") for row in graded]
     phoneme_end_values = [_metric(row, "mean_abs_end_error_ms") for row in graded]
     intra_word_center_values = [_nested(row, "intra_word_alignment", "mean_abs_center_error_ms") for row in graded]
-    direct_center_values = [_direct(row, "mean_abs_center_error_ms") for row in graded]
+    direct_center_values = [_direct(row, "mean_abs_center_error_ms") for row in graded if row.get("direct_aligner")]
 
     summary = {
         "total_cases": len(rows),
@@ -638,6 +646,9 @@ def compute_summary(rows, graded, ungraded):
         "visible_speech_region_count_mismatch_cases": 0,
         "sentence_region_count_mismatch_cases": sum(1 for row in graded if _pause_flag(row, "sentence_region", "count_mismatch")),
         "clause_region_count_mismatch_cases": sum(1 for row in graded if _pause_flag(row, "clause_region", "count_mismatch")),
+        "runtime_phone_alignment_available": runtime_phone_available,
+        "direct_aligner_available": direct_aligner_available,
+        "audio_progress_available": audio_progress_available,
         "speech_f1": _mean(
             _pause_metric(row, "speech_region", "matched_count")
             / max(_pause_metric(row, "speech_region", "reference_count"), 1.0)
@@ -673,10 +684,7 @@ def compute_summary(rows, graded, ungraded):
         "word_f1": _mean((_nested(row, "word_onset_alignment", "matched_count") / max(_nested(row, "word_onset_alignment", "reference_count"), 1.0)) for row in graded),
         "word_assignment_rate": _mean((_nested(row, "word_onset_alignment", "matched_count") / max(_nested(row, "word_onset_alignment", "reference_count"), 1.0)) for row in graded),
         "detected_word_onset_ms": _mean(_nested(row, "word_onset_alignment", "mean_abs_start_error_ms") for row in graded),
-        "word_end_ms": 0.0,
         "word_duration_ms": _mean(_metric(row, "mean_abs_duration_error_ms") for row in graded),
-        "word_duration_l1_norm": 0.0,
-        "word_stretch_abs_log2": 0.0,
         "detected_word_onset_median_ms": _median(_nested(row, "word_onset_alignment", "median_abs_start_error_ms") for row in graded),
         "phoneme_coverage_rate": _mean(phoneme_coverage),
         "phoneme_center_ms": _mean(_metric(row, "mean_abs_center_error_ms") for row in graded),
@@ -684,35 +692,39 @@ def compute_summary(rows, graded, ungraded):
         "phoneme_end_ms": _mean(_metric(row, "mean_abs_end_error_ms") for row in graded),
         "intra_word_coverage_rate": _mean((_nested(row, "intra_word_alignment", "matched_count") / max(_nested(row, "intra_word_alignment", "reference_count"), 1.0)) for row in graded),
         "intra_word_center_ms": _mean(_nested(row, "intra_word_alignment", "mean_abs_center_error_ms") for row in graded),
-        "direct_aligner_match_rate": direct_matches / max(direct_refs, 1),
-        "direct_aligner_center_ms": _mean(_direct(row, "mean_abs_center_error_ms") for row in graded),
-        "audio_progress_rows": sum(len(row.get("audio_progress_rows", [])) for row in rows),
-        "audio_progress_mfa_rows": sum(int(s.get("rows", 0)) for s in progress_summaries),
-        "audio_progress_would_advance_rows": sum(int(s.get("would_advance_rows", 0)) for s in progress_summaries),
-        "audio_progress_mfa_mae01": _mean(s.get("mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_mfa_median01": _median(s.get("median01", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_mfa_mae_ms": _mean(s.get("mae_ms", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_mfa_p90_ms": _mean(s.get("p90_ms", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_mfa_bias01": _mean(s.get("bias01", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_mfa_corr": _mean(s.get("corr", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_time_prior_mae01": _mean(s.get("time_prior_mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_density_mae01": _mean(s.get("audio_density_mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_boundary_mae01": _mean(s.get("boundary_mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_phone_mae01": _mean(s.get("phone_expectation_mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_anchor_mean_phone_probability": _mean(s.get("anchor_mean_phone_probability", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_anchor_mean_boundary_probability": _mean(s.get("anchor_mean_boundary_probability", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_anchor_mean_speech_probability": _mean(s.get("anchor_mean_speech_probability", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_micro_pause_50_count": _mean(s.get("micro_pause_50_count", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_micro_pause_75_count": _mean(s.get("micro_pause_75_count", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_micro_pause_120_count": _mean(s.get("micro_pause_120_count", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_retrospective_drift_abs01": _mean(s.get("retrospective_drift_abs01", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_retrospective_drift_abs_ms": _mean(s.get("retrospective_drift_abs_ms", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_retrospective_drift_bias01": _mean(s.get("retrospective_drift_bias01", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_retrospective_drift_confidence": _mean(s.get("retrospective_drift_confidence", 0.0) for s in progress_summaries if s.get("rows", 0)),
-        "audio_progress_drift_mean_playrate": _mean(s.get("drift_mean_playrate", 1.0) for s in progress_summaries if s.get("rows", 0)),
         "advance_reason_counts": dict(sorted(advance_reason_counts.items())),
         "phone_class_errors": phone_class_errors,
     }
+    if direct_aligner_available:
+        summary["direct_aligner_match_rate"] = direct_matches / max(direct_refs, 1)
+        summary["direct_aligner_center_ms"] = _mean(_direct(row, "mean_abs_center_error_ms") for row in graded if row.get("direct_aligner"))
+    if audio_progress_available:
+        summary.update({
+            "audio_progress_rows": sum(len(row.get("audio_progress_rows", [])) for row in rows),
+            "audio_progress_mfa_rows": sum(int(s.get("rows", 0)) for s in progress_summaries),
+            "audio_progress_would_advance_rows": sum(int(s.get("would_advance_rows", 0)) for s in progress_summaries),
+            "audio_progress_mfa_mae01": _mean(s.get("mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_mfa_median01": _median(s.get("median01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_mfa_mae_ms": _mean(s.get("mae_ms", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_mfa_p90_ms": _mean(s.get("p90_ms", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_mfa_bias01": _mean(s.get("bias01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_mfa_corr": _mean(s.get("corr", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_time_prior_mae01": _mean(s.get("time_prior_mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_density_mae01": _mean(s.get("audio_density_mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_boundary_mae01": _mean(s.get("boundary_mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_phone_mae01": _mean(s.get("phone_expectation_mae01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_anchor_mean_phone_probability": _mean(s.get("anchor_mean_phone_probability", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_anchor_mean_boundary_probability": _mean(s.get("anchor_mean_boundary_probability", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_anchor_mean_speech_probability": _mean(s.get("anchor_mean_speech_probability", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_micro_pause_50_count": _mean(s.get("micro_pause_50_count", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_micro_pause_75_count": _mean(s.get("micro_pause_75_count", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_micro_pause_120_count": _mean(s.get("micro_pause_120_count", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_retrospective_drift_abs01": _mean(s.get("retrospective_drift_abs01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_retrospective_drift_abs_ms": _mean(s.get("retrospective_drift_abs_ms", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_retrospective_drift_bias01": _mean(s.get("retrospective_drift_bias01", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_retrospective_drift_confidence": _mean(s.get("retrospective_drift_confidence", 0.0) for s in progress_summaries if s.get("rows", 0)),
+            "audio_progress_drift_mean_playrate": _mean(s.get("drift_mean_playrate", 1.0) for s in progress_summaries if s.get("rows", 0)),
+        })
     summary.update(_stats("detected_word_onset", detected_word_onset_values))
     summary.update(_stats("detected_word_onset_event_median", detected_word_onset_event_medians))
     summary.update(_stats("word_duration", word_duration_values))
@@ -720,7 +732,8 @@ def compute_summary(rows, graded, ungraded):
     summary.update(_stats("phoneme_start", phoneme_start_values))
     summary.update(_stats("phoneme_end", phoneme_end_values))
     summary.update(_stats("intra_word_center", intra_word_center_values))
-    summary.update(_stats("direct_aligner_center", direct_center_values))
+    if direct_aligner_available:
+        summary.update(_stats("direct_aligner_center", direct_center_values))
     # Keep legacy headline names stable for existing scripts/checks.
     summary["detected_word_onset_ms"] = summary["detected_word_onset_mean_ms"]
     summary["detected_word_onset_median_ms"] = summary["detected_word_onset_event_median_median_ms"]
@@ -742,7 +755,8 @@ def compute_summary(rows, graded, ungraded):
     summary["phoneme_start_ms"] = summary["phoneme_start_mean_ms"]
     summary["phoneme_end_ms"] = summary["phoneme_end_mean_ms"]
     summary["intra_word_center_ms"] = summary["intra_word_center_mean_ms"]
-    summary["direct_aligner_center_ms"] = summary["direct_aligner_center_mean_ms"]
+    if direct_aligner_available:
+        summary["direct_aligner_center_ms"] = summary["direct_aligner_center_mean_ms"]
     return summary
 
 

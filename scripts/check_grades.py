@@ -22,9 +22,7 @@ thresholds = {
     "max_speech_boundary_end_ms_increase": 0.0,
     "max_word_f1_drop": 0.0,
     "max_word_start_ms_increase": 0.0,
-    "max_word_end_ms_increase": 0.0,
     "max_word_duration_ms_increase": 0.0,
-    "max_word_duration_l1_norm_increase": 0.0,
     "max_word_head_start_ms_increase": 0.0,
     "max_phoneme_coverage_drop": 0.0,
     "max_phoneme_center_ms_increase": 0.0,
@@ -114,9 +112,7 @@ checks = [
     at_most("speech_boundary_end_ms", "max_speech_boundary_end_ms_increase"),
     at_least("word_f1", "max_word_f1_drop"),
     at_most("word_start_ms", "max_word_start_ms_increase"),
-    at_most("word_end_ms", "max_word_end_ms_increase"),
     at_most("word_duration_ms", "max_word_duration_ms_increase"),
-    at_most("word_duration_l1_norm", "max_word_duration_l1_norm_increase"),
     at_most("word_head_start_ms", "max_word_head_start_ms_increase"),
     at_least("phoneme_coverage_rate", "max_phoneme_coverage_drop"),
     at_most("phoneme_center_ms", "max_phoneme_center_ms_increase"),
@@ -136,28 +132,21 @@ if failed:
         "Summary diagnostics: "
         f"graded={summary['graded_cases']} degenerate={summary['degenerate_cases']} "
         f"speech_region_mismatch={summary['speech_region_count_mismatch_cases']} "
-        f"phone_occupancy_region_mismatch={summary['phone_occupancy_region_count_mismatch_cases']} "
-        f"visible_speech_region_mismatch={summary['visible_speech_region_count_mismatch_cases']} "
         f"sentence_region_mismatch={summary['sentence_region_count_mismatch_cases']} "
         f"clause_region_mismatch={summary['clause_region_count_mismatch_cases']} "
         f"speech_boundary_start_ms={summary['speech_boundary_start_ms']:.3f} "
         f"speech_tail_leakage_ms={summary.get('speech_tail_leakage_ms', 0.0):.3f} "
-        f"phone_occupancy_end_ms={summary.get('phone_occupancy_boundary_end_ms', 0.0):.3f} "
-        f"visible_speech_end_ms={summary.get('visible_speech_boundary_end_ms', 0.0):.3f} "
         f"word_duration_ms={summary.get('word_duration_ms', 0.0):.3f} "
-        f"word_duration_l1_norm={summary.get('word_duration_l1_norm', 0.0):.4f} "
-        f"word_stretch_abs_log2={summary.get('word_stretch_abs_log2', 0.0):.4f} "
         f"word_head_start_ms={summary['word_head_start_ms']:.3f} "
         f"word_head_start_median_ms={summary['word_head_start_median_ms']:.3f} "
         f"phoneme_center_ms={summary['phoneme_center_ms']:.3f} "
-        f"direct_aligner_match_rate={summary.get('direct_aligner_match_rate', 0.0):.3f} "
-        f"direct_aligner_center_ms={summary.get('direct_aligner_center_ms', 0.0):.3f} "
     )
-    print(
-        "Note: speech_boundary_start_ms/end_ms now use detector-owned speech regions. "
-        "phone_occupancy_* and visible_speech_* remain diagnostic layers for runtime pacing behavior. "
-        "Regenerate grade_baseline.json after accepting this evaluator update."
-    )
+    if summary.get("direct_aligner_available", False):
+        print(
+            f"Direct aligner diagnostics: match_rate={summary.get('direct_aligner_match_rate', 0.0):.3f} "
+            f"center_ms={summary.get('direct_aligner_center_ms', 0.0):.3f}"
+        )
+    print("Note: regenerate grade_baseline.json after accepting this evaluator update.")
     sys.exit(1)
 
 if summary["graded_cases"] == 0:
@@ -168,18 +157,10 @@ print(f"Grade thresholds passed for {summary['graded_cases']} graded case(s).")
 print(
     f"Diagnostics: degenerate={summary['degenerate_cases']} "
     f"speech_region_mismatch={summary['speech_region_count_mismatch_cases']} "
-    f"phone_occupancy_region_mismatch={summary['phone_occupancy_region_count_mismatch_cases']} "
-    f"visible_speech_region_mismatch={summary['visible_speech_region_count_mismatch_cases']} "
     f"sentence_region_mismatch={summary['sentence_region_count_mismatch_cases']} "
     f"clause_region_mismatch={summary['clause_region_count_mismatch_cases']} "
     f"speech_tail_leakage_ms={summary.get('speech_tail_leakage_ms', 0.0):.3f} "
-    f"phone_occupancy_end_ms={summary.get('phone_occupancy_boundary_end_ms', 0.0):.3f} "
-    f"visible_speech_end_ms={summary.get('visible_speech_boundary_end_ms', 0.0):.3f} "
     f"word_duration_ms={summary.get('word_duration_ms', 0.0):.3f} "
-    f"word_duration_l1_norm={summary.get('word_duration_l1_norm', 0.0):.4f} "
-    f"word_stretch_abs_log2={summary.get('word_stretch_abs_log2', 0.0):.4f} "
     f"word_head_start_ms={summary['word_head_start_ms']:.3f} "
     f"word_head_start_median_ms={summary['word_head_start_median_ms']:.3f} "
-    f"direct_aligner_match_rate={summary.get('direct_aligner_match_rate', 0.0):.3f} "
-    f"direct_aligner_center_ms={summary.get('direct_aligner_center_ms', 0.0):.3f} "
 )
