@@ -119,6 +119,45 @@ static void BuildEventProgressNorms(const FOffgridAITextVisemePlan& Plan, TArray
     }
 }
 
+static void BuildWordStartActiveSeconds(const FOffgridAITextVisemePlan& Plan, TArray<float>& OutWordStartActiveSeconds)
+{
+    OutWordStartActiveSeconds.Init(0.0f, Plan.WordSyllableCounts.Num());
+    if (Plan.WordSyllableCounts.Num() <= 0)
+    {
+        return;
+    }
+
+    float CumulativeActiveSec = 0.0f;
+    int32 LastWordIndex = INDEX_NONE;
+    for (const FOffgridAIExpectedPhone& Phone : Plan.ExpectedPhones)
+    {
+        if (!OutWordStartActiveSeconds.IsValidIndex(Phone.WordIndex))
+        {
+            continue;
+        }
+
+        if (Phone.WordIndex != LastWordIndex)
+        {
+            OutWordStartActiveSeconds[Phone.WordIndex] = CumulativeActiveSec;
+            LastWordIndex = Phone.WordIndex;
+        }
+
+        CumulativeActiveSec += FMath::Max(Phone.WeightSeconds, 0.020f);
+    }
+
+    if (Plan.ExpectedPhones.Num() > 0)
+    {
+        return;
+    }
+
+    float FallbackCursor = 0.0f;
+    for (int32 WordIndex = 0; WordIndex < Plan.WordSyllableCounts.Num(); ++WordIndex)
+    {
+        OutWordStartActiveSeconds[WordIndex] = FallbackCursor;
+        FallbackCursor += 0.075f * FMath::Max(Plan.WordSyllableCounts[WordIndex], 1);
+    }
+}
+
 struct FEffectiveSpeechRegion
 {
     float StartSec = 0.0f;
@@ -215,6 +254,8 @@ static void FillEventFromText(
     float ObservedActiveSec,
     float RequiredActiveSec,
     float TotalPlannedActiveSec,
+    const TArray<FEffectiveSpeechRegion>& EffectiveRegions,
+    const TArray<float>& WordStartActiveSeconds,
     const FOffgridAILipsyncRuntimeUpdateInput& Input,
     FOffgridAIAlignedVisemeEvent& Out)
 {
@@ -248,6 +289,21 @@ static void FillEventFromText(
     Out.RequiredProgressNorm = TotalPlannedActiveSec > KINDA_SMALL_NUMBER ? RequiredActiveSec / TotalPlannedActiveSec : 1.0f;
     Out.ObservedProgressNorm = TotalPlannedActiveSec > KINDA_SMALL_NUMBER ? ObservedActiveSec / TotalPlannedActiveSec : 1.0f;
     Out.ActiveProgressRatio = RequiredActiveSec > KINDA_SMALL_NUMBER ? ObservedActiveSec / RequiredActiveSec : 1.0f;
+
+    float WordStartClockSec = 0.0f;
+    const float WordStartActiveSec = WordStartActiveSeconds.IsValidIndex(T.WordIndex)
+        ? WordStartActiveSeconds[T.WordIndex]
+        : 0.0f;
+    if (MapActiveSpeechTimeToObservedClock(EffectiveRegions, FMath::Min(WordStartActiveSec, ObservedActiveSec), WordStartClockSec))
+    {
+        Out.DetectedWordStartSeconds = WordStartClockSec;
+        Out.bDetectedWordStartMappedToObservedSpeech = true;
+    }
+    else if (EffectiveRegions.Num() > 0)
+    {
+        Out.DetectedWordStartSeconds = EffectiveRegions[0].StartSec;
+        Out.bDetectedWordStartMappedToObservedSpeech = false;
+    }
 }
 }
 
@@ -444,6 +500,8 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
     TArray<float> EventCenterNorms;
     float EventTotalWeight = 0.0f;
     BuildEventProgressNorms(Plan, EventCenterNorms, EventTotalWeight);
+    TArray<float> WordStartActiveSeconds;
+    BuildWordStartActiveSeconds(Plan, WordStartActiveSeconds);
 
     const bool bFinal = Input.bInputStreamClosed || Input.bPlaybackFinalized;
     const float ObservedEnd = FMath::Max(Input.ObservedAudioBufferEndSec, 0.0f);
@@ -519,7 +577,20 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         }
 
         FOffgridAIAlignedVisemeEvent E;
-        FillEventFromText(Plan, NextEventIndex, T, OrderNorm, Center, Span, ObservedActiveSec, RequiredActiveSec, TotalPlannedActiveSec, Input, E);
+        FillEventFromText(
+            Plan,
+            NextEventIndex,
+            T,
+            OrderNorm,
+            Center,
+            Span,
+            ObservedActiveSec,
+            RequiredActiveSec,
+            TotalPlannedActiveSec,
+            EffectiveRegions,
+            WordStartActiveSeconds,
+            Input,
+            E);
         InOutTrack.Events.Add(E);
         LastCenter = Center;
         ++NextEventIndex;

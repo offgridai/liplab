@@ -36,6 +36,9 @@ struct FOffgridAIAlignedVisemeEvent
     float RequiredProgressNorm = 0.0f;
     float ObservedProgressNorm = 0.0f;
     float ActiveProgressRatio = 1.0f;
+
+    float DetectedWordStartSeconds = 0.0f;
+    bool bDetectedWordStartMappedToObservedSpeech = false;
 };
 
 struct FOffgridAIAlignedVisemeTrack

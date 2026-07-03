@@ -137,19 +137,19 @@ def main() -> int:
         + json.dumps(summary.get("gap_decision_counts", {}), sort_keys=True, separators=(",", ":"))
     )
     print(
-        f"WORDS assignment_rate={summary.get('word_assignment_rate', summary['word_f1']):.4f} start_ms={summary['word_start_ms']:.3f} "
+        f"WORDS assignment_rate={summary.get('word_assignment_rate', summary['word_f1']):.4f} detected_start_ms={summary['detected_word_onset_ms']:.3f} "
         f"intra_word_coverage={summary['intra_word_coverage_rate']:.4f} "
         f"intra_word_center_ms={summary['intra_word_center_ms']:.3f}"
     )
     print(
         f"WORD_STATS "
-        f"start_mean_ms={summary.get('word_start_mean_ms', 0.0):.3f} "
-        f"start_median_ms={summary.get('word_start_median_ms', 0.0):.3f} "
-        f"start_p90_ms={summary.get('word_start_p90_ms', 0.0):.3f} "
-        f"start_max_ms={summary.get('word_start_max_ms', 0.0):.3f} "
-        f"start_stddev_ms={summary.get('word_start_stddev_ms', 0.0):.3f} "
-        f"event_median_median_ms={summary.get('word_start_event_median_median_ms', 0.0):.3f} "
-        f"event_median_p90_ms={summary.get('word_start_event_median_p90_ms', 0.0):.3f} "
+        f"detected_start_mean_ms={summary.get('detected_word_onset_mean_ms', 0.0):.3f} "
+        f"detected_start_median_ms={summary.get('detected_word_onset_median_ms', 0.0):.3f} "
+        f"detected_start_p90_ms={summary.get('detected_word_onset_p90_ms', 0.0):.3f} "
+        f"detected_start_max_ms={summary.get('detected_word_onset_max_ms', 0.0):.3f} "
+        f"detected_start_stddev_ms={summary.get('detected_word_onset_stddev_ms', 0.0):.3f} "
+        f"case_median_median_ms={summary.get('detected_word_onset_event_median_median_ms', 0.0):.3f} "
+        f"case_median_p90_ms={summary.get('detected_word_onset_event_median_p90_ms', 0.0):.3f} "
         f"duration_mean_ms={summary.get('word_duration_mean_ms', 0.0):.3f} "
         f"duration_median_ms={summary.get('word_duration_median_ms', 0.0):.3f} "
         f"duration_p90_ms={summary.get('word_duration_p90_ms', 0.0):.3f}"

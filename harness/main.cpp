@@ -456,7 +456,7 @@ static std::string gap_candidates_csv(const TArray<FOffgridAIStreamingSpeechGapC
 static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "index,start,center,end,pose,word,word_index,phrase_index,sentence_index,strength,reason,source_phone_index,source_phone_base,source_phone_class,text_center_norm,text_diagnostic_center,commit_playback,commit_lead,required_active_elapsed,observed_active_elapsed,active_progress_deficit,required_progress_norm,observed_progress_norm,active_progress_ratio,mapped_to_observed_speech\n";
+    out << "index,start,center,end,pose,word,word_index,phrase_index,sentence_index,strength,reason,source_phone_index,source_phone_base,source_phone_class,text_center_norm,text_diagnostic_center,commit_playback,commit_lead,required_active_elapsed,observed_active_elapsed,active_progress_deficit,required_progress_norm,observed_progress_norm,active_progress_ratio,mapped_to_observed_speech,detected_word_start,detected_word_start_mapped\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.Events)
     {
@@ -484,7 +484,9 @@ static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
             << event.RequiredProgressNorm << ','
             << event.ObservedProgressNorm << ','
             << event.ActiveProgressRatio << ','
-            << (event.bMappedToObservedSpeech ? 1 : 0) << '\n';
+            << (event.bMappedToObservedSpeech ? 1 : 0) << ','
+            << event.DetectedWordStartSeconds << ','
+            << (event.bDetectedWordStartMappedToObservedSpeech ? 1 : 0) << '\n';
     }
     return out.str();
 }
@@ -492,7 +494,7 @@ static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
 static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "event_index,pose,word,word_index,source_phone_index,source_phone_base,source_phone_class,commit_reason,render_start,render_center,render_end,commit_playback,commit_lead,required_active_elapsed,observed_active_elapsed,active_progress_deficit,required_progress_norm,observed_progress_norm,active_progress_ratio,mapped_to_observed_speech\n";
+    out << "event_index,pose,word,word_index,source_phone_index,source_phone_base,source_phone_class,commit_reason,render_start,render_center,render_end,commit_playback,commit_lead,required_active_elapsed,observed_active_elapsed,active_progress_deficit,required_progress_norm,observed_progress_norm,active_progress_ratio,mapped_to_observed_speech,detected_word_start,detected_word_start_mapped\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.Events)
     {
@@ -515,7 +517,9 @@ static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& trac
             << event.RequiredProgressNorm << ','
             << event.ObservedProgressNorm << ','
             << event.ActiveProgressRatio << ','
-            << (event.bMappedToObservedSpeech ? 1 : 0) << '\n';
+            << (event.bMappedToObservedSpeech ? 1 : 0) << ','
+            << event.DetectedWordStartSeconds << ','
+            << (event.bDetectedWordStartMappedToObservedSpeech ? 1 : 0) << '\n';
     }
     return out.str();
 }
@@ -878,10 +882,13 @@ static WordOnsetAlignmentReport grade_word_onsets(
         }
 
         ++report.matched_count;
-        const double error_ms = std::abs(static_cast<double>(event_it->RenderStartSeconds) - gold_it->start) * 1000.0;
+        const double detected_start = event_it->bDetectedWordStartMappedToObservedSpeech
+            ? static_cast<double>(event_it->DetectedWordStartSeconds)
+            : static_cast<double>(event_it->RenderStartSeconds);
+        const double error_ms = std::abs(detected_start - gold_it->start) * 1000.0;
         errors.push_back(error_ms);
-        early_sum += std::max(0.0, gold_it->start - static_cast<double>(event_it->RenderStartSeconds)) * 1000.0;
-        late_sum += std::max(0.0, static_cast<double>(event_it->RenderStartSeconds) - gold_it->start) * 1000.0;
+        early_sum += std::max(0.0, gold_it->start - detected_start) * 1000.0;
+        late_sum += std::max(0.0, detected_start - gold_it->start) * 1000.0;
     }
 
     report.missing_count = std::max(0, report.reference_count - report.matched_count);
@@ -1051,7 +1058,7 @@ static std::string word_onset_diagnostics_csv(
     const std::vector<GoldWordTiming>& gold_words)
 {
     std::ostringstream out;
-    out << "word_index,word,gold_word_start,gold_word_end,first_gold_pose,first_gold_start,first_event_pose,first_event_start,error_ms,missing_event\n";
+    out << "word_index,word,gold_word_start,gold_word_end,first_gold_pose,first_gold_start,first_event_pose,first_event_start,detected_word_start,detected_word_start_mapped,error_ms,missing_event\n";
     std::vector<int> seen_words;
     for (const auto& label : handmade)
     {
@@ -1073,13 +1080,18 @@ static std::string word_onset_diagnostics_csv(
             << label.pose << "," << label.start << ",";
         if (event_it == track.Events.end())
         {
-            out << ",,0,true\n";
+            out << ",,,,0,true\n";
         }
         else
         {
+            const double detected_start = event_it->bDetectedWordStartMappedToObservedSpeech
+                ? static_cast<double>(event_it->DetectedWordStartSeconds)
+                : static_cast<double>(event_it->RenderStartSeconds);
             const double event_start = static_cast<double>(event_it->RenderStartSeconds);
             out << to_std(event_it->PoseID) << "," << event_start << ","
-                << std::abs(event_start - gold_start) * 1000.0 << ",false\n";
+                << detected_start << ","
+                << (event_it->bDetectedWordStartMappedToObservedSpeech ? 1 : 0) << ","
+                << std::abs(detected_start - gold_start) * 1000.0 << ",false\n";
         }
     }
     return out.str();

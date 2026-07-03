@@ -618,8 +618,8 @@ def compute_summary(rows, graded, ungraded):
         for klass, b in sorted(phone_class_rollup.items())
     }
 
-    word_start_values = [_nested(row, "word_onset_alignment", "mean_abs_start_error_ms") for row in graded]
-    word_start_event_medians = [_nested(row, "word_onset_alignment", "median_abs_start_error_ms") for row in graded]
+    detected_word_onset_values = [_nested(row, "word_onset_alignment", "mean_abs_start_error_ms") for row in graded]
+    detected_word_onset_event_medians = [_nested(row, "word_onset_alignment", "median_abs_start_error_ms") for row in graded]
     word_duration_values = [_metric(row, "mean_abs_duration_error_ms") for row in graded]
     phoneme_center_values = [_metric(row, "mean_abs_center_error_ms") for row in graded]
     phoneme_start_values = [_metric(row, "mean_abs_start_error_ms") for row in graded]
@@ -672,13 +672,12 @@ def compute_summary(rows, graded, ungraded):
         "gap_decision_counts": dict(sorted(gap_decision_counts.items())),
         "word_f1": _mean((_nested(row, "word_onset_alignment", "matched_count") / max(_nested(row, "word_onset_alignment", "reference_count"), 1.0)) for row in graded),
         "word_assignment_rate": _mean((_nested(row, "word_onset_alignment", "matched_count") / max(_nested(row, "word_onset_alignment", "reference_count"), 1.0)) for row in graded),
-        "word_start_ms": _mean(_nested(row, "word_onset_alignment", "mean_abs_start_error_ms") for row in graded),
+        "detected_word_onset_ms": _mean(_nested(row, "word_onset_alignment", "mean_abs_start_error_ms") for row in graded),
         "word_end_ms": 0.0,
         "word_duration_ms": _mean(_metric(row, "mean_abs_duration_error_ms") for row in graded),
         "word_duration_l1_norm": 0.0,
         "word_stretch_abs_log2": 0.0,
-        "word_head_start_ms": _mean(_nested(row, "word_onset_alignment", "mean_abs_start_error_ms") for row in graded),
-        "word_head_start_median_ms": _median(_nested(row, "word_onset_alignment", "median_abs_start_error_ms") for row in graded),
+        "detected_word_onset_median_ms": _median(_nested(row, "word_onset_alignment", "median_abs_start_error_ms") for row in graded),
         "phoneme_coverage_rate": _mean(phoneme_coverage),
         "phoneme_center_ms": _mean(_metric(row, "mean_abs_center_error_ms") for row in graded),
         "phoneme_start_ms": _mean(_metric(row, "mean_abs_start_error_ms") for row in graded),
@@ -714,8 +713,8 @@ def compute_summary(rows, graded, ungraded):
         "advance_reason_counts": dict(sorted(advance_reason_counts.items())),
         "phone_class_errors": phone_class_errors,
     }
-    summary.update(_stats("word_start", word_start_values))
-    summary.update(_stats("word_start_event_median", word_start_event_medians))
+    summary.update(_stats("detected_word_onset", detected_word_onset_values))
+    summary.update(_stats("detected_word_onset_event_median", detected_word_onset_event_medians))
     summary.update(_stats("word_duration", word_duration_values))
     summary.update(_stats("phoneme_center", phoneme_center_values))
     summary.update(_stats("phoneme_start", phoneme_start_values))
@@ -723,9 +722,21 @@ def compute_summary(rows, graded, ungraded):
     summary.update(_stats("intra_word_center", intra_word_center_values))
     summary.update(_stats("direct_aligner_center", direct_center_values))
     # Keep legacy headline names stable for existing scripts/checks.
-    summary["word_start_ms"] = summary["word_start_mean_ms"]
-    summary["word_head_start_ms"] = summary["word_start_mean_ms"]
-    summary["word_head_start_median_ms"] = summary["word_start_event_median_median_ms"]
+    summary["detected_word_onset_ms"] = summary["detected_word_onset_mean_ms"]
+    summary["detected_word_onset_median_ms"] = summary["detected_word_onset_event_median_median_ms"]
+    summary["word_start_ms"] = summary["detected_word_onset_mean_ms"]
+    summary["word_head_start_ms"] = summary["detected_word_onset_mean_ms"]
+    summary["word_head_start_median_ms"] = summary["detected_word_onset_event_median_median_ms"]
+    summary["word_start_mean_ms"] = summary["detected_word_onset_mean_ms"]
+    summary["word_start_median_ms"] = summary["detected_word_onset_median_ms"]
+    summary["word_start_p90_ms"] = summary["detected_word_onset_p90_ms"]
+    summary["word_start_max_ms"] = summary["detected_word_onset_max_ms"]
+    summary["word_start_stddev_ms"] = summary["detected_word_onset_stddev_ms"]
+    summary["word_start_event_median_mean_ms"] = summary["detected_word_onset_event_median_mean_ms"]
+    summary["word_start_event_median_median_ms"] = summary["detected_word_onset_event_median_median_ms"]
+    summary["word_start_event_median_p90_ms"] = summary["detected_word_onset_event_median_p90_ms"]
+    summary["word_start_event_median_max_ms"] = summary["detected_word_onset_event_median_max_ms"]
+    summary["word_start_event_median_stddev_ms"] = summary["detected_word_onset_event_median_stddev_ms"]
     summary["word_duration_ms"] = summary["word_duration_mean_ms"]
     summary["phoneme_center_ms"] = summary["phoneme_center_mean_ms"]
     summary["phoneme_start_ms"] = summary["phoneme_start_mean_ms"]
