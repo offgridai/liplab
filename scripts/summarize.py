@@ -15,7 +15,8 @@ def main() -> int:
     for row in graded:
         case = row.get("case", "")
         aps = row.get("audio_progress_summary", {})
-        bfs = row.get("boundary_filter_summary", {})
+        srd = row.get("speech_region_diagnostics", {})
+        gcs = row.get("gap_candidate_summary", {})
         pcs = row.get("phone_class_summary", {})
         worst = "none"
         if pcs:
@@ -29,6 +30,22 @@ def main() -> int:
                 f"unmapped={int(worst_stats.get('unmapped', 0))}"
             )
         print(
+            f"CASE_REGION_DIAG {case} "
+            f"gold_regions={int(srd.get('gold_count', 0))} "
+            f"pred_regions={int(srd.get('predicted_count', 0))} "
+            f"count_delta={int(srd.get('count_delta', 0))} "
+            f"indexed_start_ms={float(srd.get('indexed', {}).get('mean_start_error_ms', 0.0)):.1f} "
+            f"indexed_end_ms={float(srd.get('indexed', {}).get('mean_end_error_ms', 0.0)):.1f} "
+            f"indexed_overlap={float(srd.get('indexed', {}).get('mean_overlap_ratio', 0.0)):.3f} "
+            f"overlap_start_ms={float(srd.get('overlap', {}).get('mean_start_error_ms', 0.0)):.1f} "
+            f"overlap_end_ms={float(srd.get('overlap', {}).get('mean_end_error_ms', 0.0)):.1f} "
+            f"overlap_ratio={float(srd.get('overlap', {}).get('mean_overlap_ratio', 0.0)):.3f} "
+            f"overlap_matched={int(srd.get('overlap', {}).get('overlap_matched_count', 0))} "
+            f"nearest_matched={int(srd.get('overlap', {}).get('nearest_matched_count', 0))} "
+            f"pred_only={int(srd.get('overlap', {}).get('predicted_only_count', 0))} "
+            f"gold_only={int(srd.get('overlap', {}).get('gold_only_count', 0))}"
+        )
+        print(
             f"CASE_DIAG {case} "
             f"progress_rows={int(aps.get('rows', 0))} "
             f"progress_mae01={float(aps.get('mae01', 0.0)):.4f} "
@@ -41,12 +58,22 @@ def main() -> int:
             f"pause50={float(aps.get('micro_pause_50_count', 0.0)):.1f} "
             f"drift_abs_ms={float(aps.get('retrospective_drift_abs_ms', 0.0)):.1f} "
             f"drift_rate={float(aps.get('drift_mean_playrate', 1.0)):.3f} "
-            f"boundary_candidates={int(bfs.get('candidates', 0))} "
-            f"boundary_p={float(bfs.get('filtered_precision', 0.0)):.3f} "
-            f"boundary_r={float(bfs.get('filtered_recall', 0.0)):.3f} "
-            f"boundary_fp={int(bfs.get('filtered_fp', 0))} "
+            f"would_advance={int(aps.get('would_advance_rows', 0))} "
+            f"advance_reasons={json.dumps(aps.get('advance_reasons', {}), sort_keys=True, separators=(',', ':'))} "
             f"worst_phone_class={worst}"
         )
+        if gcs:
+            print(
+                f"CASE_GAPS {case} "
+                f"count={int(gcs.get('count', 0))} "
+                f"bridged={int(gcs.get('bridged', 0))} "
+                f"split={int(gcs.get('split', 0))} "
+                f"mean_gap_ms={float(gcs.get('mean_gap_ms', 0.0)):.1f} "
+                f"ambiguous={int(gcs.get('ambiguous_count', 0))} "
+                f"ambiguous_bridged={int(gcs.get('ambiguous_bridged', 0))} "
+                f"ambiguous_split={int(gcs.get('ambiguous_split', 0))} "
+                f"decisions={json.dumps(gcs.get('decision_counts', {}), sort_keys=True, separators=(',', ':'))}"
+            )
 
     print(
         f"CASES total={summary['total_cases']} graded={summary['graded_cases']} "
@@ -77,7 +104,40 @@ def main() -> int:
         f"clause_mismatch={summary['clause_region_count_mismatch_cases']}"
     )
     print(
-        f"WORDS f1={summary['word_f1']:.4f} start_ms={summary['word_start_ms']:.3f} "
+        f"REGIONS_INDEXED gold_count={summary.get('speech_region_gold_count', 0.0):.3f} "
+        f"pred_count={summary.get('speech_region_predicted_count', 0.0):.3f} "
+        f"count_delta={summary.get('speech_region_count_delta', 0.0):.3f} "
+        f"start_ms={summary.get('speech_region_indexed_start_ms', 0.0):.3f} "
+        f"end_ms={summary.get('speech_region_indexed_end_ms', 0.0):.3f} "
+        f"overlap_ratio={summary.get('speech_region_indexed_overlap_ratio', 0.0):.3f}"
+    )
+    print(
+        f"REGIONS_OVERLAP gold_count={summary.get('speech_region_gold_count', 0.0):.3f} "
+        f"pred_count={summary.get('speech_region_predicted_count', 0.0):.3f} "
+        f"overlap_matched={summary.get('speech_region_overlap_matched_count', 0.0):.3f} "
+        f"nearest_matched={summary.get('speech_region_nearest_matched_count', 0.0):.3f} "
+        f"pred_only={summary.get('speech_region_predicted_only_count', 0.0):.3f} "
+        f"gold_only={summary.get('speech_region_gold_only_count', 0.0):.3f} "
+        f"start_ms={summary.get('speech_region_overlap_start_ms', 0.0):.3f} "
+        f"end_ms={summary.get('speech_region_overlap_end_ms', 0.0):.3f} "
+        f"overlap_ratio={summary.get('speech_region_overlap_ratio', 0.0):.3f}"
+    )
+    print(
+        f"GAPS count={summary.get('gap_candidate_count', 0)} "
+        f"bridged={summary.get('gap_candidate_bridged', 0)} "
+        f"split={summary.get('gap_candidate_split', 0)} "
+        f"mean_gap_ms={summary.get('gap_candidate_mean_gap_ms', 0.0):.3f} "
+        f"ambiguous={summary.get('gap_candidate_ambiguous_count', 0)} "
+        f"ambiguous_bridged={summary.get('gap_candidate_ambiguous_bridged', 0)} "
+        f"ambiguous_split={summary.get('gap_candidate_ambiguous_split', 0)} "
+        f"ambiguous_mean_gap_ms={summary.get('gap_candidate_ambiguous_mean_gap_ms', 0.0):.3f}"
+    )
+    print(
+        "GAP_DECISIONS "
+        + json.dumps(summary.get("gap_decision_counts", {}), sort_keys=True, separators=(",", ":"))
+    )
+    print(
+        f"WORDS assignment_rate={summary.get('word_assignment_rate', summary['word_f1']):.4f} start_ms={summary['word_start_ms']:.3f} "
         f"intra_word_coverage={summary['intra_word_coverage_rate']:.4f} "
         f"intra_word_center_ms={summary['intra_word_center_ms']:.3f}"
     )
@@ -117,6 +177,7 @@ def main() -> int:
     print(f"AUDIO_PROGRESS rows={summary['audio_progress_rows']}")
     print(
         f"AUDIO_PROGRESS_MFA rows={summary['audio_progress_mfa_rows']} "
+        f"would_advance={summary.get('audio_progress_would_advance_rows', 0)} "
         f"mae01={summary['audio_progress_mfa_mae01']:.4f} "
         f"median01={summary['audio_progress_mfa_median01']:.4f} "
         f"mae_ms={summary['audio_progress_mfa_mae_ms']:.1f} "
@@ -127,6 +188,10 @@ def main() -> int:
         f"density:{summary['audio_progress_density_mae01']:.4f},"
         f"boundary:{summary['audio_progress_boundary_mae01']:.4f},"
         f"phone:{summary['audio_progress_phone_mae01']:.4f}"
+    )
+    print(
+        "ADVANCE_REASONS "
+        + json.dumps(summary.get("advance_reason_counts", {}), sort_keys=True, separators=(",", ":"))
     )
     print(
         f"TIMING_PIVOT micro_pause_50={summary.get('audio_progress_micro_pause_50_count', 0.0):.3f} "
@@ -144,18 +209,6 @@ def main() -> int:
         f"warp_rate={summary.get('audio_progress_timing_warp_rate', 1.0):.3f} "
         f"warp_conf={summary.get('audio_progress_timing_warp_confidence', 0.0):.3f} "
         f"warp_err_ms={summary.get('audio_progress_timing_warp_error_ms', 0.0):.1f}"
-    )
-    print(
-        f"BOUNDARY_FILTER candidates={summary['boundary_filter_candidates']} "
-        f"expected={summary['boundary_filter_expected']} "
-        f"raw_p={summary['boundary_filter_raw_precision']:.3f} "
-        f"raw_r={summary['boundary_filter_raw_recall']:.3f} "
-        f"filtered_p={summary['boundary_filter_filtered_precision']:.3f} "
-        f"filtered_r={summary['boundary_filter_filtered_recall']:.3f} "
-        f"filtered_fp={summary['boundary_filter_filtered_fp']} "
-        f"fp_sustained={summary['boundary_filter_filtered_fp_sustained']} "
-        f"fp_flux_only={summary['boundary_filter_filtered_fp_flux_only']} "
-        f"fp_flat={summary['boundary_filter_filtered_fp_flat']}"
     )
     phone_chunks = []
     for klass, stats in sorted(summary.get('phone_class_errors', {}).items()):

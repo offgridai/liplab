@@ -408,7 +408,7 @@ static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
 static std::string speech_csv(const TArray<FOffgridAIStreamingSpeechIsland>& islands)
 {
     std::ostringstream out;
-    out << "index,start,end,last_speech,started,ended\n";
+    out << "index,start,end,last_speech,started,ended,provisional_end,end_decision,reopen_count,end_reason\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& island : islands)
     {
@@ -417,7 +417,38 @@ static std::string speech_csv(const TArray<FOffgridAIStreamingSpeechIsland>& isl
             << island.AudioBufferEndSec << ','
             << island.AudioBufferLastSpeechSec << ','
             << (island.bStarted ? 1 : 0) << ','
-            << (island.bEnded ? 1 : 0) << '\n';
+            << (island.bEnded ? 1 : 0) << ','
+            << island.ProvisionalEndSec << ','
+            << island.EndDecisionSec << ','
+            << island.ReopenCount << ','
+            << to_std(island.EndReason) << '\n';
+    }
+    return out.str();
+}
+
+static std::string gap_candidates_csv(const TArray<FOffgridAIStreamingSpeechGapCandidate>& gaps)
+{
+    std::ostringstream out;
+    out << "gap_index,prev_island_index,next_island_index,gap_start,gap_end,gap_duration,prev_island_duration,quiet_evidence,quiet_rms_norm,reopen_evidence,reopen_flux,strong_quiet_close,strong_onset_reopen,bridged,close_reason,decision_class\n";
+    out << std::fixed << std::setprecision(6);
+    for (const auto& gap : gaps)
+    {
+        out << gap.GapIndex << ','
+            << gap.PrevIslandIndex << ','
+            << gap.NextIslandIndex << ','
+            << gap.GapStartSec << ','
+            << gap.GapEndSec << ','
+            << gap.GapDurationSec << ','
+            << gap.PrevIslandDurationSec << ','
+            << gap.QuietEvidence << ','
+            << gap.QuietRMSNorm << ','
+            << gap.ReopenEvidence << ','
+            << gap.ReopenFlux << ','
+            << (gap.bStrongQuietClose ? 1 : 0) << ','
+            << (gap.bStrongOnsetReopen ? 1 : 0) << ','
+            << (gap.bBridged ? 1 : 0) << ','
+            << to_std(gap.CloseReason) << ','
+            << to_std(gap.DecisionClass) << '\n';
     }
     return out.str();
 }
@@ -797,22 +828,18 @@ static std::vector<GradeMatch> compute_monotonic_matches(const FOffgridAIAligned
     return compute_monotonic_matches_subset(track, handmade, label_indices, event_indices);
 }
 
-static std::vector<TimeSpan> build_predicted_speech_regions(const FOffgridAIAlignedVisemeTrack& track)
+static std::vector<TimeSpan> build_predicted_speech_regions(const TArray<FOffgridAIStreamingSpeechIsland>& islands)
 {
     std::vector<TimeSpan> spans;
-    constexpr double merge_gap_seconds = 0.120;
-    for (const auto& event : track.Events)
+    for (const auto& island : islands)
     {
-        const double start = static_cast<double>(event.RenderStartSeconds);
-        const double end = static_cast<double>(event.RenderEndSeconds);
-        if (spans.empty() || start > spans.back().end + merge_gap_seconds)
+        const double start = static_cast<double>(island.AudioBufferStartSec);
+        const double end = static_cast<double>(std::max(island.AudioBufferLastSpeechSec, island.AudioBufferEndSec));
+        if (end <= start)
         {
-            spans.push_back(TimeSpan{static_cast<int>(spans.size()), start, end});
+            continue;
         }
-        else
-        {
-            spans.back().end = std::max(spans.back().end, end);
-        }
+        spans.push_back(TimeSpan{island.IslandIndex, start, end});
     }
     return spans;
 }
@@ -1096,6 +1123,7 @@ static IntraWordAlignmentReport grade_intra_word_alignment(
 
 static GradeReport grade(
     const FOffgridAIAlignedVisemeTrack& track,
+    const TArray<FOffgridAIStreamingSpeechIsland>& speech_islands,
     const std::vector<HandmadeLabel>& handmade,
     const std::vector<GoldWordTiming>& gold_words,
     const std::vector<GoldSpeechRegion>& gold_speech)
@@ -1151,7 +1179,7 @@ static GradeReport grade(
 
     report.pause_alignment.speech_regions = grade_region_boundaries(
         build_gold_speech_regions(gold_speech),
-        build_predicted_speech_regions(track));
+        build_predicted_speech_regions(speech_islands));
     report.pause_alignment.sentence_regions = grade_region_boundaries(
         build_gold_sentence_regions(gold_words),
         build_predicted_sentence_regions(track));
@@ -1488,12 +1516,14 @@ int main(int argc, char** argv)
 
             const auto& plan = session.GetTextPlan();
             const auto& speech = session.GetSpeechIslands();
+            const auto& gap_candidates = session.GetSpeechDetector().GetGapCandidates();
             const auto& committed = session.GetCommittedTrack();
 
             const fs::path case_dir = out_root / stem;
             fs::create_directories(case_dir);
             write_text(case_dir / "planned.csv", planned_csv(plan));
             write_text(case_dir / "speech_regions.csv", speech_csv(speech));
+            write_text(case_dir / "gap_candidates.csv", gap_candidates_csv(gap_candidates));
             write_text(case_dir / "committed.csv", committed_csv(committed));
             write_text(case_dir / "commit_decisions.csv", commit_decisions_csv(committed));
             write_text(case_dir / "stream_tail.csv", stream_tail_csv(session.GetStreamTailDiagnosticRow()));
@@ -1526,8 +1556,8 @@ int main(int argc, char** argv)
                 const auto gold_words = read_gold_words_csv(gold_words_path);
                 const auto gold_speech = read_gold_speech_csv(gold_speech_path);
                 gold_viseme_count = handmade.size();
-                report = grade(committed, handmade, gold_words, gold_speech);
-                const GradeReport direct_aligner_report = grade(direct_aligner_track, handmade, gold_words, gold_speech);
+                report = grade(committed, speech, handmade, gold_words, gold_speech);
+                const GradeReport direct_aligner_report = grade(direct_aligner_track, speech, handmade, gold_words, gold_speech);
                 write_text(case_dir / "direct_aligner_grade.json", grade_json(direct_aligner_report));
                 write_text(case_dir / "word_onset_diagnostics.csv", word_onset_diagnostics_csv(committed, handmade, gold_words));
             }

@@ -22,6 +22,26 @@ struct FOffgridAIStreamingSpeechIsland
     FName EndReason = NAME_None;
 };
 
+struct FOffgridAIStreamingSpeechGapCandidate
+{
+    int32 GapIndex = INDEX_NONE;
+    int32 PrevIslandIndex = INDEX_NONE;
+    int32 NextIslandIndex = INDEX_NONE;
+    float GapStartSec = 0.0f;
+    float GapEndSec = 0.0f;
+    float GapDurationSec = 0.0f;
+    float PrevIslandDurationSec = 0.0f;
+    float QuietEvidence = 0.0f;
+    float QuietRMSNorm = 0.0f;
+    float ReopenEvidence = 0.0f;
+    float ReopenFlux = 0.0f;
+    bool bStrongQuietClose = false;
+    bool bStrongOnsetReopen = false;
+    bool bBridged = false;
+    FName CloseReason = NAME_None;
+    FName DecisionClass = NAME_None;
+};
+
 struct FOffgridAIStreamingAudioFeatureFrame
 {
     float AudioBufferCenterSec = 0.0f;
@@ -53,6 +73,7 @@ public:
     void Finalize(float FinalObservedAudioBufferEndSec = -1.0f);
 
     const TArray<FOffgridAIStreamingSpeechIsland>& GetIslands() const { return Islands; }
+    const TArray<FOffgridAIStreamingSpeechGapCandidate>& GetGapCandidates() const { return GapCandidates; }
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& GetFeatureFrames() const { return FeatureFrames; }
     bool HasObservedFirstSpeechStart() const { return bHasObservedFirstSpeechStart; }
     float GetFirstSpeechAudioBufferStartSec() const { return FirstSpeechAudioBufferStartSec; }
@@ -63,6 +84,7 @@ private:
     void RefreshLocalFeatureFlags();
 
     TArray<FOffgridAIStreamingSpeechIsland> Islands;
+    TArray<FOffgridAIStreamingSpeechGapCandidate> GapCandidates;
     TArray<FOffgridAIStreamingAudioFeatureFrame> FeatureFrames;
     bool bInSpeech = false;
     bool bSpeechCandidateActive = false;
@@ -80,6 +102,8 @@ private:
     bool bHasObservedFirstSpeechStart = false;
     float FirstSpeechAudioBufferStartSec = 0.0f;
     float ObservedAudioBufferEndSec = 0.0f;
+    bool bPendingGapCandidateActive = false;
+    FOffgridAIStreamingSpeechGapCandidate PendingGapCandidate;
 
     TArray<float> PendingMonoSamples;
     int64 PendingSampleBase = 0;

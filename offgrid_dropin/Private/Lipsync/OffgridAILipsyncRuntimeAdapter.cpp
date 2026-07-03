@@ -189,6 +189,305 @@ static bool IsSoftCommaBoundary(TCHAR Punctuation)
     return Punctuation == TCHAR(',');
 }
 
+static float RuntimeSpeechEvidenceScore(const FOffgridAIStreamingAudioFeatureFrame& F);
+static bool RuntimeLowEvidenceFrame(const FOffgridAIStreamingAudioFeatureFrame& F);
+
+static bool IsStrongSentenceBoundaryPunctuation(TCHAR Punctuation)
+{
+    return Punctuation == TCHAR('.')
+        || Punctuation == TCHAR('!')
+        || Punctuation == TCHAR('?');
+}
+
+static float ClampedIslandEnd(const FOffgridAIStreamingSpeechIsland& Island, float ObservedAudioEndSec)
+{
+    float End = FMath::Max(Island.AudioBufferLastSpeechSec, Island.AudioBufferEndSec);
+    if (ObservedAudioEndSec > 0.0f)
+    {
+        End = FMath::Min(End, ObservedAudioEndSec);
+    }
+    return End;
+}
+
+static TArray<float> BuildSentenceWeights(const FOffgridAITextVisemePlan& Plan, int32 SentenceCount)
+{
+    TArray<float> Weights;
+    Weights.Init(0.0f, SentenceCount);
+    for (const FOffgridAIExpectedPhone& Phone : Plan.ExpectedPhones)
+    {
+        if (Weights.IsValidIndex(Phone.SentenceIslandIndex))
+        {
+            Weights[Phone.SentenceIslandIndex] += FMath::Max(Phone.WeightSeconds, 0.030f);
+        }
+    }
+    for (int32 WordIndex = 0; WordIndex < Plan.WordSentenceIslandIndices.Num(); ++WordIndex)
+    {
+        const int32 SentenceIndex = Plan.WordSentenceIslandIndices[WordIndex];
+        if (Weights.IsValidIndex(SentenceIndex) && Weights[SentenceIndex] <= 0.0f)
+        {
+            Weights[SentenceIndex] += 0.080f;
+        }
+    }
+    for (float& Weight : Weights)
+    {
+        Weight = FMath::Max(Weight, 0.080f);
+    }
+    return Weights;
+}
+
+static TCHAR SentenceBoundaryPunctuationAfterSentence(const FOffgridAITextVisemePlan& Plan, int32 SentenceIndex)
+{
+    int32 BoundaryWordIndex = INDEX_NONE;
+    for (int32 WordIndex = 0; WordIndex < Plan.WordSentenceIslandIndices.Num(); ++WordIndex)
+    {
+        if (Plan.WordSentenceIslandIndices[WordIndex] == SentenceIndex)
+        {
+            BoundaryWordIndex = WordIndex;
+        }
+    }
+    return Plan.WordBoundaryPunctuationAfter.IsValidIndex(BoundaryWordIndex)
+        ? Plan.WordBoundaryPunctuationAfter[BoundaryWordIndex]
+        : TCHAR(0);
+}
+
+static FOffgridAIStreamingSpeechIsland MergeSpeechIslands(
+    const FOffgridAIStreamingSpeechIsland& A,
+    const FOffgridAIStreamingSpeechIsland& B)
+{
+    FOffgridAIStreamingSpeechIsland Merged = A;
+    Merged.AudioBufferLastSpeechSec = FMath::Max(A.AudioBufferLastSpeechSec, B.AudioBufferLastSpeechSec);
+    Merged.AudioBufferEndSec = FMath::Max(A.AudioBufferEndSec, B.AudioBufferEndSec);
+    Merged.bStarted = A.bStarted || B.bStarted;
+    Merged.bEnded = A.bEnded || B.bEnded;
+    Merged.ProvisionalEndSec = -1.0f;
+    Merged.EndDecisionSec = B.EndDecisionSec > 0.0f ? B.EndDecisionSec : A.EndDecisionSec;
+    Merged.ReopenCount = A.ReopenCount + B.ReopenCount;
+    Merged.EndReason = FName(TEXT("resolved_gap_merge"));
+    return Merged;
+}
+
+static void RenumberSpeechIslands(TArray<FOffgridAIStreamingSpeechIsland>& Islands)
+{
+    for (int32 Index = 0; Index < Islands.Num(); ++Index)
+    {
+        Islands[Index].IslandIndex = Index;
+    }
+}
+
+static TArray<float> DetectSentenceBoundarySplits(
+    const FOffgridAITextVisemePlan& Plan,
+    const TArray<FOffgridAIStreamingSpeechIsland>& RawIslands,
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& Frames,
+    float ObservedAudioEndSec)
+{
+    TArray<float> Splits;
+    if (RawIslands.Num() == 0 || Frames.Num() == 0)
+    {
+        return Splits;
+    }
+
+    int32 SentenceCount = 0;
+    for (int32 SentenceIndex : Plan.WordSentenceIslandIndices)
+    {
+        SentenceCount = FMath::Max(SentenceCount, SentenceIndex + 1);
+    }
+    if (SentenceCount <= 1)
+    {
+        return Splits;
+    }
+
+    const TArray<float> SentenceWeights = BuildSentenceWeights(Plan, SentenceCount);
+    float TotalWeight = 0.0f;
+    for (float Weight : SentenceWeights)
+    {
+        TotalWeight += Weight;
+    }
+    if (TotalWeight <= 0.0f)
+    {
+        return Splits;
+    }
+
+    const float OverallStart = RawIslands[0].AudioBufferStartSec;
+    const float OverallEnd = ClampedIslandEnd(RawIslands.Last(), ObservedAudioEndSec);
+    const float OverallDuration = OverallEnd - OverallStart;
+    if (OverallDuration <= 0.20f)
+    {
+        return Splits;
+    }
+
+    float CumulativeWeight = 0.0f;
+    for (int32 SentenceIndex = 0; SentenceIndex < SentenceCount - 1; ++SentenceIndex)
+    {
+        const TCHAR BoundaryPunctuation = SentenceBoundaryPunctuationAfterSentence(Plan, SentenceIndex);
+        CumulativeWeight += SentenceWeights[SentenceIndex];
+        const float BoundaryProgress = FMath::Clamp(CumulativeWeight / TotalWeight, 0.0f, 1.0f);
+        const float TargetTimeSec = OverallStart + BoundaryProgress * OverallDuration;
+        const float SearchRadiusSec = IsStrongSentenceBoundaryPunctuation(BoundaryPunctuation) ? 0.34f : 0.22f;
+        const float SearchStartSec = FMath::Max(OverallStart + 0.08f, TargetTimeSec - SearchRadiusSec);
+        const float SearchEndSec = FMath::Min(OverallEnd - 0.08f, TargetTimeSec + SearchRadiusSec);
+        if (SearchEndSec <= SearchStartSec)
+        {
+            continue;
+        }
+
+        float BestScore = -1.0f;
+        float BestTimeSec = -1.0f;
+        float BestEvidence = 1.0f;
+        for (const FOffgridAIStreamingAudioFeatureFrame& Frame : Frames)
+        {
+            if (Frame.AudioBufferCenterSec < SearchStartSec || Frame.AudioBufferCenterSec > SearchEndSec)
+            {
+                continue;
+            }
+
+            const float Evidence = RuntimeSpeechEvidenceScore(Frame);
+            const float DistancePenalty = FMath::Abs(Frame.AudioBufferCenterSec - TargetTimeSec) / FMath::Max(SearchRadiusSec, 0.001f);
+            float Score = (1.0f - Evidence) * 0.62f;
+            Score += RuntimeLowEvidenceFrame(Frame) ? 0.20f : 0.0f;
+            Score += Frame.bLocalRMSValley ? 0.10f : 0.0f;
+            Score += (Frame.Periodicity < 0.22f && Frame.Flux < 0.06f) ? 0.08f : 0.0f;
+            Score -= FMath::Clamp(DistancePenalty, 0.0f, 1.0f) * 0.12f;
+
+            if (Score > BestScore)
+            {
+                BestScore = Score;
+                BestTimeSec = Frame.AudioBufferCenterSec;
+                BestEvidence = Evidence;
+            }
+        }
+
+        if (BestTimeSec <= 0.0f)
+        {
+            continue;
+        }
+
+        const bool bAcceptStrongBoundary = BestScore >= 0.60f && BestEvidence <= 0.14f;
+        const bool bAcceptWeakBoundary = BestScore >= 0.72f && BestEvidence <= 0.11f;
+        if ((IsStrongSentenceBoundaryPunctuation(BoundaryPunctuation) && bAcceptStrongBoundary)
+            || (!IsStrongSentenceBoundaryPunctuation(BoundaryPunctuation) && bAcceptWeakBoundary))
+        {
+            if (Splits.Num() == 0 || FMath::Abs(Splits.Last() - BestTimeSec) >= 0.12f)
+            {
+                Splits.Add(BestTimeSec);
+            }
+        }
+    }
+
+    return Splits;
+}
+
+static TArray<FOffgridAIStreamingSpeechIsland> ResolveSpeechIslands(
+    const FOffgridAITextVisemePlan& Plan,
+    const TArray<FOffgridAIStreamingSpeechIsland>& DetectorIslands,
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& Frames,
+    float ObservedAudioEndSec)
+{
+    TArray<FOffgridAIStreamingSpeechIsland> Raw;
+    for (const FOffgridAIStreamingSpeechIsland& Island : DetectorIslands)
+    {
+        const float End = ClampedIslandEnd(Island, ObservedAudioEndSec);
+        if (End <= Island.AudioBufferStartSec + 0.040f)
+        {
+            continue;
+        }
+        FOffgridAIStreamingSpeechIsland Copy = Island;
+        Copy.AudioBufferEndSec = End;
+        Copy.AudioBufferLastSpeechSec = FMath::Min(FMath::Max(Island.AudioBufferLastSpeechSec, Island.AudioBufferStartSec), End);
+        Raw.Add(Copy);
+    }
+    if (Raw.Num() <= 1)
+    {
+        RenumberSpeechIslands(Raw);
+        return Raw;
+    }
+
+    const TArray<float> SentenceSplits = DetectSentenceBoundarySplits(Plan, Raw, Frames, ObservedAudioEndSec);
+
+    TArray<FOffgridAIStreamingSpeechIsland> Merged;
+    Merged.Add(Raw[0]);
+    for (int32 Index = 1; Index < Raw.Num(); ++Index)
+    {
+        const FOffgridAIStreamingSpeechIsland& Next = Raw[Index];
+        const FOffgridAIStreamingSpeechIsland& Prev = Merged.Last();
+        const float GapStartSec = ClampedIslandEnd(Prev, ObservedAudioEndSec);
+        const float GapEndSec = Next.AudioBufferStartSec;
+        const float GapDurationSec = FMath::Max(GapEndSec - GapStartSec, 0.0f);
+
+        bool bKeepSplit = GapDurationSec >= 0.180f;
+        if (!bKeepSplit)
+        {
+            for (float SplitSec : SentenceSplits)
+            {
+                if (SplitSec >= GapStartSec - 0.025f && SplitSec <= GapEndSec + 0.025f)
+                {
+                    bKeepSplit = true;
+                    break;
+                }
+            }
+        }
+        if (!bKeepSplit)
+        {
+            const bool bStrongClose = Prev.EndReason == FName(TEXT("strong_quiet_hangover"))
+                || Prev.EndReason == FName(TEXT("finalize_at_provisional_end"));
+            bKeepSplit = bStrongClose && GapDurationSec >= 0.105f;
+        }
+
+        if (bKeepSplit)
+        {
+            Merged.Add(Next);
+        }
+        else
+        {
+            Merged.Last() = MergeSpeechIslands(Prev, Next);
+        }
+    }
+
+    TArray<FOffgridAIStreamingSpeechIsland> Resolved;
+    for (const FOffgridAIStreamingSpeechIsland& Island : Merged)
+    {
+        TArray<float> IslandSplits;
+        for (float SplitSec : SentenceSplits)
+        {
+            if (SplitSec > Island.AudioBufferStartSec + 0.08f && SplitSec < Island.AudioBufferEndSec - 0.08f)
+            {
+                IslandSplits.Add(SplitSec);
+            }
+        }
+
+        if (IslandSplits.Num() == 0)
+        {
+            Resolved.Add(Island);
+            continue;
+        }
+
+        float SegmentStartSec = Island.AudioBufferStartSec;
+        for (float SplitSec : IslandSplits)
+        {
+            FOffgridAIStreamingSpeechIsland Segment = Island;
+            Segment.AudioBufferStartSec = SegmentStartSec;
+            Segment.AudioBufferLastSpeechSec = SplitSec;
+            Segment.AudioBufferEndSec = SplitSec;
+            Segment.ProvisionalEndSec = SplitSec;
+            Segment.EndDecisionSec = SplitSec;
+            Segment.EndReason = FName(TEXT("resolved_sentence_boundary_split"));
+            Segment.ReopenCount = 0;
+            Segment.bStarted = true;
+            Segment.bEnded = true;
+            Resolved.Add(Segment);
+            SegmentStartSec = SplitSec;
+        }
+
+        FOffgridAIStreamingSpeechIsland Tail = Island;
+        Tail.AudioBufferStartSec = SegmentStartSec;
+        Tail.bStarted = true;
+        Tail.bEnded = true;
+        Resolved.Add(Tail);
+    }
+
+    RenumberSpeechIslands(Resolved);
+    return Resolved;
+}
+
 static bool FindNextSpeechIslandStartAfter(const TArray<FOffgridAIStreamingSpeechIsland>* Islands, float AfterSec, float MinGapSec, float& OutStartSec)
 {
     if (!Islands)
@@ -2598,6 +2897,7 @@ void FOffgridAILipsyncRuntimeSession::Reset()
     bInputStreamClosed = false;
     TextPlan = FOffgridAITextVisemePlan();
     Detector.Reset();
+    ResolvedSpeechIslands.Reset();
     CommittedTrack = FOffgridAIAlignedVisemeTrack();
     AudioOccupancyDiagnosticRows.Reset();
     AudioProgressMeasurementRows.Reset();
@@ -2624,6 +2924,7 @@ void FOffgridAILipsyncRuntimeSession::BeginLine(const FOffgridAILipsyncRuntimeBe
     DialogueText = Input.DialogueText;
     PrerollSec = FMath::Max(Input.PrerollSec, 0.0f);
     TextPlan = FOffgridAITextVisemePlanner::BuildPlan(FText::FromString(DialogueText));
+    RefreshResolvedSpeechIslands();
     CommittedTrack.NPCID = NPCID;
     CommittedTrack.LineID = LineID;
     bBegun = true;
@@ -2633,6 +2934,7 @@ void FOffgridAILipsyncRuntimeSession::PushAudioPCM16(const TArray<uint8>& PCMChu
 {
     if (!bBegun) return;
     Detector.AppendPCM16(PCMChunk, BytesToUse, SampleRate, NumChannels, ChunkStartSample);
+    RefreshResolvedSpeechIslands();
     ++PCMChunkCount;
     PCMBytesReceived += FMath::Max(BytesToUse, 0);
     LastPCMChunkSampleRate = SampleRate;
@@ -2647,16 +2949,18 @@ void FOffgridAILipsyncRuntimeSession::CloseInputStream()
 {
     bInputStreamClosed = true;
     Detector.Finalize();
+    RefreshResolvedSpeechIslands();
 }
 
 void FOffgridAILipsyncRuntimeSession::Update(float CurrentPlaybackSec)
 {
     PlaybackSec = FMath::Max(CurrentPlaybackSec, 0.0f);
     UpdatePlaybackGate(Detector.GetObservedAudioBufferEndSec());
+    RefreshResolvedSpeechIslands();
 
     FOffgridAILipsyncRuntimeUpdateInput Input;
     Input.TextPlan = &TextPlan;
-    Input.SpeechIslands = &Detector.GetIslands();
+    Input.SpeechIslands = &ResolvedSpeechIslands;
     Input.AudioFeatureFrames = &Detector.GetFeatureFrames();
     Input.CurrentPlaybackSec = PlaybackSec;
     Input.PrerollSec = PrerollSec;
@@ -2684,9 +2988,10 @@ void FOffgridAILipsyncRuntimeSession::Finalize(float FinalPlaybackSec)
     PlaybackSec = FMath::Max(FinalPlaybackSec, PlaybackSec);
     bInputStreamClosed = true;
     Detector.Finalize(Detector.GetObservedAudioBufferEndSec());
+    RefreshResolvedSpeechIslands();
     FOffgridAILipsyncRuntimeUpdateInput Input;
     Input.TextPlan = &TextPlan;
-    Input.SpeechIslands = &Detector.GetIslands();
+    Input.SpeechIslands = &ResolvedSpeechIslands;
     Input.AudioFeatureFrames = &Detector.GetFeatureFrames();
     Input.CurrentPlaybackSec = PlaybackSec;
     Input.PrerollSec = PrerollSec;
@@ -2719,6 +3024,15 @@ void FOffgridAILipsyncRuntimeSession::UpdatePlaybackGate(float ObservedEndSec)
     }
 }
 
+void FOffgridAILipsyncRuntimeSession::RefreshResolvedSpeechIslands()
+{
+    ResolvedSpeechIslands = ResolveSpeechIslands(
+        TextPlan,
+        Detector.GetIslands(),
+        Detector.GetFeatureFrames(),
+        Detector.GetObservedAudioBufferEndSec());
+}
+
 
 void FOffgridAILipsyncRuntimeSession::RecordAudioProgressMeasurements(float CurrentPlaybackSec)
 {
@@ -2729,7 +3043,7 @@ void FOffgridAILipsyncRuntimeSession::RecordAudioProgressMeasurements(float Curr
 
     FOffgridAILipsyncRuntimeUpdateInput Input;
     Input.TextPlan = &TextPlan;
-    Input.SpeechIslands = &Detector.GetIslands();
+    Input.SpeechIslands = &ResolvedSpeechIslands;
     Input.AudioFeatureFrames = &Detector.GetFeatureFrames();
     Input.CurrentPlaybackSec = FMath::Max(CurrentPlaybackSec, 0.0f);
     Input.PrerollSec = PrerollSec;

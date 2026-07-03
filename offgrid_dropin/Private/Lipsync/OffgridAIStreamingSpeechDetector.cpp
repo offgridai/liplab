@@ -2,9 +2,10 @@
 
 namespace
 {
-constexpr float DetectorGapBridgeMaxSec = 0.180f;
-constexpr float DetectorEndpointBaseHangoverSec = 0.140f;
-constexpr float DetectorEndpointStrongQuietHangoverSec = 0.100f;
+constexpr float DetectorGapBridgeMaxSec = 0.120f;
+constexpr float DetectorGapBridgeStrongQuietMaxSec = 0.080f;
+constexpr float DetectorEndpointBaseHangoverSec = 0.090f;
+constexpr float DetectorEndpointStrongQuietHangoverSec = 0.060f;
 
 static float DetectorSpeechEvidence(float RMSNorm, float Flux, float Periodicity, float MidBandNorm, float HighBandNorm, float SpectralCentroidNorm)
 {
@@ -18,6 +19,53 @@ static bool DetectorStrongOnsetAnchor(float Evidence, float RMS, float NoiseFloo
     return Evidence >= 0.23f
         || (Periodicity >= 0.42f && RMS >= NoiseFloorRMS * 2.2f)
         || (Flux >= 0.18f && RMS >= NoiseFloorRMS * 2.8f);
+}
+
+static float DetectorBridgeWindowSec(FName EndReason)
+{
+    if (EndReason == FName(TEXT("strong_quiet_hangover"))
+        || EndReason == FName(TEXT("finalize_at_provisional_end")))
+    {
+        return DetectorGapBridgeStrongQuietMaxSec;
+    }
+    return DetectorGapBridgeMaxSec;
+}
+
+struct FDetectorGapDecision
+{
+    bool bBridge = false;
+    FName DecisionClass = NAME_None;
+};
+
+static FDetectorGapDecision ClassifyGapDecision(
+    const FOffgridAIStreamingSpeechIsland& PrevIsland,
+    float GapDurationSec,
+    float ReopenEvidence,
+    float ReopenFlux,
+    bool bStrongOnsetReopen)
+{
+    const float PrevIslandDurationSec = FMath::Max(PrevIsland.AudioBufferEndSec - PrevIsland.AudioBufferStartSec, 0.0f);
+    if (GapDurationSec <= 0.055f)
+    {
+        return { true, FName(TEXT("micro_gap_bridge")) };
+    }
+
+    const bool bStrongQuietClose = PrevIsland.EndReason == FName(TEXT("strong_quiet_hangover"))
+        || PrevIsland.EndReason == FName(TEXT("finalize_at_provisional_end"));
+    if (bStrongQuietClose && GapDurationSec >= 0.085f && (bStrongOnsetReopen || ReopenEvidence >= 0.23f))
+    {
+        return { false, FName(TEXT("strong_quiet_split")) };
+    }
+
+    const bool bAmbiguousGap = GapDurationSec >= 0.090f;
+    const bool bFreshRestart = bStrongOnsetReopen || ReopenEvidence >= 0.24f || ReopenFlux >= 0.14f;
+    const bool bLongPriorPhrase = PrevIslandDurationSec >= 1.20f;
+    if (bAmbiguousGap && bFreshRestart && bLongPriorPhrase)
+    {
+        return { false, FName(TEXT("ambiguous_gap_split")) };
+    }
+
+    return { true, FName(TEXT("ambiguous_gap_bridge")) };
 }
 }
 
@@ -41,6 +89,8 @@ void FOffgridAIStreamingSpeechDetector::Reset()
     bHasObservedFirstSpeechStart = false;
     FirstSpeechAudioBufferStartSec = 0.0f;
     ObservedAudioBufferEndSec = 0.0f;
+    bPendingGapCandidateActive = false;
+    PendingGapCandidate = FOffgridAIStreamingSpeechGapCandidate();
     PendingMonoSamples.Reset();
     PendingSampleBase = 0;
     ActiveSampleRate = 0;
@@ -192,10 +242,15 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
     const float Evidence = DetectorSpeechEvidence(Frame.RMSNorm, Frame.Flux, Frame.Periodicity, MidBandNorm, HighBandNorm, SpectralCentroidNorm);
     const bool bStrongOnsetAnchor = DetectorStrongOnsetAnchor(Evidence, RMS, NoiseFloorRMS, Periodicity, Frame.Flux);
     const bool bOpen = (RMS >= OpenThreshold && Evidence >= 0.16f) || bStrongOnsetAnchor;
-    const bool bKeepOpen = (RMS >= CloseThreshold && Evidence >= 0.10f)
-        || Evidence >= 0.14f
-        || (Periodicity >= 0.36f && RMS >= NoiseFloorRMS * 1.8f);
-    const bool bLowEvidence = Evidence < 0.08f && RMS < CloseThreshold * 0.92f;
+    bool bKeepOpen = (RMS >= CloseThreshold && Evidence >= 0.12f)
+        || Evidence >= 0.16f
+        || (Periodicity >= 0.40f && RMS >= NoiseFloorRMS * 1.9f);
+    const bool bStrongQuiet = Evidence < 0.065f
+        && RMS < CloseThreshold * 0.82f
+        && Periodicity < 0.24f
+        && Frame.Flux < 0.045f;
+    const bool bLowEvidence = bStrongQuiet
+        || (Evidence < 0.08f && RMS < CloseThreshold * 0.90f);
 
     if (!bInSpeech)
     {
@@ -212,21 +267,84 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
             SpeechCandidatePeakEvidence = FMath::Max(SpeechCandidatePeakEvidence, Evidence);
             if (SpeechCandidateAccumSeconds >= 0.035f && (bStrongOnsetAnchor || SpeechCandidatePeakEvidence >= 0.21f))
             {
+                const bool bCanConsiderReopen = Islands.Num() > 0 && Islands.Last().bEnded && bPendingGapCandidateActive;
                 if (Islands.Num() > 0
                     && Islands.Last().bEnded
-                    && SpeechCandidateStartSeconds - Islands.Last().AudioBufferEndSec <= DetectorGapBridgeMaxSec)
+                    && SpeechCandidateStartSeconds - Islands.Last().AudioBufferEndSec <= DetectorBridgeWindowSec(Islands.Last().EndReason))
                 {
-                    FOffgridAIStreamingSpeechIsland& Island = Islands.Last();
-                    Island.AudioBufferLastSpeechSec = FrameEndSeconds;
-                    Island.AudioBufferEndSec = FrameEndSeconds;
-                    Island.bEnded = false;
-                    Island.EndReason = FName(TEXT("reopened"));
-                    Island.ReopenCount += 1;
-                    Island.ProvisionalEndSec = -1.0f;
-                    Island.EndDecisionSec = -1.0f;
+                    const FDetectorGapDecision GapDecision = ClassifyGapDecision(
+                        Islands.Last(),
+                        SpeechCandidateStartSeconds - Islands.Last().AudioBufferEndSec,
+                        SpeechCandidatePeakEvidence,
+                        Frame.Flux,
+                        bStrongOnsetAnchor);
+                    if (GapDecision.bBridge)
+                    {
+                        FOffgridAIStreamingSpeechIsland& Island = Islands.Last();
+                        if (bPendingGapCandidateActive)
+                        {
+                            PendingGapCandidate.GapEndSec = SpeechCandidateStartSeconds;
+                            PendingGapCandidate.GapDurationSec = FMath::Max(PendingGapCandidate.GapEndSec - PendingGapCandidate.GapStartSec, 0.0f);
+                            PendingGapCandidate.ReopenEvidence = SpeechCandidatePeakEvidence;
+                            PendingGapCandidate.ReopenFlux = Frame.Flux;
+                            PendingGapCandidate.bStrongOnsetReopen = bStrongOnsetAnchor;
+                            PendingGapCandidate.bBridged = true;
+                            PendingGapCandidate.DecisionClass = GapDecision.DecisionClass;
+                            PendingGapCandidate.NextIslandIndex = Island.IslandIndex;
+                            PendingGapCandidate.GapIndex = GapCandidates.Num();
+                            GapCandidates.Add(PendingGapCandidate);
+                            bPendingGapCandidateActive = false;
+                        }
+                        Island.AudioBufferLastSpeechSec = FrameEndSeconds;
+                        Island.AudioBufferEndSec = FrameEndSeconds;
+                        Island.bEnded = false;
+                        Island.EndReason = FName(TEXT("reopened"));
+                        Island.ReopenCount += 1;
+                        Island.ProvisionalEndSec = -1.0f;
+                        Island.EndDecisionSec = -1.0f;
+                    }
+                    else
+                    {
+                        if (bPendingGapCandidateActive)
+                        {
+                            PendingGapCandidate.GapEndSec = SpeechCandidateStartSeconds;
+                            PendingGapCandidate.GapDurationSec = FMath::Max(PendingGapCandidate.GapEndSec - PendingGapCandidate.GapStartSec, 0.0f);
+                            PendingGapCandidate.ReopenEvidence = SpeechCandidatePeakEvidence;
+                            PendingGapCandidate.ReopenFlux = Frame.Flux;
+                            PendingGapCandidate.bStrongOnsetReopen = bStrongOnsetAnchor;
+                            PendingGapCandidate.bBridged = false;
+                            PendingGapCandidate.DecisionClass = GapDecision.DecisionClass;
+                            PendingGapCandidate.NextIslandIndex = Islands.Num();
+                            PendingGapCandidate.GapIndex = GapCandidates.Num();
+                            GapCandidates.Add(PendingGapCandidate);
+                            bPendingGapCandidateActive = false;
+                        }
+
+                        FOffgridAIStreamingSpeechIsland Island;
+                        Island.IslandIndex = Islands.Num();
+                        Island.AudioBufferStartSec = SpeechCandidateStartSeconds;
+                        Island.AudioBufferLastSpeechSec = FrameEndSeconds;
+                        Island.AudioBufferEndSec = FrameEndSeconds;
+                        Island.bStarted = true;
+                        Islands.Add(Island);
+                    }
                 }
                 else
                 {
+                    if (bCanConsiderReopen && bPendingGapCandidateActive)
+                    {
+                        PendingGapCandidate.GapEndSec = SpeechCandidateStartSeconds;
+                        PendingGapCandidate.GapDurationSec = FMath::Max(PendingGapCandidate.GapEndSec - PendingGapCandidate.GapStartSec, 0.0f);
+                        PendingGapCandidate.ReopenEvidence = SpeechCandidatePeakEvidence;
+                        PendingGapCandidate.ReopenFlux = Frame.Flux;
+                        PendingGapCandidate.bStrongOnsetReopen = bStrongOnsetAnchor;
+                        PendingGapCandidate.bBridged = false;
+                        PendingGapCandidate.DecisionClass = FName(TEXT("bridge_window_expired_split"));
+                        PendingGapCandidate.NextIslandIndex = Islands.Num();
+                        PendingGapCandidate.GapIndex = GapCandidates.Num();
+                        GapCandidates.Add(PendingGapCandidate);
+                        bPendingGapCandidateActive = false;
+                    }
                     FOffgridAIStreamingSpeechIsland Island;
                     Island.IslandIndex = Islands.Num();
                     Island.AudioBufferStartSec = SpeechCandidateStartSeconds;
@@ -292,12 +410,21 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
             }
             const float Dt = FrameEndSeconds - FrameStartSeconds;
             SilenceAccumSeconds += bLowEvidence ? Dt : Dt * 0.50f;
-            const float Hangover = bLowEvidence ? DetectorEndpointStrongQuietHangoverSec : DetectorEndpointBaseHangoverSec;
+            const float Hangover = bStrongQuiet ? DetectorEndpointStrongQuietHangoverSec : DetectorEndpointBaseHangoverSec;
             if (SilenceAccumSeconds >= Hangover)
             {
                 Island.AudioBufferEndSec = EndpointCandidateStartSeconds;
                 Island.EndDecisionSec = FrameEndSeconds;
-                Island.EndReason = bLowEvidence ? FName(TEXT("strong_quiet_hangover")) : FName(TEXT("weak_evidence_hangover"));
+                Island.EndReason = bStrongQuiet ? FName(TEXT("strong_quiet_hangover")) : FName(TEXT("weak_evidence_hangover"));
+                PendingGapCandidate = FOffgridAIStreamingSpeechGapCandidate();
+                PendingGapCandidate.PrevIslandIndex = Island.IslandIndex;
+                PendingGapCandidate.GapStartSec = EndpointCandidateStartSeconds;
+                PendingGapCandidate.PrevIslandDurationSec = FMath::Max(Island.AudioBufferEndSec - Island.AudioBufferStartSec, 0.0f);
+                PendingGapCandidate.QuietEvidence = Evidence;
+                PendingGapCandidate.QuietRMSNorm = Frame.RMSNorm;
+                PendingGapCandidate.bStrongQuietClose = bStrongQuiet;
+                PendingGapCandidate.CloseReason = Island.EndReason;
+                bPendingGapCandidateActive = true;
                 Island.bEnded = true;
                 bInSpeech = false;
                 SilenceAccumSeconds = 0.0f;
@@ -341,6 +468,13 @@ void FOffgridAIStreamingSpeechDetector::Finalize(float FinalObservedAudioBufferE
             Island.ProvisionalEndSec = EndpointCandidateStartSeconds;
             Island.EndDecisionSec = FinalObservedAudioBufferEndSec >= 0.0f ? FinalObservedAudioBufferEndSec : ObservedAudioBufferEndSec;
             Island.EndReason = FName(TEXT("finalize_at_provisional_end"));
+            PendingGapCandidate = FOffgridAIStreamingSpeechGapCandidate();
+            PendingGapCandidate.PrevIslandIndex = Island.IslandIndex;
+            PendingGapCandidate.GapStartSec = EndpointCandidateStartSeconds;
+            PendingGapCandidate.PrevIslandDurationSec = FMath::Max(Island.AudioBufferEndSec - Island.AudioBufferStartSec, 0.0f);
+            PendingGapCandidate.bStrongQuietClose = true;
+            PendingGapCandidate.CloseReason = Island.EndReason;
+            bPendingGapCandidateActive = true;
         }
         else if (Island.AudioBufferLastSpeechSec > Island.AudioBufferStartSec)
         {
@@ -359,4 +493,5 @@ void FOffgridAIStreamingSpeechDetector::Finalize(float FinalObservedAudioBufferE
     bEndpointCandidateActive = false;
     EndpointCandidateStartSeconds = 0.0f;
     SilenceAccumSeconds = 0.0f;
+    bPendingGapCandidateActive = false;
 }

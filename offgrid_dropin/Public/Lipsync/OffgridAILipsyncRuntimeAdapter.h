@@ -237,7 +237,7 @@ public:
 
     const FOffgridAITextVisemePlan& GetTextPlan() const { return TextPlan; }
     const FOffgridAIStreamingSpeechDetector& GetSpeechDetector() const { return Detector; }
-    const TArray<FOffgridAIStreamingSpeechIsland>& GetSpeechIslands() const { return Detector.GetIslands(); }
+    const TArray<FOffgridAIStreamingSpeechIsland>& GetSpeechIslands() const { return ResolvedSpeechIslands; }
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& GetAudioFeatureFrames() const { return Detector.GetFeatureFrames(); }
     const FOffgridAIAlignedVisemeTrack& GetCommittedTrack() const { return CommittedTrack; }
     const TArray<FOffgridAIAudioOccupancyDiagnosticRow>& GetAudioOccupancyDiagnosticRows() const { return AudioOccupancyDiagnosticRows; }
@@ -251,6 +251,7 @@ public:
 
 private:
     void UpdatePlaybackGate(float ObservedEndSec);
+    void RefreshResolvedSpeechIslands();
     void RecordAlignmentDiagnostics(float CurrentPlaybackSec, bool bFinalReplay);
     void RecordAudioProgressMeasurements(float CurrentPlaybackSec);
 
@@ -276,6 +277,7 @@ private:
 
     FOffgridAITextVisemePlan TextPlan;
     FOffgridAIStreamingSpeechDetector Detector;
+    TArray<FOffgridAIStreamingSpeechIsland> ResolvedSpeechIslands;
     FOffgridAIAlignedVisemeTrack CommittedTrack;
     TArray<FOffgridAIAudioOccupancyDiagnosticRow> AudioOccupancyDiagnosticRows;
     int32 AudioOccupancyDiagnosticUpdateOrdinal = 0;
