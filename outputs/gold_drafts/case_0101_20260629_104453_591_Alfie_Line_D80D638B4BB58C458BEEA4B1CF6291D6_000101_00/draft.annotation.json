@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0101_20260629_104453_591_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000101_00",
-  "created_utc": "2026-07-04T21:57:31.300902+00:00",
+  "created_utc": "2026-07-04T22:37:37.502345+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 200,
     "source_run_dir": "outputs/offline_gold/latest/case_0101_20260629_104453_591_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000101_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-04T21:57:31.300980+00:00"
+    "reviewed_utc": "2026-07-04T22:37:37.502413+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.2,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.2,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -125,7 +125,7 @@
       "word": "two",
       "mfa_word": "two",
       "start": 0.9,
-      "end": 1.06,
+      "end": 1.07,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -139,7 +139,7 @@
       "word_index": 4,
       "word": "dollars",
       "mfa_word": "dollars",
-      "start": 1.06,
+      "start": 1.07,
       "end": 1.55,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -309,7 +309,7 @@
     {
       "word_index": 4,
       "word": "dollars",
-      "start": 1.06,
+      "start": 1.07,
       "end": 1.11,
       "pose": "D",
       "phrase_index": 0,
@@ -470,7 +470,7 @@
       "word": "two",
       "mfa_word": "two",
       "start": 0.9,
-      "end": 1.06,
+      "end": 1.07,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -484,7 +484,7 @@
       "word_index": 4,
       "word": "dollars",
       "mfa_word": "dollars",
-      "start": 1.06,
+      "start": 1.07,
       "end": 1.55,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -691,7 +691,7 @@
       "phone": "UW1",
       "phone_base": "UW",
       "start": 0.99,
-      "end": 1.06,
+      "end": 1.07,
       "word_index": 3,
       "word": "two"
     },
@@ -699,7 +699,7 @@
       "index_in_word": 0,
       "phone": "D",
       "phone_base": "D",
-      "start": 1.06,
+      "start": 1.07,
       "end": 1.11,
       "word_index": 4,
       "word": "dollars"
@@ -1007,11 +1007,11 @@
     {
       "phone": "UW1",
       "start": 0.99,
-      "end": 1.06
+      "end": 1.07
     },
     {
       "phone": "D",
-      "start": 1.06,
+      "start": 1.07,
       "end": 1.11
     },
     {
@@ -1466,8 +1466,8 @@
       "pose": "UW1",
       "phone": "UW1",
       "start": 0.99,
-      "center": 1.025,
-      "end": 1.06,
+      "center": 1.03,
+      "end": 1.07,
       "word": "two",
       "mfa_word": "two",
       "word_index": 3,
@@ -1493,8 +1493,8 @@
       "id": "D",
       "pose": "D",
       "phone": "D",
-      "start": 1.06,
-      "center": 1.085,
+      "start": 1.07,
+      "center": 1.09,
       "end": 1.11,
       "word": "dollars",
       "mfa_word": "dollars",
@@ -2283,7 +2283,7 @@
     {
       "kind": "speech_regions_split_on_mfa_phone_gaps",
       "region_count": 2,
-      "gap_threshold_seconds": 0.15,
+      "gap_threshold_seconds": 0.2,
       "largest_split_gap_seconds": 0.62,
       "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
     }

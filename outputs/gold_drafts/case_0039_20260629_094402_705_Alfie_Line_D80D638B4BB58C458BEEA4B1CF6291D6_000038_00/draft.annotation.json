@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0039_20260629_094402_705_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000038_00",
-  "created_utc": "2026-07-04T21:57:30.772946+00:00",
+  "created_utc": "2026-07-04T22:37:37.055575+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 200,
     "source_run_dir": "outputs/offline_gold/latest/case_0039_20260629_094402_705_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000038_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-04T21:57:30.773031+00:00"
+    "reviewed_utc": "2026-07-04T22:37:37.055644+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -46,28 +46,13 @@
     {
       "index": 0,
       "start": 0.0,
-      "end": 3.93,
-      "word_start_index": 0,
-      "word_end_index": 10,
-      "sentence_start_index": -1,
-      "sentence_end_index": -1,
-      "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.15,
-      "approval": {
-        "status": "approved_gold",
-        "reviewed": true
-      }
-    },
-    {
-      "index": 1,
-      "start": 4.13,
       "end": 5.29,
-      "word_start_index": 11,
+      "word_start_index": 0,
       "word_end_index": 13,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.2,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -124,7 +109,7 @@
       "word_index": 3,
       "word": "china",
       "mfa_word": "china",
-      "start": 0.89,
+      "start": 0.88,
       "end": 1.35,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -185,7 +170,7 @@
       "word": "unesco",
       "mfa_word": "unesco",
       "start": 2.0,
-      "end": 2.62,
+      "end": 2.61,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -199,7 +184,7 @@
       "word_index": 8,
       "word": "world",
       "mfa_word": "world",
-      "start": 2.62,
+      "start": 2.61,
       "end": 2.95,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -253,7 +238,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "word_index": 12,
@@ -268,7 +253,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "word_index": 13,
@@ -283,7 +268,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     }
   ],
   "word_heads": [
@@ -338,7 +323,7 @@
     {
       "word_index": 3,
       "word": "china",
-      "start": 0.89,
+      "start": 0.88,
       "end": 1.02,
       "pose": "CH",
       "phrase_index": 0,
@@ -418,7 +403,7 @@
     {
       "word_index": 8,
       "word": "world",
-      "start": 2.62,
+      "start": 2.61,
       "end": 2.78,
       "pose": "W",
       "phrase_index": 0,
@@ -469,7 +454,7 @@
       "start": 4.13,
       "end": 4.25,
       "pose": "N",
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "source_phone": "N",
       "source_phone_index": 0,
@@ -485,7 +470,7 @@
       "start": 4.43,
       "end": 4.54,
       "pose": "EH1",
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "source_phone": "EH1",
       "source_phone_index": 0,
@@ -501,7 +486,7 @@
       "start": 4.87,
       "end": 4.94,
       "pose": "EH1",
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "source_phone": "EH1",
       "source_phone_index": 0,
@@ -562,7 +547,7 @@
       "word_index": 3,
       "word": "china",
       "mfa_word": "china",
-      "start": 0.89,
+      "start": 0.88,
       "end": 1.35,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -623,7 +608,7 @@
       "word": "unesco",
       "mfa_word": "unesco",
       "start": 2.0,
-      "end": 2.62,
+      "end": 2.61,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -637,7 +622,7 @@
       "word_index": 8,
       "word": "world",
       "mfa_word": "world",
-      "start": 2.62,
+      "start": 2.61,
       "end": 2.95,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -691,7 +676,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "word_index": 12,
@@ -706,7 +691,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "word_index": 13,
@@ -721,7 +706,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     }
   ],
   "mfa_phones": [
@@ -792,7 +777,7 @@
       "index_in_word": 0,
       "phone": "CH",
       "phone_base": "CH",
-      "start": 0.89,
+      "start": 0.88,
       "end": 1.02,
       "word_index": 3,
       "word": "china"
@@ -964,7 +949,7 @@
       "phone": "OW2",
       "phone_base": "OW",
       "start": 2.51,
-      "end": 2.62,
+      "end": 2.61,
       "word_index": 7,
       "word": "unesco"
     },
@@ -972,7 +957,7 @@
       "index_in_word": 0,
       "phone": "W",
       "phone_base": "W",
-      "start": 2.62,
+      "start": 2.61,
       "end": 2.78,
       "word_index": 8,
       "word": "world"
@@ -1117,7 +1102,7 @@
       "phone": "IY1",
       "phone_base": "IY",
       "start": 4.25,
-      "end": 4.39,
+      "end": 4.4,
       "word_index": 11,
       "word": "need"
     },
@@ -1125,7 +1110,7 @@
       "index_in_word": 2,
       "phone": "D",
       "phone_base": "D",
-      "start": 4.39,
+      "start": 4.4,
       "end": 4.43,
       "word_index": 11,
       "word": "need"
@@ -1250,7 +1235,7 @@
     },
     {
       "phone": "CH",
-      "start": 0.89,
+      "start": 0.88,
       "end": 1.02
     },
     {
@@ -1346,11 +1331,11 @@
     {
       "phone": "OW2",
       "start": 2.51,
-      "end": 2.62
+      "end": 2.61
     },
     {
       "phone": "W",
-      "start": 2.62,
+      "start": 2.61,
       "end": 2.78
     },
     {
@@ -1431,11 +1416,11 @@
     {
       "phone": "IY1",
       "start": 4.25,
-      "end": 4.39
+      "end": 4.4
     },
     {
       "phone": "D",
-      "start": 4.39,
+      "start": 4.4,
       "end": 4.43
     },
     {
@@ -1687,8 +1672,8 @@
       "id": "CH",
       "pose": "CH",
       "phone": "CH",
-      "start": 0.89,
-      "center": 0.9550000000000001,
+      "start": 0.88,
+      "center": 0.95,
       "end": 1.02,
       "word": "china",
       "mfa_word": "china",
@@ -2220,8 +2205,8 @@
       "pose": "OW2",
       "phone": "OW2",
       "start": 2.51,
-      "center": 2.565,
-      "end": 2.62,
+      "center": 2.5599999999999996,
+      "end": 2.61,
       "word": "unesco",
       "mfa_word": "unesco",
       "word_index": 7,
@@ -2247,8 +2232,8 @@
       "id": "W",
       "pose": "W",
       "phone": "W",
-      "start": 2.62,
-      "center": 2.7,
+      "start": 2.61,
+      "center": 2.695,
       "end": 2.78,
       "word": "world",
       "mfa_word": "world",
@@ -2673,7 +2658,7 @@
       "word": "need",
       "mfa_word": "need",
       "word_index": 11,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2688,7 +2673,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 43,
@@ -2696,12 +2681,12 @@
       "pose": "IY1",
       "phone": "IY1",
       "start": 4.25,
-      "center": 4.32,
-      "end": 4.39,
+      "center": 4.325,
+      "end": 4.4,
       "word": "need",
       "mfa_word": "need",
       "word_index": 11,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2716,20 +2701,20 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 44,
       "id": "D",
       "pose": "D",
       "phone": "D",
-      "start": 4.39,
-      "center": 4.41,
+      "start": 4.4,
+      "center": 4.415,
       "end": 4.43,
       "word": "need",
       "mfa_word": "need",
       "word_index": 11,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2744,7 +2729,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 45,
@@ -2757,7 +2742,7 @@
       "word": "anything",
       "mfa_word": "anything",
       "word_index": 12,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2772,7 +2757,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 46,
@@ -2785,7 +2770,7 @@
       "word": "anything",
       "mfa_word": "anything",
       "word_index": 12,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2800,7 +2785,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 47,
@@ -2813,7 +2798,7 @@
       "word": "anything",
       "mfa_word": "anything",
       "word_index": 12,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2828,7 +2813,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 48,
@@ -2841,7 +2826,7 @@
       "word": "anything",
       "mfa_word": "anything",
       "word_index": 12,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2856,7 +2841,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 49,
@@ -2869,7 +2854,7 @@
       "word": "anything",
       "mfa_word": "anything",
       "word_index": 12,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2884,7 +2869,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 50,
@@ -2897,7 +2882,7 @@
       "word": "anything",
       "mfa_word": "anything",
       "word_index": 12,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2912,7 +2897,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 51,
@@ -2925,7 +2910,7 @@
       "word": "else",
       "mfa_word": "else",
       "word_index": 13,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2940,7 +2925,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 52,
@@ -2953,7 +2938,7 @@
       "word": "else",
       "mfa_word": "else",
       "word_index": 13,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2968,7 +2953,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 53,
@@ -2981,7 +2966,7 @@
       "word": "else",
       "mfa_word": "else",
       "word_index": 13,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2996,7 +2981,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     }
   ],
   "flags": [
@@ -3005,25 +2990,17 @@
       "count_mfa_words": 14,
       "count_transcript_words": 0,
       "note": "MFA word count does not match transcript-owned word count."
-    },
-    {
-      "kind": "speech_regions_split_on_mfa_phone_gaps",
-      "region_count": 2,
-      "gap_threshold_seconds": 0.15,
-      "largest_split_gap_seconds": 0.2,
-      "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
     }
   ],
   "notes": [],
   "summary": {
     "word_count": 14,
-    "speech_region_count": 2,
+    "speech_region_count": 1,
     "word_head_count": 14,
     "viseme_count": 54,
-    "flag_count": 2,
+    "flag_count": 1,
     "flags_by_kind": {
-      "word_count_mismatch": 1,
-      "speech_regions_split_on_mfa_phone_gaps": 1
+      "word_count_mismatch": 1
     },
     "commit_reasons": {
       "mfa_phone_interval": 54

@@ -2,8 +2,9 @@
 
 namespace
 {
-constexpr float DetectorGapBridgeMaxSec = 0.120f;
-constexpr float DetectorGapBridgeStrongQuietMaxSec = 0.120f;
+constexpr float DetectorGapBridgeMaxSec = 0.180f;
+constexpr float DetectorGapBridgeStrongQuietMaxSec = 0.180f;
+constexpr float DetectorSoftBridgeWindowSec = 0.320f;
 constexpr float DetectorEndpointBaseHangoverSec = 0.090f;
 constexpr float DetectorEndpointStrongQuietHangoverSec = 0.060f;
 constexpr float DetectorRelativeCollapseThreshold = 0.05f;
@@ -12,6 +13,13 @@ constexpr float DetectorRelativeCollapseHoldSec = 0.120f;
 constexpr float DetectorHardRelativeCollapseThreshold = 0.02f;
 constexpr float DetectorHardRelativeCollapseReleaseThreshold = 0.04f;
 constexpr float DetectorHardRelativeCollapseHoldSec = 0.120f;
+constexpr float DetectorStickyEndpointRelativeRMSMax = 0.08f;
+constexpr float DetectorStickyEndpointFluxMax = 0.030f;
+constexpr float DetectorShortGapBridgeMaxSec = 0.180f;
+constexpr float DetectorShortGapBridgeReopenFluxMax = 0.060f;
+constexpr float DetectorModerateGapBridgeMaxSec = 0.320f;
+constexpr float DetectorModerateGapBridgeReopenFluxMax = 0.080f;
+constexpr float DetectorModerateGapBridgeReopenEvidenceMax = 0.300f;
 constexpr float DetectorSpeechBaselinePercentile = 0.60f;
 constexpr int32 DetectorSpeechBaselineMinFrames = 12;
 
@@ -192,6 +200,26 @@ static FDetectorGapDecision ClassifyGapDecision(
         ? static_cast<float>(Gap.StrongQuietFrameCount) / static_cast<float>(Gap.GapFrameCount)
         : 0.0f;
     const bool bStrongRestart = bStrongOnsetReopen || ReopenEvidence >= 0.23f || ReopenFlux >= 0.14f;
+
+    const bool bShortSoftBridge =
+        GapDurationSec <= DetectorShortGapBridgeMaxSec
+        && ReopenFlux <= DetectorShortGapBridgeReopenFluxMax
+        && Gap.GapFluxMax <= 0.08f;
+    if (bShortSoftBridge)
+    {
+        return { true, FName(TEXT("candidate_short_soft_bridge")) };
+    }
+
+    const bool bModerateSoftBridge =
+        GapDurationSec <= DetectorModerateGapBridgeMaxSec
+        && ReopenFlux <= DetectorModerateGapBridgeReopenFluxMax
+        && ReopenEvidence <= DetectorModerateGapBridgeReopenEvidenceMax
+        && Gap.GapFluxMax <= 0.06f
+        && MeanRMSNorm <= 0.04f;
+    if (bModerateSoftBridge)
+    {
+        return { true, FName(TEXT("candidate_moderate_soft_bridge")) };
+    }
 
     int32 SplitScore = 0;
     if (GapDurationSec >= 0.115f) SplitScore += 2;
@@ -456,6 +484,14 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
         && ActiveIslandSpeechSeconds >= 0.120f
         && ActiveIslandRelativeRMS <= DetectorHardRelativeCollapseThreshold;
     const bool bHardRelativeCollapseRelease = ActiveIslandRelativeRMS >= DetectorHardRelativeCollapseReleaseThreshold;
+    const bool bStickyEndpointQuiet =
+        bEndpointCandidateActive
+        && ActiveIslandRelativeRMS <= DetectorStickyEndpointRelativeRMSMax
+        && Frame.Flux <= DetectorStickyEndpointFluxMax;
+    if (bStickyEndpointQuiet)
+    {
+        bKeepOpen = false;
+    }
 
     if (bPendingGapCandidateActive && !bInSpeech && !bOpen)
     {
@@ -488,9 +524,16 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
             if (SpeechCandidateAccumSeconds >= 0.035f && (bStrongOnsetAnchor || SpeechCandidatePeakEvidence >= 0.21f))
             {
                 const bool bCanConsiderReopen = Islands.Num() > 0 && Islands.Last().bEnded && bPendingGapCandidateActive;
+                const float PendingGapAgeSec = bCanConsiderReopen
+                    ? FMath::Max(SpeechCandidateStartSeconds - Islands.Last().AudioBufferEndSec, 0.0f)
+                    : FLT_MAX;
+                const bool bCanConsiderSoftBridge = bCanConsiderReopen
+                    && PendingGapAgeSec <= DetectorSoftBridgeWindowSec
+                    && SpeechCandidatePeakEvidence <= DetectorModerateGapBridgeReopenEvidenceMax
+                    && Frame.Flux <= DetectorModerateGapBridgeReopenFluxMax;
                 if (Islands.Num() > 0
                     && Islands.Last().bEnded
-                    && SpeechCandidateStartSeconds - Islands.Last().AudioBufferEndSec <= DetectorBridgeWindowSec(Islands.Last().EndReason))
+                    && (PendingGapAgeSec <= DetectorBridgeWindowSec(Islands.Last().EndReason) || bCanConsiderSoftBridge))
                 {
                     const FDetectorGapDecision GapDecision = ClassifyGapDecision(
                         Islands.Last(),
