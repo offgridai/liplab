@@ -31,6 +31,67 @@ static float DetectorBridgeWindowSec(FName EndReason)
     return DetectorGapBridgeMaxSec;
 }
 
+static FOffgridAIStreamingPauseCue ClassifyPauseCue(
+    bool bInSpeech,
+    bool bEndpointCandidateActive,
+    float GapAgeSec,
+    bool bStrongQuiet,
+    bool bLowEvidence,
+    float Evidence,
+    float RMSNorm,
+    float Flux)
+{
+    FOffgridAIStreamingPauseCue Cue;
+    Cue.bInSpeech = bInSpeech;
+    Cue.bEndpointCandidateActive = bEndpointCandidateActive;
+    Cue.GapAgeSec = FMath::Max(GapAgeSec, 0.0f);
+
+    if (!bEndpointCandidateActive && bInSpeech)
+    {
+        Cue.Family = FName(TEXT("continuous_speech"));
+        Cue.Confidence = FMath::Clamp(0.40f + Evidence * 0.45f + RMSNorm * 0.15f, 0.0f, 1.0f);
+        return Cue;
+    }
+
+    const float QuietStrength = FMath::Clamp(
+        (0.14f - Evidence) * 4.0f
+        + (0.16f - Flux) * 1.4f
+        + (0.22f - RMSNorm) * 1.2f
+        + (bStrongQuiet ? 0.22f : 0.0f)
+        + (bLowEvidence ? 0.10f : 0.0f),
+        0.0f,
+        1.0f);
+
+    if (Cue.GapAgeSec >= 0.180f && QuietStrength >= 0.48f)
+    {
+        Cue.Family = FName(TEXT("hard_silence"));
+        Cue.Confidence = FMath::Clamp(0.45f + QuietStrength * 0.55f, 0.0f, 1.0f);
+        return Cue;
+    }
+    if (Cue.GapAgeSec >= 0.130f && QuietStrength >= 0.34f)
+    {
+        Cue.Family = FName(TEXT("phrase_gap"));
+        Cue.Confidence = FMath::Clamp(0.32f + QuietStrength * 0.58f, 0.0f, 1.0f);
+        return Cue;
+    }
+    if (Cue.GapAgeSec >= 0.065f && QuietStrength >= 0.20f)
+    {
+        Cue.Family = FName(TEXT("word_gap"));
+        Cue.Confidence = FMath::Clamp(0.24f + QuietStrength * 0.52f, 0.0f, 1.0f);
+        return Cue;
+    }
+    if (Cue.GapAgeSec >= 0.020f && QuietStrength >= 0.10f)
+    {
+        Cue.Family = FName(TEXT("micro_gap"));
+        Cue.Confidence = FMath::Clamp(0.16f + QuietStrength * 0.48f, 0.0f, 1.0f);
+        return Cue;
+    }
+
+    Cue.Family = FName(TEXT("continuous_speech"));
+    Cue.Confidence = FMath::Clamp(0.20f + Evidence * 0.40f + RMSNorm * 0.10f, 0.0f, 1.0f);
+    return Cue;
+}
+
 struct FDetectorGapDecision
 {
     bool bBridge = false;
@@ -82,6 +143,7 @@ void FOffgridAIStreamingSpeechDetector::Reset()
     SilenceStartSeconds = 0.0f;
     bEndpointCandidateActive = false;
     EndpointCandidateStartSeconds = 0.0f;
+    EndpointCandidateMinEvidence = 1.0f;
     ActiveIslandPeakRMS = 0.0001f;
     ActiveIslandSpeechSeconds = 0.0f;
     ActiveLowEnergyAccumSeconds = 0.0f;
@@ -96,6 +158,7 @@ void FOffgridAIStreamingSpeechDetector::Reset()
     ActiveSampleRate = 0;
     SpeechPeakRMS = 0.0001f;
     NoiseFloorRMS = 0.0001f;
+    LatestPauseCue = FOffgridAIStreamingPauseCue();
 }
 
 void FOffgridAIStreamingSpeechDetector::AppendPCM16(const TArray<uint8>& PCMChunk, int32 BytesToUse, int32 SampleRate, int32 NumChannels, int64 ChunkStartSample)
@@ -237,7 +300,11 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
     Frame.HighBandNorm = HighBandNorm;
     Frame.SpectralCentroidNorm = SpectralCentroidNorm;
     Frame.Periodicity = Periodicity;
-    FeatureFrames.Add(Frame);
+    const bool bWasInSpeechAtFrameStart = bInSpeech;
+    bool bFrameStartedIsland = false;
+    bool bFrameClosedIsland = false;
+    bool bFrameBridgedIsland = false;
+    FName OccupancyDecision = NAME_None;
 
     const float Evidence = DetectorSpeechEvidence(Frame.RMSNorm, Frame.Flux, Frame.Periodicity, MidBandNorm, HighBandNorm, SpectralCentroidNorm);
     const bool bStrongOnsetAnchor = DetectorStrongOnsetAnchor(Evidence, RMS, NoiseFloorRMS, Periodicity, Frame.Flux);
@@ -302,6 +369,8 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                         Island.ReopenCount += 1;
                         Island.ProvisionalEndSec = -1.0f;
                         Island.EndDecisionSec = -1.0f;
+                        bFrameBridgedIsland = true;
+                        OccupancyDecision = GapDecision.DecisionClass;
                     }
                     else
                     {
@@ -327,6 +396,8 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                         Island.AudioBufferEndSec = FrameEndSeconds;
                         Island.bStarted = true;
                         Islands.Add(Island);
+                        bFrameStartedIsland = true;
+                        OccupancyDecision = GapDecision.DecisionClass;
                     }
                 }
                 else
@@ -352,6 +423,8 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                     Island.AudioBufferEndSec = FrameEndSeconds;
                     Island.bStarted = true;
                     Islands.Add(Island);
+                    bFrameStartedIsland = true;
+                    OccupancyDecision = bCanConsiderReopen ? FName(TEXT("bridge_window_expired_split")) : FName(TEXT("new_island_open"));
                 }
                 bInSpeech = true;
                 bSpeechCandidateActive = false;
@@ -361,6 +434,7 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                 SilenceAccumSeconds = 0.0f;
                 bEndpointCandidateActive = false;
                 EndpointCandidateStartSeconds = 0.0f;
+                EndpointCandidateMinEvidence = 1.0f;
                 if (!bHasObservedFirstSpeechStart)
                 {
                     bHasObservedFirstSpeechStart = true;
@@ -377,6 +451,7 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                 {
                     bSpeechCandidateActive = false;
                     SpeechCandidatePeakEvidence = 0.0f;
+                    OccupancyDecision = FName(TEXT("candidate_decay"));
                 }
             }
         }
@@ -392,12 +467,15 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
             ActiveIslandSpeechSeconds += FrameEndSeconds - FrameStartSeconds;
             if (bEndpointCandidateActive)
             {
+                EndpointCandidateMinEvidence = FMath::Min(EndpointCandidateMinEvidence, Evidence);
                 Island.ReopenCount += 1;
             }
             SilenceAccumSeconds = 0.0f;
             bEndpointCandidateActive = false;
             EndpointCandidateStartSeconds = 0.0f;
+            EndpointCandidateMinEvidence = 1.0f;
             Island.ProvisionalEndSec = -1.0f;
+            OccupancyDecision = FName(TEXT("keep_open"));
         }
         else
         {
@@ -406,7 +484,13 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                 SilenceStartSeconds = FrameStartSeconds;
                 bEndpointCandidateActive = true;
                 EndpointCandidateStartSeconds = FrameStartSeconds;
+                EndpointCandidateMinEvidence = Evidence;
                 Island.ProvisionalEndSec = FrameStartSeconds;
+                OccupancyDecision = FName(TEXT("endpoint_candidate_start"));
+            }
+            if (bEndpointCandidateActive)
+            {
+                EndpointCandidateMinEvidence = FMath::Min(EndpointCandidateMinEvidence, Evidence);
             }
             const float Dt = FrameEndSeconds - FrameStartSeconds;
             SilenceAccumSeconds += bLowEvidence ? Dt : Dt * 0.50f;
@@ -426,13 +510,76 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                 PendingGapCandidate.CloseReason = Island.EndReason;
                 bPendingGapCandidateActive = true;
                 Island.bEnded = true;
+                bFrameClosedIsland = true;
+                OccupancyDecision = Island.EndReason;
                 bInSpeech = false;
                 SilenceAccumSeconds = 0.0f;
                 bEndpointCandidateActive = false;
                 EndpointCandidateStartSeconds = 0.0f;
+                EndpointCandidateMinEvidence = 1.0f;
             }
         }
     }
+
+    if (OccupancyDecision.IsNone())
+    {
+        if (!bWasInSpeechAtFrameStart && !bOpen)
+        {
+            OccupancyDecision = bSpeechCandidateActive ? FName(TEXT("candidate_accumulating")) : FName(TEXT("closed_frame"));
+        }
+        else if (bWasInSpeechAtFrameStart && !bKeepOpen)
+        {
+            OccupancyDecision = FName(TEXT("endpoint_candidate_accumulating"));
+        }
+        else
+        {
+            OccupancyDecision = FName(TEXT("no_state_change"));
+        }
+    }
+
+    Frame.SpeechEvidence = Evidence;
+    Frame.OpenThreshold = OpenThreshold;
+    Frame.CloseThreshold = CloseThreshold;
+    Frame.SilenceAccumSec = SilenceAccumSeconds;
+    Frame.EndpointCandidateStartSec = bEndpointCandidateActive ? EndpointCandidateStartSeconds : -1.0f;
+    Frame.ActiveIslandStartSec = Islands.Num() > 0 ? Islands.Last().AudioBufferStartSec : -1.0f;
+    Frame.ActiveIslandEndSec = Islands.Num() > 0 ? Islands.Last().AudioBufferEndSec : -1.0f;
+    Frame.bInSpeechBeforeFrame = bWasInSpeechAtFrameStart;
+    Frame.bInSpeechAfterFrame = bInSpeech;
+    Frame.bOpenCandidate = bOpen;
+    Frame.bKeepOpen = bKeepOpen;
+    Frame.bStrongOnsetAnchor = bStrongOnsetAnchor;
+    Frame.bStrongQuiet = bStrongQuiet;
+    Frame.bLowEvidence = bLowEvidence;
+    Frame.bEndpointCandidateActive = bEndpointCandidateActive;
+    Frame.bFrameStartedIsland = bFrameStartedIsland;
+    Frame.bFrameClosedIsland = bFrameClosedIsland;
+    Frame.bFrameBridgedIsland = bFrameBridgedIsland;
+    Frame.OccupancyDecision = OccupancyDecision;
+
+    float PauseGapAgeSec = 0.0f;
+    if (bEndpointCandidateActive)
+    {
+        PauseGapAgeSec = FMath::Max(FrameEndSeconds - EndpointCandidateStartSeconds, 0.0f);
+    }
+    else if (!bInSpeech && Islands.Num() > 0 && Islands.Last().bEnded)
+    {
+        PauseGapAgeSec = FMath::Max(FrameEndSeconds - Islands.Last().AudioBufferEndSec, 0.0f);
+    }
+    LatestPauseCue = ClassifyPauseCue(
+        bInSpeech,
+        bEndpointCandidateActive,
+        PauseGapAgeSec,
+        bStrongQuiet,
+        bLowEvidence,
+        Evidence,
+        Frame.RMSNorm,
+        Frame.Flux);
+    Frame.PauseFamily = LatestPauseCue.Family;
+    Frame.PauseFamilyConfidence = LatestPauseCue.Confidence;
+    Frame.PauseGapAgeSec = LatestPauseCue.GapAgeSec;
+
+    FeatureFrames.Add(Frame);
 
     ObservedAudioBufferEndSec = FMath::Max(ObservedAudioBufferEndSec, FrameEndSeconds);
     RefreshLocalFeatureFlags();
@@ -492,6 +639,7 @@ void FOffgridAIStreamingSpeechDetector::Finalize(float FinalObservedAudioBufferE
     bInSpeech = false;
     bEndpointCandidateActive = false;
     EndpointCandidateStartSeconds = 0.0f;
+    EndpointCandidateMinEvidence = 1.0f;
     SilenceAccumSeconds = 0.0f;
     bPendingGapCandidateActive = false;
 }

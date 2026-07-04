@@ -200,18 +200,6 @@ static void AddEvent(TArray<FOffgridAITextVisemeEvent>& Events, EOffgridAITextVi
         return;
     }
 
-    // Collapse exact repeated mouth shapes inside one word. CMU may contain
-    // repeated consonants or vowel tails; one held visual target is clearer than
-    // multiple identical planned events.
-    if (Events.Num() > 0)
-    {
-        const FOffgridAITextVisemeEvent& Prev = Events.Last();
-        if (Prev.WordIndex == WordIndex && Prev.PoseID == ResolvedPose)
-        {
-            return;
-        }
-    }
-
     FOffgridAITextVisemeEvent E;
     E.Viseme = V;
     E.PoseID = ResolvedPose;
@@ -237,64 +225,6 @@ static bool IsStress1Or2(const FString& Phone)
     return Phone.Contains(TEXT("1")) || Phone.Contains(TEXT("2"));
 }
 
-static bool WordAlreadyHasPose(const TArray<FOffgridAITextVisemeEvent>& Events, int32 WordIndex, FName PoseID)
-{
-    for (const FOffgridAITextVisemeEvent& E : Events)
-    {
-        if (E.WordIndex == WordIndex && E.PoseID == PoseID)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-static bool HasStrongVowel(const TArray<FString>& Phones)
-{
-    for (const FString& Phone : Phones)
-    {
-        const FString Base = StripStressDigits(Phone);
-        if (IsVowelPhonemeBase(Base) && IsStress1Or2(Phone))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-static int32 CountVowels(const TArray<FString>& Phones)
-{
-    int32 Count = 0;
-    for (const FString& Phone : Phones)
-    {
-        if (IsVowelPhonemeBase(StripStressDigits(Phone)))
-        {
-            ++Count;
-        }
-    }
-    return Count;
-}
-
-static bool IsReducedVowelToSuppress(const FString& Base, const FString& Phone, const TArray<FString>& WordPhones)
-{
-    // This is the important distinction between a CMU phoneme plan and the old
-    // letter-soup planner. Reduced IH0/AH0/ER0 tails preserve pronunciation, but
-    // they are usually not separate readable mouth targets when a word already
-    // has a stressed vowel. Examples: sandwiches, dollars, there.
-    if (!HasStrongVowel(WordPhones) || CountVowels(WordPhones) <= 1)
-    {
-        return false;
-    }
-
-    const bool bUnstressed = !(Phone.Contains(TEXT("1")) || Phone.Contains(TEXT("2")));
-    if (!bUnstressed)
-    {
-        return false;
-    }
-
-    return Base == TEXT("IH") || Base == TEXT("AH") || Base == TEXT("ER");
-}
-
 static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FString& Word, const TArray<FString>& WordPhones, const FString& Phone, int32 PhoneIndex, int32 PhoneCount, int32 WordIndex, int32 Phrase, int32 Sentence)
 {
     const FString Base = StripStressDigits(Phone);
@@ -305,18 +235,12 @@ static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FStr
     // Strong visible consonants. These are CMU phonemes, not letters.
     if (Base == TEXT("M") || Base == TEXT("B") || Base == TEXT("P"))
     {
-        if (!WordAlreadyHasPose(Events, WordIndex, TEXT("22_MBP")))
-        {
-            AddEvent(Events, EOffgridAITextViseme::MBP, TEXT("22_MBP"), WordIndex, Phrase, Sentence, Word, 1.00f, TEXT("cmu_bilabial"), LocalOrder, PhoneIndex, Phone, Base);
-        }
+        AddEvent(Events, EOffgridAITextViseme::MBP, TEXT("22_MBP"), WordIndex, Phrase, Sentence, Word, 1.00f, TEXT("cmu_bilabial"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("F") || Base == TEXT("V"))
     {
-        if (!WordAlreadyHasPose(Events, WordIndex, TEXT("20_FV")))
-        {
-            AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("20_FV"), WordIndex, Phrase, Sentence, Word, 0.96f, TEXT("cmu_fv"), LocalOrder, PhoneIndex, Phone, Base);
-        }
+        AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("20_FV"), WordIndex, Phrase, Sentence, Word, 0.96f, TEXT("cmu_fv"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("W"))
@@ -342,11 +266,6 @@ static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FStr
     {
         AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("14_ChJjSh"), WordIndex, Phrase, Sentence, Word, 0.42f, TEXT("cmu_affricate_sibilant"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
-    }
-
-    if (IsReducedVowelToSuppress(Base, Phone, WordPhones))
-    {
-        return false;
     }
 
     if (Base == TEXT("AY"))

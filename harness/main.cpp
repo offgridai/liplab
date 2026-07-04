@@ -55,6 +55,18 @@ struct GoldSpeechRegion
     double last_speech = 0.0;
 };
 
+struct StreamingDetectorReport
+{
+    int pause_frames = 0;
+    int pause_matches = 0;
+    int gold_word_boundaries = 0;
+    int predicted_word_boundaries = 0;
+    int matched_word_boundaries = 0;
+    double mean_abs_word_boundary_error_ms = 0.0;
+    double median_abs_word_boundary_error_ms = 0.0;
+    double p90_abs_word_boundary_error_ms = 0.0;
+};
+
 struct BoundaryAlignmentReport
 {
     int reference_count = 0;
@@ -426,6 +438,57 @@ static std::string speech_csv(const TArray<FOffgridAIStreamingSpeechIsland>& isl
     return out.str();
 }
 
+static std::string occupancy_frames_csv(const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames)
+{
+    std::ostringstream out;
+    out << "index,start,end,center,rms,rms_norm,delta_rms,flux,zcr,low_band,mid_band,high_band,centroid,periodicity,evidence,open_threshold,close_threshold,in_speech_before,in_speech_after,open_candidate,keep_open,strong_onset,strong_quiet,low_evidence,endpoint_active,silence_accum,endpoint_start,active_island_start,active_island_end,frame_started,frame_closed,frame_bridged,decision,local_rms_peak,local_rms_valley,local_flux_peak,pause_family,pause_family_confidence,pause_gap_age\n";
+    out << std::fixed << std::setprecision(6);
+    for (int32 i = 0; i < frames.Num(); ++i)
+    {
+        const auto& f = frames[i];
+        out << i << ','
+            << f.AudioBufferStartSec << ','
+            << f.AudioBufferEndSec << ','
+            << f.AudioBufferCenterSec << ','
+            << f.RMS << ','
+            << f.RMSNorm << ','
+            << f.DeltaRMS << ','
+            << f.Flux << ','
+            << f.ZCR << ','
+            << f.LowBandNorm << ','
+            << f.MidBandNorm << ','
+            << f.HighBandNorm << ','
+            << f.SpectralCentroidNorm << ','
+            << f.Periodicity << ','
+            << f.SpeechEvidence << ','
+            << f.OpenThreshold << ','
+            << f.CloseThreshold << ','
+            << (f.bInSpeechBeforeFrame ? 1 : 0) << ','
+            << (f.bInSpeechAfterFrame ? 1 : 0) << ','
+            << (f.bOpenCandidate ? 1 : 0) << ','
+            << (f.bKeepOpen ? 1 : 0) << ','
+            << (f.bStrongOnsetAnchor ? 1 : 0) << ','
+            << (f.bStrongQuiet ? 1 : 0) << ','
+            << (f.bLowEvidence ? 1 : 0) << ','
+            << (f.bEndpointCandidateActive ? 1 : 0) << ','
+            << f.SilenceAccumSec << ','
+            << f.EndpointCandidateStartSec << ','
+            << f.ActiveIslandStartSec << ','
+            << f.ActiveIslandEndSec << ','
+            << (f.bFrameStartedIsland ? 1 : 0) << ','
+            << (f.bFrameClosedIsland ? 1 : 0) << ','
+            << (f.bFrameBridgedIsland ? 1 : 0) << ','
+            << to_std(f.OccupancyDecision) << ','
+            << (f.bLocalRMSPeak ? 1 : 0) << ','
+            << (f.bLocalRMSValley ? 1 : 0) << ','
+            << (f.bLocalFluxPeak ? 1 : 0) << ','
+            << to_std(f.PauseFamily) << ','
+            << f.PauseFamilyConfidence << ','
+            << f.PauseGapAgeSec << '\n';
+    }
+    return out.str();
+}
+
 static std::string gap_candidates_csv(const TArray<FOffgridAIStreamingSpeechGapCandidate>& gaps)
 {
     std::ostringstream out;
@@ -684,6 +747,211 @@ static std::vector<GradeMatch> compute_monotonic_matches(const FOffgridAIAligned
     std::vector<int> event_indices(track.Events.Num());
     std::iota(event_indices.begin(), event_indices.end(), 0);
     return compute_monotonic_matches_subset(track, handmade, label_indices, event_indices);
+}
+
+static std::string classify_gap_family_by_duration(double gap_seconds)
+{
+    if (gap_seconds >= 0.180) return "hard_silence";
+    if (gap_seconds >= 0.130) return "phrase_gap";
+    if (gap_seconds >= 0.065) return "word_gap";
+    if (gap_seconds >= 0.020) return "micro_gap";
+    return "continuous_speech";
+}
+
+static std::string gold_pause_family_at_time(
+    double time_seconds,
+    double audio_end_seconds,
+    const std::vector<GoldWordTiming>& gold_words,
+    const std::vector<GoldSpeechRegion>& gold_speech)
+{
+    for (size_t i = 1; i < gold_words.size(); ++i)
+    {
+        const auto& prev = gold_words[i - 1];
+        const auto& next = gold_words[i];
+        if (next.start <= prev.end)
+        {
+            continue;
+        }
+        if (time_seconds >= prev.end && time_seconds < next.start)
+        {
+            return classify_gap_family_by_duration(next.start - prev.end);
+        }
+    }
+
+    for (const auto& region : gold_speech)
+    {
+        if (time_seconds >= region.start && time_seconds < region.end)
+        {
+            return "continuous_speech";
+        }
+    }
+
+    double gap_start = 0.0;
+    double gap_end = audio_end_seconds;
+    bool found = false;
+    for (size_t i = 0; i < gold_speech.size(); ++i)
+    {
+        const auto& region = gold_speech[i];
+        if (time_seconds < region.start)
+        {
+            gap_end = region.start;
+            if (i > 0)
+            {
+                gap_start = gold_speech[i - 1].end;
+            }
+            found = true;
+            break;
+        }
+        gap_start = region.end;
+    }
+    if (!found && !gold_speech.empty())
+    {
+        gap_start = gold_speech.back().end;
+    }
+    return classify_gap_family_by_duration(std::max(0.0, gap_end - gap_start));
+}
+
+static bool is_pause_family(const std::string& family)
+{
+    return !family.empty() && family != "continuous_speech";
+}
+
+static std::vector<double> build_gold_pause_word_boundaries(
+    const std::vector<GoldWordTiming>& gold_words,
+    double min_gap_seconds)
+{
+    std::vector<double> boundaries;
+    for (size_t i = 1; i < gold_words.size(); ++i)
+    {
+        const auto& prev = gold_words[i - 1];
+        const auto& next = gold_words[i];
+        if ((next.start - prev.end) >= min_gap_seconds)
+        {
+            boundaries.push_back(next.start);
+        }
+    }
+    return boundaries;
+}
+
+static std::vector<double> build_predicted_pause_word_boundaries(const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames)
+{
+    std::vector<double> boundaries;
+    bool previous_pause = false;
+    for (int32 i = 0; i < frames.Num(); ++i)
+    {
+        const std::string family = to_std(frames[i].PauseFamily);
+        const bool pause = is_pause_family(family);
+        if (previous_pause && !pause)
+        {
+            boundaries.push_back(static_cast<double>(frames[i].AudioBufferCenterSec));
+        }
+        previous_pause = pause;
+    }
+    return boundaries;
+}
+
+static std::vector<double> collect_match_errors_ms(
+    int& out_matched,
+    const std::vector<double>& gold_boundaries,
+    const std::vector<double>& predicted_boundaries,
+    double tolerance_seconds)
+{
+    std::vector<double> errors_ms;
+    size_t predicted_index = 0;
+    out_matched = 0;
+    for (double gold_time : gold_boundaries)
+    {
+        while (predicted_index < predicted_boundaries.size() &&
+               predicted_boundaries[predicted_index] < gold_time - tolerance_seconds)
+        {
+            ++predicted_index;
+        }
+
+        if (predicted_index >= predicted_boundaries.size())
+        {
+            continue;
+        }
+
+        size_t best_index = predicted_index;
+        double best_error = std::abs(predicted_boundaries[best_index] - gold_time);
+        if ((predicted_index + 1) < predicted_boundaries.size())
+        {
+            const double next_error = std::abs(predicted_boundaries[predicted_index + 1] - gold_time);
+            if (next_error < best_error)
+            {
+                best_index = predicted_index + 1;
+                best_error = next_error;
+            }
+        }
+
+        if (best_error <= tolerance_seconds)
+        {
+            ++out_matched;
+            errors_ms.push_back(best_error * 1000.0);
+            predicted_index = best_index + 1;
+        }
+    }
+    return errors_ms;
+}
+
+static std::string streaming_detector_frames_csv(
+    StreamingDetectorReport& out_report,
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames,
+    const std::vector<GoldWordTiming>& gold_words,
+    const std::vector<GoldSpeechRegion>& gold_speech,
+    double audio_end_seconds)
+{
+    constexpr double kMinGoldGapSeconds = 0.020;
+    constexpr double kBoundaryToleranceSeconds = 0.050;
+
+    const std::vector<double> gold_boundaries = build_gold_pause_word_boundaries(gold_words, kMinGoldGapSeconds);
+    const std::vector<double> predicted_boundaries = build_predicted_pause_word_boundaries(frames);
+    out_report.gold_word_boundaries = static_cast<int>(gold_boundaries.size());
+    out_report.predicted_word_boundaries = static_cast<int>(predicted_boundaries.size());
+    std::vector<double> boundary_errors_ms = collect_match_errors_ms(
+        out_report.matched_word_boundaries,
+        gold_boundaries,
+        predicted_boundaries,
+        kBoundaryToleranceSeconds);
+    std::sort(boundary_errors_ms.begin(), boundary_errors_ms.end());
+    if (!boundary_errors_ms.empty())
+    {
+        const double sum = std::accumulate(boundary_errors_ms.begin(), boundary_errors_ms.end(), 0.0);
+        out_report.mean_abs_word_boundary_error_ms = sum / static_cast<double>(boundary_errors_ms.size());
+        out_report.median_abs_word_boundary_error_ms = percentile_ms(boundary_errors_ms, 0.5);
+        out_report.p90_abs_word_boundary_error_ms = percentile_ms(boundary_errors_ms, 0.9);
+    }
+
+    std::ostringstream out;
+    out << "frame_index,start,end,center,gold_pause_family,pred_pause_family,pause_confidence,pause_match,predicted_word_boundary\n";
+    out << std::fixed << std::setprecision(6);
+
+    bool previous_pause = false;
+    for (int32 i = 0; i < frames.Num(); ++i)
+    {
+        const auto& frame = frames[i];
+        const double center = static_cast<double>(frame.AudioBufferCenterSec);
+        const std::string gold_pause = gold_pause_family_at_time(center, audio_end_seconds, gold_words, gold_speech);
+        const std::string pred_pause = to_std(frame.PauseFamily);
+        const bool pause = is_pause_family(pred_pause);
+        const int predicted_word_boundary = (previous_pause && !pause) ? 1 : 0;
+        previous_pause = pause;
+        const int pause_match = (!gold_pause.empty() && gold_pause == pred_pause) ? 1 : 0;
+        ++out_report.pause_frames;
+        out_report.pause_matches += pause_match;
+
+        out << i << ','
+            << frame.AudioBufferStartSec << ','
+            << frame.AudioBufferEndSec << ','
+            << frame.AudioBufferCenterSec << ','
+            << gold_pause << ','
+            << pred_pause << ','
+            << frame.PauseFamilyConfidence << ','
+            << pause_match << ','
+            << predicted_word_boundary << '\n';
+    }
+
+    return out.str();
 }
 
 static std::vector<TimeSpan> build_predicted_speech_regions(const TArray<FOffgridAIStreamingSpeechIsland>& islands)
@@ -1187,6 +1455,39 @@ static std::string grade_json(const GradeReport& grade_report)
     return out.str();
 }
 
+static std::string streaming_detector_summary_json(const StreamingDetectorReport& report)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(6);
+    const double pause_accuracy = report.pause_frames > 0
+        ? static_cast<double>(report.pause_matches) / static_cast<double>(report.pause_frames)
+        : 0.0;
+    const double boundary_precision = report.predicted_word_boundaries > 0
+        ? static_cast<double>(report.matched_word_boundaries) / static_cast<double>(report.predicted_word_boundaries)
+        : 0.0;
+    const double boundary_recall = report.gold_word_boundaries > 0
+        ? static_cast<double>(report.matched_word_boundaries) / static_cast<double>(report.gold_word_boundaries)
+        : 0.0;
+    const double boundary_f1 = (boundary_precision + boundary_recall) > 0.0
+        ? (2.0 * boundary_precision * boundary_recall) / (boundary_precision + boundary_recall)
+        : 0.0;
+    out << "{\n"
+        << "  \"pause_frames\": " << report.pause_frames << ",\n"
+        << "  \"pause_matches\": " << report.pause_matches << ",\n"
+        << "  \"pause_top1_accuracy\": " << pause_accuracy << ",\n"
+        << "  \"gold_word_boundaries\": " << report.gold_word_boundaries << ",\n"
+        << "  \"predicted_word_boundaries\": " << report.predicted_word_boundaries << ",\n"
+        << "  \"matched_word_boundaries\": " << report.matched_word_boundaries << ",\n"
+        << "  \"word_boundary_precision\": " << boundary_precision << ",\n"
+        << "  \"word_boundary_recall\": " << boundary_recall << ",\n"
+        << "  \"word_boundary_f1\": " << boundary_f1 << ",\n"
+        << "  \"word_boundary_mean_abs_ms\": " << report.mean_abs_word_boundary_error_ms << ",\n"
+        << "  \"word_boundary_median_abs_ms\": " << report.median_abs_word_boundary_error_ms << ",\n"
+        << "  \"word_boundary_p90_abs_ms\": " << report.p90_abs_word_boundary_error_ms << "\n"
+        << "}\n";
+    return out.str();
+}
+
 static float wav_duration_seconds(const Wav& wav)
 {
     if (wav.sample_rate <= 0 || wav.channels <= 0) return 0.0f;
@@ -1414,6 +1715,7 @@ int main(int argc, char** argv)
             write_text(case_dir / "planned.csv", planned_csv(plan));
             write_text(case_dir / "speech_regions.csv", speech_csv(speech));
             write_text(case_dir / "gap_candidates.csv", gap_candidates_csv(gap_candidates));
+            write_text(case_dir / "occupancy_frames.csv", occupancy_frames_csv(session.GetSpeechDetector().GetFeatureFrames()));
             write_text(case_dir / "committed.csv", committed_csv(committed));
             write_text(case_dir / "commit_decisions.csv", commit_decisions_csv(committed));
             write_text(case_dir / "stream_tail.csv", stream_tail_csv(session.GetStreamTailDiagnosticRow()));
@@ -1431,6 +1733,16 @@ int main(int argc, char** argv)
                 const auto gold_speech = read_gold_speech_csv(gold_speech_path);
                 gold_viseme_count = handmade.size();
                 report = grade(committed, speech, handmade, gold_words, gold_speech);
+                StreamingDetectorReport detector_report;
+                write_text(
+                    case_dir / "streaming_detector_frames.csv",
+                    streaming_detector_frames_csv(
+                        detector_report,
+                        session.GetSpeechDetector().GetFeatureFrames(),
+                        gold_words,
+                        gold_speech,
+                        static_cast<double>(wav.samples.size()) / static_cast<double>(std::max(wav.sample_rate * wav.channels, 1))));
+                write_text(case_dir / "streaming_detector_summary.json", streaming_detector_summary_json(detector_report));
                 write_text(case_dir / "word_onset_diagnostics.csv", word_onset_diagnostics_csv(committed, handmade, gold_words));
             }
             else

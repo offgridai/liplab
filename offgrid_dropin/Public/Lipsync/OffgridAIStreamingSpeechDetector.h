@@ -60,9 +60,44 @@ struct FOffgridAIStreamingAudioFeatureFrame
     float SpectralCentroidNorm = 0.0f;
     float Periodicity = 0.0f;
 
+    // Detector-owned occupancy diagnostics captured at 10 ms frame cadence.
+    float SpeechEvidence = 0.0f;
+    float OpenThreshold = 0.0f;
+    float CloseThreshold = 0.0f;
+    float SilenceAccumSec = 0.0f;
+    float EndpointCandidateStartSec = -1.0f;
+    float ActiveIslandStartSec = -1.0f;
+    float ActiveIslandEndSec = -1.0f;
+    bool bInSpeechBeforeFrame = false;
+    bool bInSpeechAfterFrame = false;
+    bool bOpenCandidate = false;
+    bool bKeepOpen = false;
+    bool bStrongOnsetAnchor = false;
+    bool bStrongQuiet = false;
+    bool bLowEvidence = false;
+    bool bEndpointCandidateActive = false;
+    bool bFrameStartedIsland = false;
+    bool bFrameClosedIsland = false;
+    bool bFrameBridgedIsland = false;
+    FName OccupancyDecision = NAME_None;
+
     bool bLocalRMSPeak = false;
     bool bLocalRMSValley = false;
     bool bLocalFluxPeak = false;
+
+    // Detector-owned pause-family cue for nearby silence/gap structure.
+    FName PauseFamily = NAME_None;
+    float PauseFamilyConfidence = 0.0f;
+    float PauseGapAgeSec = 0.0f;
+};
+
+struct FOffgridAIStreamingPauseCue
+{
+    FName Family = NAME_None;
+    float Confidence = 0.0f;
+    float GapAgeSec = 0.0f;
+    bool bInSpeech = false;
+    bool bEndpointCandidateActive = false;
 };
 
 class OFFGRIDAI_API FOffgridAIStreamingSpeechDetector
@@ -75,6 +110,7 @@ public:
     const TArray<FOffgridAIStreamingSpeechIsland>& GetIslands() const { return Islands; }
     const TArray<FOffgridAIStreamingSpeechGapCandidate>& GetGapCandidates() const { return GapCandidates; }
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& GetFeatureFrames() const { return FeatureFrames; }
+    const FOffgridAIStreamingPauseCue& GetLatestPauseCue() const { return LatestPauseCue; }
     bool HasObservedFirstSpeechStart() const { return bHasObservedFirstSpeechStart; }
     float GetFirstSpeechAudioBufferStartSec() const { return FirstSpeechAudioBufferStartSec; }
     float GetObservedAudioBufferEndSec() const { return ObservedAudioBufferEndSec; }
@@ -95,6 +131,7 @@ private:
     float SilenceStartSeconds = 0.0f;
     bool bEndpointCandidateActive = false;
     float EndpointCandidateStartSeconds = 0.0f;
+    float EndpointCandidateMinEvidence = 1.0f;
     float ActiveIslandPeakRMS = 0.0001f;
     float ActiveIslandSpeechSeconds = 0.0f;
     float ActiveLowEnergyAccumSeconds = 0.0f;
@@ -111,4 +148,5 @@ private:
 
     float SpeechPeakRMS = 0.0001f;
     float NoiseFloorRMS = 0.0001f;
+    FOffgridAIStreamingPauseCue LatestPauseCue;
 };

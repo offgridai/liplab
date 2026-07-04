@@ -90,6 +90,16 @@ def load_occupancy_summary(case_dir: pathlib.Path) -> dict:
     }
 
 
+def load_streaming_detector_summary(case_dir: pathlib.Path) -> dict:
+    path = case_dir / "streaming_detector_summary.json"
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+
+
 
 
 def load_close_suppressions(case_dir: pathlib.Path) -> dict:
@@ -895,6 +905,58 @@ def main() -> int:
             f"start_ms={float(stats.get('start_ms', 0.0)):.1f},end_ms={float(stats.get('end_ms', 0.0)):.1f}"
         )
     print("PHONE_CLASS_ERRORS " + " | ".join(phone_chunks))
+
+    detector_case_count = 0
+    pause_frames = 0
+    pause_matches = 0
+    gold_word_boundaries = 0
+    predicted_word_boundaries = 0
+    matched_word_boundaries = 0
+    boundary_error_weighted_sum = 0.0
+    for row in graded:
+        case_dir = root / row.get("case", "")
+        detector = load_streaming_detector_summary(case_dir)
+        if not detector:
+            continue
+        detector_case_count += 1
+        pause_frames += int(detector.get("pause_frames", 0))
+        pause_matches += int(detector.get("pause_matches", 0))
+        gold_word_boundaries += int(detector.get("gold_word_boundaries", 0))
+        predicted_word_boundaries += int(detector.get("predicted_word_boundaries", 0))
+        matched_word_boundaries += int(detector.get("matched_word_boundaries", 0))
+        boundary_error_weighted_sum += (
+            float(detector.get("word_boundary_mean_abs_ms", 0.0))
+            * int(detector.get("matched_word_boundaries", 0))
+        )
+    if detector_case_count:
+        pause_acc = (pause_matches / pause_frames) if pause_frames else 0.0
+        boundary_precision = (
+            matched_word_boundaries / predicted_word_boundaries
+            if predicted_word_boundaries else 0.0
+        )
+        boundary_recall = (
+            matched_word_boundaries / gold_word_boundaries
+            if gold_word_boundaries else 0.0
+        )
+        boundary_f1 = (
+            2.0 * boundary_precision * boundary_recall / (boundary_precision + boundary_recall)
+            if (boundary_precision + boundary_recall) else 0.0
+        )
+        boundary_mean_abs_ms = (
+            boundary_error_weighted_sum / matched_word_boundaries
+            if matched_word_boundaries else 0.0
+        )
+        print(
+            f"STREAMING_DETECTORS cases={detector_case_count} "
+            f"pause_frames={pause_frames} pause_top1={pause_acc:.4f} "
+            f"gold_word_boundaries={gold_word_boundaries} "
+            f"predicted_word_boundaries={predicted_word_boundaries} "
+            f"matched_word_boundaries={matched_word_boundaries} "
+            f"word_boundary_precision={boundary_precision:.4f} "
+            f"word_boundary_recall={boundary_recall:.4f} "
+            f"word_boundary_f1={boundary_f1:.4f} "
+            f"word_boundary_mean_abs_ms={boundary_mean_abs_ms:.1f}"
+        )
     return 0
 
 
