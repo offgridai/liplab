@@ -1,1920 +1,2505 @@
-﻿{
-    "schema_version":  1,
-    "case_id":  "case_0015_20260629_093954_282_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000014_00",
-    "created_utc":  "2026-07-01T16:51:36.135910+00:00",
-    "generator":  {
-                      "kind":  "liplab_gold_mfa_phase1",
-                      "buffer_ms":  600000,
-                      "chunk_ms":  600000,
-                      "mfa_num_jobs":  4,
-                      "speech_merge_gap_ms":  120,
-                      "source_run_dir":  "outputs/offline_gold/latest/case_0015_20260629_093954_282_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000014_00",
-                      "mfa_align_dir":  "outputs/mfa_align/latest"
-                  },
-    "approval":  {
-                     "status":  "approved_gold",
-                     "reviewed":  true,
-                     "reviewer":  "bulk_promote",
-                     "reviewed_utc":  "2026-07-01T16:53:34.1144044Z"
-                 },
-    "review_layers":  {
-                          "speech_regions":  {
-                                                 "status":  "reviewed_boundary",
-                                                 "reviewed":  true,
-                                                 "reviewer":  "bulk_promote"
-                                             },
-                          "word_heads":  {
-                                             "status":  "reviewed_boundary",
-                                             "reviewed":  true,
-                                             "reviewer":  "bulk_promote"
-                                         },
-                          "dense_visemes":  {
-                                                "status":  "reviewed_dense",
-                                                "reviewed":  true,
-                                                "reviewer":  "bulk_promote"
-                                            }
-                      },
-    "transcript":  "Austria is where you\u0027ll find the famous Salzburg, home of Mozart.",
-    "audio":  {
-                  "path":  "inputs/wav/case_0015_20260629_093954_282_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000014_00.wav",
-                  "sample_rate_hz":  24000,
-                  "channels":  1,
-                  "frame_count":  95445,
-                  "duration_sec":  3.976875
-              },
-    "speech_regions":  [
-                           {
-                               "index":  0,
-                               "start":  0.28,
-                               "end":  3.83,
-                               "word_start_index":  0,
-                               "word_end_index":  10,
-                               "sentence_start_index":  0,
-                               "sentence_end_index":  0,
-                               "source":  "mfa_word_boundaries_with_occupancy_lull_splits",
-                               "approval":  {
-                                                "status":  "draft_auto",
-                                                "reviewed":  false
-                                            }
-                           }
-                       ],
-    "gold_words":  [
-                       {
-                           "word_index":  0,
-                           "word":  "austria",
-                           "mfa_word":  "austria",
-                           "start":  0.28,
-                           "end":  0.76,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  1,
-                           "word":  "is",
-                           "mfa_word":  "is",
-                           "start":  0.76,
-                           "end":  0.98,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  2,
-                           "word":  "where",
-                           "mfa_word":  "where",
-                           "start":  0.98,
-                           "end":  1.16,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  3,
-                           "word":  "you\u0027ll",
-                           "mfa_word":  "you\u0027ll",
-                           "start":  1.16,
-                           "end":  1.32,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  4,
-                           "word":  "find",
-                           "mfa_word":  "find",
-                           "start":  1.32,
-                           "end":  1.65,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  5,
-                           "word":  "the",
-                           "mfa_word":  "the",
-                           "start":  1.65,
-                           "end":  1.7,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  6,
-                           "word":  "famous",
-                           "mfa_word":  "famous",
-                           "start":  1.7,
-                           "end":  2.08,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  7,
-                           "word":  "salzburg",
-                           "mfa_word":  "salzburg",
-                           "start":  2.08,
-                           "end":  2.77,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  8,
-                           "word":  "home",
-                           "mfa_word":  "home",
-                           "start":  2.85,
-                           "end":  3.12,
-                           "phrase_index":  1,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  9,
-                           "word":  "of",
-                           "mfa_word":  "of",
-                           "start":  3.12,
-                           "end":  3.22,
-                           "phrase_index":  1,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  10,
-                           "word":  "mozart",
-                           "mfa_word":  "mozart",
-                           "start":  3.22,
-                           "end":  3.83,
-                           "phrase_index":  1,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       }
-                   ],
-    "word_heads":  [
-                       {
-                           "word_index":  0,
-                           "word":  "austria",
-                           "start":  0.28,
-                           "end":  0.41,
-                           "pose":  "09_Oh",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "AO",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_source_phone_index_label_mismatch",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  1,
-                           "word":  "is",
-                           "start":  0.76,
-                           "end":  0.9,
-                           "pose":  "05_Ay",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "AY",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_source_phone_index_label_mismatch",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  2,
-                           "word":  "where",
-                           "start":  0.98,
-                           "end":  1.06,
-                           "pose":  "12_Ww-Oo-",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "W",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  3,
-                           "word":  "you\u0027ll",
-                           "start":  1.22,
-                           "end":  1.28,
-                           "pose":  "11_Oo",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "UW",
-                           "source_phone_index":  1,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  4,
-                           "word":  "find",
-                           "start":  1.32,
-                           "end":  1.44,
-                           "pose":  "20_FV",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "F",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  5,
-                           "word":  "the",
-                           "start":  1.66,
-                           "end":  1.7,
-                           "pose":  "07_Aa",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "AH",
-                           "source_phone_index":  1,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  6,
-                           "word":  "famous",
-                           "start":  1.7,
-                           "end":  1.81,
-                           "pose":  "20_FV",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "F",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  7,
-                           "word":  "salzburg",
-                           "start":  2.21,
-                           "end":  2.3,
-                           "pose":  "09_Oh",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "AO",
-                           "source_phone_index":  1,
-                           "alignment_reason":  "mfa_source_phone_index_label_mismatch",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  8,
-                           "word":  "home",
-                           "start":  2.96,
-                           "end":  3.05,
-                           "pose":  "09_Oh",
-                           "phrase_index":  1,
-                           "sentence_index":  0,
-                           "source_phone":  "OW",
-                           "source_phone_index":  1,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  9,
-                           "word":  "of",
-                           "start":  3.12,
-                           "end":  3.16,
-                           "pose":  "07_Aa",
-                           "phrase_index":  1,
-                           "sentence_index":  0,
-                           "source_phone":  "AH",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  10,
-                           "word":  "mozart",
-                           "start":  3.22,
-                           "end":  3.3,
-                           "pose":  "22_MBP",
-                           "phrase_index":  1,
-                           "sentence_index":  0,
-                           "source_phone":  "M",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       }
-                   ],
-    "mfa_words":  [
-                      {
-                          "word_index":  0,
-                          "word":  "austria",
-                          "mfa_word":  "austria",
-                          "start":  0.28,
-                          "end":  0.76,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  1,
-                          "word":  "is",
-                          "mfa_word":  "is",
-                          "start":  0.76,
-                          "end":  0.98,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  2,
-                          "word":  "where",
-                          "mfa_word":  "where",
-                          "start":  0.98,
-                          "end":  1.16,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  3,
-                          "word":  "you\u0027ll",
-                          "mfa_word":  "you\u0027ll",
-                          "start":  1.16,
-                          "end":  1.32,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  4,
-                          "word":  "find",
-                          "mfa_word":  "find",
-                          "start":  1.32,
-                          "end":  1.65,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  5,
-                          "word":  "the",
-                          "mfa_word":  "the",
-                          "start":  1.65,
-                          "end":  1.7,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  6,
-                          "word":  "famous",
-                          "mfa_word":  "famous",
-                          "start":  1.7,
-                          "end":  2.08,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  7,
-                          "word":  "salzburg",
-                          "mfa_word":  "salzburg",
-                          "start":  2.08,
-                          "end":  2.77,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  8,
-                          "word":  "home",
-                          "mfa_word":  "home",
-                          "start":  2.85,
-                          "end":  3.12,
-                          "phrase_index":  1,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  9,
-                          "word":  "of",
-                          "mfa_word":  "of",
-                          "start":  3.12,
-                          "end":  3.22,
-                          "phrase_index":  1,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  10,
-                          "word":  "mozart",
-                          "mfa_word":  "mozart",
-                          "start":  3.22,
-                          "end":  3.83,
-                          "phrase_index":  1,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      }
-                  ],
-    "mfa_phones":  [
-                       {
-                           "index_in_word":  0,
-                           "phone":  "AA1",
-                           "phone_base":  "AA",
-                           "start":  0.28,
-                           "end":  0.41,
-                           "word_index":  0,
-                           "word":  "austria"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "S",
-                           "phone_base":  "S",
-                           "start":  0.41,
-                           "end":  0.49,
-                           "word_index":  0,
-                           "word":  "austria"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "T",
-                           "phone_base":  "T",
-                           "start":  0.49,
-                           "end":  0.56,
-                           "word_index":  0,
-                           "word":  "austria"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "R",
-                           "phone_base":  "R",
-                           "start":  0.56,
-                           "end":  0.61,
-                           "word_index":  0,
-                           "word":  "austria"
-                       },
-                       {
-                           "index_in_word":  4,
-                           "phone":  "IY0",
-                           "phone_base":  "IY",
-                           "start":  0.61,
-                           "end":  0.67,
-                           "word_index":  0,
-                           "word":  "austria"
-                       },
-                       {
-                           "index_in_word":  5,
-                           "phone":  "AH0",
-                           "phone_base":  "AH",
-                           "start":  0.67,
-                           "end":  0.76,
-                           "word_index":  0,
-                           "word":  "austria"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "IH1",
-                           "phone_base":  "IH",
-                           "start":  0.76,
-                           "end":  0.9,
-                           "word_index":  1,
-                           "word":  "is"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "Z",
-                           "phone_base":  "Z",
-                           "start":  0.9,
-                           "end":  0.98,
-                           "word_index":  1,
-                           "word":  "is"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "W",
-                           "phone_base":  "W",
-                           "start":  0.98,
-                           "end":  1.06,
-                           "word_index":  2,
-                           "word":  "where"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "EH1",
-                           "phone_base":  "EH",
-                           "start":  1.06,
-                           "end":  1.11,
-                           "word_index":  2,
-                           "word":  "where"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "R",
-                           "phone_base":  "R",
-                           "start":  1.11,
-                           "end":  1.16,
-                           "word_index":  2,
-                           "word":  "where"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "Y",
-                           "phone_base":  "Y",
-                           "start":  1.16,
-                           "end":  1.22,
-                           "word_index":  3,
-                           "word":  "you\u0027ll"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "UW1",
-                           "phone_base":  "UW",
-                           "start":  1.22,
-                           "end":  1.28,
-                           "word_index":  3,
-                           "word":  "you\u0027ll"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "L",
-                           "phone_base":  "L",
-                           "start":  1.28,
-                           "end":  1.32,
-                           "word_index":  3,
-                           "word":  "you\u0027ll"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "F",
-                           "phone_base":  "F",
-                           "start":  1.32,
-                           "end":  1.44,
-                           "word_index":  4,
-                           "word":  "find"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "AY1",
-                           "phone_base":  "AY",
-                           "start":  1.44,
-                           "end":  1.57,
-                           "word_index":  4,
-                           "word":  "find"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "N",
-                           "phone_base":  "N",
-                           "start":  1.57,
-                           "end":  1.62,
-                           "word_index":  4,
-                           "word":  "find"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "D",
-                           "phone_base":  "D",
-                           "start":  1.62,
-                           "end":  1.65,
-                           "word_index":  4,
-                           "word":  "find"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "DH",
-                           "phone_base":  "DH",
-                           "start":  1.65,
-                           "end":  1.66,
-                           "word_index":  5,
-                           "word":  "the"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "AH0",
-                           "phone_base":  "AH",
-                           "start":  1.66,
-                           "end":  1.7,
-                           "word_index":  5,
-                           "word":  "the"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "F",
-                           "phone_base":  "F",
-                           "start":  1.7,
-                           "end":  1.81,
-                           "word_index":  6,
-                           "word":  "famous"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "EY1",
-                           "phone_base":  "EY",
-                           "start":  1.81,
-                           "end":  1.92,
-                           "word_index":  6,
-                           "word":  "famous"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "M",
-                           "phone_base":  "M",
-                           "start":  1.92,
-                           "end":  1.98,
-                           "word_index":  6,
-                           "word":  "famous"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "AH0",
-                           "phone_base":  "AH",
-                           "start":  1.98,
-                           "end":  2.04,
-                           "word_index":  6,
-                           "word":  "famous"
-                       },
-                       {
-                           "index_in_word":  4,
-                           "phone":  "S",
-                           "phone_base":  "S",
-                           "start":  2.04,
-                           "end":  2.08,
-                           "word_index":  6,
-                           "word":  "famous"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "S",
-                           "phone_base":  "S",
-                           "start":  2.08,
-                           "end":  2.21,
-                           "word_index":  7,
-                           "word":  "salzburg"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "AA1",
-                           "phone_base":  "AA",
-                           "start":  2.21,
-                           "end":  2.3,
-                           "word_index":  7,
-                           "word":  "salzburg"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "L",
-                           "phone_base":  "L",
-                           "start":  2.3,
-                           "end":  2.35,
-                           "word_index":  7,
-                           "word":  "salzburg"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "T",
-                           "phone_base":  "T",
-                           "start":  2.35,
-                           "end":  2.38,
-                           "word_index":  7,
-                           "word":  "salzburg"
-                       },
-                       {
-                           "index_in_word":  4,
-                           "phone":  "S",
-                           "phone_base":  "S",
-                           "start":  2.38,
-                           "end":  2.42,
-                           "word_index":  7,
-                           "word":  "salzburg"
-                       },
-                       {
-                           "index_in_word":  5,
-                           "phone":  "B",
-                           "phone_base":  "B",
-                           "start":  2.42,
-                           "end":  2.5,
-                           "word_index":  7,
-                           "word":  "salzburg"
-                       },
-                       {
-                           "index_in_word":  6,
-                           "phone":  "ER0",
-                           "phone_base":  "ER",
-                           "start":  2.5,
-                           "end":  2.67,
-                           "word_index":  7,
-                           "word":  "salzburg"
-                       },
-                       {
-                           "index_in_word":  7,
-                           "phone":  "G",
-                           "phone_base":  "G",
-                           "start":  2.67,
-                           "end":  2.77,
-                           "word_index":  7,
-                           "word":  "salzburg"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "HH",
-                           "phone_base":  "HH",
-                           "start":  2.85,
-                           "end":  2.96,
-                           "word_index":  8,
-                           "word":  "home"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "OW1",
-                           "phone_base":  "OW",
-                           "start":  2.96,
-                           "end":  3.05,
-                           "word_index":  8,
-                           "word":  "home"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "M",
-                           "phone_base":  "M",
-                           "start":  3.05,
-                           "end":  3.12,
-                           "word_index":  8,
-                           "word":  "home"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "AH1",
-                           "phone_base":  "AH",
-                           "start":  3.12,
-                           "end":  3.16,
-                           "word_index":  9,
-                           "word":  "of"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "V",
-                           "phone_base":  "V",
-                           "start":  3.16,
-                           "end":  3.22,
-                           "word_index":  9,
-                           "word":  "of"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "M",
-                           "phone_base":  "M",
-                           "start":  3.22,
-                           "end":  3.3,
-                           "word_index":  10,
-                           "word":  "mozart"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "OW1",
-                           "phone_base":  "OW",
-                           "start":  3.3,
-                           "end":  3.39,
-                           "word_index":  10,
-                           "word":  "mozart"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "T",
-                           "phone_base":  "T",
-                           "start":  3.39,
-                           "end":  3.45,
-                           "word_index":  10,
-                           "word":  "mozart"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "S",
-                           "phone_base":  "S",
-                           "start":  3.45,
-                           "end":  3.53,
-                           "word_index":  10,
-                           "word":  "mozart"
-                       },
-                       {
-                           "index_in_word":  4,
-                           "phone":  "AA0",
-                           "phone_base":  "AA",
-                           "start":  3.53,
-                           "end":  3.58,
-                           "word_index":  10,
-                           "word":  "mozart"
-                       },
-                       {
-                           "index_in_word":  5,
-                           "phone":  "R",
-                           "phone_base":  "R",
-                           "start":  3.58,
-                           "end":  3.67,
-                           "word_index":  10,
-                           "word":  "mozart"
-                       },
-                       {
-                           "index_in_word":  6,
-                           "phone":  "T",
-                           "phone_base":  "T",
-                           "start":  3.67,
-                           "end":  3.83,
-                           "word_index":  10,
-                           "word":  "mozart"
-                       }
-                   ],
-    "planned_visemes":  [
-                            {
-                                "index":  0,
-                                "pose":  "09_Oh",
-                                "word":  "austria",
-                                "word_index":  0,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.013944,
-                                "strength":  0.92,
-                                "source_phone":  "AO",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_oh_vowel"
-                            },
-                            {
-                                "index":  1,
-                                "pose":  "03_Ee",
-                                "word":  "austria",
-                                "word_index":  0,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.125,
-                                "strength":  0.5,
-                                "source_phone":  "IY",
-                                "source_phone_index":  4,
-                                "generator":  "cmu_front_vowel"
-                            },
-                            {
-                                "index":  2,
-                                "pose":  "05_Ay",
-                                "word":  "is",
-                                "word_index":  1,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.183333,
-                                "strength":  0.94,
-                                "source_phone":  "AY",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_ay"
-                            },
-                            {
-                                "index":  3,
-                                "pose":  "12_Ww-Oo-",
-                                "word":  "where",
-                                "word_index":  2,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.244444,
-                                "strength":  0.88,
-                                "source_phone":  "W",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_w"
-                            },
-                            {
-                                "index":  4,
-                                "pose":  "06_Eh",
-                                "word":  "where",
-                                "word_index":  2,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.266667,
-                                "strength":  0.92,
-                                "source_phone":  "EH",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_eh_vowel"
-                            },
-                            {
-                                "index":  5,
-                                "pose":  "11_Oo",
-                                "word":  "you\u0027ll",
-                                "word_index":  3,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.333333,
-                                "strength":  0.92,
-                                "source_phone":  "UW",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_oo_vowel"
-                            },
-                            {
-                                "index":  6,
-                                "pose":  "20_FV",
-                                "word":  "find",
-                                "word_index":  4,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.375,
-                                "strength":  0.96,
-                                "source_phone":  "F",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_fv"
-                            },
-                            {
-                                "index":  7,
-                                "pose":  "05_Ay",
-                                "word":  "find",
-                                "word_index":  4,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.391667,
-                                "strength":  0.94,
-                                "source_phone":  "AY",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_ay"
-                            },
-                            {
-                                "index":  8,
-                                "pose":  "07_Aa",
-                                "word":  "the",
-                                "word_index":  5,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.483333,
-                                "strength":  0.5,
-                                "source_phone":  "AH",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_open_vowel"
-                            },
-                            {
-                                "index":  9,
-                                "pose":  "20_FV",
-                                "word":  "famous",
-                                "word_index":  6,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.51,
-                                "strength":  0.96,
-                                "source_phone":  "F",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_fv"
-                            },
-                            {
-                                "index":  10,
-                                "pose":  "06_Eh",
-                                "word":  "famous",
-                                "word_index":  6,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.53,
-                                "strength":  0.92,
-                                "source_phone":  "EY",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_eh_vowel"
-                            },
-                            {
-                                "index":  11,
-                                "pose":  "22_MBP",
-                                "word":  "famous",
-                                "word_index":  6,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.55,
-                                "strength":  1.0,
-                                "source_phone":  "M",
-                                "source_phone_index":  2,
-                                "generator":  "cmu_bilabial"
-                            },
-                            {
-                                "index":  12,
-                                "pose":  "09_Oh",
-                                "word":  "salzburg",
-                                "word_index":  7,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.628571,
-                                "strength":  0.92,
-                                "source_phone":  "AO",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_oh_vowel"
-                            },
-                            {
-                                "index":  13,
-                                "pose":  "22_MBP",
-                                "word":  "salzburg",
-                                "word_index":  7,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.685714,
-                                "strength":  1.0,
-                                "source_phone":  "B",
-                                "source_phone_index":  4,
-                                "generator":  "cmu_bilabial"
-                            },
-                            {
-                                "index":  14,
-                                "pose":  "09_Oh",
-                                "word":  "home",
-                                "word_index":  8,
-                                "phrase_index":  1,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.766667,
-                                "strength":  0.92,
-                                "source_phone":  "OW",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_oh_vowel"
-                            },
-                            {
-                                "index":  15,
-                                "pose":  "22_MBP",
-                                "word":  "home",
-                                "word_index":  8,
-                                "phrase_index":  1,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.788889,
-                                "strength":  1.0,
-                                "source_phone":  "M",
-                                "source_phone_index":  2,
-                                "generator":  "cmu_bilabial"
-                            },
-                            {
-                                "index":  16,
-                                "pose":  "07_Aa",
-                                "word":  "of",
-                                "word_index":  9,
-                                "phrase_index":  1,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.816667,
-                                "strength":  0.92,
-                                "source_phone":  "AH",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_open_vowel"
-                            },
-                            {
-                                "index":  17,
-                                "pose":  "20_FV",
-                                "word":  "of",
-                                "word_index":  9,
-                                "phrase_index":  1,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.85,
-                                "strength":  0.96,
-                                "source_phone":  "V",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_fv"
-                            },
-                            {
-                                "index":  18,
-                                "pose":  "22_MBP",
-                                "word":  "mozart",
-                                "word_index":  10,
-                                "phrase_index":  1,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.877778,
-                                "strength":  1.0,
-                                "source_phone":  "M",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_bilabial"
-                            },
-                            {
-                                "index":  19,
-                                "pose":  "09_Oh",
-                                "word":  "mozart",
-                                "word_index":  10,
-                                "phrase_index":  1,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.9,
-                                "strength":  0.92,
-                                "source_phone":  "OW",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_oh_vowel"
-                            },
-                            {
-                                "index":  20,
-                                "pose":  "07_Aa",
-                                "word":  "mozart",
-                                "word_index":  10,
-                                "phrase_index":  1,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.944444,
-                                "strength":  0.5,
-                                "source_phone":  "AA",
-                                "source_phone_index":  3,
-                                "generator":  "cmu_open_vowel"
-                            }
-                        ],
-    "visemes":  [
-                    {
-                        "index":  0,
-                        "id":  "09_Oh",
-                        "pose":  "09_Oh",
-                        "start":  0.28,
-                        "center":  0.345,
-                        "end":  0.41,
-                        "word":  "austria",
-                        "word_index":  0,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_source_phone_index_label_mismatch",
-                        "source_phone":  "AO",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  1,
-                        "id":  "03_Ee",
-                        "pose":  "03_Ee",
-                        "start":  0.61,
-                        "center":  0.64,
-                        "end":  0.67,
-                        "word":  "austria",
-                        "word_index":  0,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.5,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "IY",
-                        "source_phone_index":  4,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-                                      {
-                                          "kind":  "low_strength_viseme",
-                                          "start":  0.61,
-                                          "end":  0.67,
-                                          "note":  "Viseme strength is low (0.500)."
-                                      }
-                                  ]
-                    },
-                    {
-                        "index":  2,
-                        "id":  "05_Ay",
-                        "pose":  "05_Ay",
-                        "start":  0.76,
-                        "center":  0.8300000000000001,
-                        "end":  0.9,
-                        "word":  "is",
-                        "word_index":  1,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.94,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_source_phone_index_label_mismatch",
-                        "source_phone":  "AY",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  3,
-                        "id":  "12_Ww-Oo-",
-                        "pose":  "12_Ww-Oo-",
-                        "start":  0.98,
-                        "center":  1.02,
-                        "end":  1.06,
-                        "word":  "where",
-                        "word_index":  2,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.88,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "W",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  4,
-                        "id":  "06_Eh",
-                        "pose":  "06_Eh",
-                        "start":  1.06,
-                        "center":  1.085,
-                        "end":  1.11,
-                        "word":  "where",
-                        "word_index":  2,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "EH",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  5,
-                        "id":  "11_Oo",
-                        "pose":  "11_Oo",
-                        "start":  1.22,
-                        "center":  1.25,
-                        "end":  1.28,
-                        "word":  "you\u0027ll",
-                        "word_index":  3,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "UW",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  6,
-                        "id":  "20_FV",
-                        "pose":  "20_FV",
-                        "start":  1.32,
-                        "center":  1.38,
-                        "end":  1.44,
-                        "word":  "find",
-                        "word_index":  4,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.96,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "F",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  7,
-                        "id":  "05_Ay",
-                        "pose":  "05_Ay",
-                        "start":  1.44,
-                        "center":  1.505,
-                        "end":  1.57,
-                        "word":  "find",
-                        "word_index":  4,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.94,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "AY",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  8,
-                        "id":  "07_Aa",
-                        "pose":  "07_Aa",
-                        "start":  1.66,
-                        "center":  1.68,
-                        "end":  1.7,
-                        "word":  "the",
-                        "word_index":  5,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.5,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "AH",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-                                      {
-                                          "kind":  "low_strength_viseme",
-                                          "start":  1.66,
-                                          "end":  1.7,
-                                          "note":  "Viseme strength is low (0.500)."
-                                      }
-                                  ]
-                    },
-                    {
-                        "index":  9,
-                        "id":  "20_FV",
-                        "pose":  "20_FV",
-                        "start":  1.7,
-                        "center":  1.755,
-                        "end":  1.81,
-                        "word":  "famous",
-                        "word_index":  6,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.96,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "F",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  10,
-                        "id":  "06_Eh",
-                        "pose":  "06_Eh",
-                        "start":  1.81,
-                        "center":  1.865,
-                        "end":  1.92,
-                        "word":  "famous",
-                        "word_index":  6,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "EY",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  11,
-                        "id":  "22_MBP",
-                        "pose":  "22_MBP",
-                        "start":  1.92,
-                        "center":  1.95,
-                        "end":  1.98,
-                        "word":  "famous",
-                        "word_index":  6,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  1.0,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "M",
-                        "source_phone_index":  2,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  12,
-                        "id":  "09_Oh",
-                        "pose":  "09_Oh",
-                        "start":  2.21,
-                        "center":  2.255,
-                        "end":  2.3,
-                        "word":  "salzburg",
-                        "word_index":  7,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_source_phone_index_label_mismatch",
-                        "source_phone":  "AO",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  13,
-                        "id":  "22_MBP",
-                        "pose":  "22_MBP",
-                        "start":  2.38,
-                        "center":  2.4,
-                        "end":  2.42,
-                        "word":  "salzburg",
-                        "word_index":  7,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  1.0,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_source_phone_index_label_mismatch",
-                        "source_phone":  "B",
-                        "source_phone_index":  4,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  14,
-                        "id":  "09_Oh",
-                        "pose":  "09_Oh",
-                        "start":  2.96,
-                        "center":  3.005,
-                        "end":  3.05,
-                        "word":  "home",
-                        "word_index":  8,
-                        "phrase_index":  1,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "OW",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-                                      {
-                                          "kind":  "large_inter_event_gap",
-                                          "start":  2.96,
-                                          "end":  3.05,
-                                          "note":  "Large gap from previous viseme center (0.605s)."
-                                      }
-                                  ]
-                    },
-                    {
-                        "index":  15,
-                        "id":  "22_MBP",
-                        "pose":  "22_MBP",
-                        "start":  3.05,
-                        "center":  3.085,
-                        "end":  3.12,
-                        "word":  "home",
-                        "word_index":  8,
-                        "phrase_index":  1,
-                        "sentence_index":  0,
-                        "strength":  1.0,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "M",
-                        "source_phone_index":  2,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  16,
-                        "id":  "07_Aa",
-                        "pose":  "07_Aa",
-                        "start":  3.12,
-                        "center":  3.14,
-                        "end":  3.16,
-                        "word":  "of",
-                        "word_index":  9,
-                        "phrase_index":  1,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "AH",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  17,
-                        "id":  "20_FV",
-                        "pose":  "20_FV",
-                        "start":  3.16,
-                        "center":  3.1900000000000004,
-                        "end":  3.22,
-                        "word":  "of",
-                        "word_index":  9,
-                        "phrase_index":  1,
-                        "sentence_index":  0,
-                        "strength":  0.96,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "V",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  18,
-                        "id":  "22_MBP",
-                        "pose":  "22_MBP",
-                        "start":  3.22,
-                        "center":  3.26,
-                        "end":  3.3,
-                        "word":  "mozart",
-                        "word_index":  10,
-                        "phrase_index":  1,
-                        "sentence_index":  0,
-                        "strength":  1.0,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "M",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  19,
-                        "id":  "09_Oh",
-                        "pose":  "09_Oh",
-                        "start":  3.3,
-                        "center":  3.3449999999999998,
-                        "end":  3.39,
-                        "word":  "mozart",
-                        "word_index":  10,
-                        "phrase_index":  1,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "OW",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  20,
-                        "id":  "07_Aa",
-                        "pose":  "07_Aa",
-                        "start":  3.45,
-                        "center":  3.49,
-                        "end":  3.53,
-                        "word":  "mozart",
-                        "word_index":  10,
-                        "phrase_index":  1,
-                        "sentence_index":  0,
-                        "strength":  0.5,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_source_phone_index_label_mismatch",
-                        "source_phone":  "AA",
-                        "source_phone_index":  3,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-                                      {
-                                          "kind":  "low_strength_viseme",
-                                          "start":  3.45,
-                                          "end":  3.53,
-                                          "note":  "Viseme strength is low (0.500)."
-                                      }
-                                  ]
-                    }
-                ],
-    "flags":  [
-                  {
-                      "kind":  "implausibly_short_word",
-                      "word_index":  3,
-                      "word":  "you\u0027ll",
-                      "duration_seconds":  0.16,
-                      "note":  "A relatively long word was aligned to an implausibly short duration."
-                  },
-                  {
-                      "kind":  "low_strength_viseme",
-                      "start":  0.61,
-                      "end":  0.67,
-                      "note":  "Viseme strength is low (0.500)."
-                  },
-                  {
-                      "kind":  "low_strength_viseme",
-                      "start":  1.66,
-                      "end":  1.7,
-                      "note":  "Viseme strength is low (0.500)."
-                  },
-                  {
-                      "kind":  "large_inter_event_gap",
-                      "start":  2.96,
-                      "end":  3.05,
-                      "note":  "Large gap from previous viseme center (0.605s)."
-                  },
-                  {
-                      "kind":  "low_strength_viseme",
-                      "start":  3.45,
-                      "end":  3.53,
-                      "note":  "Viseme strength is low (0.500)."
-                  }
-              ],
-    "notes":  [
-
-              ],
-    "summary":  {
-                    "word_count":  11,
-                    "speech_region_count":  1,
-                    "word_head_count":  11,
-                    "viseme_count":  21,
-                    "flag_count":  5,
-                    "flags_by_kind":  {
-                                          "implausibly_short_word":  1,
-                                          "low_strength_viseme":  3,
-                                          "large_inter_event_gap":  1
-                                      },
-                    "commit_reasons":  {
-                                           "mfa_phone_alignment":  21
-                                       },
-                    "alignment_reasons":  {
-                                              "mfa_source_phone_index_label_mismatch":  5,
-                                              "mfa_exact_source_phone_index":  16
-                                          },
-                    "mapped_to_observed_speech_count":  21
-                }
+{
+  "schema_version": 1,
+  "case_id": "case_0015_20260629_093954_282_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000014_00",
+  "created_utc": "2026-07-04T18:58:52.043364+00:00",
+  "generator": {
+    "kind": "liplab_gold_mfa_phase1",
+    "buffer_ms": 600000,
+    "chunk_ms": 600000,
+    "mfa_num_jobs": 4,
+    "speech_merge_gap_ms": 120,
+    "source_run_dir": "outputs/offline_gold/latest/case_0015_20260629_093954_282_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000014_00",
+    "mfa_align_dir": "outputs/mfa_align/latest"
+  },
+  "approval": {
+    "status": "approved_gold",
+    "reviewed": true,
+    "reviewer": "auto_mfa_phone_export",
+    "reviewed_utc": "2026-07-04T18:58:52.043442+00:00"
+  },
+  "review_layers": {
+    "speech_regions": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "word_heads": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "dense_visemes": {
+      "status": "reviewed_dense",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    }
+  },
+  "transcript": "Austria is where you'll find the famous Salzburg, home of Mozart.",
+  "audio": {
+    "path": "inputs/wav/case_0015_20260629_093954_282_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000014_00.wav",
+    "sample_rate_hz": 24000,
+    "channels": 1,
+    "frame_count": 95445,
+    "duration_sec": 3.976875
+  },
+  "speech_regions": [
+    {
+      "index": 0,
+      "start": 0.28,
+      "end": 3.83,
+      "word_start_index": 0,
+      "word_end_index": 10,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_non_silence_phone_gap_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    }
+  ],
+  "gold_words": [
+    {
+      "word_index": 0,
+      "word": "austria",
+      "mfa_word": "austria",
+      "start": 0.28,
+      "end": 0.76,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "is",
+      "mfa_word": "is",
+      "start": 0.76,
+      "end": 0.98,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 2,
+      "word": "where",
+      "mfa_word": "where",
+      "start": 0.98,
+      "end": 1.16,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 3,
+      "word": "you'll",
+      "mfa_word": "you'll",
+      "start": 1.16,
+      "end": 1.32,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 4,
+      "word": "find",
+      "mfa_word": "find",
+      "start": 1.32,
+      "end": 1.65,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 5,
+      "word": "the",
+      "mfa_word": "the",
+      "start": 1.65,
+      "end": 1.7,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 6,
+      "word": "famous",
+      "mfa_word": "famous",
+      "start": 1.7,
+      "end": 2.08,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 7,
+      "word": "salzburg",
+      "mfa_word": "salzburg",
+      "start": 2.08,
+      "end": 2.77,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 8,
+      "word": "home",
+      "mfa_word": "home",
+      "start": 2.85,
+      "end": 3.12,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 9,
+      "word": "of",
+      "mfa_word": "of",
+      "start": 3.12,
+      "end": 3.22,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 10,
+      "word": "mozart",
+      "mfa_word": "mozart",
+      "start": 3.22,
+      "end": 3.83,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    }
+  ],
+  "word_heads": [
+    {
+      "word_index": 0,
+      "word": "austria",
+      "start": 0.28,
+      "end": 0.41,
+      "pose": "AA1",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "AA1",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 1,
+      "word": "is",
+      "start": 0.76,
+      "end": 0.9,
+      "pose": "IH1",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "IH1",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 2,
+      "word": "where",
+      "start": 0.98,
+      "end": 1.06,
+      "pose": "W",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 3,
+      "word": "you'll",
+      "start": 1.16,
+      "end": 1.22,
+      "pose": "Y",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "Y",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 4,
+      "word": "find",
+      "start": 1.32,
+      "end": 1.44,
+      "pose": "F",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "F",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 5,
+      "word": "the",
+      "start": 1.65,
+      "end": 1.66,
+      "pose": "DH",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "DH",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 6,
+      "word": "famous",
+      "start": 1.7,
+      "end": 1.81,
+      "pose": "F",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "F",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 7,
+      "word": "salzburg",
+      "start": 2.08,
+      "end": 2.21,
+      "pose": "S",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "S",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 8,
+      "word": "home",
+      "start": 2.85,
+      "end": 2.96,
+      "pose": "HH",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 9,
+      "word": "of",
+      "start": 3.12,
+      "end": 3.16,
+      "pose": "AH1",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "AH1",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 10,
+      "word": "mozart",
+      "start": 3.22,
+      "end": 3.3,
+      "pose": "M",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "M",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    }
+  ],
+  "mfa_words": [
+    {
+      "word_index": 0,
+      "word": "austria",
+      "mfa_word": "austria",
+      "start": 0.28,
+      "end": 0.76,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "is",
+      "mfa_word": "is",
+      "start": 0.76,
+      "end": 0.98,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 2,
+      "word": "where",
+      "mfa_word": "where",
+      "start": 0.98,
+      "end": 1.16,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 3,
+      "word": "you'll",
+      "mfa_word": "you'll",
+      "start": 1.16,
+      "end": 1.32,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 4,
+      "word": "find",
+      "mfa_word": "find",
+      "start": 1.32,
+      "end": 1.65,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 5,
+      "word": "the",
+      "mfa_word": "the",
+      "start": 1.65,
+      "end": 1.7,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 6,
+      "word": "famous",
+      "mfa_word": "famous",
+      "start": 1.7,
+      "end": 2.08,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 7,
+      "word": "salzburg",
+      "mfa_word": "salzburg",
+      "start": 2.08,
+      "end": 2.77,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 8,
+      "word": "home",
+      "mfa_word": "home",
+      "start": 2.85,
+      "end": 3.12,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 9,
+      "word": "of",
+      "mfa_word": "of",
+      "start": 3.12,
+      "end": 3.22,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 10,
+      "word": "mozart",
+      "mfa_word": "mozart",
+      "start": 3.22,
+      "end": 3.83,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    }
+  ],
+  "mfa_phones": [
+    {
+      "index_in_word": 0,
+      "phone": "AA1",
+      "phone_base": "AA",
+      "start": 0.28,
+      "end": 0.41,
+      "word_index": 0,
+      "word": "austria"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 0.41,
+      "end": 0.49,
+      "word_index": 0,
+      "word": "austria"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 0.49,
+      "end": 0.56,
+      "word_index": 0,
+      "word": "austria"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "R",
+      "phone_base": "R",
+      "start": 0.56,
+      "end": 0.61,
+      "word_index": 0,
+      "word": "austria"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "IY0",
+      "phone_base": "IY",
+      "start": 0.61,
+      "end": 0.67,
+      "word_index": 0,
+      "word": "austria"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 0.67,
+      "end": 0.76,
+      "word_index": 0,
+      "word": "austria"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "IH1",
+      "phone_base": "IH",
+      "start": 0.76,
+      "end": 0.9,
+      "word_index": 1,
+      "word": "is"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "Z",
+      "phone_base": "Z",
+      "start": 0.9,
+      "end": 0.98,
+      "word_index": 1,
+      "word": "is"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 0.98,
+      "end": 1.06,
+      "word_index": 2,
+      "word": "where"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "EH1",
+      "phone_base": "EH",
+      "start": 1.06,
+      "end": 1.11,
+      "word_index": 2,
+      "word": "where"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "R",
+      "phone_base": "R",
+      "start": 1.11,
+      "end": 1.16,
+      "word_index": 2,
+      "word": "where"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "Y",
+      "phone_base": "Y",
+      "start": 1.16,
+      "end": 1.22,
+      "word_index": 3,
+      "word": "you'll"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "UW1",
+      "phone_base": "UW",
+      "start": 1.22,
+      "end": 1.28,
+      "word_index": 3,
+      "word": "you'll"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 1.28,
+      "end": 1.32,
+      "word_index": 3,
+      "word": "you'll"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "F",
+      "phone_base": "F",
+      "start": 1.32,
+      "end": 1.44,
+      "word_index": 4,
+      "word": "find"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AY1",
+      "phone_base": "AY",
+      "start": 1.44,
+      "end": 1.57,
+      "word_index": 4,
+      "word": "find"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 1.57,
+      "end": 1.62,
+      "word_index": 4,
+      "word": "find"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 1.62,
+      "end": 1.65,
+      "word_index": 4,
+      "word": "find"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "DH",
+      "phone_base": "DH",
+      "start": 1.65,
+      "end": 1.66,
+      "word_index": 5,
+      "word": "the"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 1.66,
+      "end": 1.7,
+      "word_index": 5,
+      "word": "the"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "F",
+      "phone_base": "F",
+      "start": 1.7,
+      "end": 1.81,
+      "word_index": 6,
+      "word": "famous"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "EY1",
+      "phone_base": "EY",
+      "start": 1.81,
+      "end": 1.92,
+      "word_index": 6,
+      "word": "famous"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "M",
+      "phone_base": "M",
+      "start": 1.92,
+      "end": 1.98,
+      "word_index": 6,
+      "word": "famous"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 1.98,
+      "end": 2.04,
+      "word_index": 6,
+      "word": "famous"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 2.04,
+      "end": 2.08,
+      "word_index": 6,
+      "word": "famous"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 2.08,
+      "end": 2.21,
+      "word_index": 7,
+      "word": "salzburg"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AA1",
+      "phone_base": "AA",
+      "start": 2.21,
+      "end": 2.3,
+      "word_index": 7,
+      "word": "salzburg"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 2.3,
+      "end": 2.35,
+      "word_index": 7,
+      "word": "salzburg"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 2.35,
+      "end": 2.38,
+      "word_index": 7,
+      "word": "salzburg"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 2.38,
+      "end": 2.42,
+      "word_index": 7,
+      "word": "salzburg"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "B",
+      "phone_base": "B",
+      "start": 2.42,
+      "end": 2.5,
+      "word_index": 7,
+      "word": "salzburg"
+    },
+    {
+      "index_in_word": 6,
+      "phone": "ER0",
+      "phone_base": "ER",
+      "start": 2.5,
+      "end": 2.67,
+      "word_index": 7,
+      "word": "salzburg"
+    },
+    {
+      "index_in_word": 7,
+      "phone": "G",
+      "phone_base": "G",
+      "start": 2.67,
+      "end": 2.77,
+      "word_index": 7,
+      "word": "salzburg"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "HH",
+      "phone_base": "HH",
+      "start": 2.85,
+      "end": 2.96,
+      "word_index": 8,
+      "word": "home"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "OW1",
+      "phone_base": "OW",
+      "start": 2.96,
+      "end": 3.05,
+      "word_index": 8,
+      "word": "home"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "M",
+      "phone_base": "M",
+      "start": 3.05,
+      "end": 3.12,
+      "word_index": 8,
+      "word": "home"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "AH1",
+      "phone_base": "AH",
+      "start": 3.12,
+      "end": 3.16,
+      "word_index": 9,
+      "word": "of"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "V",
+      "phone_base": "V",
+      "start": 3.16,
+      "end": 3.22,
+      "word_index": 9,
+      "word": "of"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "M",
+      "phone_base": "M",
+      "start": 3.22,
+      "end": 3.3,
+      "word_index": 10,
+      "word": "mozart"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "OW1",
+      "phone_base": "OW",
+      "start": 3.3,
+      "end": 3.39,
+      "word_index": 10,
+      "word": "mozart"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 3.39,
+      "end": 3.45,
+      "word_index": 10,
+      "word": "mozart"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 3.45,
+      "end": 3.53,
+      "word_index": 10,
+      "word": "mozart"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "AA0",
+      "phone_base": "AA",
+      "start": 3.53,
+      "end": 3.58,
+      "word_index": 10,
+      "word": "mozart"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "R",
+      "phone_base": "R",
+      "start": 3.58,
+      "end": 3.67,
+      "word_index": 10,
+      "word": "mozart"
+    },
+    {
+      "index_in_word": 6,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 3.67,
+      "end": 3.83,
+      "word_index": 10,
+      "word": "mozart"
+    }
+  ],
+  "mfa_non_silence_phone_intervals": [
+    {
+      "phone": "AA1",
+      "start": 0.28,
+      "end": 0.41
+    },
+    {
+      "phone": "S",
+      "start": 0.41,
+      "end": 0.49
+    },
+    {
+      "phone": "T",
+      "start": 0.49,
+      "end": 0.56
+    },
+    {
+      "phone": "R",
+      "start": 0.56,
+      "end": 0.61
+    },
+    {
+      "phone": "IY0",
+      "start": 0.61,
+      "end": 0.67
+    },
+    {
+      "phone": "AH0",
+      "start": 0.67,
+      "end": 0.76
+    },
+    {
+      "phone": "IH1",
+      "start": 0.76,
+      "end": 0.9
+    },
+    {
+      "phone": "Z",
+      "start": 0.9,
+      "end": 0.98
+    },
+    {
+      "phone": "W",
+      "start": 0.98,
+      "end": 1.06
+    },
+    {
+      "phone": "EH1",
+      "start": 1.06,
+      "end": 1.11
+    },
+    {
+      "phone": "R",
+      "start": 1.11,
+      "end": 1.16
+    },
+    {
+      "phone": "Y",
+      "start": 1.16,
+      "end": 1.22
+    },
+    {
+      "phone": "UW1",
+      "start": 1.22,
+      "end": 1.28
+    },
+    {
+      "phone": "L",
+      "start": 1.28,
+      "end": 1.32
+    },
+    {
+      "phone": "F",
+      "start": 1.32,
+      "end": 1.44
+    },
+    {
+      "phone": "AY1",
+      "start": 1.44,
+      "end": 1.57
+    },
+    {
+      "phone": "N",
+      "start": 1.57,
+      "end": 1.62
+    },
+    {
+      "phone": "D",
+      "start": 1.62,
+      "end": 1.65
+    },
+    {
+      "phone": "DH",
+      "start": 1.65,
+      "end": 1.66
+    },
+    {
+      "phone": "AH0",
+      "start": 1.66,
+      "end": 1.7
+    },
+    {
+      "phone": "F",
+      "start": 1.7,
+      "end": 1.81
+    },
+    {
+      "phone": "EY1",
+      "start": 1.81,
+      "end": 1.92
+    },
+    {
+      "phone": "M",
+      "start": 1.92,
+      "end": 1.98
+    },
+    {
+      "phone": "AH0",
+      "start": 1.98,
+      "end": 2.04
+    },
+    {
+      "phone": "S",
+      "start": 2.04,
+      "end": 2.08
+    },
+    {
+      "phone": "S",
+      "start": 2.08,
+      "end": 2.21
+    },
+    {
+      "phone": "AA1",
+      "start": 2.21,
+      "end": 2.3
+    },
+    {
+      "phone": "L",
+      "start": 2.3,
+      "end": 2.35
+    },
+    {
+      "phone": "T",
+      "start": 2.35,
+      "end": 2.38
+    },
+    {
+      "phone": "S",
+      "start": 2.38,
+      "end": 2.42
+    },
+    {
+      "phone": "B",
+      "start": 2.42,
+      "end": 2.5
+    },
+    {
+      "phone": "ER0",
+      "start": 2.5,
+      "end": 2.67
+    },
+    {
+      "phone": "G",
+      "start": 2.67,
+      "end": 2.77
+    },
+    {
+      "phone": "HH",
+      "start": 2.85,
+      "end": 2.96
+    },
+    {
+      "phone": "OW1",
+      "start": 2.96,
+      "end": 3.05
+    },
+    {
+      "phone": "M",
+      "start": 3.05,
+      "end": 3.12
+    },
+    {
+      "phone": "AH1",
+      "start": 3.12,
+      "end": 3.16
+    },
+    {
+      "phone": "V",
+      "start": 3.16,
+      "end": 3.22
+    },
+    {
+      "phone": "M",
+      "start": 3.22,
+      "end": 3.3
+    },
+    {
+      "phone": "OW1",
+      "start": 3.3,
+      "end": 3.39
+    },
+    {
+      "phone": "T",
+      "start": 3.39,
+      "end": 3.45
+    },
+    {
+      "phone": "S",
+      "start": 3.45,
+      "end": 3.53
+    },
+    {
+      "phone": "AA0",
+      "start": 3.53,
+      "end": 3.58
+    },
+    {
+      "phone": "R",
+      "start": 3.58,
+      "end": 3.67
+    },
+    {
+      "phone": "T",
+      "start": 3.67,
+      "end": 3.83
+    }
+  ],
+  "planned_visemes": [],
+  "visemes": [
+    {
+      "index": 0,
+      "id": "AA1",
+      "pose": "AA1",
+      "phone": "AA1",
+      "start": 0.28,
+      "center": 0.345,
+      "end": 0.41,
+      "word": "austria",
+      "mfa_word": "austria",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AA1",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 1,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 0.41,
+      "center": 0.44999999999999996,
+      "end": 0.49,
+      "word": "austria",
+      "mfa_word": "austria",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 2,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 0.49,
+      "center": 0.525,
+      "end": 0.56,
+      "word": "austria",
+      "mfa_word": "austria",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 3,
+      "id": "R",
+      "pose": "R",
+      "phone": "R",
+      "start": 0.56,
+      "center": 0.585,
+      "end": 0.61,
+      "word": "austria",
+      "mfa_word": "austria",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "R",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 4,
+      "id": "IY0",
+      "pose": "IY0",
+      "phone": "IY0",
+      "start": 0.61,
+      "center": 0.64,
+      "end": 0.67,
+      "word": "austria",
+      "mfa_word": "austria",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IY0",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 5,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 0.67,
+      "center": 0.7150000000000001,
+      "end": 0.76,
+      "word": "austria",
+      "mfa_word": "austria",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 5,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 6,
+      "id": "IH1",
+      "pose": "IH1",
+      "phone": "IH1",
+      "start": 0.76,
+      "center": 0.8300000000000001,
+      "end": 0.9,
+      "word": "is",
+      "mfa_word": "is",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IH1",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 7,
+      "id": "Z",
+      "pose": "Z",
+      "phone": "Z",
+      "start": 0.9,
+      "center": 0.94,
+      "end": 0.98,
+      "word": "is",
+      "mfa_word": "is",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "Z",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 8,
+      "id": "W",
+      "pose": "W",
+      "phone": "W",
+      "start": 0.98,
+      "center": 1.02,
+      "end": 1.06,
+      "word": "where",
+      "mfa_word": "where",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 9,
+      "id": "EH1",
+      "pose": "EH1",
+      "phone": "EH1",
+      "start": 1.06,
+      "center": 1.085,
+      "end": 1.11,
+      "word": "where",
+      "mfa_word": "where",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EH1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 10,
+      "id": "R",
+      "pose": "R",
+      "phone": "R",
+      "start": 1.11,
+      "center": 1.135,
+      "end": 1.16,
+      "word": "where",
+      "mfa_word": "where",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "R",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 11,
+      "id": "Y",
+      "pose": "Y",
+      "phone": "Y",
+      "start": 1.16,
+      "center": 1.19,
+      "end": 1.22,
+      "word": "you'll",
+      "mfa_word": "you'll",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "Y",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 12,
+      "id": "UW1",
+      "pose": "UW1",
+      "phone": "UW1",
+      "start": 1.22,
+      "center": 1.25,
+      "end": 1.28,
+      "word": "you'll",
+      "mfa_word": "you'll",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "UW1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 13,
+      "id": "L",
+      "pose": "L",
+      "phone": "L",
+      "start": 1.28,
+      "center": 1.3,
+      "end": 1.32,
+      "word": "you'll",
+      "mfa_word": "you'll",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "L",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 14,
+      "id": "F",
+      "pose": "F",
+      "phone": "F",
+      "start": 1.32,
+      "center": 1.38,
+      "end": 1.44,
+      "word": "find",
+      "mfa_word": "find",
+      "word_index": 4,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "F",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 15,
+      "id": "AY1",
+      "pose": "AY1",
+      "phone": "AY1",
+      "start": 1.44,
+      "center": 1.505,
+      "end": 1.57,
+      "word": "find",
+      "mfa_word": "find",
+      "word_index": 4,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AY1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 16,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 1.57,
+      "center": 1.5950000000000002,
+      "end": 1.62,
+      "word": "find",
+      "mfa_word": "find",
+      "word_index": 4,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 17,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 1.62,
+      "center": 1.635,
+      "end": 1.65,
+      "word": "find",
+      "mfa_word": "find",
+      "word_index": 4,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "D",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 18,
+      "id": "DH",
+      "pose": "DH",
+      "phone": "DH",
+      "start": 1.65,
+      "center": 1.6549999999999998,
+      "end": 1.66,
+      "word": "the",
+      "mfa_word": "the",
+      "word_index": 5,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "DH",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 19,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 1.66,
+      "center": 1.68,
+      "end": 1.7,
+      "word": "the",
+      "mfa_word": "the",
+      "word_index": 5,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 20,
+      "id": "F",
+      "pose": "F",
+      "phone": "F",
+      "start": 1.7,
+      "center": 1.755,
+      "end": 1.81,
+      "word": "famous",
+      "mfa_word": "famous",
+      "word_index": 6,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "F",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 21,
+      "id": "EY1",
+      "pose": "EY1",
+      "phone": "EY1",
+      "start": 1.81,
+      "center": 1.865,
+      "end": 1.92,
+      "word": "famous",
+      "mfa_word": "famous",
+      "word_index": 6,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EY1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 22,
+      "id": "M",
+      "pose": "M",
+      "phone": "M",
+      "start": 1.92,
+      "center": 1.95,
+      "end": 1.98,
+      "word": "famous",
+      "mfa_word": "famous",
+      "word_index": 6,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "M",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 23,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 1.98,
+      "center": 2.01,
+      "end": 2.04,
+      "word": "famous",
+      "mfa_word": "famous",
+      "word_index": 6,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 24,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 2.04,
+      "center": 2.06,
+      "end": 2.08,
+      "word": "famous",
+      "mfa_word": "famous",
+      "word_index": 6,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 25,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 2.08,
+      "center": 2.145,
+      "end": 2.21,
+      "word": "salzburg",
+      "mfa_word": "salzburg",
+      "word_index": 7,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 26,
+      "id": "AA1",
+      "pose": "AA1",
+      "phone": "AA1",
+      "start": 2.21,
+      "center": 2.255,
+      "end": 2.3,
+      "word": "salzburg",
+      "mfa_word": "salzburg",
+      "word_index": 7,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AA1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 27,
+      "id": "L",
+      "pose": "L",
+      "phone": "L",
+      "start": 2.3,
+      "center": 2.325,
+      "end": 2.35,
+      "word": "salzburg",
+      "mfa_word": "salzburg",
+      "word_index": 7,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "L",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 28,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 2.35,
+      "center": 2.365,
+      "end": 2.38,
+      "word": "salzburg",
+      "mfa_word": "salzburg",
+      "word_index": 7,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 29,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 2.38,
+      "center": 2.4,
+      "end": 2.42,
+      "word": "salzburg",
+      "mfa_word": "salzburg",
+      "word_index": 7,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 30,
+      "id": "B",
+      "pose": "B",
+      "phone": "B",
+      "start": 2.42,
+      "center": 2.46,
+      "end": 2.5,
+      "word": "salzburg",
+      "mfa_word": "salzburg",
+      "word_index": 7,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "B",
+      "source_phone_index": 5,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 31,
+      "id": "ER0",
+      "pose": "ER0",
+      "phone": "ER0",
+      "start": 2.5,
+      "center": 2.585,
+      "end": 2.67,
+      "word": "salzburg",
+      "mfa_word": "salzburg",
+      "word_index": 7,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "ER0",
+      "source_phone_index": 6,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 32,
+      "id": "G",
+      "pose": "G",
+      "phone": "G",
+      "start": 2.67,
+      "center": 2.7199999999999998,
+      "end": 2.77,
+      "word": "salzburg",
+      "mfa_word": "salzburg",
+      "word_index": 7,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "G",
+      "source_phone_index": 7,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 33,
+      "id": "HH",
+      "pose": "HH",
+      "phone": "HH",
+      "start": 2.85,
+      "center": 2.9050000000000002,
+      "end": 2.96,
+      "word": "home",
+      "mfa_word": "home",
+      "word_index": 8,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 34,
+      "id": "OW1",
+      "pose": "OW1",
+      "phone": "OW1",
+      "start": 2.96,
+      "center": 3.005,
+      "end": 3.05,
+      "word": "home",
+      "mfa_word": "home",
+      "word_index": 8,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "OW1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 35,
+      "id": "M",
+      "pose": "M",
+      "phone": "M",
+      "start": 3.05,
+      "center": 3.085,
+      "end": 3.12,
+      "word": "home",
+      "mfa_word": "home",
+      "word_index": 8,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "M",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 36,
+      "id": "AH1",
+      "pose": "AH1",
+      "phone": "AH1",
+      "start": 3.12,
+      "center": 3.14,
+      "end": 3.16,
+      "word": "of",
+      "mfa_word": "of",
+      "word_index": 9,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH1",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 37,
+      "id": "V",
+      "pose": "V",
+      "phone": "V",
+      "start": 3.16,
+      "center": 3.1900000000000004,
+      "end": 3.22,
+      "word": "of",
+      "mfa_word": "of",
+      "word_index": 9,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "V",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 38,
+      "id": "M",
+      "pose": "M",
+      "phone": "M",
+      "start": 3.22,
+      "center": 3.26,
+      "end": 3.3,
+      "word": "mozart",
+      "mfa_word": "mozart",
+      "word_index": 10,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "M",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 39,
+      "id": "OW1",
+      "pose": "OW1",
+      "phone": "OW1",
+      "start": 3.3,
+      "center": 3.3449999999999998,
+      "end": 3.39,
+      "word": "mozart",
+      "mfa_word": "mozart",
+      "word_index": 10,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "OW1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 40,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 3.39,
+      "center": 3.42,
+      "end": 3.45,
+      "word": "mozart",
+      "mfa_word": "mozart",
+      "word_index": 10,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 41,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 3.45,
+      "center": 3.49,
+      "end": 3.53,
+      "word": "mozart",
+      "mfa_word": "mozart",
+      "word_index": 10,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 42,
+      "id": "AA0",
+      "pose": "AA0",
+      "phone": "AA0",
+      "start": 3.53,
+      "center": 3.5549999999999997,
+      "end": 3.58,
+      "word": "mozart",
+      "mfa_word": "mozart",
+      "word_index": 10,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AA0",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 43,
+      "id": "R",
+      "pose": "R",
+      "phone": "R",
+      "start": 3.58,
+      "center": 3.625,
+      "end": 3.67,
+      "word": "mozart",
+      "mfa_word": "mozart",
+      "word_index": 10,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "R",
+      "source_phone_index": 5,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 44,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 3.67,
+      "center": 3.75,
+      "end": 3.83,
+      "word": "mozart",
+      "mfa_word": "mozart",
+      "word_index": 10,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 6,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    }
+  ],
+  "flags": [
+    {
+      "kind": "word_count_mismatch",
+      "count_mfa_words": 11,
+      "count_transcript_words": 0,
+      "note": "MFA word count does not match transcript-owned word count."
+    },
+    {
+      "kind": "implausibly_short_word",
+      "word_index": 3,
+      "word": "you'll",
+      "duration_seconds": 0.16,
+      "note": "A relatively long word was aligned to an implausibly short duration."
+    }
+  ],
+  "notes": [],
+  "summary": {
+    "word_count": 11,
+    "speech_region_count": 1,
+    "word_head_count": 11,
+    "viseme_count": 45,
+    "flag_count": 2,
+    "flags_by_kind": {
+      "word_count_mismatch": 1,
+      "implausibly_short_word": 1
+    },
+    "commit_reasons": {
+      "mfa_phone_interval": 45
+    },
+    "alignment_reasons": {
+      "mfa_textgrid_phone": 45
+    },
+    "mapped_to_observed_speech_count": 45
+  }
 }

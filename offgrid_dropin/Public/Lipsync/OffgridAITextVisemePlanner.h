@@ -66,6 +66,10 @@ struct FOffgridAITextVisemePlan
     TArray<int32> WordSentenceIslandIndices;
     TArray<int32> WordPhraseIndices;
     TArray<int32> WordSyllableCounts;
+    TArray<int32> WordPhoneBeginIndices;
+    TArray<int32> WordPhoneEndIndices;
+    TArray<int32> WordVisibleEventBeginIndices;
+    TArray<int32> WordVisibleEventEndIndices;
 
     // Boundary punctuation following each tokenized word. Zero means no boundary. Runtime code treats this as a soft boundary metadata only.
     TArray<TCHAR> WordBoundaryPunctuationAfter;

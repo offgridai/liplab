@@ -306,15 +306,9 @@ static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FStr
 
 static void AddCmuWordVisemeEvents(TArray<FOffgridAITextVisemeEvent>& Events, const FString& Word, const TArray<FString>& Phones, int32 WordIndex, int32 Phrase, int32 Sentence)
 {
-    const int32 FirstEventIndex = Events.Num();
     for (int32 I = 0; I < Phones.Num(); ++I)
     {
         AddPhoneViseme(Events, Word, Phones, Phones[I], I, Phones.Num(), WordIndex, Phrase, Sentence);
-    }
-
-    if (Events.Num() == FirstEventIndex)
-    {
-        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("06_Eh"), WordIndex, Phrase, Sentence, Word, 0.22f, TEXT("cmu_no_visible_phone"), 0.5f);
     }
 }
 
@@ -358,7 +352,7 @@ static void AddConservativeUnknownWordEvents(TArray<FOffgridAITextVisemeEvent>& 
 {
     // Unknown words should not fall back to letter soup. Emit one low-strength
     // generic vowel so timing can continue, and make CMU misses obvious in logs.
-    AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("06_Eh"), WordIndex, Phrase, Sentence, Word, 0.28f, TEXT("cmu_miss_conservative_single_vowel"), 0.5f);
+    AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("06_Eh"), WordIndex, Phrase, Sentence, Word, 0.28f, TEXT("cmu_miss_conservative_single_vowel"), 0.5f, 0, TEXT("UNK"), TEXT("UNK"));
 }
 }
 
@@ -398,6 +392,10 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
 
     TArray<TArray<FString>> WordPhones;
     TArray<bool> WordCmuHit;
+    Plan.WordPhoneBeginIndices.Init(INDEX_NONE, Words.Num());
+    Plan.WordPhoneEndIndices.Init(INDEX_NONE, Words.Num());
+    Plan.WordVisibleEventBeginIndices.Init(INDEX_NONE, Words.Num());
+    Plan.WordVisibleEventEndIndices.Init(INDEX_NONE, Words.Num());
     int32 Phrase = 0;
     int32 Sentence = 0;
     int32 TotalUnits = 0;
@@ -436,6 +434,7 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
         const int32 WordStartUnit = UnitCursor;
         const int32 Units = WordUnits.IsValidIndex(W) ? WordUnits[W] : 2;
         const int32 FirstEventIndex = Plan.Events.Num();
+        Plan.WordVisibleEventBeginIndices[W] = FirstEventIndex;
 
         if (WordCmuHit.IsValidIndex(W) && WordCmuHit[W])
         {
@@ -449,6 +448,7 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
         const TArray<FString>* PhonesForWordPtr = (WordCmuHit.IsValidIndex(W) && WordCmuHit[W]) ? &WordPhones[W] : nullptr;
         if (PhonesForWordPtr && PhonesForWordPtr->Num() > 0)
         {
+            Plan.WordPhoneBeginIndices[W] = Plan.ExpectedPhones.Num();
             for (int32 PIdx = 0; PIdx < PhonesForWordPtr->Num(); ++PIdx)
             {
                 const FString Phone = (*PhonesForWordPtr)[PIdx];
@@ -468,6 +468,7 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
                 Expected.WeightSeconds = ExpectedPhoneWeightSeconds(Base);
                 Plan.ExpectedPhones.Add(Expected);
             }
+            Plan.WordPhoneEndIndices[W] = Plan.ExpectedPhones.Num();
 
             for (int32 EIdx = FirstEventIndex; EIdx < Plan.Events.Num(); ++EIdx)
             {
@@ -486,22 +487,52 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
                     }
                 }
             }
+
+            for (int32 PhoneGlobalIndex = Plan.WordPhoneBeginIndices[W]; PhoneGlobalIndex < Plan.WordPhoneEndIndices[W]; ++PhoneGlobalIndex)
+            {
+                FOffgridAIExpectedPhone& Expected = Plan.ExpectedPhones[PhoneGlobalIndex];
+                for (int32 EIdx = FirstEventIndex; EIdx < Plan.Events.Num(); ++EIdx)
+                {
+                    const FOffgridAITextVisemeEvent& Event = Plan.Events[EIdx];
+                    if (Event.WordIndex == W && Event.SourcePhoneGlobalIndex == Expected.PhoneIndex)
+                    {
+                        Expected.FirstVisibleEventIndex = EIdx;
+                        break;
+                    }
+                }
+            }
         }
         else
         {
+            Plan.WordPhoneBeginIndices[W] = Plan.ExpectedPhones.Num();
             FOffgridAIExpectedPhone Expected;
             Expected.PhoneIndex = Plan.ExpectedPhones.Num();
+            Expected.WordPhoneIndex = 0;
             Expected.Phone = TEXT("UNK");
             Expected.BasePhone = TEXT("UNK");
             Expected.SourceWord = Word;
             Expected.WordIndex = W;
             Expected.PhraseIndex = Phrase;
             Expected.SentenceIslandIndex = Sentence;
-            Expected.bIsVisibleViseme = true;
+            Expected.bIsVisibleViseme = (Plan.Events.Num() > FirstEventIndex);
+            Expected.FirstVisibleEventIndex = Expected.bIsVisibleViseme ? FirstEventIndex : INDEX_NONE;
             Expected.BoundaryAfterWord = Boundaries.IsValidIndex(W) ? Boundaries[W] : TCHAR(0);
             Expected.WeightSeconds = 0.100f;
             Plan.ExpectedPhones.Add(Expected);
+            Plan.WordPhoneEndIndices[W] = Plan.ExpectedPhones.Num();
+
+            for (int32 EIdx = FirstEventIndex; EIdx < Plan.Events.Num(); ++EIdx)
+            {
+                FOffgridAITextVisemeEvent& Event = Plan.Events[EIdx];
+                if (Event.WordIndex != W) continue;
+                Event.SourcePhoneIndex = 0;
+                Event.SourcePhoneGlobalIndex = Plan.WordPhoneBeginIndices[W];
+                Event.SourcePhone = TEXT("UNK");
+                Event.SourcePhoneBase = TEXT("UNK");
+            }
         }
+
+        Plan.WordVisibleEventEndIndices[W] = Plan.Events.Num();
 
         const int32 EventCountForWord = Plan.Events.Num() - FirstEventIndex;
         for (int32 EIdx = FirstEventIndex; EIdx < Plan.Events.Num(); ++EIdx)

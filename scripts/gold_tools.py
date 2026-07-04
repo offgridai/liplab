@@ -207,11 +207,148 @@ def build_compound_pronunciation(word: str, entries: dict[str, list[str]]) -> st
     return None
 
 
+
+_DIGIT_WORDS = {
+    "0": "zero",
+    "1": "one",
+    "2": "two",
+    "3": "three",
+    "4": "four",
+    "5": "five",
+    "6": "six",
+    "7": "seven",
+    "8": "eight",
+    "9": "nine",
+}
+
+_LETTER_WORDS = {
+    "a": "EY1", "b": "B IY1", "c": "S IY1", "d": "D IY1", "e": "IY1", "f": "EH1 F",
+    "g": "JH IY1", "h": "EY1 CH", "i": "AY1", "j": "JH EY1", "k": "K EY1", "l": "EH1 L",
+    "m": "EH1 M", "n": "EH1 N", "o": "OW1", "p": "P IY1", "q": "K Y UW1", "r": "AA1 R",
+    "s": "EH1 S", "t": "T IY1", "u": "Y UW1", "v": "V IY1", "w": "D AH1 B AH0 L Y UW0",
+    "x": "EH1 K S", "y": "W AY1", "z": "Z IY1",
+}
+
+_MULTI_GRAPHEME_PHONES = [
+    ("ough", "AO1"), ("eigh", "EY1"), ("tion", "SH AH0 N"), ("sion", "ZH AH0 N"),
+    ("ch", "CH"), ("sh", "SH"), ("th", "TH"), ("ph", "F"), ("wh", "W"),
+    ("ng", "NG"), ("qu", "K W"), ("ck", "K"), ("ee", "IY1"), ("ea", "IY1"),
+    ("ai", "EY1"), ("ay", "EY1"), ("oa", "OW1"), ("ow", "AW1"), ("oo", "UW1"),
+    ("ou", "AW1"), ("oi", "OY1"), ("oy", "OY1"), ("er", "ER0"), ("ar", "AA1 R"),
+    ("or", "AO1 R"), ("ir", "ER1"), ("ur", "ER1"),
+]
+
+_SINGLE_GRAPHEME_PHONES = {
+    "a": "AH0", "b": "B", "c": "K", "d": "D", "e": "EH1", "f": "F", "g": "G", "h": "HH",
+    "i": "IH1", "j": "JH", "k": "K", "l": "L", "m": "M", "n": "N", "o": "OW1", "p": "P",
+    "q": "K", "r": "R", "s": "S", "t": "T", "u": "AH0", "v": "V", "w": "W", "x": "K S",
+    "y": "IY0", "z": "Z",
+}
+
+
+def _entry_pronunciation_for_word(word: str, entries: dict[str, list[str]]) -> str | None:
+    pronunciations = entries.get(normalize_dictionary_word(word))
+    return pronunciations[0] if pronunciations else None
+
+
+def build_number_pronunciation(word: str, entries: dict[str, list[str]]) -> str | None:
+    """Return a dictionary-backed pronunciation for numeric tokens.
+
+    This deliberately uses digit-by-digit expansion because the corpus contains
+    IDs / codes like 000 or 4, where reading the token as a number can be less
+    useful than preserving the spoken sequence that MFA is likely hearing.
+    """
+    if not re.fullmatch(r"\d+", word or ""):
+        return None
+    phones: list[str] = []
+    for digit in word:
+        digit_word = _DIGIT_WORDS.get(digit)
+        pronunciation = _entry_pronunciation_for_word(digit_word or "", entries)
+        if not pronunciation:
+            return None
+        phones.extend(pronunciation.split())
+    return " ".join(phones)
+
+
+def build_acronym_pronunciation(word: str) -> str | None:
+    letters = re.sub(r"[^a-z]", "", word.lower())
+    if not letters or letters != word.lower() or len(letters) > 5:
+        return None
+    # Very short all-consonant tokens are often letter names rather than words.
+    if any(ch in "aeiou" for ch in letters):
+        return None
+    phones: list[str] = []
+    for ch in letters:
+        pronunciation = _LETTER_WORDS.get(ch)
+        if not pronunciation:
+            return None
+        phones.extend(pronunciation.split())
+    return " ".join(phones)
+
+
+def build_grapheme_fallback_pronunciation(word: str) -> str | None:
+    """Small deterministic ARPAbet fallback for proper names / nonce words.
+
+    This is not intended to be as good as a real G2P model. Its purpose is to
+    keep MFA from collapsing unknown spoken words to spn, so the resulting gold
+    still has editable phone intervals instead of a single opaque unknown span.
+    """
+    letters = re.sub(r"[^a-z]", "", word.lower())
+    if len(letters) < 2:
+        return None
+    phones: list[str] = []
+    i = 0
+    while i < len(letters):
+        matched = False
+        for grapheme, pronunciation in _MULTI_GRAPHEME_PHONES:
+            if letters.startswith(grapheme, i):
+                phones.extend(pronunciation.split())
+                i += len(grapheme)
+                matched = True
+                break
+        if matched:
+            continue
+        ch = letters[i]
+        pronunciation = _SINGLE_GRAPHEME_PHONES.get(ch)
+        if pronunciation:
+            # Soft c/g before front vowels.
+            if ch == "c" and i + 1 < len(letters) and letters[i + 1] in "eiy":
+                pronunciation = "S"
+            elif ch == "g" and i + 1 < len(letters) and letters[i + 1] in "eiy":
+                pronunciation = "JH"
+            phones.extend(pronunciation.split())
+        i += 1
+    # Avoid a totally consonant-only pronunciation for name-like words.
+    if not any(any(ch.isdigit() for ch in phone) or phone in {"AH", "EH", "IH", "IY", "OW", "UW", "AA", "AO", "AE", "AY", "EY", "OY", "AW", "ER"} for phone in phones):
+        phones.append("AH0")
+    return " ".join(phones) if phones else None
+
+
+def build_unknown_word_pronunciation(word: str, entries: dict[str, list[str]]) -> tuple[str | None, str | None]:
+    number = build_number_pronunciation(word, entries)
+    if number:
+        return number, "number_digit_fallback"
+    acronym = build_acronym_pronunciation(word)
+    if acronym:
+        return acronym, "acronym_letter_fallback"
+    guessed = build_grapheme_fallback_pronunciation(word)
+    if guessed:
+        return guessed, "grapheme_g2p_fallback"
+    return None, None
+
+
 def build_mfa_alignment_dictionary(cases: list[str], output_path: pathlib.Path) -> dict[str, object]:
     entries = combine_dictionary_entries()
     selected: dict[str, list[str]] = {}
     unresolved: list[str] = []
-    resolved_by_source = {"stock_or_offgrid": 0, "compound_fallback": 0}
+    resolved_by_source = {
+        "stock_or_offgrid": 0,
+        "compound_fallback": 0,
+        "number_digit_fallback": 0,
+        "acronym_letter_fallback": 0,
+        "grapheme_g2p_fallback": 0,
+    }
+    fallback_pronunciations: dict[str, dict[str, str]] = {}
 
     for case_id in cases:
         transcript = read_text(ROOT / "inputs" / "transcripts" / f"{case_id}.txt")
@@ -229,6 +366,12 @@ def build_mfa_alignment_dictionary(cases: list[str], output_path: pathlib.Path) 
                 selected[word] = [compound]
                 resolved_by_source["compound_fallback"] += 1
                 continue
+            guessed, source = build_unknown_word_pronunciation(word, entries)
+            if guessed and source:
+                selected[word] = [guessed]
+                resolved_by_source[source] += 1
+                fallback_pronunciations[word] = {"source": source, "pronunciation": guessed}
+                continue
             unresolved.append(word)
 
     lines: list[str] = []
@@ -241,6 +384,7 @@ def build_mfa_alignment_dictionary(cases: list[str], output_path: pathlib.Path) 
         "case_count": len(cases),
         "word_count": len(selected),
         "resolved_by_source": resolved_by_source,
+        "fallback_pronunciations": fallback_pronunciations,
         "unresolved_words": sorted(set(unresolved)),
     }
     write_json(mfa_generated_dictionary_report_path(), report)
@@ -261,24 +405,50 @@ def run_mfa_align(cases: list[str], output_root: pathlib.Path, num_jobs: int) ->
     env = os.environ.copy()
     env["MFA_ROOT_DIR"] = str(mfa_root_dir())
     env["CONDA_NO_PLUGINS"] = "true"
-    cmd = [
-        "conda",
-        "run",
-        "-p",
-        str(env_path),
-        "mfa",
-        "align",
-        str(corpus_root),
-        str(generated_dictionary),
-        str(mfa_acoustic_model_path()),
-        str(output_root),
-        "--audio_directory",
-        str(ROOT / "inputs" / "wav"),
-        "--clean",
-        "--single_speaker",
-        "--num_jobs",
-        str(max(num_jobs, 1)),
-    ]
+
+    # Prefer the project-local MFA executable directly. This avoids depending on
+    # conda.exe being on PATH when the user already activated .conda/mfa.
+    if os.name == "nt":
+        mfa_exe = env_path / "Scripts" / "mfa.exe"
+    else:
+        mfa_exe = env_path / "bin" / "mfa"
+
+    if mfa_exe.exists():
+        cmd = [
+            str(mfa_exe),
+            "align",
+            str(corpus_root),
+            str(generated_dictionary),
+            str(mfa_acoustic_model_path()),
+            str(output_root),
+            "--audio_directory",
+            str(ROOT / "inputs" / "wav"),
+            "--clean",
+            "--single_speaker",
+            "--num_jobs",
+            str(max(num_jobs, 1)),
+        ]
+    else:
+        # Fallback for environments where only conda-run is available.
+        cmd = [
+            "conda",
+            "run",
+            "-p",
+            str(env_path),
+            "mfa",
+            "align",
+            str(corpus_root),
+            str(generated_dictionary),
+            str(mfa_acoustic_model_path()),
+            str(output_root),
+            "--audio_directory",
+            str(ROOT / "inputs" / "wav"),
+            "--clean",
+            "--single_speaker",
+            "--num_jobs",
+            str(max(num_jobs, 1)),
+        ]
+    print("Running MFA:", " ".join(cmd))
     return subprocess.call(cmd, env=env)
 
 

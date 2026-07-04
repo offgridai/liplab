@@ -1,1772 +1,2100 @@
-﻿{
-    "schema_version":  1,
-    "case_id":  "case_0022_20260629_094140_141_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000021_00",
-    "created_utc":  "2026-07-01T16:51:36.232436+00:00",
-    "generator":  {
-                      "kind":  "liplab_gold_mfa_phase1",
-                      "buffer_ms":  600000,
-                      "chunk_ms":  600000,
-                      "mfa_num_jobs":  4,
-                      "speech_merge_gap_ms":  120,
-                      "source_run_dir":  "outputs/offline_gold/latest/case_0022_20260629_094140_141_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000021_00",
-                      "mfa_align_dir":  "outputs/mfa_align/latest"
-                  },
-    "approval":  {
-                     "status":  "approved_gold",
-                     "reviewed":  true,
-                     "reviewer":  "bulk_promote",
-                     "reviewed_utc":  "2026-07-01T16:53:34.1144044Z"
-                 },
-    "review_layers":  {
-                          "speech_regions":  {
-                                                 "status":  "reviewed_boundary",
-                                                 "reviewed":  true,
-                                                 "reviewer":  "bulk_promote"
-                                             },
-                          "word_heads":  {
-                                             "status":  "reviewed_boundary",
-                                             "reviewed":  true,
-                                             "reviewer":  "bulk_promote"
-                                         },
-                          "dense_visemes":  {
-                                                "status":  "reviewed_dense",
-                                                "reviewed":  true,
-                                                "reviewer":  "bulk_promote"
-                                            }
-                      },
-    "transcript":  "I\u0027m not sure what you mean by bailies. Can you clarify?",
-    "audio":  {
-                  "path":  "inputs/wav/case_0022_20260629_094140_141_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000021_00.wav",
-                  "sample_rate_hz":  24000,
-                  "channels":  1,
-                  "frame_count":  91605,
-                  "duration_sec":  3.816875
-              },
-    "speech_regions":  [
-                           {
-                               "index":  0,
-                               "start":  0.21,
-                               "end":  2.11,
-                               "word_start_index":  0,
-                               "word_end_index":  7,
-                               "sentence_start_index":  0,
-                               "sentence_end_index":  0,
-                               "source":  "mfa_word_boundaries_with_occupancy_lull_splits",
-                               "approval":  {
-                                                "status":  "draft_auto",
-                                                "reviewed":  false
-                                            }
-                           },
-                           {
-                               "index":  1,
-                               "start":  2.68,
-                               "end":  3.55,
-                               "word_start_index":  8,
-                               "word_end_index":  10,
-                               "sentence_start_index":  1,
-                               "sentence_end_index":  1,
-                               "source":  "mfa_word_boundaries_with_occupancy_lull_splits",
-                               "approval":  {
-                                                "status":  "draft_auto",
-                                                "reviewed":  false
-                                            }
-                           }
-                       ],
-    "gold_words":  [
-                       {
-                           "word_index":  0,
-                           "word":  "i\u0027m",
-                           "mfa_word":  "i\u0027m",
-                           "start":  0.21,
-                           "end":  0.33,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  1,
-                           "word":  "not",
-                           "mfa_word":  "not",
-                           "start":  0.33,
-                           "end":  0.52,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  2,
-                           "word":  "sure",
-                           "mfa_word":  "sure",
-                           "start":  0.52,
-                           "end":  0.77,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  3,
-                           "word":  "what",
-                           "mfa_word":  "what",
-                           "start":  0.77,
-                           "end":  0.93,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  4,
-                           "word":  "you",
-                           "mfa_word":  "you",
-                           "start":  0.93,
-                           "end":  1.03,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  5,
-                           "word":  "mean",
-                           "mfa_word":  "mean",
-                           "start":  1.03,
-                           "end":  1.27,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  6,
-                           "word":  "by",
-                           "mfa_word":  "by",
-                           "start":  1.27,
-                           "end":  1.43,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  7,
-                           "word":  "bailies",
-                           "mfa_word":  "bailies",
-                           "start":  1.43,
-                           "end":  2.11,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  8,
-                           "word":  "can",
-                           "mfa_word":  "can",
-                           "start":  2.68,
-                           "end":  2.82,
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  9,
-                           "word":  "you",
-                           "mfa_word":  "you",
-                           "start":  2.82,
-                           "end":  2.92,
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  10,
-                           "word":  "clarify",
-                           "mfa_word":  "clarify",
-                           "start":  2.92,
-                           "end":  3.55,
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       }
-                   ],
-    "word_heads":  [
-                       {
-                           "word_index":  0,
-                           "word":  "i\u0027m",
-                           "start":  0.21,
-                           "end":  0.28,
-                           "pose":  "05_Ay",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "AY",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  1,
-                           "word":  "not",
-                           "start":  0.36,
-                           "end":  0.46,
-                           "pose":  "07_Aa",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "AA",
-                           "source_phone_index":  1,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  2,
-                           "word":  "sure",
-                           "start":  0.52,
-                           "end":  0.65,
-                           "pose":  "14_ChJjSh",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "SH",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  3,
-                           "word":  "what",
-                           "start":  0.77,
-                           "end":  0.84,
-                           "pose":  "12_Ww-Oo-",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "W",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  4,
-                           "word":  "you",
-                           "start":  0.98,
-                           "end":  1.03,
-                           "pose":  "11_Oo",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "UW",
-                           "source_phone_index":  1,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  5,
-                           "word":  "mean",
-                           "start":  1.03,
-                           "end":  1.11,
-                           "pose":  "22_MBP",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "M",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  6,
-                           "word":  "by",
-                           "start":  1.27,
-                           "end":  1.33,
-                           "pose":  "22_MBP",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "B",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  7,
-                           "word":  "bailies",
-                           "start":  1.43,
-                           "end":  1.55,
-                           "pose":  "22_MBP",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "B",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  8,
-                           "word":  "can",
-                           "start":  2.74,
-                           "end":  2.79,
-                           "pose":  "07_Aa",
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source_phone":  "AE",
-                           "source_phone_index":  1,
-                           "alignment_reason":  "mfa_source_phone_index_label_mismatch",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  9,
-                           "word":  "you",
-                           "start":  2.87,
-                           "end":  2.92,
-                           "pose":  "11_Oo",
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source_phone":  "UW",
-                           "source_phone_index":  1,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  10,
-                           "word":  "clarify",
-                           "start":  3.06,
-                           "end":  3.11,
-                           "pose":  "06_Eh",
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source_phone":  "EH",
-                           "source_phone_index":  2,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       }
-                   ],
-    "mfa_words":  [
-                      {
-                          "word_index":  0,
-                          "word":  "i\u0027m",
-                          "mfa_word":  "i\u0027m",
-                          "start":  0.21,
-                          "end":  0.33,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  1,
-                          "word":  "not",
-                          "mfa_word":  "not",
-                          "start":  0.33,
-                          "end":  0.52,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  2,
-                          "word":  "sure",
-                          "mfa_word":  "sure",
-                          "start":  0.52,
-                          "end":  0.77,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  3,
-                          "word":  "what",
-                          "mfa_word":  "what",
-                          "start":  0.77,
-                          "end":  0.93,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  4,
-                          "word":  "you",
-                          "mfa_word":  "you",
-                          "start":  0.93,
-                          "end":  1.03,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  5,
-                          "word":  "mean",
-                          "mfa_word":  "mean",
-                          "start":  1.03,
-                          "end":  1.27,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  6,
-                          "word":  "by",
-                          "mfa_word":  "by",
-                          "start":  1.27,
-                          "end":  1.43,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  7,
-                          "word":  "bailies",
-                          "mfa_word":  "bailies",
-                          "start":  1.43,
-                          "end":  2.11,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  8,
-                          "word":  "can",
-                          "mfa_word":  "can",
-                          "start":  2.68,
-                          "end":  2.82,
-                          "phrase_index":  1,
-                          "sentence_index":  1,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  9,
-                          "word":  "you",
-                          "mfa_word":  "you",
-                          "start":  2.82,
-                          "end":  2.92,
-                          "phrase_index":  1,
-                          "sentence_index":  1,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  10,
-                          "word":  "clarify",
-                          "mfa_word":  "clarify",
-                          "start":  2.92,
-                          "end":  3.55,
-                          "phrase_index":  1,
-                          "sentence_index":  1,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      }
-                  ],
-    "mfa_phones":  [
-                       {
-                           "index_in_word":  0,
-                           "phone":  "AY1",
-                           "phone_base":  "AY",
-                           "start":  0.21,
-                           "end":  0.28,
-                           "word_index":  0,
-                           "word":  "i\u0027m"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "M",
-                           "phone_base":  "M",
-                           "start":  0.28,
-                           "end":  0.33,
-                           "word_index":  0,
-                           "word":  "i\u0027m"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "N",
-                           "phone_base":  "N",
-                           "start":  0.33,
-                           "end":  0.36,
-                           "word_index":  1,
-                           "word":  "not"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "AA1",
-                           "phone_base":  "AA",
-                           "start":  0.36,
-                           "end":  0.46,
-                           "word_index":  1,
-                           "word":  "not"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "T",
-                           "phone_base":  "T",
-                           "start":  0.46,
-                           "end":  0.52,
-                           "word_index":  1,
-                           "word":  "not"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "SH",
-                           "phone_base":  "SH",
-                           "start":  0.52,
-                           "end":  0.65,
-                           "word_index":  2,
-                           "word":  "sure"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "UH1",
-                           "phone_base":  "UH",
-                           "start":  0.65,
-                           "end":  0.7,
-                           "word_index":  2,
-                           "word":  "sure"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "R",
-                           "phone_base":  "R",
-                           "start":  0.7,
-                           "end":  0.77,
-                           "word_index":  2,
-                           "word":  "sure"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "W",
-                           "phone_base":  "W",
-                           "start":  0.77,
-                           "end":  0.84,
-                           "word_index":  3,
-                           "word":  "what"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "AH1",
-                           "phone_base":  "AH",
-                           "start":  0.84,
-                           "end":  0.89,
-                           "word_index":  3,
-                           "word":  "what"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "T",
-                           "phone_base":  "T",
-                           "start":  0.89,
-                           "end":  0.93,
-                           "word_index":  3,
-                           "word":  "what"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "Y",
-                           "phone_base":  "Y",
-                           "start":  0.93,
-                           "end":  0.98,
-                           "word_index":  4,
-                           "word":  "you"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "UW1",
-                           "phone_base":  "UW",
-                           "start":  0.98,
-                           "end":  1.03,
-                           "word_index":  4,
-                           "word":  "you"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "M",
-                           "phone_base":  "M",
-                           "start":  1.03,
-                           "end":  1.11,
-                           "word_index":  5,
-                           "word":  "mean"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "IY1",
-                           "phone_base":  "IY",
-                           "start":  1.11,
-                           "end":  1.22,
-                           "word_index":  5,
-                           "word":  "mean"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "N",
-                           "phone_base":  "N",
-                           "start":  1.22,
-                           "end":  1.27,
-                           "word_index":  5,
-                           "word":  "mean"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "B",
-                           "phone_base":  "B",
-                           "start":  1.27,
-                           "end":  1.33,
-                           "word_index":  6,
-                           "word":  "by"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "AY1",
-                           "phone_base":  "AY",
-                           "start":  1.33,
-                           "end":  1.43,
-                           "word_index":  6,
-                           "word":  "by"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "B",
-                           "phone_base":  "B",
-                           "start":  1.43,
-                           "end":  1.55,
-                           "word_index":  7,
-                           "word":  "bailies"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "EY1",
-                           "phone_base":  "EY",
-                           "start":  1.55,
-                           "end":  1.71,
-                           "word_index":  7,
-                           "word":  "bailies"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "L",
-                           "phone_base":  "L",
-                           "start":  1.71,
-                           "end":  1.81,
-                           "word_index":  7,
-                           "word":  "bailies"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "IY0",
-                           "phone_base":  "IY",
-                           "start":  1.81,
-                           "end":  1.9,
-                           "word_index":  7,
-                           "word":  "bailies"
-                       },
-                       {
-                           "index_in_word":  4,
-                           "phone":  "Z",
-                           "phone_base":  "Z",
-                           "start":  1.9,
-                           "end":  2.11,
-                           "word_index":  7,
-                           "word":  "bailies"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "K",
-                           "phone_base":  "K",
-                           "start":  2.68,
-                           "end":  2.74,
-                           "word_index":  8,
-                           "word":  "can"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "AH0",
-                           "phone_base":  "AH",
-                           "start":  2.74,
-                           "end":  2.79,
-                           "word_index":  8,
-                           "word":  "can"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "N",
-                           "phone_base":  "N",
-                           "start":  2.79,
-                           "end":  2.82,
-                           "word_index":  8,
-                           "word":  "can"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "Y",
-                           "phone_base":  "Y",
-                           "start":  2.82,
-                           "end":  2.87,
-                           "word_index":  9,
-                           "word":  "you"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "UW1",
-                           "phone_base":  "UW",
-                           "start":  2.87,
-                           "end":  2.92,
-                           "word_index":  9,
-                           "word":  "you"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "K",
-                           "phone_base":  "K",
-                           "start":  2.92,
-                           "end":  3.01,
-                           "word_index":  10,
-                           "word":  "clarify"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "L",
-                           "phone_base":  "L",
-                           "start":  3.01,
-                           "end":  3.06,
-                           "word_index":  10,
-                           "word":  "clarify"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "EH1",
-                           "phone_base":  "EH",
-                           "start":  3.06,
-                           "end":  3.11,
-                           "word_index":  10,
-                           "word":  "clarify"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "R",
-                           "phone_base":  "R",
-                           "start":  3.11,
-                           "end":  3.18,
-                           "word_index":  10,
-                           "word":  "clarify"
-                       },
-                       {
-                           "index_in_word":  4,
-                           "phone":  "AH0",
-                           "phone_base":  "AH",
-                           "start":  3.18,
-                           "end":  3.23,
-                           "word_index":  10,
-                           "word":  "clarify"
-                       },
-                       {
-                           "index_in_word":  5,
-                           "phone":  "F",
-                           "phone_base":  "F",
-                           "start":  3.23,
-                           "end":  3.31,
-                           "word_index":  10,
-                           "word":  "clarify"
-                       },
-                       {
-                           "index_in_word":  6,
-                           "phone":  "AY2",
-                           "phone_base":  "AY",
-                           "start":  3.31,
-                           "end":  3.55,
-                           "word_index":  10,
-                           "word":  "clarify"
-                       }
-                   ],
-    "planned_visemes":  [
-                            {
-                                "index":  0,
-                                "pose":  "05_Ay",
-                                "word":  "i\u0027m",
-                                "word_index":  0,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.019231,
-                                "strength":  0.94,
-                                "source_phone":  "AY",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_ay"
-                            },
-                            {
-                                "index":  1,
-                                "pose":  "22_MBP",
-                                "word":  "i\u0027m",
-                                "word_index":  0,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.057692,
-                                "strength":  1.0,
-                                "source_phone":  "M",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_bilabial"
-                            },
-                            {
-                                "index":  2,
-                                "pose":  "07_Aa",
-                                "word":  "not",
-                                "word_index":  1,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.115385,
-                                "strength":  0.92,
-                                "source_phone":  "AA",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_open_vowel"
-                            },
-                            {
-                                "index":  3,
-                                "pose":  "14_ChJjSh",
-                                "word":  "sure",
-                                "word_index":  2,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.166667,
-                                "strength":  0.82,
-                                "source_phone":  "SH",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_affricate_sibilant"
-                            },
-                            {
-                                "index":  4,
-                                "pose":  "11_Oo",
-                                "word":  "sure",
-                                "word_index":  2,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.192308,
-                                "strength":  0.92,
-                                "source_phone":  "UH",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_oo_vowel"
-                            },
-                            {
-                                "index":  5,
-                                "pose":  "12_Ww-Oo-",
-                                "word":  "what",
-                                "word_index":  3,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.24359,
-                                "strength":  0.88,
-                                "source_phone":  "W",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_w"
-                            },
-                            {
-                                "index":  6,
-                                "pose":  "07_Aa",
-                                "word":  "what",
-                                "word_index":  3,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.269231,
-                                "strength":  0.92,
-                                "source_phone":  "AH",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_open_vowel"
-                            },
-                            {
-                                "index":  7,
-                                "pose":  "11_Oo",
-                                "word":  "you",
-                                "word_index":  4,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.365385,
-                                "strength":  0.92,
-                                "source_phone":  "UW",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_oo_vowel"
-                            },
-                            {
-                                "index":  8,
-                                "pose":  "22_MBP",
-                                "word":  "mean",
-                                "word_index":  5,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.397436,
-                                "strength":  1.0,
-                                "source_phone":  "M",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_bilabial"
-                            },
-                            {
-                                "index":  9,
-                                "pose":  "03_Ee",
-                                "word":  "mean",
-                                "word_index":  5,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.423077,
-                                "strength":  0.92,
-                                "source_phone":  "IY",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_front_vowel"
-                            },
-                            {
-                                "index":  10,
-                                "pose":  "22_MBP",
-                                "word":  "by",
-                                "word_index":  6,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.480769,
-                                "strength":  1.0,
-                                "source_phone":  "B",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_bilabial"
-                            },
-                            {
-                                "index":  11,
-                                "pose":  "05_Ay",
-                                "word":  "by",
-                                "word_index":  6,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.519231,
-                                "strength":  0.94,
-                                "source_phone":  "AY",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_ay"
-                            },
-                            {
-                                "index":  12,
-                                "pose":  "22_MBP",
-                                "word":  "bailies",
-                                "word_index":  7,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.55,
-                                "strength":  1.0,
-                                "source_phone":  "B",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_bilabial"
-                            },
-                            {
-                                "index":  13,
-                                "pose":  "06_Eh",
-                                "word":  "bailies",
-                                "word_index":  7,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.573077,
-                                "strength":  0.92,
-                                "source_phone":  "EY",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_eh_vowel"
-                            },
-                            {
-                                "index":  14,
-                                "pose":  "03_Ee",
-                                "word":  "bailies",
-                                "word_index":  7,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.619231,
-                                "strength":  0.5,
-                                "source_phone":  "IY",
-                                "source_phone_index":  3,
-                                "generator":  "cmu_front_vowel"
-                            },
-                            {
-                                "index":  15,
-                                "pose":  "07_Aa",
-                                "word":  "can",
-                                "word_index":  8,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.692308,
-                                "strength":  0.92,
-                                "source_phone":  "AE",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_open_vowel"
-                            },
-                            {
-                                "index":  16,
-                                "pose":  "11_Oo",
-                                "word":  "you",
-                                "word_index":  9,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.788462,
-                                "strength":  0.92,
-                                "source_phone":  "UW",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_oo_vowel"
-                            },
-                            {
-                                "index":  17,
-                                "pose":  "06_Eh",
-                                "word":  "clarify",
-                                "word_index":  10,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.876374,
-                                "strength":  0.92,
-                                "source_phone":  "EH",
-                                "source_phone_index":  2,
-                                "generator":  "cmu_eh_vowel"
-                            },
-                            {
-                                "index":  18,
-                                "pose":  "20_FV",
-                                "word":  "clarify",
-                                "word_index":  10,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.958791,
-                                "strength":  0.96,
-                                "source_phone":  "F",
-                                "source_phone_index":  5,
-                                "generator":  "cmu_fv"
-                            },
-                            {
-                                "index":  19,
-                                "pose":  "05_Ay",
-                                "word":  "clarify",
-                                "word_index":  10,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.986264,
-                                "strength":  0.94,
-                                "source_phone":  "AY",
-                                "source_phone_index":  6,
-                                "generator":  "cmu_ay"
-                            }
-                        ],
-    "visemes":  [
-                    {
-                        "index":  0,
-                        "id":  "05_Ay",
-                        "pose":  "05_Ay",
-                        "start":  0.21,
-                        "center":  0.245,
-                        "end":  0.28,
-                        "word":  "i\u0027m",
-                        "word_index":  0,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.94,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "AY",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  1,
-                        "id":  "22_MBP",
-                        "pose":  "22_MBP",
-                        "start":  0.28,
-                        "center":  0.30500000000000005,
-                        "end":  0.33,
-                        "word":  "i\u0027m",
-                        "word_index":  0,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  1.0,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "M",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  2,
-                        "id":  "07_Aa",
-                        "pose":  "07_Aa",
-                        "start":  0.36,
-                        "center":  0.41000000000000003,
-                        "end":  0.46,
-                        "word":  "not",
-                        "word_index":  1,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "AA",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  3,
-                        "id":  "14_ChJjSh",
-                        "pose":  "14_ChJjSh",
-                        "start":  0.52,
-                        "center":  0.585,
-                        "end":  0.65,
-                        "word":  "sure",
-                        "word_index":  2,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.82,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "SH",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  4,
-                        "id":  "11_Oo",
-                        "pose":  "11_Oo",
-                        "start":  0.65,
-                        "center":  0.675,
-                        "end":  0.7,
-                        "word":  "sure",
-                        "word_index":  2,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "UH",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  5,
-                        "id":  "12_Ww-Oo-",
-                        "pose":  "12_Ww-Oo-",
-                        "start":  0.77,
-                        "center":  0.8049999999999999,
-                        "end":  0.84,
-                        "word":  "what",
-                        "word_index":  3,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.88,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "W",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  6,
-                        "id":  "07_Aa",
-                        "pose":  "07_Aa",
-                        "start":  0.84,
-                        "center":  0.865,
-                        "end":  0.89,
-                        "word":  "what",
-                        "word_index":  3,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "AH",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  7,
-                        "id":  "11_Oo",
-                        "pose":  "11_Oo",
-                        "start":  0.98,
-                        "center":  1.005,
-                        "end":  1.03,
-                        "word":  "you",
-                        "word_index":  4,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "UW",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  8,
-                        "id":  "22_MBP",
-                        "pose":  "22_MBP",
-                        "start":  1.03,
-                        "center":  1.07,
-                        "end":  1.11,
-                        "word":  "mean",
-                        "word_index":  5,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  1.0,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "M",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  9,
-                        "id":  "03_Ee",
-                        "pose":  "03_Ee",
-                        "start":  1.11,
-                        "center":  1.165,
-                        "end":  1.22,
-                        "word":  "mean",
-                        "word_index":  5,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "IY",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  10,
-                        "id":  "22_MBP",
-                        "pose":  "22_MBP",
-                        "start":  1.27,
-                        "center":  1.3,
-                        "end":  1.33,
-                        "word":  "by",
-                        "word_index":  6,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  1.0,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "B",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  11,
-                        "id":  "05_Ay",
-                        "pose":  "05_Ay",
-                        "start":  1.33,
-                        "center":  1.38,
-                        "end":  1.43,
-                        "word":  "by",
-                        "word_index":  6,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.94,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "AY",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  12,
-                        "id":  "22_MBP",
-                        "pose":  "22_MBP",
-                        "start":  1.43,
-                        "center":  1.49,
-                        "end":  1.55,
-                        "word":  "bailies",
-                        "word_index":  7,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  1.0,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "B",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  13,
-                        "id":  "06_Eh",
-                        "pose":  "06_Eh",
-                        "start":  1.55,
-                        "center":  1.63,
-                        "end":  1.71,
-                        "word":  "bailies",
-                        "word_index":  7,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "EY",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  14,
-                        "id":  "03_Ee",
-                        "pose":  "03_Ee",
-                        "start":  1.81,
-                        "center":  1.855,
-                        "end":  1.9,
-                        "word":  "bailies",
-                        "word_index":  7,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.5,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "IY",
-                        "source_phone_index":  3,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-                                      {
-                                          "kind":  "low_strength_viseme",
-                                          "start":  1.81,
-                                          "end":  1.9,
-                                          "note":  "Viseme strength is low (0.500)."
-                                      }
-                                  ]
-                    },
-                    {
-                        "index":  15,
-                        "id":  "07_Aa",
-                        "pose":  "07_Aa",
-                        "start":  2.74,
-                        "center":  2.765,
-                        "end":  2.79,
-                        "word":  "can",
-                        "word_index":  8,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_source_phone_index_label_mismatch",
-                        "source_phone":  "AE",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-                                      {
-                                          "kind":  "large_inter_event_gap",
-                                          "start":  2.74,
-                                          "end":  2.79,
-                                          "note":  "Large gap from previous viseme center (0.910s)."
-                                      }
-                                  ]
-                    },
-                    {
-                        "index":  16,
-                        "id":  "11_Oo",
-                        "pose":  "11_Oo",
-                        "start":  2.87,
-                        "center":  2.895,
-                        "end":  2.92,
-                        "word":  "you",
-                        "word_index":  9,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "UW",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  17,
-                        "id":  "06_Eh",
-                        "pose":  "06_Eh",
-                        "start":  3.06,
-                        "center":  3.085,
-                        "end":  3.11,
-                        "word":  "clarify",
-                        "word_index":  10,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "EH",
-                        "source_phone_index":  2,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  18,
-                        "id":  "20_FV",
-                        "pose":  "20_FV",
-                        "start":  3.23,
-                        "center":  3.27,
-                        "end":  3.31,
-                        "word":  "clarify",
-                        "word_index":  10,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.96,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "F",
-                        "source_phone_index":  5,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  19,
-                        "id":  "05_Ay",
-                        "pose":  "05_Ay",
-                        "start":  3.31,
-                        "center":  3.4299999999999997,
-                        "end":  3.55,
-                        "word":  "clarify",
-                        "word_index":  10,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.94,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "AY",
-                        "source_phone_index":  6,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    }
-                ],
-    "flags":  [
-                  {
-                      "kind":  "low_strength_viseme",
-                      "start":  1.81,
-                      "end":  1.9,
-                      "note":  "Viseme strength is low (0.500)."
-                  },
-                  {
-                      "kind":  "large_inter_event_gap",
-                      "start":  2.74,
-                      "end":  2.79,
-                      "note":  "Large gap from previous viseme center (0.910s)."
-                  }
-              ],
-    "notes":  [
-
-              ],
-    "summary":  {
-                    "word_count":  11,
-                    "speech_region_count":  2,
-                    "word_head_count":  11,
-                    "viseme_count":  20,
-                    "flag_count":  2,
-                    "flags_by_kind":  {
-                                          "low_strength_viseme":  1,
-                                          "large_inter_event_gap":  1
-                                      },
-                    "commit_reasons":  {
-                                           "mfa_phone_alignment":  20
-                                       },
-                    "alignment_reasons":  {
-                                              "mfa_exact_source_phone_index":  19,
-                                              "mfa_source_phone_index_label_mismatch":  1
-                                          },
-                    "mapped_to_observed_speech_count":  20
-                }
+{
+  "schema_version": 1,
+  "case_id": "case_0022_20260629_094140_141_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000021_00",
+  "created_utc": "2026-07-04T18:58:52.076336+00:00",
+  "generator": {
+    "kind": "liplab_gold_mfa_phase1",
+    "buffer_ms": 600000,
+    "chunk_ms": 600000,
+    "mfa_num_jobs": 4,
+    "speech_merge_gap_ms": 120,
+    "source_run_dir": "outputs/offline_gold/latest/case_0022_20260629_094140_141_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000021_00",
+    "mfa_align_dir": "outputs/mfa_align/latest"
+  },
+  "approval": {
+    "status": "approved_gold",
+    "reviewed": true,
+    "reviewer": "auto_mfa_phone_export",
+    "reviewed_utc": "2026-07-04T18:58:52.076408+00:00"
+  },
+  "review_layers": {
+    "speech_regions": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "word_heads": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "dense_visemes": {
+      "status": "reviewed_dense",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    }
+  },
+  "transcript": "I'm not sure what you mean by bailies. Can you clarify?",
+  "audio": {
+    "path": "inputs/wav/case_0022_20260629_094140_141_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000021_00.wav",
+    "sample_rate_hz": 24000,
+    "channels": 1,
+    "frame_count": 91605,
+    "duration_sec": 3.816875
+  },
+  "speech_regions": [
+    {
+      "index": 0,
+      "start": 0.21,
+      "end": 2.11,
+      "word_start_index": 0,
+      "word_end_index": 7,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_non_silence_phone_gap_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    },
+    {
+      "index": 1,
+      "start": 2.68,
+      "end": 3.55,
+      "word_start_index": 8,
+      "word_end_index": 10,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_non_silence_phone_gap_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    }
+  ],
+  "gold_words": [
+    {
+      "word_index": 0,
+      "word": "i'm",
+      "mfa_word": "i'm",
+      "start": 0.21,
+      "end": 0.33,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "not",
+      "mfa_word": "not",
+      "start": 0.33,
+      "end": 0.52,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 2,
+      "word": "sure",
+      "mfa_word": "sure",
+      "start": 0.52,
+      "end": 0.77,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 3,
+      "word": "what",
+      "mfa_word": "what",
+      "start": 0.77,
+      "end": 0.93,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 4,
+      "word": "you",
+      "mfa_word": "you",
+      "start": 0.93,
+      "end": 1.03,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 5,
+      "word": "mean",
+      "mfa_word": "mean",
+      "start": 1.03,
+      "end": 1.27,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 6,
+      "word": "by",
+      "mfa_word": "by",
+      "start": 1.27,
+      "end": 1.43,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 7,
+      "word": "bailies",
+      "mfa_word": "bailies",
+      "start": 1.43,
+      "end": 2.11,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 8,
+      "word": "can",
+      "mfa_word": "can",
+      "start": 2.68,
+      "end": 2.82,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 9,
+      "word": "you",
+      "mfa_word": "you",
+      "start": 2.82,
+      "end": 2.92,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 10,
+      "word": "clarify",
+      "mfa_word": "clarify",
+      "start": 2.92,
+      "end": 3.55,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    }
+  ],
+  "word_heads": [
+    {
+      "word_index": 0,
+      "word": "i'm",
+      "start": 0.21,
+      "end": 0.28,
+      "pose": "AY1",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "AY1",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 1,
+      "word": "not",
+      "start": 0.33,
+      "end": 0.36,
+      "pose": "N",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "N",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 2,
+      "word": "sure",
+      "start": 0.52,
+      "end": 0.65,
+      "pose": "SH",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "SH",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 3,
+      "word": "what",
+      "start": 0.77,
+      "end": 0.84,
+      "pose": "W",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 4,
+      "word": "you",
+      "start": 0.93,
+      "end": 0.98,
+      "pose": "Y",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "Y",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 5,
+      "word": "mean",
+      "start": 1.03,
+      "end": 1.11,
+      "pose": "M",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "M",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 6,
+      "word": "by",
+      "start": 1.27,
+      "end": 1.33,
+      "pose": "B",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 7,
+      "word": "bailies",
+      "start": 1.43,
+      "end": 1.55,
+      "pose": "B",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 8,
+      "word": "can",
+      "start": 2.68,
+      "end": 2.74,
+      "pose": "K",
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "source_phone": "K",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 9,
+      "word": "you",
+      "start": 2.82,
+      "end": 2.87,
+      "pose": "Y",
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "source_phone": "Y",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 10,
+      "word": "clarify",
+      "start": 2.92,
+      "end": 3.01,
+      "pose": "K",
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "source_phone": "K",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    }
+  ],
+  "mfa_words": [
+    {
+      "word_index": 0,
+      "word": "i'm",
+      "mfa_word": "i'm",
+      "start": 0.21,
+      "end": 0.33,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "not",
+      "mfa_word": "not",
+      "start": 0.33,
+      "end": 0.52,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 2,
+      "word": "sure",
+      "mfa_word": "sure",
+      "start": 0.52,
+      "end": 0.77,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 3,
+      "word": "what",
+      "mfa_word": "what",
+      "start": 0.77,
+      "end": 0.93,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 4,
+      "word": "you",
+      "mfa_word": "you",
+      "start": 0.93,
+      "end": 1.03,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 5,
+      "word": "mean",
+      "mfa_word": "mean",
+      "start": 1.03,
+      "end": 1.27,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 6,
+      "word": "by",
+      "mfa_word": "by",
+      "start": 1.27,
+      "end": 1.43,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 7,
+      "word": "bailies",
+      "mfa_word": "bailies",
+      "start": 1.43,
+      "end": 2.11,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 8,
+      "word": "can",
+      "mfa_word": "can",
+      "start": 2.68,
+      "end": 2.82,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 9,
+      "word": "you",
+      "mfa_word": "you",
+      "start": 2.82,
+      "end": 2.92,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 10,
+      "word": "clarify",
+      "mfa_word": "clarify",
+      "start": 2.92,
+      "end": 3.55,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    }
+  ],
+  "mfa_phones": [
+    {
+      "index_in_word": 0,
+      "phone": "AY1",
+      "phone_base": "AY",
+      "start": 0.21,
+      "end": 0.28,
+      "word_index": 0,
+      "word": "i'm"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "M",
+      "phone_base": "M",
+      "start": 0.28,
+      "end": 0.33,
+      "word_index": 0,
+      "word": "i'm"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 0.33,
+      "end": 0.36,
+      "word_index": 1,
+      "word": "not"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AA1",
+      "phone_base": "AA",
+      "start": 0.36,
+      "end": 0.46,
+      "word_index": 1,
+      "word": "not"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 0.46,
+      "end": 0.52,
+      "word_index": 1,
+      "word": "not"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "SH",
+      "phone_base": "SH",
+      "start": 0.52,
+      "end": 0.65,
+      "word_index": 2,
+      "word": "sure"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "UH1",
+      "phone_base": "UH",
+      "start": 0.65,
+      "end": 0.7,
+      "word_index": 2,
+      "word": "sure"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "R",
+      "phone_base": "R",
+      "start": 0.7,
+      "end": 0.77,
+      "word_index": 2,
+      "word": "sure"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 0.77,
+      "end": 0.84,
+      "word_index": 3,
+      "word": "what"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AH1",
+      "phone_base": "AH",
+      "start": 0.84,
+      "end": 0.89,
+      "word_index": 3,
+      "word": "what"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 0.89,
+      "end": 0.93,
+      "word_index": 3,
+      "word": "what"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "Y",
+      "phone_base": "Y",
+      "start": 0.93,
+      "end": 0.98,
+      "word_index": 4,
+      "word": "you"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "UW1",
+      "phone_base": "UW",
+      "start": 0.98,
+      "end": 1.03,
+      "word_index": 4,
+      "word": "you"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "M",
+      "phone_base": "M",
+      "start": 1.03,
+      "end": 1.11,
+      "word_index": 5,
+      "word": "mean"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "IY1",
+      "phone_base": "IY",
+      "start": 1.11,
+      "end": 1.22,
+      "word_index": 5,
+      "word": "mean"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 1.22,
+      "end": 1.27,
+      "word_index": 5,
+      "word": "mean"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "B",
+      "phone_base": "B",
+      "start": 1.27,
+      "end": 1.33,
+      "word_index": 6,
+      "word": "by"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AY1",
+      "phone_base": "AY",
+      "start": 1.33,
+      "end": 1.43,
+      "word_index": 6,
+      "word": "by"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "B",
+      "phone_base": "B",
+      "start": 1.43,
+      "end": 1.55,
+      "word_index": 7,
+      "word": "bailies"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "EY1",
+      "phone_base": "EY",
+      "start": 1.55,
+      "end": 1.71,
+      "word_index": 7,
+      "word": "bailies"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 1.71,
+      "end": 1.81,
+      "word_index": 7,
+      "word": "bailies"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "IY0",
+      "phone_base": "IY",
+      "start": 1.81,
+      "end": 1.89,
+      "word_index": 7,
+      "word": "bailies"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "Z",
+      "phone_base": "Z",
+      "start": 1.89,
+      "end": 2.11,
+      "word_index": 7,
+      "word": "bailies"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "K",
+      "phone_base": "K",
+      "start": 2.68,
+      "end": 2.74,
+      "word_index": 8,
+      "word": "can"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 2.74,
+      "end": 2.79,
+      "word_index": 8,
+      "word": "can"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 2.79,
+      "end": 2.82,
+      "word_index": 8,
+      "word": "can"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "Y",
+      "phone_base": "Y",
+      "start": 2.82,
+      "end": 2.87,
+      "word_index": 9,
+      "word": "you"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "UW1",
+      "phone_base": "UW",
+      "start": 2.87,
+      "end": 2.92,
+      "word_index": 9,
+      "word": "you"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "K",
+      "phone_base": "K",
+      "start": 2.92,
+      "end": 3.01,
+      "word_index": 10,
+      "word": "clarify"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 3.01,
+      "end": 3.06,
+      "word_index": 10,
+      "word": "clarify"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "EH1",
+      "phone_base": "EH",
+      "start": 3.06,
+      "end": 3.11,
+      "word_index": 10,
+      "word": "clarify"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "R",
+      "phone_base": "R",
+      "start": 3.11,
+      "end": 3.18,
+      "word_index": 10,
+      "word": "clarify"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 3.18,
+      "end": 3.23,
+      "word_index": 10,
+      "word": "clarify"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "F",
+      "phone_base": "F",
+      "start": 3.23,
+      "end": 3.31,
+      "word_index": 10,
+      "word": "clarify"
+    },
+    {
+      "index_in_word": 6,
+      "phone": "AY2",
+      "phone_base": "AY",
+      "start": 3.31,
+      "end": 3.55,
+      "word_index": 10,
+      "word": "clarify"
+    }
+  ],
+  "mfa_non_silence_phone_intervals": [
+    {
+      "phone": "AY1",
+      "start": 0.21,
+      "end": 0.28
+    },
+    {
+      "phone": "M",
+      "start": 0.28,
+      "end": 0.33
+    },
+    {
+      "phone": "N",
+      "start": 0.33,
+      "end": 0.36
+    },
+    {
+      "phone": "AA1",
+      "start": 0.36,
+      "end": 0.46
+    },
+    {
+      "phone": "T",
+      "start": 0.46,
+      "end": 0.52
+    },
+    {
+      "phone": "SH",
+      "start": 0.52,
+      "end": 0.65
+    },
+    {
+      "phone": "UH1",
+      "start": 0.65,
+      "end": 0.7
+    },
+    {
+      "phone": "R",
+      "start": 0.7,
+      "end": 0.77
+    },
+    {
+      "phone": "W",
+      "start": 0.77,
+      "end": 0.84
+    },
+    {
+      "phone": "AH1",
+      "start": 0.84,
+      "end": 0.89
+    },
+    {
+      "phone": "T",
+      "start": 0.89,
+      "end": 0.93
+    },
+    {
+      "phone": "Y",
+      "start": 0.93,
+      "end": 0.98
+    },
+    {
+      "phone": "UW1",
+      "start": 0.98,
+      "end": 1.03
+    },
+    {
+      "phone": "M",
+      "start": 1.03,
+      "end": 1.11
+    },
+    {
+      "phone": "IY1",
+      "start": 1.11,
+      "end": 1.22
+    },
+    {
+      "phone": "N",
+      "start": 1.22,
+      "end": 1.27
+    },
+    {
+      "phone": "B",
+      "start": 1.27,
+      "end": 1.33
+    },
+    {
+      "phone": "AY1",
+      "start": 1.33,
+      "end": 1.43
+    },
+    {
+      "phone": "B",
+      "start": 1.43,
+      "end": 1.55
+    },
+    {
+      "phone": "EY1",
+      "start": 1.55,
+      "end": 1.71
+    },
+    {
+      "phone": "L",
+      "start": 1.71,
+      "end": 1.81
+    },
+    {
+      "phone": "IY0",
+      "start": 1.81,
+      "end": 1.89
+    },
+    {
+      "phone": "Z",
+      "start": 1.89,
+      "end": 2.11
+    },
+    {
+      "phone": "K",
+      "start": 2.68,
+      "end": 2.74
+    },
+    {
+      "phone": "AH0",
+      "start": 2.74,
+      "end": 2.79
+    },
+    {
+      "phone": "N",
+      "start": 2.79,
+      "end": 2.82
+    },
+    {
+      "phone": "Y",
+      "start": 2.82,
+      "end": 2.87
+    },
+    {
+      "phone": "UW1",
+      "start": 2.87,
+      "end": 2.92
+    },
+    {
+      "phone": "K",
+      "start": 2.92,
+      "end": 3.01
+    },
+    {
+      "phone": "L",
+      "start": 3.01,
+      "end": 3.06
+    },
+    {
+      "phone": "EH1",
+      "start": 3.06,
+      "end": 3.11
+    },
+    {
+      "phone": "R",
+      "start": 3.11,
+      "end": 3.18
+    },
+    {
+      "phone": "AH0",
+      "start": 3.18,
+      "end": 3.23
+    },
+    {
+      "phone": "F",
+      "start": 3.23,
+      "end": 3.31
+    },
+    {
+      "phone": "AY2",
+      "start": 3.31,
+      "end": 3.55
+    }
+  ],
+  "planned_visemes": [],
+  "visemes": [
+    {
+      "index": 0,
+      "id": "AY1",
+      "pose": "AY1",
+      "phone": "AY1",
+      "start": 0.21,
+      "center": 0.245,
+      "end": 0.28,
+      "word": "i'm",
+      "mfa_word": "i'm",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AY1",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 1,
+      "id": "M",
+      "pose": "M",
+      "phone": "M",
+      "start": 0.28,
+      "center": 0.30500000000000005,
+      "end": 0.33,
+      "word": "i'm",
+      "mfa_word": "i'm",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "M",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 2,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 0.33,
+      "center": 0.345,
+      "end": 0.36,
+      "word": "not",
+      "mfa_word": "not",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 3,
+      "id": "AA1",
+      "pose": "AA1",
+      "phone": "AA1",
+      "start": 0.36,
+      "center": 0.41000000000000003,
+      "end": 0.46,
+      "word": "not",
+      "mfa_word": "not",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AA1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 4,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 0.46,
+      "center": 0.49,
+      "end": 0.52,
+      "word": "not",
+      "mfa_word": "not",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 5,
+      "id": "SH",
+      "pose": "SH",
+      "phone": "SH",
+      "start": 0.52,
+      "center": 0.585,
+      "end": 0.65,
+      "word": "sure",
+      "mfa_word": "sure",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "SH",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 6,
+      "id": "UH1",
+      "pose": "UH1",
+      "phone": "UH1",
+      "start": 0.65,
+      "center": 0.675,
+      "end": 0.7,
+      "word": "sure",
+      "mfa_word": "sure",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "UH1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 7,
+      "id": "R",
+      "pose": "R",
+      "phone": "R",
+      "start": 0.7,
+      "center": 0.735,
+      "end": 0.77,
+      "word": "sure",
+      "mfa_word": "sure",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "R",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 8,
+      "id": "W",
+      "pose": "W",
+      "phone": "W",
+      "start": 0.77,
+      "center": 0.8049999999999999,
+      "end": 0.84,
+      "word": "what",
+      "mfa_word": "what",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 9,
+      "id": "AH1",
+      "pose": "AH1",
+      "phone": "AH1",
+      "start": 0.84,
+      "center": 0.865,
+      "end": 0.89,
+      "word": "what",
+      "mfa_word": "what",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 10,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 0.89,
+      "center": 0.91,
+      "end": 0.93,
+      "word": "what",
+      "mfa_word": "what",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 11,
+      "id": "Y",
+      "pose": "Y",
+      "phone": "Y",
+      "start": 0.93,
+      "center": 0.9550000000000001,
+      "end": 0.98,
+      "word": "you",
+      "mfa_word": "you",
+      "word_index": 4,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "Y",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 12,
+      "id": "UW1",
+      "pose": "UW1",
+      "phone": "UW1",
+      "start": 0.98,
+      "center": 1.005,
+      "end": 1.03,
+      "word": "you",
+      "mfa_word": "you",
+      "word_index": 4,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "UW1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 13,
+      "id": "M",
+      "pose": "M",
+      "phone": "M",
+      "start": 1.03,
+      "center": 1.07,
+      "end": 1.11,
+      "word": "mean",
+      "mfa_word": "mean",
+      "word_index": 5,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "M",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 14,
+      "id": "IY1",
+      "pose": "IY1",
+      "phone": "IY1",
+      "start": 1.11,
+      "center": 1.165,
+      "end": 1.22,
+      "word": "mean",
+      "mfa_word": "mean",
+      "word_index": 5,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IY1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 15,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 1.22,
+      "center": 1.245,
+      "end": 1.27,
+      "word": "mean",
+      "mfa_word": "mean",
+      "word_index": 5,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 16,
+      "id": "B",
+      "pose": "B",
+      "phone": "B",
+      "start": 1.27,
+      "center": 1.3,
+      "end": 1.33,
+      "word": "by",
+      "mfa_word": "by",
+      "word_index": 6,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 17,
+      "id": "AY1",
+      "pose": "AY1",
+      "phone": "AY1",
+      "start": 1.33,
+      "center": 1.38,
+      "end": 1.43,
+      "word": "by",
+      "mfa_word": "by",
+      "word_index": 6,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AY1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 18,
+      "id": "B",
+      "pose": "B",
+      "phone": "B",
+      "start": 1.43,
+      "center": 1.49,
+      "end": 1.55,
+      "word": "bailies",
+      "mfa_word": "bailies",
+      "word_index": 7,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 19,
+      "id": "EY1",
+      "pose": "EY1",
+      "phone": "EY1",
+      "start": 1.55,
+      "center": 1.63,
+      "end": 1.71,
+      "word": "bailies",
+      "mfa_word": "bailies",
+      "word_index": 7,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EY1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 20,
+      "id": "L",
+      "pose": "L",
+      "phone": "L",
+      "start": 1.71,
+      "center": 1.76,
+      "end": 1.81,
+      "word": "bailies",
+      "mfa_word": "bailies",
+      "word_index": 7,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "L",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 21,
+      "id": "IY0",
+      "pose": "IY0",
+      "phone": "IY0",
+      "start": 1.81,
+      "center": 1.85,
+      "end": 1.89,
+      "word": "bailies",
+      "mfa_word": "bailies",
+      "word_index": 7,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IY0",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 22,
+      "id": "Z",
+      "pose": "Z",
+      "phone": "Z",
+      "start": 1.89,
+      "center": 2.0,
+      "end": 2.11,
+      "word": "bailies",
+      "mfa_word": "bailies",
+      "word_index": 7,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "Z",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 23,
+      "id": "K",
+      "pose": "K",
+      "phone": "K",
+      "start": 2.68,
+      "center": 2.71,
+      "end": 2.74,
+      "word": "can",
+      "mfa_word": "can",
+      "word_index": 8,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "K",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 24,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 2.74,
+      "center": 2.765,
+      "end": 2.79,
+      "word": "can",
+      "mfa_word": "can",
+      "word_index": 8,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 25,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 2.79,
+      "center": 2.8049999999999997,
+      "end": 2.82,
+      "word": "can",
+      "mfa_word": "can",
+      "word_index": 8,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 26,
+      "id": "Y",
+      "pose": "Y",
+      "phone": "Y",
+      "start": 2.82,
+      "center": 2.8449999999999998,
+      "end": 2.87,
+      "word": "you",
+      "mfa_word": "you",
+      "word_index": 9,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "Y",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 27,
+      "id": "UW1",
+      "pose": "UW1",
+      "phone": "UW1",
+      "start": 2.87,
+      "center": 2.895,
+      "end": 2.92,
+      "word": "you",
+      "mfa_word": "you",
+      "word_index": 9,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "UW1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 28,
+      "id": "K",
+      "pose": "K",
+      "phone": "K",
+      "start": 2.92,
+      "center": 2.965,
+      "end": 3.01,
+      "word": "clarify",
+      "mfa_word": "clarify",
+      "word_index": 10,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "K",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 29,
+      "id": "L",
+      "pose": "L",
+      "phone": "L",
+      "start": 3.01,
+      "center": 3.035,
+      "end": 3.06,
+      "word": "clarify",
+      "mfa_word": "clarify",
+      "word_index": 10,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "L",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 30,
+      "id": "EH1",
+      "pose": "EH1",
+      "phone": "EH1",
+      "start": 3.06,
+      "center": 3.085,
+      "end": 3.11,
+      "word": "clarify",
+      "mfa_word": "clarify",
+      "word_index": 10,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EH1",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 31,
+      "id": "R",
+      "pose": "R",
+      "phone": "R",
+      "start": 3.11,
+      "center": 3.145,
+      "end": 3.18,
+      "word": "clarify",
+      "mfa_word": "clarify",
+      "word_index": 10,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "R",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 32,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 3.18,
+      "center": 3.205,
+      "end": 3.23,
+      "word": "clarify",
+      "mfa_word": "clarify",
+      "word_index": 10,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 33,
+      "id": "F",
+      "pose": "F",
+      "phone": "F",
+      "start": 3.23,
+      "center": 3.27,
+      "end": 3.31,
+      "word": "clarify",
+      "mfa_word": "clarify",
+      "word_index": 10,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "F",
+      "source_phone_index": 5,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 34,
+      "id": "AY2",
+      "pose": "AY2",
+      "phone": "AY2",
+      "start": 3.31,
+      "center": 3.4299999999999997,
+      "end": 3.55,
+      "word": "clarify",
+      "mfa_word": "clarify",
+      "word_index": 10,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AY2",
+      "source_phone_index": 6,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    }
+  ],
+  "flags": [
+    {
+      "kind": "word_count_mismatch",
+      "count_mfa_words": 11,
+      "count_transcript_words": 0,
+      "note": "MFA word count does not match transcript-owned word count."
+    },
+    {
+      "kind": "speech_regions_split_on_mfa_phone_gaps",
+      "region_count": 2,
+      "gap_threshold_seconds": 0.12,
+      "largest_split_gap_seconds": 0.57,
+      "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
+    }
+  ],
+  "notes": [],
+  "summary": {
+    "word_count": 11,
+    "speech_region_count": 2,
+    "word_head_count": 11,
+    "viseme_count": 35,
+    "flag_count": 2,
+    "flags_by_kind": {
+      "word_count_mismatch": 1,
+      "speech_regions_split_on_mfa_phone_gaps": 1
+    },
+    "commit_reasons": {
+      "mfa_phone_interval": 35
+    },
+    "alignment_reasons": {
+      "mfa_textgrid_phone": 35
+    },
+    "mapped_to_observed_speech_count": 35
+  }
 }

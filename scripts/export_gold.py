@@ -36,22 +36,88 @@ def approval_errors(case_id: str, payload: dict) -> list[str]:
     return errors
 
 
+def _phone_rows(payload: dict) -> list[dict]:
+    rows = payload.get("visemes", [])
+    return rows if isinstance(rows, list) else []
+
+
 def export_visemes(case_dir, payload: dict) -> None:
+    # Compatibility export: the reviewer currently reads visemes.csv, but these rows
+    # are now MFA/CMU phone intervals. pose is intentionally set to the phone label.
     dest = case_dir / "visemes.csv"
+    fields = [
+        "start",
+        "end",
+        "pose",
+        "phone",
+        "word",
+        "confidence",
+        "word_index",
+        "speech_region_index",
+        "phrase_index",
+        "sentence_index",
+        "source_phone",
+        "source_phone_index",
+        "alignment_reason",
+    ]
     with dest.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["start", "end", "pose", "word", "confidence", "word_index", "phrase_index", "sentence_index"])
-        for viseme in payload.get("visemes", []):
+        writer.writerow(fields)
+        for row in _phone_rows(payload):
+            phone = row.get("phone") or row.get("source_phone") or row.get("pose", "")
             writer.writerow(
                 [
-                    f"{float(viseme.get('start', 0.0)):.6f}",
-                    f"{float(viseme.get('end', 0.0)):.6f}",
-                    viseme.get("pose", ""),
-                    viseme.get("word", ""),
+                    f"{float(row.get('start', 0.0)):.6f}",
+                    f"{float(row.get('end', 0.0)):.6f}",
+                    phone,
+                    phone,
+                    row.get("word", ""),
                     "1.0",
-                    int(viseme.get("word_index", -1)),
-                    int(viseme.get("phrase_index", -1)),
-                    int(viseme.get("sentence_index", -1)),
+                    int(row.get("word_index", -1)),
+                    int(row.get("speech_region_index", row.get("phrase_index", -1))),
+                    int(row.get("phrase_index", -1)),
+                    int(row.get("sentence_index", -1)),
+                    phone,
+                    int(row.get("source_phone_index", -1)),
+                    row.get("alignment_reason", "mfa_textgrid_phone"),
+                ]
+            )
+
+
+def export_phones(case_dir, payload: dict) -> None:
+    # Canonical export for new tooling. Same content as visemes.csv, named plainly.
+    dest = case_dir / "phones.csv"
+    fields = [
+        "start",
+        "end",
+        "phone",
+        "word",
+        "confidence",
+        "word_index",
+        "speech_region_index",
+        "phone_index",
+        "phrase_index",
+        "sentence_index",
+        "alignment_reason",
+    ]
+    with dest.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(fields)
+        for row in _phone_rows(payload):
+            phone = row.get("phone") or row.get("source_phone") or row.get("pose", "")
+            writer.writerow(
+                [
+                    f"{float(row.get('start', 0.0)):.6f}",
+                    f"{float(row.get('end', 0.0)):.6f}",
+                    phone,
+                    row.get("word", ""),
+                    "1.0",
+                    int(row.get("word_index", -1)),
+                    int(row.get("speech_region_index", row.get("phrase_index", -1))),
+                    int(row.get("source_phone_index", -1)),
+                    int(row.get("phrase_index", -1)),
+                    int(row.get("sentence_index", -1)),
+                    row.get("alignment_reason", "mfa_textgrid_phone"),
                 ]
             )
 
@@ -60,7 +126,7 @@ def export_words(case_dir, payload: dict) -> None:
     dest = case_dir / "words.csv"
     with dest.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["word_index", "word", "start", "end", "phrase_index", "sentence_index"])
+        writer.writerow(["word_index", "word", "start", "end", "speech_region_index", "phrase_index", "sentence_index"])
         for word in payload.get("gold_words", []):
             writer.writerow(
                 [
@@ -68,6 +134,7 @@ def export_words(case_dir, payload: dict) -> None:
                     word.get("word", ""),
                     f"{float(word.get('start', 0.0)):.6f}",
                     f"{float(word.get('end', 0.0)):.6f}",
+                    int(word.get("speech_region_index", word.get("phrase_index", -1))),
                     int(word.get("phrase_index", -1)),
                     int(word.get("sentence_index", -1)),
                 ]
@@ -78,13 +145,16 @@ def export_speech(case_dir, payload: dict) -> None:
     dest = case_dir / "speech.csv"
     with dest.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["index", "start", "end"])
+        writer.writerow(["index", "start", "end", "word_start_index", "word_end_index", "source"])
         for region in payload.get("speech_regions", []):
             writer.writerow(
                 [
                     int(region.get("index", -1)),
                     f"{float(region.get('start', 0.0)):.6f}",
                     f"{float(region.get('end', 0.0)):.6f}",
+                    int(region.get("word_start_index", -1)),
+                    int(region.get("word_end_index", -1)),
+                    region.get("source", ""),
                 ]
             )
 
@@ -118,6 +188,7 @@ def export_case(case_id: str) -> bool:
     case_dir = approved_gold_case_dir(case_id)
     case_dir.mkdir(parents=True, exist_ok=True)
     export_visemes(case_dir, payload)
+    export_phones(case_dir, payload)
     export_words(case_dir, payload)
     export_speech(case_dir, payload)
     export_metadata(case_id, case_dir, payload)

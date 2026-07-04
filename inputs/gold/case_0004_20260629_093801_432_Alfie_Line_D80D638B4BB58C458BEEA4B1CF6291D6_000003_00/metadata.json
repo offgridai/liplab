@@ -1,49 +1,48 @@
 {
   "schema_version": 1,
   "case_id": "case_0004_20260629_093801_432_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000003_00",
-  "exported_utc": "2026-07-01T16:53:48.825092+00:00",
+  "exported_utc": "2026-07-04T18:58:56.635934+00:00",
   "approval": {
     "status": "approved_gold",
     "reviewed": true,
-    "reviewer": "bulk_promote",
-    "reviewed_utc": "2026-07-01T16:53:34.1144044Z"
+    "reviewer": "auto_mfa_phone_export",
+    "reviewed_utc": "2026-07-04T18:58:51.949702+00:00"
   },
   "review_layers": {
     "speech_regions": {
       "status": "reviewed_boundary",
       "reviewed": true,
-      "reviewer": "bulk_promote"
+      "reviewer": "auto_mfa_phone_export"
     },
     "word_heads": {
       "status": "reviewed_boundary",
       "reviewed": true,
-      "reviewer": "bulk_promote"
+      "reviewer": "auto_mfa_phone_export"
     },
     "dense_visemes": {
       "status": "reviewed_dense",
       "reviewed": true,
-      "reviewer": "bulk_promote"
+      "reviewer": "auto_mfa_phone_export"
     }
   },
-  "reviewer": "bulk_promote",
+  "reviewer": "auto_mfa_phone_export",
   "source_draft": "outputs/gold_drafts/case_0004_20260629_093801_432_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000003_00",
   "summary": {
     "word_count": 9,
     "speech_region_count": 2,
     "word_head_count": 9,
-    "viseme_count": 20,
-    "flag_count": 4,
+    "viseme_count": 30,
+    "flag_count": 2,
     "flags_by_kind": {
-      "low_strength_viseme": 3,
-      "large_inter_event_gap": 1
+      "word_count_mismatch": 1,
+      "speech_regions_split_on_mfa_phone_gaps": 1
     },
     "commit_reasons": {
-      "mfa_phone_alignment": 20
+      "mfa_phone_interval": 30
     },
     "alignment_reasons": {
-      "mfa_exact_source_phone_index": 18,
-      "mfa_source_phone_index_label_mismatch": 2
+      "mfa_textgrid_phone": 30
     },
-    "mapped_to_observed_speech_count": 20
+    "mapped_to_observed_speech_count": 30
   }
 }

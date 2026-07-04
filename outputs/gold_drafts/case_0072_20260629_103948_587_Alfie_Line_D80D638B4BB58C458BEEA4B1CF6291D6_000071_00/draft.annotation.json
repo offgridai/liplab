@@ -1,1159 +1,1670 @@
-﻿{
-    "schema_version":  1,
-    "case_id":  "case_0072_20260629_103948_587_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000071_00",
-    "created_utc":  "2026-07-01T16:51:37.077627+00:00",
-    "generator":  {
-                      "kind":  "liplab_gold_mfa_phase1",
-                      "buffer_ms":  600000,
-                      "chunk_ms":  600000,
-                      "mfa_num_jobs":  4,
-                      "speech_merge_gap_ms":  120,
-                      "source_run_dir":  "outputs/offline_gold/latest/case_0072_20260629_103948_587_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000071_00",
-                      "mfa_align_dir":  "outputs/mfa_align/latest"
-                  },
-    "approval":  {
-                     "status":  "approved_gold",
-                     "reviewed":  true,
-                     "reviewer":  "bulk_promote",
-                     "reviewed_utc":  "2026-07-01T16:53:34.1144044Z"
-                 },
-    "review_layers":  {
-                          "speech_regions":  {
-                                                 "status":  "reviewed_boundary",
-                                                 "reviewed":  true,
-                                                 "reviewer":  "bulk_promote"
-                                             },
-                          "word_heads":  {
-                                             "status":  "reviewed_boundary",
-                                             "reviewed":  true,
-                                             "reviewer":  "bulk_promote"
-                                         },
-                          "dense_visemes":  {
-                                                "status":  "reviewed_dense",
-                                                "reviewed":  true,
-                                                "reviewer":  "bulk_promote"
-                                            }
-                      },
-    "transcript":  "Guinea\u0027s pelele is tasty. Want a sandwich?",
-    "audio":  {
-                  "path":  "inputs/wav/case_0072_20260629_103948_587_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000071_00.wav",
-                  "sample_rate_hz":  24000,
-                  "channels":  1,
-                  "frame_count":  101205,
-                  "duration_sec":  4.216875
-              },
-    "speech_regions":  [
-                           {
-                               "index":  0,
-                               "start":  0.0,
-                               "end":  2.08,
-                               "word_start_index":  0,
-                               "word_end_index":  3,
-                               "sentence_start_index":  0,
-                               "sentence_end_index":  0,
-                               "source":  "mfa_word_boundaries_with_occupancy_lull_splits",
-                               "approval":  {
-                                                "status":  "draft_auto",
-                                                "reviewed":  false
-                                            }
-                           },
-                           {
-                               "index":  1,
-                               "start":  2.23,
-                               "end":  3.26,
-                               "word_start_index":  4,
-                               "word_end_index":  6,
-                               "sentence_start_index":  1,
-                               "sentence_end_index":  1,
-                               "source":  "mfa_word_boundaries_with_occupancy_lull_splits",
-                               "approval":  {
-                                                "status":  "draft_auto",
-                                                "reviewed":  false
-                                            }
-                           }
-                       ],
-    "gold_words":  [
-                       {
-                           "word_index":  0,
-                           "word":  "guinea\u0027s",
-                           "mfa_word":  "guinea\u0027s",
-                           "start":  0.0,
-                           "end":  0.48,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  1,
-                           "word":  "pelele",
-                           "mfa_word":  "pelele",
-                           "start":  0.48,
-                           "end":  1.07,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  2,
-                           "word":  "is",
-                           "mfa_word":  "is",
-                           "start":  1.12,
-                           "end":  1.38,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  3,
-                           "word":  "tasty",
-                           "mfa_word":  "tasty",
-                           "start":  1.42,
-                           "end":  2.08,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  4,
-                           "word":  "want",
-                           "mfa_word":  "want",
-                           "start":  2.23,
-                           "end":  2.49,
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  5,
-                           "word":  "a",
-                           "mfa_word":  "a",
-                           "start":  2.49,
-                           "end":  2.52,
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  6,
-                           "word":  "sandwich",
-                           "mfa_word":  "sandwich",
-                           "start":  2.52,
-                           "end":  3.26,
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       }
-                   ],
-    "word_heads":  [
-                       {
-                           "word_index":  0,
-                           "word":  "guinea\u0027s",
-                           "start":  0.14,
-                           "end":  0.21,
-                           "pose":  "03_Ee",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "IH",
-                           "source_phone_index":  1,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  1,
-                           "word":  "pelele",
-                           "start":  0.48,
-                           "end":  1.07,
-                           "pose":  "06_Eh",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "",
-                           "source_phone_index":  -1,
-                           "alignment_reason":  "synthetic_word_fallback",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  2,
-                           "word":  "is",
-                           "start":  1.12,
-                           "end":  1.25,
-                           "pose":  "05_Ay",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "AY",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_source_phone_index_label_mismatch",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  3,
-                           "word":  "tasty",
-                           "start":  1.52,
-                           "end":  1.65,
-                           "pose":  "06_Eh",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "EY",
-                           "source_phone_index":  1,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  4,
-                           "word":  "want",
-                           "start":  2.23,
-                           "end":  2.37,
-                           "pose":  "12_Ww-Oo-",
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source_phone":  "W",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  5,
-                           "word":  "a",
-                           "start":  2.49,
-                           "end":  2.52,
-                           "pose":  "07_Aa",
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source_phone":  "AH",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  6,
-                           "word":  "sandwich",
-                           "start":  2.65,
-                           "end":  2.79,
-                           "pose":  "07_Aa",
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source_phone":  "AE",
-                           "source_phone_index":  1,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       }
-                   ],
-    "mfa_words":  [
-                      {
-                          "word_index":  0,
-                          "word":  "guinea\u0027s",
-                          "mfa_word":  "guinea\u0027s",
-                          "start":  0.0,
-                          "end":  0.48,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  1,
-                          "word":  "pelele",
-                          "mfa_word":  "pelele",
-                          "start":  0.48,
-                          "end":  1.07,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  2,
-                          "word":  "is",
-                          "mfa_word":  "is",
-                          "start":  1.12,
-                          "end":  1.38,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  3,
-                          "word":  "tasty",
-                          "mfa_word":  "tasty",
-                          "start":  1.42,
-                          "end":  2.08,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  4,
-                          "word":  "want",
-                          "mfa_word":  "want",
-                          "start":  2.23,
-                          "end":  2.49,
-                          "phrase_index":  1,
-                          "sentence_index":  1,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  5,
-                          "word":  "a",
-                          "mfa_word":  "a",
-                          "start":  2.49,
-                          "end":  2.52,
-                          "phrase_index":  1,
-                          "sentence_index":  1,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  6,
-                          "word":  "sandwich",
-                          "mfa_word":  "sandwich",
-                          "start":  2.52,
-                          "end":  3.26,
-                          "phrase_index":  1,
-                          "sentence_index":  1,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      }
-                  ],
-    "mfa_phones":  [
-                       {
-                           "index_in_word":  0,
-                           "phone":  "G",
-                           "phone_base":  "G",
-                           "start":  0.0,
-                           "end":  0.14,
-                           "word_index":  0,
-                           "word":  "guinea\u0027s"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "IH1",
-                           "phone_base":  "IH",
-                           "start":  0.14,
-                           "end":  0.21,
-                           "word_index":  0,
-                           "word":  "guinea\u0027s"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "N",
-                           "phone_base":  "N",
-                           "start":  0.21,
-                           "end":  0.25,
-                           "word_index":  0,
-                           "word":  "guinea\u0027s"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "IY0",
-                           "phone_base":  "IY",
-                           "start":  0.25,
-                           "end":  0.41,
-                           "word_index":  0,
-                           "word":  "guinea\u0027s"
-                       },
-                       {
-                           "index_in_word":  4,
-                           "phone":  "Z",
-                           "phone_base":  "Z",
-                           "start":  0.41,
-                           "end":  0.48,
-                           "word_index":  0,
-                           "word":  "guinea\u0027s"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "pseudo_0",
-                           "phone_base":  "pseudo_0",
-                           "start":  0.48,
-                           "end":  1.07,
-                           "word_index":  1,
-                           "word":  "pelele",
-                           "synthetic":  true
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "IH1",
-                           "phone_base":  "IH",
-                           "start":  1.12,
-                           "end":  1.25,
-                           "word_index":  2,
-                           "word":  "is"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "Z",
-                           "phone_base":  "Z",
-                           "start":  1.25,
-                           "end":  1.38,
-                           "word_index":  2,
-                           "word":  "is"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "T",
-                           "phone_base":  "T",
-                           "start":  1.42,
-                           "end":  1.52,
-                           "word_index":  3,
-                           "word":  "tasty"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "EY1",
-                           "phone_base":  "EY",
-                           "start":  1.52,
-                           "end":  1.65,
-                           "word_index":  3,
-                           "word":  "tasty"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "S",
-                           "phone_base":  "S",
-                           "start":  1.65,
-                           "end":  1.77,
-                           "word_index":  3,
-                           "word":  "tasty"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "T",
-                           "phone_base":  "T",
-                           "start":  1.77,
-                           "end":  1.84,
-                           "word_index":  3,
-                           "word":  "tasty"
-                       },
-                       {
-                           "index_in_word":  4,
-                           "phone":  "IY0",
-                           "phone_base":  "IY",
-                           "start":  1.84,
-                           "end":  2.08,
-                           "word_index":  3,
-                           "word":  "tasty"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "W",
-                           "phone_base":  "W",
-                           "start":  2.23,
-                           "end":  2.37,
-                           "word_index":  4,
-                           "word":  "want"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "AA1",
-                           "phone_base":  "AA",
-                           "start":  2.37,
-                           "end":  2.43,
-                           "word_index":  4,
-                           "word":  "want"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "N",
-                           "phone_base":  "N",
-                           "start":  2.43,
-                           "end":  2.46,
-                           "word_index":  4,
-                           "word":  "want"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "T",
-                           "phone_base":  "T",
-                           "start":  2.46,
-                           "end":  2.49,
-                           "word_index":  4,
-                           "word":  "want"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "AH0",
-                           "phone_base":  "AH",
-                           "start":  2.49,
-                           "end":  2.52,
-                           "word_index":  5,
-                           "word":  "a"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "S",
-                           "phone_base":  "S",
-                           "start":  2.52,
-                           "end":  2.65,
-                           "word_index":  6,
-                           "word":  "sandwich"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "AE1",
-                           "phone_base":  "AE",
-                           "start":  2.65,
-                           "end":  2.79,
-                           "word_index":  6,
-                           "word":  "sandwich"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "N",
-                           "phone_base":  "N",
-                           "start":  2.79,
-                           "end":  2.82,
-                           "word_index":  6,
-                           "word":  "sandwich"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "D",
-                           "phone_base":  "D",
-                           "start":  2.82,
-                           "end":  2.88,
-                           "word_index":  6,
-                           "word":  "sandwich"
-                       },
-                       {
-                           "index_in_word":  4,
-                           "phone":  "W",
-                           "phone_base":  "W",
-                           "start":  2.88,
-                           "end":  2.93,
-                           "word_index":  6,
-                           "word":  "sandwich"
-                       },
-                       {
-                           "index_in_word":  5,
-                           "phone":  "IH0",
-                           "phone_base":  "IH",
-                           "start":  2.93,
-                           "end":  3.0,
-                           "word_index":  6,
-                           "word":  "sandwich"
-                       },
-                       {
-                           "index_in_word":  6,
-                           "phone":  "CH",
-                           "phone_base":  "CH",
-                           "start":  3.0,
-                           "end":  3.26,
-                           "word_index":  6,
-                           "word":  "sandwich"
-                       }
-                   ],
-    "planned_visemes":  [
-                            {
-                                "index":  0,
-                                "pose":  "03_Ee",
-                                "word":  "guinea\u0027s",
-                                "word_index":  0,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.045,
-                                "strength":  0.92,
-                                "source_phone":  "IH",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_front_vowel"
-                            },
-                            {
-                                "index":  1,
-                                "pose":  "06_Eh",
-                                "word":  "pelele",
-                                "word_index":  1,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.25,
-                                "strength":  0.28,
-                                "source_phone":  "",
-                                "source_phone_index":  -1,
-                                "generator":  "cmu_miss_conservative_single_vowel"
-                            },
-                            {
-                                "index":  2,
-                                "pose":  "05_Ay",
-                                "word":  "is",
-                                "word_index":  2,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.375,
-                                "strength":  0.94,
-                                "source_phone":  "AY",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_ay"
-                            },
-                            {
-                                "index":  3,
-                                "pose":  "06_Eh",
-                                "word":  "tasty",
-                                "word_index":  3,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.495,
-                                "strength":  0.92,
-                                "source_phone":  "EY",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_eh_vowel"
-                            },
-                            {
-                                "index":  4,
-                                "pose":  "03_Ee",
-                                "word":  "tasty",
-                                "word_index":  3,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.585,
-                                "strength":  0.5,
-                                "source_phone":  "IY",
-                                "source_phone_index":  4,
-                                "generator":  "cmu_front_vowel"
-                            },
-                            {
-                                "index":  5,
-                                "pose":  "12_Ww-Oo-",
-                                "word":  "want",
-                                "word_index":  4,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.6125,
-                                "strength":  0.88,
-                                "source_phone":  "W",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_w"
-                            },
-                            {
-                                "index":  6,
-                                "pose":  "07_Aa",
-                                "word":  "want",
-                                "word_index":  4,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.6375,
-                                "strength":  0.92,
-                                "source_phone":  "AA",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_open_vowel"
-                            },
-                            {
-                                "index":  7,
-                                "pose":  "07_Aa",
-                                "word":  "a",
-                                "word_index":  5,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.75,
-                                "strength":  0.5,
-                                "source_phone":  "AH",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_open_vowel"
-                            },
-                            {
-                                "index":  8,
-                                "pose":  "07_Aa",
-                                "word":  "sandwich",
-                                "word_index":  6,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.842857,
-                                "strength":  0.92,
-                                "source_phone":  "AE",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_open_vowel"
-                            },
-                            {
-                                "index":  9,
-                                "pose":  "12_Ww-Oo-",
-                                "word":  "sandwich",
-                                "word_index":  6,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.928571,
-                                "strength":  0.88,
-                                "source_phone":  "W",
-                                "source_phone_index":  4,
-                                "generator":  "cmu_w"
-                            },
-                            {
-                                "index":  10,
-                                "pose":  "14_ChJjSh",
-                                "word":  "sandwich",
-                                "word_index":  6,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.984857,
-                                "strength":  0.82,
-                                "source_phone":  "CH",
-                                "source_phone_index":  6,
-                                "generator":  "cmu_affricate_sibilant"
-                            }
-                        ],
-    "visemes":  [
-                    {
-                        "index":  0,
-                        "id":  "03_Ee",
-                        "pose":  "03_Ee",
-                        "start":  0.14,
-                        "center":  0.175,
-                        "end":  0.21,
-                        "word":  "guinea\u0027s",
-                        "word_index":  0,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "IH",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  1,
-                        "id":  "06_Eh",
-                        "pose":  "06_Eh",
-                        "start":  0.48,
-                        "center":  0.775,
-                        "end":  1.07,
-                        "word":  "pelele",
-                        "word_index":  1,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.28,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "synthetic_word_fallback",
-                        "source_phone":  "",
-                        "source_phone_index":  -1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-                                      {
-                                          "kind":  "low_strength_viseme",
-                                          "start":  0.48,
-                                          "end":  1.07,
-                                          "note":  "Viseme strength is low (0.280)."
-                                      },
-                                      {
-                                          "kind":  "large_inter_event_gap",
-                                          "start":  0.48,
-                                          "end":  1.07,
-                                          "note":  "Large gap from previous viseme center (0.600s)."
-                                      }
-                                  ]
-                    },
-                    {
-                        "index":  2,
-                        "id":  "05_Ay",
-                        "pose":  "05_Ay",
-                        "start":  1.12,
-                        "center":  1.185,
-                        "end":  1.25,
-                        "word":  "is",
-                        "word_index":  2,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.94,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_source_phone_index_label_mismatch",
-                        "source_phone":  "AY",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  3,
-                        "id":  "06_Eh",
-                        "pose":  "06_Eh",
-                        "start":  1.52,
-                        "center":  1.585,
-                        "end":  1.65,
-                        "word":  "tasty",
-                        "word_index":  3,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "EY",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  4,
-                        "id":  "03_Ee",
-                        "pose":  "03_Ee",
-                        "start":  1.84,
-                        "center":  1.96,
-                        "end":  2.08,
-                        "word":  "tasty",
-                        "word_index":  3,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.5,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "IY",
-                        "source_phone_index":  4,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-                                      {
-                                          "kind":  "low_strength_viseme",
-                                          "start":  1.84,
-                                          "end":  2.08,
-                                          "note":  "Viseme strength is low (0.500)."
-                                      }
-                                  ]
-                    },
-                    {
-                        "index":  5,
-                        "id":  "12_Ww-Oo-",
-                        "pose":  "12_Ww-Oo-",
-                        "start":  2.23,
-                        "center":  2.3,
-                        "end":  2.37,
-                        "word":  "want",
-                        "word_index":  4,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.88,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "W",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  6,
-                        "id":  "07_Aa",
-                        "pose":  "07_Aa",
-                        "start":  2.37,
-                        "center":  2.4000000000000004,
-                        "end":  2.43,
-                        "word":  "want",
-                        "word_index":  4,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "AA",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  7,
-                        "id":  "07_Aa",
-                        "pose":  "07_Aa",
-                        "start":  2.49,
-                        "center":  2.505,
-                        "end":  2.52,
-                        "word":  "a",
-                        "word_index":  5,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.5,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "AH",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-                                      {
-                                          "kind":  "low_strength_viseme",
-                                          "start":  2.49,
-                                          "end":  2.52,
-                                          "note":  "Viseme strength is low (0.500)."
-                                      }
-                                  ]
-                    },
-                    {
-                        "index":  8,
-                        "id":  "07_Aa",
-                        "pose":  "07_Aa",
-                        "start":  2.65,
-                        "center":  2.7199999999999998,
-                        "end":  2.79,
-                        "word":  "sandwich",
-                        "word_index":  6,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "AE",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  9,
-                        "id":  "12_Ww-Oo-",
-                        "pose":  "12_Ww-Oo-",
-                        "start":  2.88,
-                        "center":  2.9050000000000002,
-                        "end":  2.93,
-                        "word":  "sandwich",
-                        "word_index":  6,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.88,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "W",
-                        "source_phone_index":  4,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  10,
-                        "id":  "14_ChJjSh",
-                        "pose":  "14_ChJjSh",
-                        "start":  3.0,
-                        "center":  3.13,
-                        "end":  3.26,
-                        "word":  "sandwich",
-                        "word_index":  6,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.82,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "CH",
-                        "source_phone_index":  6,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    }
-                ],
-    "flags":  [
-                  {
-                      "kind":  "mfa_timeline_truncated_tail",
-                      "seconds":  0.957,
-                      "note":  "The final MFA word ends well before the WAV ends."
-                  },
-                  {
-                      "kind":  "low_strength_viseme",
-                      "start":  0.48,
-                      "end":  1.07,
-                      "note":  "Viseme strength is low (0.280)."
-                  },
-                  {
-                      "kind":  "large_inter_event_gap",
-                      "start":  0.48,
-                      "end":  1.07,
-                      "note":  "Large gap from previous viseme center (0.600s)."
-                  },
-                  {
-                      "kind":  "low_strength_viseme",
-                      "start":  1.84,
-                      "end":  2.08,
-                      "note":  "Viseme strength is low (0.500)."
-                  },
-                  {
-                      "kind":  "low_strength_viseme",
-                      "start":  2.49,
-                      "end":  2.52,
-                      "note":  "Viseme strength is low (0.500)."
-                  }
-              ],
-    "notes":  [
-
-              ],
-    "summary":  {
-                    "word_count":  7,
-                    "speech_region_count":  2,
-                    "word_head_count":  7,
-                    "viseme_count":  11,
-                    "flag_count":  5,
-                    "flags_by_kind":  {
-                                          "mfa_timeline_truncated_tail":  1,
-                                          "low_strength_viseme":  3,
-                                          "large_inter_event_gap":  1
-                                      },
-                    "commit_reasons":  {
-                                           "mfa_phone_alignment":  11
-                                       },
-                    "alignment_reasons":  {
-                                              "mfa_exact_source_phone_index":  9,
-                                              "synthetic_word_fallback":  1,
-                                              "mfa_source_phone_index_label_mismatch":  1
-                                          },
-                    "mapped_to_observed_speech_count":  11
-                }
+{
+  "schema_version": 1,
+  "case_id": "case_0072_20260629_103948_587_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000071_00",
+  "created_utc": "2026-07-04T18:58:52.456446+00:00",
+  "generator": {
+    "kind": "liplab_gold_mfa_phase1",
+    "buffer_ms": 600000,
+    "chunk_ms": 600000,
+    "mfa_num_jobs": 4,
+    "speech_merge_gap_ms": 120,
+    "source_run_dir": "outputs/offline_gold/latest/case_0072_20260629_103948_587_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000071_00",
+    "mfa_align_dir": "outputs/mfa_align/latest"
+  },
+  "approval": {
+    "status": "approved_gold",
+    "reviewed": true,
+    "reviewer": "auto_mfa_phone_export",
+    "reviewed_utc": "2026-07-04T18:58:52.456505+00:00"
+  },
+  "review_layers": {
+    "speech_regions": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "word_heads": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "dense_visemes": {
+      "status": "reviewed_dense",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    }
+  },
+  "transcript": "Guinea's pelele is tasty. Want a sandwich?",
+  "audio": {
+    "path": "inputs/wav/case_0072_20260629_103948_587_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000071_00.wav",
+    "sample_rate_hz": 24000,
+    "channels": 1,
+    "frame_count": 101205,
+    "duration_sec": 4.216875
+  },
+  "speech_regions": [
+    {
+      "index": 0,
+      "start": 0.0,
+      "end": 2.08,
+      "word_start_index": 0,
+      "word_end_index": 3,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_non_silence_phone_gap_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    },
+    {
+      "index": 1,
+      "start": 2.23,
+      "end": 3.26,
+      "word_start_index": 4,
+      "word_end_index": 6,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_non_silence_phone_gap_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    }
+  ],
+  "gold_words": [
+    {
+      "word_index": 0,
+      "word": "guinea's",
+      "mfa_word": "guinea's",
+      "start": 0.0,
+      "end": 0.48,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "pelele",
+      "mfa_word": "pelele",
+      "start": 0.48,
+      "end": 1.07,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 2,
+      "word": "is",
+      "mfa_word": "is",
+      "start": 1.12,
+      "end": 1.38,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 3,
+      "word": "tasty",
+      "mfa_word": "tasty",
+      "start": 1.42,
+      "end": 2.08,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 4,
+      "word": "want",
+      "mfa_word": "want",
+      "start": 2.23,
+      "end": 2.49,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 5,
+      "word": "a",
+      "mfa_word": "a",
+      "start": 2.49,
+      "end": 2.52,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 6,
+      "word": "sandwich",
+      "mfa_word": "sandwich",
+      "start": 2.52,
+      "end": 3.26,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    }
+  ],
+  "word_heads": [
+    {
+      "word_index": 0,
+      "word": "guinea's",
+      "start": 0.0,
+      "end": 0.14,
+      "pose": "G",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "G",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 1,
+      "word": "pelele",
+      "start": 0.48,
+      "end": 0.57,
+      "pose": "P",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "P",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 2,
+      "word": "is",
+      "start": 1.12,
+      "end": 1.25,
+      "pose": "IH1",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "IH1",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 3,
+      "word": "tasty",
+      "start": 1.42,
+      "end": 1.52,
+      "pose": "T",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "T",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 4,
+      "word": "want",
+      "start": 2.23,
+      "end": 2.37,
+      "pose": "W",
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 5,
+      "word": "a",
+      "start": 2.49,
+      "end": 2.52,
+      "pose": "AH0",
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "source_phone": "AH0",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 6,
+      "word": "sandwich",
+      "start": 2.52,
+      "end": 2.65,
+      "pose": "S",
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "source_phone": "S",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    }
+  ],
+  "mfa_words": [
+    {
+      "word_index": 0,
+      "word": "guinea's",
+      "mfa_word": "guinea's",
+      "start": 0.0,
+      "end": 0.48,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "pelele",
+      "mfa_word": "pelele",
+      "start": 0.48,
+      "end": 1.07,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 2,
+      "word": "is",
+      "mfa_word": "is",
+      "start": 1.12,
+      "end": 1.38,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 3,
+      "word": "tasty",
+      "mfa_word": "tasty",
+      "start": 1.42,
+      "end": 2.08,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 4,
+      "word": "want",
+      "mfa_word": "want",
+      "start": 2.23,
+      "end": 2.49,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 5,
+      "word": "a",
+      "mfa_word": "a",
+      "start": 2.49,
+      "end": 2.52,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 6,
+      "word": "sandwich",
+      "mfa_word": "sandwich",
+      "start": 2.52,
+      "end": 3.26,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    }
+  ],
+  "mfa_phones": [
+    {
+      "index_in_word": 0,
+      "phone": "G",
+      "phone_base": "G",
+      "start": 0.0,
+      "end": 0.14,
+      "word_index": 0,
+      "word": "guinea's"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "IH1",
+      "phone_base": "IH",
+      "start": 0.14,
+      "end": 0.21,
+      "word_index": 0,
+      "word": "guinea's"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 0.21,
+      "end": 0.25,
+      "word_index": 0,
+      "word": "guinea's"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "IY0",
+      "phone_base": "IY",
+      "start": 0.25,
+      "end": 0.41,
+      "word_index": 0,
+      "word": "guinea's"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "Z",
+      "phone_base": "Z",
+      "start": 0.41,
+      "end": 0.48,
+      "word_index": 0,
+      "word": "guinea's"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "P",
+      "phone_base": "P",
+      "start": 0.48,
+      "end": 0.57,
+      "word_index": 1,
+      "word": "pelele"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "EH1",
+      "phone_base": "EH",
+      "start": 0.57,
+      "end": 0.61,
+      "word_index": 1,
+      "word": "pelele"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 0.61,
+      "end": 0.73,
+      "word_index": 1,
+      "word": "pelele"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "EH1",
+      "phone_base": "EH",
+      "start": 0.73,
+      "end": 0.9,
+      "word_index": 1,
+      "word": "pelele"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 0.9,
+      "end": 1.07,
+      "word_index": 1,
+      "word": "pelele"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "IH1",
+      "phone_base": "IH",
+      "start": 1.12,
+      "end": 1.25,
+      "word_index": 2,
+      "word": "is"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "Z",
+      "phone_base": "Z",
+      "start": 1.25,
+      "end": 1.38,
+      "word_index": 2,
+      "word": "is"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 1.42,
+      "end": 1.52,
+      "word_index": 3,
+      "word": "tasty"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "EY1",
+      "phone_base": "EY",
+      "start": 1.52,
+      "end": 1.65,
+      "word_index": 3,
+      "word": "tasty"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 1.65,
+      "end": 1.77,
+      "word_index": 3,
+      "word": "tasty"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 1.77,
+      "end": 1.84,
+      "word_index": 3,
+      "word": "tasty"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "IY0",
+      "phone_base": "IY",
+      "start": 1.84,
+      "end": 2.08,
+      "word_index": 3,
+      "word": "tasty"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 2.23,
+      "end": 2.37,
+      "word_index": 4,
+      "word": "want"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AA1",
+      "phone_base": "AA",
+      "start": 2.37,
+      "end": 2.43,
+      "word_index": 4,
+      "word": "want"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 2.43,
+      "end": 2.46,
+      "word_index": 4,
+      "word": "want"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 2.46,
+      "end": 2.49,
+      "word_index": 4,
+      "word": "want"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 2.49,
+      "end": 2.52,
+      "word_index": 5,
+      "word": "a"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 2.52,
+      "end": 2.65,
+      "word_index": 6,
+      "word": "sandwich"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AE1",
+      "phone_base": "AE",
+      "start": 2.65,
+      "end": 2.79,
+      "word_index": 6,
+      "word": "sandwich"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 2.79,
+      "end": 2.82,
+      "word_index": 6,
+      "word": "sandwich"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 2.82,
+      "end": 2.89,
+      "word_index": 6,
+      "word": "sandwich"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 2.89,
+      "end": 2.93,
+      "word_index": 6,
+      "word": "sandwich"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "IH0",
+      "phone_base": "IH",
+      "start": 2.93,
+      "end": 3.0,
+      "word_index": 6,
+      "word": "sandwich"
+    },
+    {
+      "index_in_word": 6,
+      "phone": "CH",
+      "phone_base": "CH",
+      "start": 3.0,
+      "end": 3.26,
+      "word_index": 6,
+      "word": "sandwich"
+    }
+  ],
+  "mfa_non_silence_phone_intervals": [
+    {
+      "phone": "G",
+      "start": 0.0,
+      "end": 0.14
+    },
+    {
+      "phone": "IH1",
+      "start": 0.14,
+      "end": 0.21
+    },
+    {
+      "phone": "N",
+      "start": 0.21,
+      "end": 0.25
+    },
+    {
+      "phone": "IY0",
+      "start": 0.25,
+      "end": 0.41
+    },
+    {
+      "phone": "Z",
+      "start": 0.41,
+      "end": 0.48
+    },
+    {
+      "phone": "P",
+      "start": 0.48,
+      "end": 0.57
+    },
+    {
+      "phone": "EH1",
+      "start": 0.57,
+      "end": 0.61
+    },
+    {
+      "phone": "L",
+      "start": 0.61,
+      "end": 0.73
+    },
+    {
+      "phone": "EH1",
+      "start": 0.73,
+      "end": 0.9
+    },
+    {
+      "phone": "L",
+      "start": 0.9,
+      "end": 1.07
+    },
+    {
+      "phone": "IH1",
+      "start": 1.12,
+      "end": 1.25
+    },
+    {
+      "phone": "Z",
+      "start": 1.25,
+      "end": 1.38
+    },
+    {
+      "phone": "T",
+      "start": 1.42,
+      "end": 1.52
+    },
+    {
+      "phone": "EY1",
+      "start": 1.52,
+      "end": 1.65
+    },
+    {
+      "phone": "S",
+      "start": 1.65,
+      "end": 1.77
+    },
+    {
+      "phone": "T",
+      "start": 1.77,
+      "end": 1.84
+    },
+    {
+      "phone": "IY0",
+      "start": 1.84,
+      "end": 2.08
+    },
+    {
+      "phone": "W",
+      "start": 2.23,
+      "end": 2.37
+    },
+    {
+      "phone": "AA1",
+      "start": 2.37,
+      "end": 2.43
+    },
+    {
+      "phone": "N",
+      "start": 2.43,
+      "end": 2.46
+    },
+    {
+      "phone": "T",
+      "start": 2.46,
+      "end": 2.49
+    },
+    {
+      "phone": "AH0",
+      "start": 2.49,
+      "end": 2.52
+    },
+    {
+      "phone": "S",
+      "start": 2.52,
+      "end": 2.65
+    },
+    {
+      "phone": "AE1",
+      "start": 2.65,
+      "end": 2.79
+    },
+    {
+      "phone": "N",
+      "start": 2.79,
+      "end": 2.82
+    },
+    {
+      "phone": "D",
+      "start": 2.82,
+      "end": 2.89
+    },
+    {
+      "phone": "W",
+      "start": 2.89,
+      "end": 2.93
+    },
+    {
+      "phone": "IH0",
+      "start": 2.93,
+      "end": 3.0
+    },
+    {
+      "phone": "CH",
+      "start": 3.0,
+      "end": 3.26
+    }
+  ],
+  "planned_visemes": [],
+  "visemes": [
+    {
+      "index": 0,
+      "id": "G",
+      "pose": "G",
+      "phone": "G",
+      "start": 0.0,
+      "center": 0.07,
+      "end": 0.14,
+      "word": "guinea's",
+      "mfa_word": "guinea's",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "G",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 1,
+      "id": "IH1",
+      "pose": "IH1",
+      "phone": "IH1",
+      "start": 0.14,
+      "center": 0.175,
+      "end": 0.21,
+      "word": "guinea's",
+      "mfa_word": "guinea's",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IH1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 2,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 0.21,
+      "center": 0.22999999999999998,
+      "end": 0.25,
+      "word": "guinea's",
+      "mfa_word": "guinea's",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 3,
+      "id": "IY0",
+      "pose": "IY0",
+      "phone": "IY0",
+      "start": 0.25,
+      "center": 0.32999999999999996,
+      "end": 0.41,
+      "word": "guinea's",
+      "mfa_word": "guinea's",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IY0",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 4,
+      "id": "Z",
+      "pose": "Z",
+      "phone": "Z",
+      "start": 0.41,
+      "center": 0.44499999999999995,
+      "end": 0.48,
+      "word": "guinea's",
+      "mfa_word": "guinea's",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "Z",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 5,
+      "id": "P",
+      "pose": "P",
+      "phone": "P",
+      "start": 0.48,
+      "center": 0.5249999999999999,
+      "end": 0.57,
+      "word": "pelele",
+      "mfa_word": "pelele",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "P",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 6,
+      "id": "EH1",
+      "pose": "EH1",
+      "phone": "EH1",
+      "start": 0.57,
+      "center": 0.59,
+      "end": 0.61,
+      "word": "pelele",
+      "mfa_word": "pelele",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EH1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 7,
+      "id": "L",
+      "pose": "L",
+      "phone": "L",
+      "start": 0.61,
+      "center": 0.6699999999999999,
+      "end": 0.73,
+      "word": "pelele",
+      "mfa_word": "pelele",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "L",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 8,
+      "id": "EH1",
+      "pose": "EH1",
+      "phone": "EH1",
+      "start": 0.73,
+      "center": 0.815,
+      "end": 0.9,
+      "word": "pelele",
+      "mfa_word": "pelele",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EH1",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 9,
+      "id": "L",
+      "pose": "L",
+      "phone": "L",
+      "start": 0.9,
+      "center": 0.9850000000000001,
+      "end": 1.07,
+      "word": "pelele",
+      "mfa_word": "pelele",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "L",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 10,
+      "id": "IH1",
+      "pose": "IH1",
+      "phone": "IH1",
+      "start": 1.12,
+      "center": 1.185,
+      "end": 1.25,
+      "word": "is",
+      "mfa_word": "is",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IH1",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 11,
+      "id": "Z",
+      "pose": "Z",
+      "phone": "Z",
+      "start": 1.25,
+      "center": 1.315,
+      "end": 1.38,
+      "word": "is",
+      "mfa_word": "is",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "Z",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 12,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 1.42,
+      "center": 1.47,
+      "end": 1.52,
+      "word": "tasty",
+      "mfa_word": "tasty",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 13,
+      "id": "EY1",
+      "pose": "EY1",
+      "phone": "EY1",
+      "start": 1.52,
+      "center": 1.585,
+      "end": 1.65,
+      "word": "tasty",
+      "mfa_word": "tasty",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EY1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 14,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 1.65,
+      "center": 1.71,
+      "end": 1.77,
+      "word": "tasty",
+      "mfa_word": "tasty",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 15,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 1.77,
+      "center": 1.8050000000000002,
+      "end": 1.84,
+      "word": "tasty",
+      "mfa_word": "tasty",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 16,
+      "id": "IY0",
+      "pose": "IY0",
+      "phone": "IY0",
+      "start": 1.84,
+      "center": 1.96,
+      "end": 2.08,
+      "word": "tasty",
+      "mfa_word": "tasty",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IY0",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 17,
+      "id": "W",
+      "pose": "W",
+      "phone": "W",
+      "start": 2.23,
+      "center": 2.3,
+      "end": 2.37,
+      "word": "want",
+      "mfa_word": "want",
+      "word_index": 4,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 18,
+      "id": "AA1",
+      "pose": "AA1",
+      "phone": "AA1",
+      "start": 2.37,
+      "center": 2.4000000000000004,
+      "end": 2.43,
+      "word": "want",
+      "mfa_word": "want",
+      "word_index": 4,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AA1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 19,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 2.43,
+      "center": 2.4450000000000003,
+      "end": 2.46,
+      "word": "want",
+      "mfa_word": "want",
+      "word_index": 4,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 20,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 2.46,
+      "center": 2.475,
+      "end": 2.49,
+      "word": "want",
+      "mfa_word": "want",
+      "word_index": 4,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 21,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 2.49,
+      "center": 2.505,
+      "end": 2.52,
+      "word": "a",
+      "mfa_word": "a",
+      "word_index": 5,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 22,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 2.52,
+      "center": 2.585,
+      "end": 2.65,
+      "word": "sandwich",
+      "mfa_word": "sandwich",
+      "word_index": 6,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 23,
+      "id": "AE1",
+      "pose": "AE1",
+      "phone": "AE1",
+      "start": 2.65,
+      "center": 2.7199999999999998,
+      "end": 2.79,
+      "word": "sandwich",
+      "mfa_word": "sandwich",
+      "word_index": 6,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AE1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 24,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 2.79,
+      "center": 2.8049999999999997,
+      "end": 2.82,
+      "word": "sandwich",
+      "mfa_word": "sandwich",
+      "word_index": 6,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 25,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 2.82,
+      "center": 2.855,
+      "end": 2.89,
+      "word": "sandwich",
+      "mfa_word": "sandwich",
+      "word_index": 6,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "D",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 26,
+      "id": "W",
+      "pose": "W",
+      "phone": "W",
+      "start": 2.89,
+      "center": 2.91,
+      "end": 2.93,
+      "word": "sandwich",
+      "mfa_word": "sandwich",
+      "word_index": 6,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "W",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 27,
+      "id": "IH0",
+      "pose": "IH0",
+      "phone": "IH0",
+      "start": 2.93,
+      "center": 2.965,
+      "end": 3.0,
+      "word": "sandwich",
+      "mfa_word": "sandwich",
+      "word_index": 6,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IH0",
+      "source_phone_index": 5,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 28,
+      "id": "CH",
+      "pose": "CH",
+      "phone": "CH",
+      "start": 3.0,
+      "center": 3.13,
+      "end": 3.26,
+      "word": "sandwich",
+      "mfa_word": "sandwich",
+      "word_index": 6,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "CH",
+      "source_phone_index": 6,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    }
+  ],
+  "flags": [
+    {
+      "kind": "word_count_mismatch",
+      "count_mfa_words": 7,
+      "count_transcript_words": 0,
+      "note": "MFA word count does not match transcript-owned word count."
+    },
+    {
+      "kind": "mfa_timeline_truncated_tail",
+      "seconds": 0.957,
+      "note": "The final MFA word ends well before the WAV ends."
+    },
+    {
+      "kind": "speech_regions_split_on_mfa_phone_gaps",
+      "region_count": 2,
+      "gap_threshold_seconds": 0.12,
+      "largest_split_gap_seconds": 0.15,
+      "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
+    }
+  ],
+  "notes": [],
+  "summary": {
+    "word_count": 7,
+    "speech_region_count": 2,
+    "word_head_count": 7,
+    "viseme_count": 29,
+    "flag_count": 3,
+    "flags_by_kind": {
+      "word_count_mismatch": 1,
+      "mfa_timeline_truncated_tail": 1,
+      "speech_regions_split_on_mfa_phone_gaps": 1
+    },
+    "commit_reasons": {
+      "mfa_phone_interval": 29
+    },
+    "alignment_reasons": {
+      "mfa_textgrid_phone": 29
+    },
+    "mapped_to_observed_speech_count": 29
+  }
 }

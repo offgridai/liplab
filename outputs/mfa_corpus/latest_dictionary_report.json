@@ -1,19 +1,50 @@
 {
   "case_count": 104,
-  "word_count": 429,
+  "word_count": 438,
   "resolved_by_source": {
     "stock_or_offgrid": 421,
-    "compound_fallback": 8
+    "compound_fallback": 8,
+    "number_digit_fallback": 2,
+    "acronym_letter_fallback": 0,
+    "grapheme_g2p_fallback": 7
   },
-  "unresolved_words": [
-    "000",
-    "4",
-    "cobu",
-    "eswatini",
-    "griot",
-    "kebbeh",
-    "kokshetau",
-    "rila",
-    "zarghoona"
-  ]
+  "fallback_pronunciations": {
+    "zarghoona": {
+      "source": "grapheme_g2p_fallback",
+      "pronunciation": "Z AA1 R G HH UW1 N AH0"
+    },
+    "4": {
+      "source": "number_digit_fallback",
+      "pronunciation": "0.99 0.2 1.12 0.98 F AO1 R"
+    },
+    "000": {
+      "source": "number_digit_fallback",
+      "pronunciation": "0.99 0.68 0.52 1.24 Z IH1 R OW0 0.99 0.68 0.52 1.24 Z IH1 R OW0 0.99 0.68 0.52 1.24 Z IH1 R OW0"
+    },
+    "rila": {
+      "source": "grapheme_g2p_fallback",
+      "pronunciation": "R IH1 L AH0"
+    },
+    "cobu": {
+      "source": "grapheme_g2p_fallback",
+      "pronunciation": "K OW1 B AH0"
+    },
+    "eswatini": {
+      "source": "grapheme_g2p_fallback",
+      "pronunciation": "EH1 S W AH0 T IH1 N IH1"
+    },
+    "griot": {
+      "source": "grapheme_g2p_fallback",
+      "pronunciation": "G R IH1 OW1 T"
+    },
+    "kebbeh": {
+      "source": "grapheme_g2p_fallback",
+      "pronunciation": "K EH1 B B EH1 HH"
+    },
+    "kokshetau": {
+      "source": "grapheme_g2p_fallback",
+      "pronunciation": "K OW1 K SH EH1 T AH0 AH0"
+    }
+  },
+  "unresolved_words": []
 }

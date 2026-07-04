@@ -1,1687 +1,2348 @@
-﻿{
-    "schema_version":  1,
-    "case_id":  "case_0029_20260629_094229_854_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000028_00",
-    "created_utc":  "2026-07-01T16:51:36.337620+00:00",
-    "generator":  {
-                      "kind":  "liplab_gold_mfa_phase1",
-                      "buffer_ms":  600000,
-                      "chunk_ms":  600000,
-                      "mfa_num_jobs":  4,
-                      "speech_merge_gap_ms":  120,
-                      "source_run_dir":  "outputs/offline_gold/latest/case_0029_20260629_094229_854_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000028_00",
-                      "mfa_align_dir":  "outputs/mfa_align/latest"
-                  },
-    "approval":  {
-                     "status":  "approved_gold",
-                     "reviewed":  true,
-                     "reviewer":  "bulk_promote",
-                     "reviewed_utc":  "2026-07-01T16:53:34.1144044Z"
-                 },
-    "review_layers":  {
-                          "speech_regions":  {
-                                                 "status":  "reviewed_boundary",
-                                                 "reviewed":  true,
-                                                 "reviewer":  "bulk_promote"
-                                             },
-                          "word_heads":  {
-                                             "status":  "reviewed_boundary",
-                                             "reviewed":  true,
-                                             "reviewer":  "bulk_promote"
-                                         },
-                          "dense_visemes":  {
-                                                "status":  "reviewed_dense",
-                                                "reviewed":  true,
-                                                "reviewer":  "bulk_promote"
-                                            }
-                      },
-    "transcript":  "Brunei has beautiful mosques and oil wealth. Need anything else?",
-    "audio":  {
-                  "path":  "inputs/wav/case_0029_20260629_094229_854_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000028_00.wav",
-                  "sample_rate_hz":  24000,
-                  "channels":  1,
-                  "frame_count":  116565,
-                  "duration_sec":  4.856875
-              },
-    "speech_regions":  [
-                           {
-                               "index":  0,
-                               "start":  0.06,
-                               "end":  3.2,
-                               "word_start_index":  0,
-                               "word_end_index":  6,
-                               "sentence_start_index":  0,
-                               "sentence_end_index":  0,
-                               "source":  "mfa_word_boundaries_with_occupancy_lull_splits",
-                               "approval":  {
-                                                "status":  "draft_auto",
-                                                "reviewed":  false
-                                            }
-                           },
-                           {
-                               "index":  1,
-                               "start":  3.7,
-                               "end":  4.81,
-                               "word_start_index":  7,
-                               "word_end_index":  9,
-                               "sentence_start_index":  1,
-                               "sentence_end_index":  1,
-                               "source":  "mfa_word_boundaries_with_occupancy_lull_splits",
-                               "approval":  {
-                                                "status":  "draft_auto",
-                                                "reviewed":  false
-                                            }
-                           }
-                       ],
-    "gold_words":  [
-                       {
-                           "word_index":  0,
-                           "word":  "brunei",
-                           "mfa_word":  "brunei",
-                           "start":  0.06,
-                           "end":  0.64,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  1,
-                           "word":  "has",
-                           "mfa_word":  "has",
-                           "start":  0.64,
-                           "end":  0.98,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  2,
-                           "word":  "beautiful",
-                           "mfa_word":  "beautiful",
-                           "start":  0.98,
-                           "end":  1.54,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  3,
-                           "word":  "mosques",
-                           "mfa_word":  "mosques",
-                           "start":  1.54,
-                           "end":  2.12,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  4,
-                           "word":  "and",
-                           "mfa_word":  "and",
-                           "start":  2.12,
-                           "end":  2.29,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  5,
-                           "word":  "oil",
-                           "mfa_word":  "oil",
-                           "start":  2.39,
-                           "end":  2.71,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  6,
-                           "word":  "wealth",
-                           "mfa_word":  "wealth",
-                           "start":  2.71,
-                           "end":  3.2,
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  7,
-                           "word":  "need",
-                           "mfa_word":  "need",
-                           "start":  3.7,
-                           "end":  4.01,
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  8,
-                           "word":  "anything",
-                           "mfa_word":  "anything",
-                           "start":  4.01,
-                           "end":  4.39,
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  9,
-                           "word":  "else",
-                           "mfa_word":  "else",
-                           "start":  4.39,
-                           "end":  4.81,
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source":  "mfa_word_interval",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       }
-                   ],
-    "word_heads":  [
-                       {
-                           "word_index":  0,
-                           "word":  "brunei",
-                           "start":  0.06,
-                           "end":  0.16,
-                           "pose":  "22_MBP",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "B",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  1,
-                           "word":  "has",
-                           "start":  0.79,
-                           "end":  0.9,
-                           "pose":  "07_Aa",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "AE",
-                           "source_phone_index":  1,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  2,
-                           "word":  "beautiful",
-                           "start":  0.98,
-                           "end":  1.11,
-                           "pose":  "22_MBP",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "B",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  3,
-                           "word":  "mosques",
-                           "start":  1.54,
-                           "end":  1.65,
-                           "pose":  "22_MBP",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "M",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  4,
-                           "word":  "and",
-                           "start":  2.12,
-                           "end":  2.2,
-                           "pose":  "07_Aa",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "AH",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_source_phone_index_label_mismatch",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  5,
-                           "word":  "oil",
-                           "start":  2.39,
-                           "end":  2.64,
-                           "pose":  "09_Oh",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "OY",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  6,
-                           "word":  "wealth",
-                           "start":  2.71,
-                           "end":  2.78,
-                           "pose":  "12_Ww-Oo-",
-                           "phrase_index":  0,
-                           "sentence_index":  0,
-                           "source_phone":  "W",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  7,
-                           "word":  "need",
-                           "start":  3.86,
-                           "end":  3.97,
-                           "pose":  "03_Ee",
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source_phone":  "IY",
-                           "source_phone_index":  1,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  8,
-                           "word":  "anything",
-                           "start":  4.01,
-                           "end":  4.08,
-                           "pose":  "06_Eh",
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source_phone":  "EH",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       },
-                       {
-                           "word_index":  9,
-                           "word":  "else",
-                           "start":  4.39,
-                           "end":  4.46,
-                           "pose":  "06_Eh",
-                           "phrase_index":  1,
-                           "sentence_index":  1,
-                           "source_phone":  "EH",
-                           "source_phone_index":  0,
-                           "alignment_reason":  "mfa_exact_source_phone_index",
-                           "approval":  {
-                                            "status":  "draft_auto",
-                                            "reviewed":  false
-                                        }
-                       }
-                   ],
-    "mfa_words":  [
-                      {
-                          "word_index":  0,
-                          "word":  "brunei",
-                          "mfa_word":  "brunei",
-                          "start":  0.06,
-                          "end":  0.64,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  1,
-                          "word":  "has",
-                          "mfa_word":  "has",
-                          "start":  0.64,
-                          "end":  0.98,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  2,
-                          "word":  "beautiful",
-                          "mfa_word":  "beautiful",
-                          "start":  0.98,
-                          "end":  1.54,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  3,
-                          "word":  "mosques",
-                          "mfa_word":  "mosques",
-                          "start":  1.54,
-                          "end":  2.12,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  4,
-                          "word":  "and",
-                          "mfa_word":  "and",
-                          "start":  2.12,
-                          "end":  2.29,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  5,
-                          "word":  "oil",
-                          "mfa_word":  "oil",
-                          "start":  2.39,
-                          "end":  2.71,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  6,
-                          "word":  "wealth",
-                          "mfa_word":  "wealth",
-                          "start":  2.71,
-                          "end":  3.2,
-                          "phrase_index":  0,
-                          "sentence_index":  0,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  7,
-                          "word":  "need",
-                          "mfa_word":  "need",
-                          "start":  3.7,
-                          "end":  4.01,
-                          "phrase_index":  1,
-                          "sentence_index":  1,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  8,
-                          "word":  "anything",
-                          "mfa_word":  "anything",
-                          "start":  4.01,
-                          "end":  4.39,
-                          "phrase_index":  1,
-                          "sentence_index":  1,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      },
-                      {
-                          "word_index":  9,
-                          "word":  "else",
-                          "mfa_word":  "else",
-                          "start":  4.39,
-                          "end":  4.81,
-                          "phrase_index":  1,
-                          "sentence_index":  1,
-                          "source":  "mfa_word_interval",
-                          "approval":  {
-                                           "status":  "draft_auto",
-                                           "reviewed":  false
-                                       }
-                      }
-                  ],
-    "mfa_phones":  [
-                       {
-                           "index_in_word":  0,
-                           "phone":  "B",
-                           "phone_base":  "B",
-                           "start":  0.06,
-                           "end":  0.16,
-                           "word_index":  0,
-                           "word":  "brunei"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "R",
-                           "phone_base":  "R",
-                           "start":  0.16,
-                           "end":  0.22,
-                           "word_index":  0,
-                           "word":  "brunei"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "UW0",
-                           "phone_base":  "UW",
-                           "start":  0.22,
-                           "end":  0.32,
-                           "word_index":  0,
-                           "word":  "brunei"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "N",
-                           "phone_base":  "N",
-                           "start":  0.32,
-                           "end":  0.39,
-                           "word_index":  0,
-                           "word":  "brunei"
-                       },
-                       {
-                           "index_in_word":  4,
-                           "phone":  "AY1",
-                           "phone_base":  "AY",
-                           "start":  0.39,
-                           "end":  0.64,
-                           "word_index":  0,
-                           "word":  "brunei"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "HH",
-                           "phone_base":  "HH",
-                           "start":  0.64,
-                           "end":  0.79,
-                           "word_index":  1,
-                           "word":  "has"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "AE1",
-                           "phone_base":  "AE",
-                           "start":  0.79,
-                           "end":  0.9,
-                           "word_index":  1,
-                           "word":  "has"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "Z",
-                           "phone_base":  "Z",
-                           "start":  0.9,
-                           "end":  0.98,
-                           "word_index":  1,
-                           "word":  "has"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "B",
-                           "phone_base":  "B",
-                           "start":  0.98,
-                           "end":  1.11,
-                           "word_index":  2,
-                           "word":  "beautiful"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "Y",
-                           "phone_base":  "Y",
-                           "start":  1.11,
-                           "end":  1.22,
-                           "word_index":  2,
-                           "word":  "beautiful"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "UW1",
-                           "phone_base":  "UW",
-                           "start":  1.22,
-                           "end":  1.27,
-                           "word_index":  2,
-                           "word":  "beautiful"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "T",
-                           "phone_base":  "T",
-                           "start":  1.27,
-                           "end":  1.31,
-                           "word_index":  2,
-                           "word":  "beautiful"
-                       },
-                       {
-                           "index_in_word":  4,
-                           "phone":  "AH0",
-                           "phone_base":  "AH",
-                           "start":  1.31,
-                           "end":  1.36,
-                           "word_index":  2,
-                           "word":  "beautiful"
-                       },
-                       {
-                           "index_in_word":  5,
-                           "phone":  "F",
-                           "phone_base":  "F",
-                           "start":  1.36,
-                           "end":  1.45,
-                           "word_index":  2,
-                           "word":  "beautiful"
-                       },
-                       {
-                           "index_in_word":  6,
-                           "phone":  "AH0",
-                           "phone_base":  "AH",
-                           "start":  1.45,
-                           "end":  1.48,
-                           "word_index":  2,
-                           "word":  "beautiful"
-                       },
-                       {
-                           "index_in_word":  7,
-                           "phone":  "L",
-                           "phone_base":  "L",
-                           "start":  1.48,
-                           "end":  1.54,
-                           "word_index":  2,
-                           "word":  "beautiful"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "M",
-                           "phone_base":  "M",
-                           "start":  1.54,
-                           "end":  1.65,
-                           "word_index":  3,
-                           "word":  "mosques"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "AA1",
-                           "phone_base":  "AA",
-                           "start":  1.65,
-                           "end":  1.86,
-                           "word_index":  3,
-                           "word":  "mosques"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "S",
-                           "phone_base":  "S",
-                           "start":  1.86,
-                           "end":  1.96,
-                           "word_index":  3,
-                           "word":  "mosques"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "K",
-                           "phone_base":  "K",
-                           "start":  1.96,
-                           "end":  2.02,
-                           "word_index":  3,
-                           "word":  "mosques"
-                       },
-                       {
-                           "index_in_word":  4,
-                           "phone":  "S",
-                           "phone_base":  "S",
-                           "start":  2.02,
-                           "end":  2.12,
-                           "word_index":  3,
-                           "word":  "mosques"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "AE1",
-                           "phone_base":  "AE",
-                           "start":  2.12,
-                           "end":  2.2,
-                           "word_index":  4,
-                           "word":  "and"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "N",
-                           "phone_base":  "N",
-                           "start":  2.2,
-                           "end":  2.24,
-                           "word_index":  4,
-                           "word":  "and"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "D",
-                           "phone_base":  "D",
-                           "start":  2.24,
-                           "end":  2.29,
-                           "word_index":  4,
-                           "word":  "and"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "OY1",
-                           "phone_base":  "OY",
-                           "start":  2.39,
-                           "end":  2.64,
-                           "word_index":  5,
-                           "word":  "oil"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "L",
-                           "phone_base":  "L",
-                           "start":  2.64,
-                           "end":  2.71,
-                           "word_index":  5,
-                           "word":  "oil"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "W",
-                           "phone_base":  "W",
-                           "start":  2.71,
-                           "end":  2.78,
-                           "word_index":  6,
-                           "word":  "wealth"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "EH1",
-                           "phone_base":  "EH",
-                           "start":  2.78,
-                           "end":  2.86,
-                           "word_index":  6,
-                           "word":  "wealth"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "L",
-                           "phone_base":  "L",
-                           "start":  2.86,
-                           "end":  2.98,
-                           "word_index":  6,
-                           "word":  "wealth"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "TH",
-                           "phone_base":  "TH",
-                           "start":  2.98,
-                           "end":  3.2,
-                           "word_index":  6,
-                           "word":  "wealth"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "N",
-                           "phone_base":  "N",
-                           "start":  3.7,
-                           "end":  3.86,
-                           "word_index":  7,
-                           "word":  "need"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "IY1",
-                           "phone_base":  "IY",
-                           "start":  3.86,
-                           "end":  3.97,
-                           "word_index":  7,
-                           "word":  "need"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "D",
-                           "phone_base":  "D",
-                           "start":  3.97,
-                           "end":  4.01,
-                           "word_index":  7,
-                           "word":  "need"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "EH1",
-                           "phone_base":  "EH",
-                           "start":  4.01,
-                           "end":  4.08,
-                           "word_index":  8,
-                           "word":  "anything"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "N",
-                           "phone_base":  "N",
-                           "start":  4.08,
-                           "end":  4.13,
-                           "word_index":  8,
-                           "word":  "anything"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "IY0",
-                           "phone_base":  "IY",
-                           "start":  4.13,
-                           "end":  4.19,
-                           "word_index":  8,
-                           "word":  "anything"
-                       },
-                       {
-                           "index_in_word":  3,
-                           "phone":  "TH",
-                           "phone_base":  "TH",
-                           "start":  4.19,
-                           "end":  4.27,
-                           "word_index":  8,
-                           "word":  "anything"
-                       },
-                       {
-                           "index_in_word":  4,
-                           "phone":  "IH2",
-                           "phone_base":  "IH",
-                           "start":  4.27,
-                           "end":  4.32,
-                           "word_index":  8,
-                           "word":  "anything"
-                       },
-                       {
-                           "index_in_word":  5,
-                           "phone":  "NG",
-                           "phone_base":  "NG",
-                           "start":  4.32,
-                           "end":  4.39,
-                           "word_index":  8,
-                           "word":  "anything"
-                       },
-                       {
-                           "index_in_word":  0,
-                           "phone":  "EH1",
-                           "phone_base":  "EH",
-                           "start":  4.39,
-                           "end":  4.46,
-                           "word_index":  9,
-                           "word":  "else"
-                       },
-                       {
-                           "index_in_word":  1,
-                           "phone":  "L",
-                           "phone_base":  "L",
-                           "start":  4.46,
-                           "end":  4.57,
-                           "word_index":  9,
-                           "word":  "else"
-                       },
-                       {
-                           "index_in_word":  2,
-                           "phone":  "S",
-                           "phone_base":  "S",
-                           "start":  4.57,
-                           "end":  4.81,
-                           "word_index":  9,
-                           "word":  "else"
-                       }
-                   ],
-    "planned_visemes":  [
-                            {
-                                "index":  0,
-                                "pose":  "22_MBP",
-                                "word":  "brunei",
-                                "word_index":  0,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.011481,
-                                "strength":  1.0,
-                                "source_phone":  "B",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_bilabial"
-                            },
-                            {
-                                "index":  1,
-                                "pose":  "11_Oo",
-                                "word":  "brunei",
-                                "word_index":  0,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.055556,
-                                "strength":  0.5,
-                                "source_phone":  "UW",
-                                "source_phone_index":  2,
-                                "generator":  "cmu_oo_vowel"
-                            },
-                            {
-                                "index":  2,
-                                "pose":  "05_Ay",
-                                "word":  "brunei",
-                                "word_index":  0,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.1,
-                                "strength":  0.94,
-                                "source_phone":  "AY",
-                                "source_phone_index":  4,
-                                "generator":  "cmu_ay"
-                            },
-                            {
-                                "index":  3,
-                                "pose":  "07_Aa",
-                                "word":  "has",
-                                "word_index":  1,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.148148,
-                                "strength":  0.92,
-                                "source_phone":  "AE",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_open_vowel"
-                            },
-                            {
-                                "index":  4,
-                                "pose":  "22_MBP",
-                                "word":  "beautiful",
-                                "word_index":  2,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.196759,
-                                "strength":  1.0,
-                                "source_phone":  "B",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_bilabial"
-                            },
-                            {
-                                "index":  5,
-                                "pose":  "11_Oo",
-                                "word":  "beautiful",
-                                "word_index":  2,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.243056,
-                                "strength":  0.92,
-                                "source_phone":  "UW",
-                                "source_phone_index":  2,
-                                "generator":  "cmu_oo_vowel"
-                            },
-                            {
-                                "index":  6,
-                                "pose":  "20_FV",
-                                "word":  "beautiful",
-                                "word_index":  2,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.3125,
-                                "strength":  0.96,
-                                "source_phone":  "F",
-                                "source_phone_index":  5,
-                                "generator":  "cmu_fv"
-                            },
-                            {
-                                "index":  7,
-                                "pose":  "22_MBP",
-                                "word":  "mosques",
-                                "word_index":  3,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.377778,
-                                "strength":  1.0,
-                                "source_phone":  "M",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_bilabial"
-                            },
-                            {
-                                "index":  8,
-                                "pose":  "07_Aa",
-                                "word":  "mosques",
-                                "word_index":  3,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.392593,
-                                "strength":  0.92,
-                                "source_phone":  "AA",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_open_vowel"
-                            },
-                            {
-                                "index":  9,
-                                "pose":  "07_Aa",
-                                "word":  "and",
-                                "word_index":  4,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.45679,
-                                "strength":  0.5,
-                                "source_phone":  "AH",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_open_vowel"
-                            },
-                            {
-                                "index":  10,
-                                "pose":  "09_Oh",
-                                "word":  "oil",
-                                "word_index":  5,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.537037,
-                                "strength":  0.92,
-                                "source_phone":  "OY",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_oh_vowel"
-                            },
-                            {
-                                "index":  11,
-                                "pose":  "12_Ww-Oo-",
-                                "word":  "wealth",
-                                "word_index":  6,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.601852,
-                                "strength":  0.88,
-                                "source_phone":  "W",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_w"
-                            },
-                            {
-                                "index":  12,
-                                "pose":  "06_Eh",
-                                "word":  "wealth",
-                                "word_index":  6,
-                                "phrase_index":  0,
-                                "sentence_index":  0,
-                                "text_center_norm":  0.62037,
-                                "strength":  0.92,
-                                "source_phone":  "EH",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_eh_vowel"
-                            },
-                            {
-                                "index":  13,
-                                "pose":  "03_Ee",
-                                "word":  "need",
-                                "word_index":  7,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.703704,
-                                "strength":  0.92,
-                                "source_phone":  "IY",
-                                "source_phone_index":  1,
-                                "generator":  "cmu_front_vowel"
-                            },
-                            {
-                                "index":  14,
-                                "pose":  "06_Eh",
-                                "word":  "anything",
-                                "word_index":  8,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.756173,
-                                "strength":  0.92,
-                                "source_phone":  "EH",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_eh_vowel"
-                            },
-                            {
-                                "index":  15,
-                                "pose":  "03_Ee",
-                                "word":  "anything",
-                                "word_index":  8,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.817901,
-                                "strength":  0.5,
-                                "source_phone":  "IY",
-                                "source_phone_index":  2,
-                                "generator":  "cmu_front_vowel"
-                            },
-                            {
-                                "index":  16,
-                                "pose":  "06_Eh",
-                                "word":  "else",
-                                "word_index":  9,
-                                "phrase_index":  1,
-                                "sentence_index":  1,
-                                "text_center_norm":  0.938272,
-                                "strength":  0.92,
-                                "source_phone":  "EH",
-                                "source_phone_index":  0,
-                                "generator":  "cmu_eh_vowel"
-                            }
-                        ],
-    "visemes":  [
-                    {
-                        "index":  0,
-                        "id":  "22_MBP",
-                        "pose":  "22_MBP",
-                        "start":  0.06,
-                        "center":  0.11,
-                        "end":  0.16,
-                        "word":  "brunei",
-                        "word_index":  0,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  1.0,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "B",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  1,
-                        "id":  "11_Oo",
-                        "pose":  "11_Oo",
-                        "start":  0.22,
-                        "center":  0.27,
-                        "end":  0.32,
-                        "word":  "brunei",
-                        "word_index":  0,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.5,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "UW",
-                        "source_phone_index":  2,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-                                      {
-                                          "kind":  "low_strength_viseme",
-                                          "start":  0.22,
-                                          "end":  0.32,
-                                          "note":  "Viseme strength is low (0.500)."
-                                      }
-                                  ]
-                    },
-                    {
-                        "index":  2,
-                        "id":  "05_Ay",
-                        "pose":  "05_Ay",
-                        "start":  0.39,
-                        "center":  0.515,
-                        "end":  0.64,
-                        "word":  "brunei",
-                        "word_index":  0,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.94,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "AY",
-                        "source_phone_index":  4,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  3,
-                        "id":  "07_Aa",
-                        "pose":  "07_Aa",
-                        "start":  0.79,
-                        "center":  0.845,
-                        "end":  0.9,
-                        "word":  "has",
-                        "word_index":  1,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "AE",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  4,
-                        "id":  "22_MBP",
-                        "pose":  "22_MBP",
-                        "start":  0.98,
-                        "center":  1.045,
-                        "end":  1.11,
-                        "word":  "beautiful",
-                        "word_index":  2,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  1.0,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "B",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  5,
-                        "id":  "11_Oo",
-                        "pose":  "11_Oo",
-                        "start":  1.22,
-                        "center":  1.245,
-                        "end":  1.27,
-                        "word":  "beautiful",
-                        "word_index":  2,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "UW",
-                        "source_phone_index":  2,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  6,
-                        "id":  "20_FV",
-                        "pose":  "20_FV",
-                        "start":  1.36,
-                        "center":  1.405,
-                        "end":  1.45,
-                        "word":  "beautiful",
-                        "word_index":  2,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.96,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "F",
-                        "source_phone_index":  5,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  7,
-                        "id":  "22_MBP",
-                        "pose":  "22_MBP",
-                        "start":  1.54,
-                        "center":  1.595,
-                        "end":  1.65,
-                        "word":  "mosques",
-                        "word_index":  3,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  1.0,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "M",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  8,
-                        "id":  "07_Aa",
-                        "pose":  "07_Aa",
-                        "start":  1.65,
-                        "center":  1.755,
-                        "end":  1.86,
-                        "word":  "mosques",
-                        "word_index":  3,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "AA",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  9,
-                        "id":  "07_Aa",
-                        "pose":  "07_Aa",
-                        "start":  2.12,
-                        "center":  2.16,
-                        "end":  2.2,
-                        "word":  "and",
-                        "word_index":  4,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.5,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_source_phone_index_label_mismatch",
-                        "source_phone":  "AH",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-                                      {
-                                          "kind":  "low_strength_viseme",
-                                          "start":  2.12,
-                                          "end":  2.2,
-                                          "note":  "Viseme strength is low (0.500)."
-                                      }
-                                  ]
-                    },
-                    {
-                        "index":  10,
-                        "id":  "09_Oh",
-                        "pose":  "09_Oh",
-                        "start":  2.39,
-                        "center":  2.515,
-                        "end":  2.64,
-                        "word":  "oil",
-                        "word_index":  5,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "OY",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  11,
-                        "id":  "12_Ww-Oo-",
-                        "pose":  "12_Ww-Oo-",
-                        "start":  2.71,
-                        "center":  2.745,
-                        "end":  2.78,
-                        "word":  "wealth",
-                        "word_index":  6,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.88,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "W",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  12,
-                        "id":  "06_Eh",
-                        "pose":  "06_Eh",
-                        "start":  2.78,
-                        "center":  2.82,
-                        "end":  2.86,
-                        "word":  "wealth",
-                        "word_index":  6,
-                        "phrase_index":  0,
-                        "sentence_index":  0,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "EH",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  13,
-                        "id":  "03_Ee",
-                        "pose":  "03_Ee",
-                        "start":  3.86,
-                        "center":  3.915,
-                        "end":  3.97,
-                        "word":  "need",
-                        "word_index":  7,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "IY",
-                        "source_phone_index":  1,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-                                      {
-                                          "kind":  "large_inter_event_gap",
-                                          "start":  3.86,
-                                          "end":  3.97,
-                                          "note":  "Large gap from previous viseme center (1.095s)."
-                                      }
-                                  ]
-                    },
-                    {
-                        "index":  14,
-                        "id":  "06_Eh",
-                        "pose":  "06_Eh",
-                        "start":  4.01,
-                        "center":  4.045,
-                        "end":  4.08,
-                        "word":  "anything",
-                        "word_index":  8,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "EH",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    },
-                    {
-                        "index":  15,
-                        "id":  "03_Ee",
-                        "pose":  "03_Ee",
-                        "start":  4.13,
-                        "center":  4.16,
-                        "end":  4.19,
-                        "word":  "anything",
-                        "word_index":  8,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.5,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "IY",
-                        "source_phone_index":  2,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-                                      {
-                                          "kind":  "low_strength_viseme",
-                                          "start":  4.13,
-                                          "end":  4.19,
-                                          "note":  "Viseme strength is low (0.500)."
-                                      }
-                                  ]
-                    },
-                    {
-                        "index":  16,
-                        "id":  "06_Eh",
-                        "pose":  "06_Eh",
-                        "start":  4.39,
-                        "center":  4.425,
-                        "end":  4.46,
-                        "word":  "else",
-                        "word_index":  9,
-                        "phrase_index":  1,
-                        "sentence_index":  1,
-                        "strength":  0.92,
-                        "commit_reason":  "mfa_phone_alignment",
-                        "alignment_reason":  "mfa_exact_source_phone_index",
-                        "source_phone":  "EH",
-                        "source_phone_index":  0,
-                        "source_phone_class":  "",
-                        "mapped_to_observed_speech":  true,
-                        "approval":  {
-                                         "status":  "draft_auto",
-                                         "reviewed":  false
-                                     },
-                        "notes":  [
-
-                                  ],
-                        "flags":  [
-
-                                  ]
-                    }
-                ],
-    "flags":  [
-                  {
-                      "kind":  "low_strength_viseme",
-                      "start":  0.22,
-                      "end":  0.32,
-                      "note":  "Viseme strength is low (0.500)."
-                  },
-                  {
-                      "kind":  "low_strength_viseme",
-                      "start":  2.12,
-                      "end":  2.2,
-                      "note":  "Viseme strength is low (0.500)."
-                  },
-                  {
-                      "kind":  "large_inter_event_gap",
-                      "start":  3.86,
-                      "end":  3.97,
-                      "note":  "Large gap from previous viseme center (1.095s)."
-                  },
-                  {
-                      "kind":  "low_strength_viseme",
-                      "start":  4.13,
-                      "end":  4.19,
-                      "note":  "Viseme strength is low (0.500)."
-                  }
-              ],
-    "notes":  [
-
-              ],
-    "summary":  {
-                    "word_count":  10,
-                    "speech_region_count":  2,
-                    "word_head_count":  10,
-                    "viseme_count":  17,
-                    "flag_count":  4,
-                    "flags_by_kind":  {
-                                          "low_strength_viseme":  3,
-                                          "large_inter_event_gap":  1
-                                      },
-                    "commit_reasons":  {
-                                           "mfa_phone_alignment":  17
-                                       },
-                    "alignment_reasons":  {
-                                              "mfa_exact_source_phone_index":  16,
-                                              "mfa_source_phone_index_label_mismatch":  1
-                                          },
-                    "mapped_to_observed_speech_count":  17
-                }
+{
+  "schema_version": 1,
+  "case_id": "case_0029_20260629_094229_854_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000028_00",
+  "created_utc": "2026-07-04T18:58:52.121484+00:00",
+  "generator": {
+    "kind": "liplab_gold_mfa_phase1",
+    "buffer_ms": 600000,
+    "chunk_ms": 600000,
+    "mfa_num_jobs": 4,
+    "speech_merge_gap_ms": 120,
+    "source_run_dir": "outputs/offline_gold/latest/case_0029_20260629_094229_854_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000028_00",
+    "mfa_align_dir": "outputs/mfa_align/latest"
+  },
+  "approval": {
+    "status": "approved_gold",
+    "reviewed": true,
+    "reviewer": "auto_mfa_phone_export",
+    "reviewed_utc": "2026-07-04T18:58:52.121539+00:00"
+  },
+  "review_layers": {
+    "speech_regions": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "word_heads": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "dense_visemes": {
+      "status": "reviewed_dense",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    }
+  },
+  "transcript": "Brunei has beautiful mosques and oil wealth. Need anything else?",
+  "audio": {
+    "path": "inputs/wav/case_0029_20260629_094229_854_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000028_00.wav",
+    "sample_rate_hz": 24000,
+    "channels": 1,
+    "frame_count": 116565,
+    "duration_sec": 4.856875
+  },
+  "speech_regions": [
+    {
+      "index": 0,
+      "start": 0.06,
+      "end": 3.21,
+      "word_start_index": 0,
+      "word_end_index": 6,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_non_silence_phone_gap_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    },
+    {
+      "index": 1,
+      "start": 3.7,
+      "end": 4.81,
+      "word_start_index": 7,
+      "word_end_index": 9,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_non_silence_phone_gap_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    }
+  ],
+  "gold_words": [
+    {
+      "word_index": 0,
+      "word": "brunei",
+      "mfa_word": "brunei",
+      "start": 0.06,
+      "end": 0.64,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "has",
+      "mfa_word": "has",
+      "start": 0.64,
+      "end": 0.98,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 2,
+      "word": "beautiful",
+      "mfa_word": "beautiful",
+      "start": 0.98,
+      "end": 1.54,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 3,
+      "word": "mosques",
+      "mfa_word": "mosques",
+      "start": 1.54,
+      "end": 2.12,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 4,
+      "word": "and",
+      "mfa_word": "and",
+      "start": 2.12,
+      "end": 2.29,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 5,
+      "word": "oil",
+      "mfa_word": "oil",
+      "start": 2.39,
+      "end": 2.71,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 6,
+      "word": "wealth",
+      "mfa_word": "wealth",
+      "start": 2.71,
+      "end": 3.21,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 7,
+      "word": "need",
+      "mfa_word": "need",
+      "start": 3.7,
+      "end": 4.01,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 8,
+      "word": "anything",
+      "mfa_word": "anything",
+      "start": 4.01,
+      "end": 4.39,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 9,
+      "word": "else",
+      "mfa_word": "else",
+      "start": 4.39,
+      "end": 4.81,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    }
+  ],
+  "word_heads": [
+    {
+      "word_index": 0,
+      "word": "brunei",
+      "start": 0.06,
+      "end": 0.16,
+      "pose": "B",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 1,
+      "word": "has",
+      "start": 0.64,
+      "end": 0.79,
+      "pose": "HH",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 2,
+      "word": "beautiful",
+      "start": 0.98,
+      "end": 1.11,
+      "pose": "B",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 3,
+      "word": "mosques",
+      "start": 1.54,
+      "end": 1.65,
+      "pose": "M",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "M",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 4,
+      "word": "and",
+      "start": 2.12,
+      "end": 2.2,
+      "pose": "AE1",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "AE1",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 5,
+      "word": "oil",
+      "start": 2.39,
+      "end": 2.64,
+      "pose": "OY1",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "OY1",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 6,
+      "word": "wealth",
+      "start": 2.71,
+      "end": 2.78,
+      "pose": "W",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 7,
+      "word": "need",
+      "start": 3.7,
+      "end": 3.86,
+      "pose": "N",
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "source_phone": "N",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 8,
+      "word": "anything",
+      "start": 4.01,
+      "end": 4.08,
+      "pose": "EH1",
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "source_phone": "EH1",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 9,
+      "word": "else",
+      "start": 4.39,
+      "end": 4.46,
+      "pose": "EH1",
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "source_phone": "EH1",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    }
+  ],
+  "mfa_words": [
+    {
+      "word_index": 0,
+      "word": "brunei",
+      "mfa_word": "brunei",
+      "start": 0.06,
+      "end": 0.64,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "has",
+      "mfa_word": "has",
+      "start": 0.64,
+      "end": 0.98,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 2,
+      "word": "beautiful",
+      "mfa_word": "beautiful",
+      "start": 0.98,
+      "end": 1.54,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 3,
+      "word": "mosques",
+      "mfa_word": "mosques",
+      "start": 1.54,
+      "end": 2.12,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 4,
+      "word": "and",
+      "mfa_word": "and",
+      "start": 2.12,
+      "end": 2.29,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 5,
+      "word": "oil",
+      "mfa_word": "oil",
+      "start": 2.39,
+      "end": 2.71,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 6,
+      "word": "wealth",
+      "mfa_word": "wealth",
+      "start": 2.71,
+      "end": 3.21,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 7,
+      "word": "need",
+      "mfa_word": "need",
+      "start": 3.7,
+      "end": 4.01,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 8,
+      "word": "anything",
+      "mfa_word": "anything",
+      "start": 4.01,
+      "end": 4.39,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 9,
+      "word": "else",
+      "mfa_word": "else",
+      "start": 4.39,
+      "end": 4.81,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "speech_region_index": 1
+    }
+  ],
+  "mfa_phones": [
+    {
+      "index_in_word": 0,
+      "phone": "B",
+      "phone_base": "B",
+      "start": 0.06,
+      "end": 0.16,
+      "word_index": 0,
+      "word": "brunei"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "R",
+      "phone_base": "R",
+      "start": 0.16,
+      "end": 0.22,
+      "word_index": 0,
+      "word": "brunei"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "UW0",
+      "phone_base": "UW",
+      "start": 0.22,
+      "end": 0.32,
+      "word_index": 0,
+      "word": "brunei"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 0.32,
+      "end": 0.39,
+      "word_index": 0,
+      "word": "brunei"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "AY1",
+      "phone_base": "AY",
+      "start": 0.39,
+      "end": 0.64,
+      "word_index": 0,
+      "word": "brunei"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "HH",
+      "phone_base": "HH",
+      "start": 0.64,
+      "end": 0.79,
+      "word_index": 1,
+      "word": "has"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AE1",
+      "phone_base": "AE",
+      "start": 0.79,
+      "end": 0.9,
+      "word_index": 1,
+      "word": "has"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "Z",
+      "phone_base": "Z",
+      "start": 0.9,
+      "end": 0.98,
+      "word_index": 1,
+      "word": "has"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "B",
+      "phone_base": "B",
+      "start": 0.98,
+      "end": 1.11,
+      "word_index": 2,
+      "word": "beautiful"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "Y",
+      "phone_base": "Y",
+      "start": 1.11,
+      "end": 1.22,
+      "word_index": 2,
+      "word": "beautiful"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "UW1",
+      "phone_base": "UW",
+      "start": 1.22,
+      "end": 1.27,
+      "word_index": 2,
+      "word": "beautiful"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 1.27,
+      "end": 1.31,
+      "word_index": 2,
+      "word": "beautiful"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 1.31,
+      "end": 1.36,
+      "word_index": 2,
+      "word": "beautiful"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "F",
+      "phone_base": "F",
+      "start": 1.36,
+      "end": 1.45,
+      "word_index": 2,
+      "word": "beautiful"
+    },
+    {
+      "index_in_word": 6,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 1.45,
+      "end": 1.48,
+      "word_index": 2,
+      "word": "beautiful"
+    },
+    {
+      "index_in_word": 7,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 1.48,
+      "end": 1.54,
+      "word_index": 2,
+      "word": "beautiful"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "M",
+      "phone_base": "M",
+      "start": 1.54,
+      "end": 1.65,
+      "word_index": 3,
+      "word": "mosques"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AA1",
+      "phone_base": "AA",
+      "start": 1.65,
+      "end": 1.86,
+      "word_index": 3,
+      "word": "mosques"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 1.86,
+      "end": 1.96,
+      "word_index": 3,
+      "word": "mosques"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "K",
+      "phone_base": "K",
+      "start": 1.96,
+      "end": 2.02,
+      "word_index": 3,
+      "word": "mosques"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 2.02,
+      "end": 2.12,
+      "word_index": 3,
+      "word": "mosques"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "AE1",
+      "phone_base": "AE",
+      "start": 2.12,
+      "end": 2.2,
+      "word_index": 4,
+      "word": "and"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 2.2,
+      "end": 2.24,
+      "word_index": 4,
+      "word": "and"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 2.24,
+      "end": 2.29,
+      "word_index": 4,
+      "word": "and"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "OY1",
+      "phone_base": "OY",
+      "start": 2.39,
+      "end": 2.64,
+      "word_index": 5,
+      "word": "oil"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 2.64,
+      "end": 2.71,
+      "word_index": 5,
+      "word": "oil"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 2.71,
+      "end": 2.78,
+      "word_index": 6,
+      "word": "wealth"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "EH1",
+      "phone_base": "EH",
+      "start": 2.78,
+      "end": 2.86,
+      "word_index": 6,
+      "word": "wealth"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 2.86,
+      "end": 2.98,
+      "word_index": 6,
+      "word": "wealth"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "TH",
+      "phone_base": "TH",
+      "start": 2.98,
+      "end": 3.21,
+      "word_index": 6,
+      "word": "wealth"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 3.7,
+      "end": 3.86,
+      "word_index": 7,
+      "word": "need"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "IY1",
+      "phone_base": "IY",
+      "start": 3.86,
+      "end": 3.97,
+      "word_index": 7,
+      "word": "need"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 3.97,
+      "end": 4.01,
+      "word_index": 7,
+      "word": "need"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "EH1",
+      "phone_base": "EH",
+      "start": 4.01,
+      "end": 4.08,
+      "word_index": 8,
+      "word": "anything"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 4.08,
+      "end": 4.13,
+      "word_index": 8,
+      "word": "anything"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "IY0",
+      "phone_base": "IY",
+      "start": 4.13,
+      "end": 4.19,
+      "word_index": 8,
+      "word": "anything"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "TH",
+      "phone_base": "TH",
+      "start": 4.19,
+      "end": 4.27,
+      "word_index": 8,
+      "word": "anything"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "IH2",
+      "phone_base": "IH",
+      "start": 4.27,
+      "end": 4.32,
+      "word_index": 8,
+      "word": "anything"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "NG",
+      "phone_base": "NG",
+      "start": 4.32,
+      "end": 4.39,
+      "word_index": 8,
+      "word": "anything"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "EH1",
+      "phone_base": "EH",
+      "start": 4.39,
+      "end": 4.46,
+      "word_index": 9,
+      "word": "else"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 4.46,
+      "end": 4.57,
+      "word_index": 9,
+      "word": "else"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 4.57,
+      "end": 4.81,
+      "word_index": 9,
+      "word": "else"
+    }
+  ],
+  "mfa_non_silence_phone_intervals": [
+    {
+      "phone": "B",
+      "start": 0.06,
+      "end": 0.16
+    },
+    {
+      "phone": "R",
+      "start": 0.16,
+      "end": 0.22
+    },
+    {
+      "phone": "UW0",
+      "start": 0.22,
+      "end": 0.32
+    },
+    {
+      "phone": "N",
+      "start": 0.32,
+      "end": 0.39
+    },
+    {
+      "phone": "AY1",
+      "start": 0.39,
+      "end": 0.64
+    },
+    {
+      "phone": "HH",
+      "start": 0.64,
+      "end": 0.79
+    },
+    {
+      "phone": "AE1",
+      "start": 0.79,
+      "end": 0.9
+    },
+    {
+      "phone": "Z",
+      "start": 0.9,
+      "end": 0.98
+    },
+    {
+      "phone": "B",
+      "start": 0.98,
+      "end": 1.11
+    },
+    {
+      "phone": "Y",
+      "start": 1.11,
+      "end": 1.22
+    },
+    {
+      "phone": "UW1",
+      "start": 1.22,
+      "end": 1.27
+    },
+    {
+      "phone": "T",
+      "start": 1.27,
+      "end": 1.31
+    },
+    {
+      "phone": "AH0",
+      "start": 1.31,
+      "end": 1.36
+    },
+    {
+      "phone": "F",
+      "start": 1.36,
+      "end": 1.45
+    },
+    {
+      "phone": "AH0",
+      "start": 1.45,
+      "end": 1.48
+    },
+    {
+      "phone": "L",
+      "start": 1.48,
+      "end": 1.54
+    },
+    {
+      "phone": "M",
+      "start": 1.54,
+      "end": 1.65
+    },
+    {
+      "phone": "AA1",
+      "start": 1.65,
+      "end": 1.86
+    },
+    {
+      "phone": "S",
+      "start": 1.86,
+      "end": 1.96
+    },
+    {
+      "phone": "K",
+      "start": 1.96,
+      "end": 2.02
+    },
+    {
+      "phone": "S",
+      "start": 2.02,
+      "end": 2.12
+    },
+    {
+      "phone": "AE1",
+      "start": 2.12,
+      "end": 2.2
+    },
+    {
+      "phone": "N",
+      "start": 2.2,
+      "end": 2.24
+    },
+    {
+      "phone": "D",
+      "start": 2.24,
+      "end": 2.29
+    },
+    {
+      "phone": "OY1",
+      "start": 2.39,
+      "end": 2.64
+    },
+    {
+      "phone": "L",
+      "start": 2.64,
+      "end": 2.71
+    },
+    {
+      "phone": "W",
+      "start": 2.71,
+      "end": 2.78
+    },
+    {
+      "phone": "EH1",
+      "start": 2.78,
+      "end": 2.86
+    },
+    {
+      "phone": "L",
+      "start": 2.86,
+      "end": 2.98
+    },
+    {
+      "phone": "TH",
+      "start": 2.98,
+      "end": 3.21
+    },
+    {
+      "phone": "N",
+      "start": 3.7,
+      "end": 3.86
+    },
+    {
+      "phone": "IY1",
+      "start": 3.86,
+      "end": 3.97
+    },
+    {
+      "phone": "D",
+      "start": 3.97,
+      "end": 4.01
+    },
+    {
+      "phone": "EH1",
+      "start": 4.01,
+      "end": 4.08
+    },
+    {
+      "phone": "N",
+      "start": 4.08,
+      "end": 4.13
+    },
+    {
+      "phone": "IY0",
+      "start": 4.13,
+      "end": 4.19
+    },
+    {
+      "phone": "TH",
+      "start": 4.19,
+      "end": 4.27
+    },
+    {
+      "phone": "IH2",
+      "start": 4.27,
+      "end": 4.32
+    },
+    {
+      "phone": "NG",
+      "start": 4.32,
+      "end": 4.39
+    },
+    {
+      "phone": "EH1",
+      "start": 4.39,
+      "end": 4.46
+    },
+    {
+      "phone": "L",
+      "start": 4.46,
+      "end": 4.57
+    },
+    {
+      "phone": "S",
+      "start": 4.57,
+      "end": 4.81
+    }
+  ],
+  "planned_visemes": [],
+  "visemes": [
+    {
+      "index": 0,
+      "id": "B",
+      "pose": "B",
+      "phone": "B",
+      "start": 0.06,
+      "center": 0.11,
+      "end": 0.16,
+      "word": "brunei",
+      "mfa_word": "brunei",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 1,
+      "id": "R",
+      "pose": "R",
+      "phone": "R",
+      "start": 0.16,
+      "center": 0.19,
+      "end": 0.22,
+      "word": "brunei",
+      "mfa_word": "brunei",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "R",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 2,
+      "id": "UW0",
+      "pose": "UW0",
+      "phone": "UW0",
+      "start": 0.22,
+      "center": 0.27,
+      "end": 0.32,
+      "word": "brunei",
+      "mfa_word": "brunei",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "UW0",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 3,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 0.32,
+      "center": 0.355,
+      "end": 0.39,
+      "word": "brunei",
+      "mfa_word": "brunei",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 4,
+      "id": "AY1",
+      "pose": "AY1",
+      "phone": "AY1",
+      "start": 0.39,
+      "center": 0.515,
+      "end": 0.64,
+      "word": "brunei",
+      "mfa_word": "brunei",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AY1",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 5,
+      "id": "HH",
+      "pose": "HH",
+      "phone": "HH",
+      "start": 0.64,
+      "center": 0.7150000000000001,
+      "end": 0.79,
+      "word": "has",
+      "mfa_word": "has",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 6,
+      "id": "AE1",
+      "pose": "AE1",
+      "phone": "AE1",
+      "start": 0.79,
+      "center": 0.845,
+      "end": 0.9,
+      "word": "has",
+      "mfa_word": "has",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AE1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 7,
+      "id": "Z",
+      "pose": "Z",
+      "phone": "Z",
+      "start": 0.9,
+      "center": 0.94,
+      "end": 0.98,
+      "word": "has",
+      "mfa_word": "has",
+      "word_index": 1,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "Z",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 8,
+      "id": "B",
+      "pose": "B",
+      "phone": "B",
+      "start": 0.98,
+      "center": 1.045,
+      "end": 1.11,
+      "word": "beautiful",
+      "mfa_word": "beautiful",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 9,
+      "id": "Y",
+      "pose": "Y",
+      "phone": "Y",
+      "start": 1.11,
+      "center": 1.165,
+      "end": 1.22,
+      "word": "beautiful",
+      "mfa_word": "beautiful",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "Y",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 10,
+      "id": "UW1",
+      "pose": "UW1",
+      "phone": "UW1",
+      "start": 1.22,
+      "center": 1.245,
+      "end": 1.27,
+      "word": "beautiful",
+      "mfa_word": "beautiful",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "UW1",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 11,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 1.27,
+      "center": 1.29,
+      "end": 1.31,
+      "word": "beautiful",
+      "mfa_word": "beautiful",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 12,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 1.31,
+      "center": 1.335,
+      "end": 1.36,
+      "word": "beautiful",
+      "mfa_word": "beautiful",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 13,
+      "id": "F",
+      "pose": "F",
+      "phone": "F",
+      "start": 1.36,
+      "center": 1.405,
+      "end": 1.45,
+      "word": "beautiful",
+      "mfa_word": "beautiful",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "F",
+      "source_phone_index": 5,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 14,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 1.45,
+      "center": 1.4649999999999999,
+      "end": 1.48,
+      "word": "beautiful",
+      "mfa_word": "beautiful",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 6,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 15,
+      "id": "L",
+      "pose": "L",
+      "phone": "L",
+      "start": 1.48,
+      "center": 1.51,
+      "end": 1.54,
+      "word": "beautiful",
+      "mfa_word": "beautiful",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "L",
+      "source_phone_index": 7,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 16,
+      "id": "M",
+      "pose": "M",
+      "phone": "M",
+      "start": 1.54,
+      "center": 1.595,
+      "end": 1.65,
+      "word": "mosques",
+      "mfa_word": "mosques",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "M",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 17,
+      "id": "AA1",
+      "pose": "AA1",
+      "phone": "AA1",
+      "start": 1.65,
+      "center": 1.755,
+      "end": 1.86,
+      "word": "mosques",
+      "mfa_word": "mosques",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AA1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 18,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 1.86,
+      "center": 1.9100000000000001,
+      "end": 1.96,
+      "word": "mosques",
+      "mfa_word": "mosques",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 19,
+      "id": "K",
+      "pose": "K",
+      "phone": "K",
+      "start": 1.96,
+      "center": 1.99,
+      "end": 2.02,
+      "word": "mosques",
+      "mfa_word": "mosques",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "K",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 20,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 2.02,
+      "center": 2.0700000000000003,
+      "end": 2.12,
+      "word": "mosques",
+      "mfa_word": "mosques",
+      "word_index": 3,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 21,
+      "id": "AE1",
+      "pose": "AE1",
+      "phone": "AE1",
+      "start": 2.12,
+      "center": 2.16,
+      "end": 2.2,
+      "word": "and",
+      "mfa_word": "and",
+      "word_index": 4,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AE1",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 22,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 2.2,
+      "center": 2.22,
+      "end": 2.24,
+      "word": "and",
+      "mfa_word": "and",
+      "word_index": 4,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 23,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 2.24,
+      "center": 2.265,
+      "end": 2.29,
+      "word": "and",
+      "mfa_word": "and",
+      "word_index": 4,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "D",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 24,
+      "id": "OY1",
+      "pose": "OY1",
+      "phone": "OY1",
+      "start": 2.39,
+      "center": 2.515,
+      "end": 2.64,
+      "word": "oil",
+      "mfa_word": "oil",
+      "word_index": 5,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "OY1",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 25,
+      "id": "L",
+      "pose": "L",
+      "phone": "L",
+      "start": 2.64,
+      "center": 2.675,
+      "end": 2.71,
+      "word": "oil",
+      "mfa_word": "oil",
+      "word_index": 5,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "L",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 26,
+      "id": "W",
+      "pose": "W",
+      "phone": "W",
+      "start": 2.71,
+      "center": 2.745,
+      "end": 2.78,
+      "word": "wealth",
+      "mfa_word": "wealth",
+      "word_index": 6,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 27,
+      "id": "EH1",
+      "pose": "EH1",
+      "phone": "EH1",
+      "start": 2.78,
+      "center": 2.82,
+      "end": 2.86,
+      "word": "wealth",
+      "mfa_word": "wealth",
+      "word_index": 6,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EH1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 28,
+      "id": "L",
+      "pose": "L",
+      "phone": "L",
+      "start": 2.86,
+      "center": 2.92,
+      "end": 2.98,
+      "word": "wealth",
+      "mfa_word": "wealth",
+      "word_index": 6,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "L",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 29,
+      "id": "TH",
+      "pose": "TH",
+      "phone": "TH",
+      "start": 2.98,
+      "center": 3.0949999999999998,
+      "end": 3.21,
+      "word": "wealth",
+      "mfa_word": "wealth",
+      "word_index": 6,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "TH",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 30,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 3.7,
+      "center": 3.7800000000000002,
+      "end": 3.86,
+      "word": "need",
+      "mfa_word": "need",
+      "word_index": 7,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 31,
+      "id": "IY1",
+      "pose": "IY1",
+      "phone": "IY1",
+      "start": 3.86,
+      "center": 3.915,
+      "end": 3.97,
+      "word": "need",
+      "mfa_word": "need",
+      "word_index": 7,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IY1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 32,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 3.97,
+      "center": 3.99,
+      "end": 4.01,
+      "word": "need",
+      "mfa_word": "need",
+      "word_index": 7,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "D",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 33,
+      "id": "EH1",
+      "pose": "EH1",
+      "phone": "EH1",
+      "start": 4.01,
+      "center": 4.045,
+      "end": 4.08,
+      "word": "anything",
+      "mfa_word": "anything",
+      "word_index": 8,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EH1",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 34,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 4.08,
+      "center": 4.105,
+      "end": 4.13,
+      "word": "anything",
+      "mfa_word": "anything",
+      "word_index": 8,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 35,
+      "id": "IY0",
+      "pose": "IY0",
+      "phone": "IY0",
+      "start": 4.13,
+      "center": 4.16,
+      "end": 4.19,
+      "word": "anything",
+      "mfa_word": "anything",
+      "word_index": 8,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IY0",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 36,
+      "id": "TH",
+      "pose": "TH",
+      "phone": "TH",
+      "start": 4.19,
+      "center": 4.23,
+      "end": 4.27,
+      "word": "anything",
+      "mfa_word": "anything",
+      "word_index": 8,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "TH",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 37,
+      "id": "IH2",
+      "pose": "IH2",
+      "phone": "IH2",
+      "start": 4.27,
+      "center": 4.295,
+      "end": 4.32,
+      "word": "anything",
+      "mfa_word": "anything",
+      "word_index": 8,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IH2",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 38,
+      "id": "NG",
+      "pose": "NG",
+      "phone": "NG",
+      "start": 4.32,
+      "center": 4.355,
+      "end": 4.39,
+      "word": "anything",
+      "mfa_word": "anything",
+      "word_index": 8,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "NG",
+      "source_phone_index": 5,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 39,
+      "id": "EH1",
+      "pose": "EH1",
+      "phone": "EH1",
+      "start": 4.39,
+      "center": 4.425,
+      "end": 4.46,
+      "word": "else",
+      "mfa_word": "else",
+      "word_index": 9,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EH1",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 40,
+      "id": "L",
+      "pose": "L",
+      "phone": "L",
+      "start": 4.46,
+      "center": 4.515000000000001,
+      "end": 4.57,
+      "word": "else",
+      "mfa_word": "else",
+      "word_index": 9,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "L",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 41,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 4.57,
+      "center": 4.6899999999999995,
+      "end": 4.81,
+      "word": "else",
+      "mfa_word": "else",
+      "word_index": 9,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    }
+  ],
+  "flags": [
+    {
+      "kind": "word_count_mismatch",
+      "count_mfa_words": 10,
+      "count_transcript_words": 0,
+      "note": "MFA word count does not match transcript-owned word count."
+    },
+    {
+      "kind": "speech_regions_split_on_mfa_phone_gaps",
+      "region_count": 2,
+      "gap_threshold_seconds": 0.12,
+      "largest_split_gap_seconds": 0.49,
+      "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
+    }
+  ],
+  "notes": [],
+  "summary": {
+    "word_count": 10,
+    "speech_region_count": 2,
+    "word_head_count": 10,
+    "viseme_count": 42,
+    "flag_count": 2,
+    "flags_by_kind": {
+      "word_count_mismatch": 1,
+      "speech_regions_split_on_mfa_phone_gaps": 1
+    },
+    "commit_reasons": {
+      "mfa_phone_interval": 42
+    },
+    "alignment_reasons": {
+      "mfa_textgrid_phone": 42
+    },
+    "mapped_to_observed_speech_count": 42
+  }
 }

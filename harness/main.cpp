@@ -1,7 +1,9 @@
 #include "Lipsync/OffgridAILipsyncRuntimeAdapter.h"
+#include "Lipsync/OffgridAIOnlinePhoneAligner.h"
 #include "Lipsync/OffgridAIVisemePerformer.h"
 
 #include <cstring>
+#include <cctype>
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
@@ -43,6 +45,21 @@ struct GoldWordTiming
     std::string word;
     double start = 0.0;
     double end = 0.0;
+    int phrase_index = -1;
+    int sentence_index = -1;
+};
+
+struct GoldPhoneTiming
+{
+    int global_phone_index = -1;
+    int word_phone_index = -1;
+    std::string phone;
+    std::string phone_base;
+    std::string word;
+    double start = 0.0;
+    double end = 0.0;
+    int word_index = -1;
+    int speech_region_index = -1;
     int phrase_index = -1;
     int sentence_index = -1;
 };
@@ -345,6 +362,65 @@ static std::vector<HandmadeLabel> read_handmade_csv(const fs::path& path)
     return out;
 }
 
+static std::string strip_stress_digits(std::string phone)
+{
+    phone.erase(
+        std::remove_if(
+            phone.begin(),
+            phone.end(),
+            [](unsigned char c)
+            {
+                return std::isdigit(c) != 0;
+            }),
+        phone.end());
+    return phone;
+}
+
+static std::vector<GoldPhoneTiming> read_gold_phones_csv(const fs::path& path)
+{
+    std::vector<GoldPhoneTiming> out;
+    std::ifstream file(path);
+    if (!file) return out;
+
+    std::string line;
+    std::getline(file, line);
+    const std::vector<std::string> header = parse_csv_cells(line);
+    const bool has_global_phone_index = !header.empty() && header[0] == "global_phone_index";
+    int global_index = 0;
+    while (std::getline(file, line))
+    {
+        if (line.empty()) continue;
+        const std::vector<std::string> cells = parse_csv_cells(line);
+        if (cells.size() < 7) continue;
+
+        GoldPhoneTiming phone;
+        int offset = 0;
+        if (has_global_phone_index)
+        {
+            phone.global_phone_index = cells[0].empty() ? global_index : std::stoi(cells[0]);
+            offset = 1;
+        }
+        else
+        {
+            phone.global_phone_index = global_index;
+        }
+
+        phone.start = std::stod(cells[offset + 0]);
+        phone.end = std::stod(cells[offset + 1]);
+        phone.phone = cells[offset + 2];
+        phone.phone_base = strip_stress_digits(phone.phone);
+        phone.word = cells[offset + 3];
+        if (cells.size() > static_cast<size_t>(offset + 5) && !cells[offset + 5].empty()) phone.word_index = std::stoi(cells[offset + 5]);
+        if (cells.size() > static_cast<size_t>(offset + 6) && !cells[offset + 6].empty()) phone.speech_region_index = std::stoi(cells[offset + 6]);
+        if (cells.size() > static_cast<size_t>(offset + 7) && !cells[offset + 7].empty()) phone.word_phone_index = std::stoi(cells[offset + 7]);
+        if (cells.size() > static_cast<size_t>(offset + 8) && !cells[offset + 8].empty()) phone.phrase_index = std::stoi(cells[offset + 8]);
+        if (cells.size() > static_cast<size_t>(offset + 9) && !cells[offset + 9].empty()) phone.sentence_index = std::stoi(cells[offset + 9]);
+        out.push_back(phone);
+        ++global_index;
+    }
+    return out;
+}
+
 static std::vector<GoldWordTiming> read_gold_words_csv(const fs::path& path)
 {
     std::vector<GoldWordTiming> out;
@@ -393,6 +469,93 @@ static std::vector<GoldSpeechRegion> read_gold_speech_csv(const fs::path& path)
     return out;
 }
 
+static std::string gold_visible_visemes_csv(const std::vector<HandmadeLabel>& labels)
+{
+    std::ostringstream out;
+    out << "start,end,pose,word,confidence,word_index,phrase_index,sentence_index\n";
+    out << std::fixed << std::setprecision(6);
+    for (const HandmadeLabel& label : labels)
+    {
+        out << label.start << ','
+            << label.end << ','
+            << label.pose << ','
+            << label.word << ','
+            << label.confidence << ','
+            << label.word_index << ','
+            << label.phrase_index << ','
+            << label.sentence_index << '\n';
+    }
+    return out.str();
+}
+
+static std::vector<HandmadeLabel> build_gold_visible_labels(
+    const FOffgridAITextVisemePlan& plan,
+    const std::vector<GoldPhoneTiming>& gold_phones)
+{
+    std::vector<HandmadeLabel> out;
+    if (plan.Events.Num() <= 0 || gold_phones.empty())
+    {
+        return out;
+    }
+
+    std::vector<const GoldPhoneTiming*> by_global_index(gold_phones.size(), nullptr);
+    for (const GoldPhoneTiming& phone : gold_phones)
+    {
+        if (phone.global_phone_index >= 0 && static_cast<size_t>(phone.global_phone_index) < by_global_index.size())
+        {
+            by_global_index[static_cast<size_t>(phone.global_phone_index)] = &phone;
+        }
+    }
+
+    for (const FOffgridAITextVisemeEvent& event : plan.Events)
+    {
+        const GoldPhoneTiming* matched_phone = nullptr;
+        if (event.SourcePhoneGlobalIndex >= 0
+            && static_cast<size_t>(event.SourcePhoneGlobalIndex) < by_global_index.size())
+        {
+            matched_phone = by_global_index[static_cast<size_t>(event.SourcePhoneGlobalIndex)];
+        }
+
+        if (!matched_phone)
+        {
+            for (const GoldPhoneTiming& phone : gold_phones)
+            {
+                if (phone.word_index != event.WordIndex) continue;
+                if (phone.word_phone_index != event.SourcePhoneIndex) continue;
+                matched_phone = &phone;
+                break;
+            }
+        }
+
+        if (!matched_phone)
+        {
+            continue;
+        }
+
+        HandmadeLabel label;
+        label.start = matched_phone->start;
+        label.end = matched_phone->end;
+        label.pose = to_std(event.PoseID);
+        label.word = matched_phone->word.empty() ? to_std(event.SourceText) : matched_phone->word;
+        label.confidence = 1.0;
+        label.word_index = matched_phone->word_index;
+        label.phrase_index = matched_phone->phrase_index;
+        label.sentence_index = matched_phone->sentence_index;
+        out.push_back(label);
+    }
+
+    std::stable_sort(
+        out.begin(),
+        out.end(),
+        [](const HandmadeLabel& a, const HandmadeLabel& b)
+        {
+            if (a.start != b.start) return a.start < b.start;
+            if (a.word_index != b.word_index) return a.word_index < b.word_index;
+            return a.pose < b.pose;
+        });
+    return out;
+}
+
 static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
 {
     std::ostringstream out;
@@ -413,6 +576,30 @@ static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
             << to_std(event.SourcePhoneBase) << ','
             << event.SourcePhoneIndex << ','
             << to_std(event.Generator) << '\n';
+    }
+    return out.str();
+}
+
+static std::string expected_phones_csv(const FOffgridAITextVisemePlan& plan)
+{
+    std::ostringstream out;
+    out << "phone_index,word_phone_index,phone,base_phone,word,word_index,phrase_index,sentence_index,is_vowel,is_visible_viseme,first_visible_event_index,boundary_after_word,weight_seconds\n";
+    out << std::fixed << std::setprecision(6);
+    for (const auto& phone : plan.ExpectedPhones)
+    {
+        out << phone.PhoneIndex << ','
+            << phone.WordPhoneIndex << ','
+            << to_std(phone.Phone) << ','
+            << to_std(phone.BasePhone) << ','
+            << to_std(phone.SourceWord) << ','
+            << phone.WordIndex << ','
+            << phone.PhraseIndex << ','
+            << phone.SentenceIslandIndex << ','
+            << (phone.bIsVowel ? 1 : 0) << ','
+            << (phone.bIsVisibleViseme ? 1 : 0) << ','
+            << phone.FirstVisibleEventIndex << ','
+            << static_cast<int>(phone.BoundaryAfterWord) << ','
+            << phone.WeightSeconds << '\n';
     }
     return out.str();
 }
@@ -489,13 +676,87 @@ static std::string occupancy_frames_csv(const TArray<FOffgridAIStreamingAudioFea
     return out.str();
 }
 
+static std::string phone_class_frames_csv(const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames)
+{
+    std::ostringstream out;
+    out << "index,start,end,center,top_class,top_score,silence,vowel_open,vowel_front,vowel_round,bilabial,labiodental,dental,sibilant,stop_burst,liquid,glide,nasal,unknown,speech,voiced,vowel,fricative,closure,release,sonorant,transition,red_herring,low_tilt,high_tilt,spectral_change,energy_change\n";
+    out << std::fixed << std::setprecision(6);
+
+    auto top_class_name = [](const FOffgridAIPhoneClassScores& Scores, float& OutScore) -> std::string
+    {
+        struct Candidate
+        {
+            EOffgridAIPhoneClass Class = EOffgridAIPhoneClass::Unknown;
+            float Score = 0.0f;
+        };
+
+        Candidate Best;
+        for (int32 ClassIndex = 0; ClassIndex <= static_cast<int32>(EOffgridAIPhoneClass::Unknown); ++ClassIndex)
+        {
+            const EOffgridAIPhoneClass PhoneClass = static_cast<EOffgridAIPhoneClass>(ClassIndex);
+            const float Score = FOffgridAIOnlinePhoneAligner::ScoreForClass(Scores, PhoneClass);
+            if (ClassIndex == 0 || Score > Best.Score)
+            {
+                Best.Class = PhoneClass;
+                Best.Score = Score;
+            }
+        }
+
+        OutScore = Best.Score;
+        return to_std(FOffgridAIOnlinePhoneAligner::PhoneClassToString(Best.Class));
+    };
+
+    for (int32 i = 0; i < frames.Num(); ++i)
+    {
+        const auto& f = frames[i];
+        const FOffgridAIArticulatoryProbabilityField field = FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(f);
+        float top_score = 0.0f;
+        const std::string top_class = top_class_name(field.PhoneScores, top_score);
+
+        out << i << ','
+            << f.AudioBufferStartSec << ','
+            << f.AudioBufferEndSec << ','
+            << f.AudioBufferCenterSec << ','
+            << top_class << ','
+            << top_score << ','
+            << field.PhoneScores.Silence << ','
+            << field.PhoneScores.VowelOpen << ','
+            << field.PhoneScores.VowelFront << ','
+            << field.PhoneScores.VowelRound << ','
+            << field.PhoneScores.Bilabial << ','
+            << field.PhoneScores.Labiodental << ','
+            << field.PhoneScores.Dental << ','
+            << field.PhoneScores.Sibilant << ','
+            << field.PhoneScores.StopBurst << ','
+            << field.PhoneScores.Liquid << ','
+            << field.PhoneScores.Glide << ','
+            << field.PhoneScores.Nasal << ','
+            << field.PhoneScores.Unknown << ','
+            << field.Speech << ','
+            << field.Voiced << ','
+            << field.Vowel << ','
+            << field.Fricative << ','
+            << field.Closure << ','
+            << field.Release << ','
+            << field.Sonorant << ','
+            << field.Transition << ','
+            << field.RedHerring << ','
+            << field.LowTilt << ','
+            << field.HighTilt << ','
+            << field.SpectralChange << ','
+            << field.EnergyChange << '\n';
+    }
+    return out.str();
+}
+
 static std::string gap_candidates_csv(const TArray<FOffgridAIStreamingSpeechGapCandidate>& gaps)
 {
     std::ostringstream out;
-    out << "gap_index,prev_island_index,next_island_index,gap_start,gap_end,gap_duration,prev_island_duration,quiet_evidence,quiet_rms_norm,reopen_evidence,reopen_flux,strong_quiet_close,strong_onset_reopen,bridged,close_reason,decision_class\n";
+    out << "gap_index,prev_island_index,next_island_index,gap_start,gap_end,gap_duration,prev_island_duration,quiet_evidence,quiet_rms_norm,gap_frames,low_evidence_frames,strong_quiet_frames,mean_evidence,mean_rms_norm,mean_periodicity,mean_flux,mean_centroid,min_evidence,min_rms_norm,max_periodicity,max_flux,reopen_evidence,reopen_flux,strong_quiet_close,strong_onset_reopen,bridged,close_reason,decision_class\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& gap : gaps)
     {
+        const float inv_frames = gap.GapFrameCount > 0 ? 1.0f / static_cast<float>(gap.GapFrameCount) : 0.0f;
         out << gap.GapIndex << ','
             << gap.PrevIslandIndex << ','
             << gap.NextIslandIndex << ','
@@ -505,6 +766,18 @@ static std::string gap_candidates_csv(const TArray<FOffgridAIStreamingSpeechGapC
             << gap.PrevIslandDurationSec << ','
             << gap.QuietEvidence << ','
             << gap.QuietRMSNorm << ','
+            << gap.GapFrameCount << ','
+            << gap.LowEvidenceFrameCount << ','
+            << gap.StrongQuietFrameCount << ','
+            << gap.GapEvidenceSum * inv_frames << ','
+            << gap.GapRMSNormSum * inv_frames << ','
+            << gap.GapPeriodicitySum * inv_frames << ','
+            << gap.GapFluxSum * inv_frames << ','
+            << gap.GapCentroidSum * inv_frames << ','
+            << gap.GapEvidenceMin << ','
+            << gap.GapRMSNormMin << ','
+            << gap.GapPeriodicityMax << ','
+            << gap.GapFluxMax << ','
             << gap.ReopenEvidence << ','
             << gap.ReopenFlux << ','
             << (gap.bStrongQuietClose ? 1 : 0) << ','
@@ -1713,25 +1986,29 @@ int main(int argc, char** argv)
             const fs::path case_dir = out_root / stem;
             fs::create_directories(case_dir);
             write_text(case_dir / "planned.csv", planned_csv(plan));
+            write_text(case_dir / "expected_phones.csv", expected_phones_csv(plan));
             write_text(case_dir / "speech_regions.csv", speech_csv(speech));
             write_text(case_dir / "gap_candidates.csv", gap_candidates_csv(gap_candidates));
             write_text(case_dir / "occupancy_frames.csv", occupancy_frames_csv(session.GetSpeechDetector().GetFeatureFrames()));
+            write_text(case_dir / "phone_class_frames.csv", phone_class_frames_csv(session.GetSpeechDetector().GetFeatureFrames()));
             write_text(case_dir / "committed.csv", committed_csv(committed));
             write_text(case_dir / "commit_decisions.csv", commit_decisions_csv(committed));
             write_text(case_dir / "stream_tail.csv", stream_tail_csv(session.GetStreamTailDiagnosticRow()));
             GradeReport report;
             const fs::path gold_case_dir = root / "inputs" / "gold" / stem;
-            const fs::path gold_visemes_path = gold_case_dir / "visemes.csv";
+            const fs::path gold_phones_path = gold_case_dir / "phones.csv";
             const fs::path gold_words_path = gold_case_dir / "words.csv";
             const fs::path gold_speech_path = gold_case_dir / "speech.csv";
-            const bool gold_available = fs::exists(gold_visemes_path) && fs::exists(gold_words_path) && fs::exists(gold_speech_path);
+            const bool gold_available = fs::exists(gold_phones_path) && fs::exists(gold_words_path) && fs::exists(gold_speech_path);
             size_t gold_viseme_count = 0;
             if (gold_available)
             {
-                const auto handmade = read_handmade_csv(gold_visemes_path);
+                const auto gold_phones = read_gold_phones_csv(gold_phones_path);
                 const auto gold_words = read_gold_words_csv(gold_words_path);
                 const auto gold_speech = read_gold_speech_csv(gold_speech_path);
+                const auto handmade = build_gold_visible_labels(plan, gold_phones);
                 gold_viseme_count = handmade.size();
+                write_text(case_dir / "gold_visible_visemes.csv", gold_visible_visemes_csv(handmade));
                 report = grade(committed, speech, handmade, gold_words, gold_speech);
                 StreamingDetectorReport detector_report;
                 write_text(

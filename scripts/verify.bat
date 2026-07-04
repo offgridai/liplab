@@ -104,6 +104,10 @@ echo [phase] summarize
 python scripts\summarize.py
 if errorlevel 1 exit /b 1
 
+echo [phase] signal_audits
+python scripts\signal_audits.py
+if errorlevel 1 exit /b 1
+
 echo [phase] check_grades
 python scripts\check_grades.py
 if errorlevel 1 exit /b 1
