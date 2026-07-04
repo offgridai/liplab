@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0048_20260629_094511_055_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000047_00",
-  "created_utc": "2026-07-04T18:58:52.274046+00:00",
+  "created_utc": "2026-07-04T21:57:30.853740+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 120,
+    "speech_merge_gap_ms": 150,
     "source_run_dir": "outputs/offline_gold/latest/case_0048_20260629_094511_055_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000047_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-04T18:58:52.274117+00:00"
+    "reviewed_utc": "2026-07-04T21:57:30.853802+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -718,7 +718,7 @@
       "phone": "AY1",
       "phone_base": "AY",
       "start": 1.55,
-      "end": 1.65,
+      "end": 1.64,
       "word_index": 3,
       "word": "wildlife"
     },
@@ -726,7 +726,7 @@
       "index_in_word": 2,
       "phone": "L",
       "phone_base": "L",
-      "start": 1.65,
+      "start": 1.64,
       "end": 1.73,
       "word_index": 3,
       "word": "wildlife"
@@ -1121,11 +1121,11 @@
     {
       "phone": "AY1",
       "start": 1.55,
-      "end": 1.65
+      "end": 1.64
     },
     {
       "phone": "L",
-      "start": 1.65,
+      "start": 1.64,
       "end": 1.73
     },
     {
@@ -1704,8 +1704,8 @@
       "pose": "AY1",
       "phone": "AY1",
       "start": 1.55,
-      "center": 1.6,
-      "end": 1.65,
+      "center": 1.595,
+      "end": 1.64,
       "word": "wildlife",
       "mfa_word": "wildlife",
       "word_index": 3,
@@ -1731,8 +1731,8 @@
       "id": "L",
       "pose": "L",
       "phone": "L",
-      "start": 1.65,
-      "center": 1.69,
+      "start": 1.64,
+      "center": 1.685,
       "end": 1.73,
       "word": "wildlife",
       "mfa_word": "wildlife",
@@ -2745,7 +2745,7 @@
     {
       "kind": "speech_regions_split_on_mfa_phone_gaps",
       "region_count": 2,
-      "gap_threshold_seconds": 0.12,
+      "gap_threshold_seconds": 0.15,
       "largest_split_gap_seconds": 0.57,
       "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
     }

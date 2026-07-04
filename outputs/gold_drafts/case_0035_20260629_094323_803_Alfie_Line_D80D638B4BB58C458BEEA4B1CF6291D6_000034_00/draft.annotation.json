@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0035_20260629_094323_803_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000034_00",
-  "created_utc": "2026-07-04T18:58:52.168608+00:00",
+  "created_utc": "2026-07-04T21:57:30.742873+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 120,
+    "speech_merge_gap_ms": 150,
     "source_run_dir": "outputs/offline_gold/latest/case_0035_20260629_094323_803_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000034_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-04T18:58:52.168680+00:00"
+    "reviewed_utc": "2026-07-04T21:57:30.742949+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -61,13 +61,13 @@
     {
       "index": 1,
       "start": 2.27,
-      "end": 4.49,
+      "end": 4.5,
       "word_start_index": 4,
       "word_end_index": 9,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -82,7 +82,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -230,7 +230,7 @@
       "word": "rainforests",
       "mfa_word": "rainforests",
       "start": 3.67,
-      "end": 4.49,
+      "end": 4.5,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -637,7 +637,7 @@
       "word": "rainforests",
       "mfa_word": "rainforests",
       "start": 3.67,
-      "end": 4.49,
+      "end": 4.5,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -1140,7 +1140,7 @@
       "phone": "S",
       "phone_base": "S",
       "start": 4.35,
-      "end": 4.49,
+      "end": 4.5,
       "word_index": 9,
       "word": "rainforests"
     },
@@ -1502,7 +1502,7 @@
     {
       "phone": "S",
       "start": 4.35,
-      "end": 4.49
+      "end": 4.5
     },
     {
       "phone": "N",
@@ -2945,8 +2945,8 @@
       "pose": "S",
       "phone": "S",
       "start": 4.35,
-      "center": 4.42,
-      "end": 4.49,
+      "center": 4.425,
+      "end": 4.5,
       "word": "rainforests",
       "mfa_word": "rainforests",
       "word_index": 9,
@@ -3314,8 +3314,8 @@
     {
       "kind": "speech_regions_split_on_mfa_phone_gaps",
       "region_count": 3,
-      "gap_threshold_seconds": 0.12,
-      "largest_split_gap_seconds": 0.46,
+      "gap_threshold_seconds": 0.15,
+      "largest_split_gap_seconds": 0.45,
       "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
     }
   ],

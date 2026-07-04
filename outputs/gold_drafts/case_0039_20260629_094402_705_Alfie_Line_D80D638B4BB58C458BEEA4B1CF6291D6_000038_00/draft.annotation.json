@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0039_20260629_094402_705_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000038_00",
-  "created_utc": "2026-07-04T18:58:52.200796+00:00",
+  "created_utc": "2026-07-04T21:57:30.772946+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 120,
+    "speech_merge_gap_ms": 150,
     "source_run_dir": "outputs/offline_gold/latest/case_0039_20260629_094402_705_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000038_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-04T18:58:52.200907+00:00"
+    "reviewed_utc": "2026-07-04T21:57:30.773031+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -185,7 +185,7 @@
       "word": "unesco",
       "mfa_word": "unesco",
       "start": 2.0,
-      "end": 2.61,
+      "end": 2.62,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -199,7 +199,7 @@
       "word_index": 8,
       "word": "world",
       "mfa_word": "world",
-      "start": 2.61,
+      "start": 2.62,
       "end": 2.95,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -418,7 +418,7 @@
     {
       "word_index": 8,
       "word": "world",
-      "start": 2.61,
+      "start": 2.62,
       "end": 2.78,
       "pose": "W",
       "phrase_index": 0,
@@ -623,7 +623,7 @@
       "word": "unesco",
       "mfa_word": "unesco",
       "start": 2.0,
-      "end": 2.61,
+      "end": 2.62,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -637,7 +637,7 @@
       "word_index": 8,
       "word": "world",
       "mfa_word": "world",
-      "start": 2.61,
+      "start": 2.62,
       "end": 2.95,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -964,7 +964,7 @@
       "phone": "OW2",
       "phone_base": "OW",
       "start": 2.51,
-      "end": 2.61,
+      "end": 2.62,
       "word_index": 7,
       "word": "unesco"
     },
@@ -972,7 +972,7 @@
       "index_in_word": 0,
       "phone": "W",
       "phone_base": "W",
-      "start": 2.61,
+      "start": 2.62,
       "end": 2.78,
       "word_index": 8,
       "word": "world"
@@ -1346,11 +1346,11 @@
     {
       "phone": "OW2",
       "start": 2.51,
-      "end": 2.61
+      "end": 2.62
     },
     {
       "phone": "W",
-      "start": 2.61,
+      "start": 2.62,
       "end": 2.78
     },
     {
@@ -2220,8 +2220,8 @@
       "pose": "OW2",
       "phone": "OW2",
       "start": 2.51,
-      "center": 2.5599999999999996,
-      "end": 2.61,
+      "center": 2.565,
+      "end": 2.62,
       "word": "unesco",
       "mfa_word": "unesco",
       "word_index": 7,
@@ -2247,8 +2247,8 @@
       "id": "W",
       "pose": "W",
       "phone": "W",
-      "start": 2.61,
-      "center": 2.695,
+      "start": 2.62,
+      "center": 2.7,
       "end": 2.78,
       "word": "world",
       "mfa_word": "world",
@@ -3009,7 +3009,7 @@
     {
       "kind": "speech_regions_split_on_mfa_phone_gaps",
       "region_count": 2,
-      "gap_threshold_seconds": 0.12,
+      "gap_threshold_seconds": 0.15,
       "largest_split_gap_seconds": 0.2,
       "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
     }

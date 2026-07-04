@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0027_20260629_094215_159_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000026_00",
-  "created_utc": "2026-07-04T18:58:52.109697+00:00",
+  "created_utc": "2026-07-04T21:57:30.679178+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 120,
+    "speech_merge_gap_ms": 150,
     "source_run_dir": "outputs/offline_gold/latest/case_0027_20260629_094215_159_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000026_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-04T18:58:52.109773+00:00"
+    "reviewed_utc": "2026-07-04T21:57:30.679249+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -311,7 +311,7 @@
       "word_index": 5,
       "word": "famous",
       "start": 2.78,
-      "end": 2.88,
+      "end": 2.87,
       "pose": "F",
       "phrase_index": 1,
       "sentence_index": -1,
@@ -753,7 +753,7 @@
       "phone": "F",
       "phone_base": "F",
       "start": 2.78,
-      "end": 2.88,
+      "end": 2.87,
       "word_index": 5,
       "word": "famous"
     },
@@ -761,7 +761,7 @@
       "index_in_word": 1,
       "phone": "EY1",
       "phone_base": "EY",
-      "start": 2.88,
+      "start": 2.87,
       "end": 3.04,
       "word_index": 5,
       "word": "famous"
@@ -1075,11 +1075,11 @@
     {
       "phone": "F",
       "start": 2.78,
-      "end": 2.88
+      "end": 2.87
     },
     {
       "phone": "EY1",
-      "start": 2.88,
+      "start": 2.87,
       "end": 3.04
     },
     {
@@ -1840,8 +1840,8 @@
       "pose": "F",
       "phone": "F",
       "start": 2.78,
-      "center": 2.83,
-      "end": 2.88,
+      "center": 2.825,
+      "end": 2.87,
       "word": "famous",
       "mfa_word": "famous",
       "word_index": 5,
@@ -1867,8 +1867,8 @@
       "id": "EY1",
       "pose": "EY1",
       "phone": "EY1",
-      "start": 2.88,
-      "center": 2.96,
+      "start": 2.87,
+      "center": 2.955,
       "end": 3.04,
       "word": "famous",
       "mfa_word": "famous",
@@ -2489,7 +2489,7 @@
     {
       "kind": "speech_regions_split_on_mfa_phone_gaps",
       "region_count": 2,
-      "gap_threshold_seconds": 0.12,
+      "gap_threshold_seconds": 0.15,
       "largest_split_gap_seconds": 0.61,
       "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
     }

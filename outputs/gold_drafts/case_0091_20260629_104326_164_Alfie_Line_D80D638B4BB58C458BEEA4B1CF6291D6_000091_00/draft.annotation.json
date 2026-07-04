@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0091_20260629_104326_164_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000091_00",
-  "created_utc": "2026-07-04T18:58:52.578195+00:00",
+  "created_utc": "2026-07-04T21:57:31.224512+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 120,
+    "speech_merge_gap_ms": 150,
     "source_run_dir": "outputs/offline_gold/latest/case_0091_20260629_104326_164_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000091_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-04T18:58:52.578247+00:00"
+    "reviewed_utc": "2026-07-04T21:57:31.224568+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -46,28 +46,13 @@
     {
       "index": 0,
       "start": 0.0,
-      "end": 1.25,
-      "word_start_index": 0,
-      "word_end_index": 4,
-      "sentence_start_index": -1,
-      "sentence_end_index": -1,
-      "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
-      "approval": {
-        "status": "approved_gold",
-        "reviewed": true
-      }
-    },
-    {
-      "index": 1,
-      "start": 1.39,
       "end": 2.29,
-      "word_start_index": 5,
+      "word_start_index": 0,
       "word_end_index": 7,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -163,7 +148,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "word_index": 6,
@@ -178,7 +163,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "word_index": 7,
@@ -193,7 +178,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     }
   ],
   "word_heads": [
@@ -283,7 +268,7 @@
       "start": 1.39,
       "end": 1.48,
       "pose": "W",
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "source_phone": "W",
       "source_phone_index": 0,
@@ -299,7 +284,7 @@
       "start": 1.61,
       "end": 1.64,
       "pose": "AH0",
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "source_phone": "AH0",
       "source_phone_index": 0,
@@ -315,7 +300,7 @@
       "start": 1.64,
       "end": 1.76,
       "pose": "S",
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "source_phone": "S",
       "source_phone_index": 0,
@@ -415,7 +400,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "word_index": 6,
@@ -430,7 +415,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "word_index": 7,
@@ -445,7 +430,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     }
   ],
   "mfa_phones": [
@@ -1305,7 +1290,7 @@
       "word": "want",
       "mfa_word": "want",
       "word_index": 5,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1320,7 +1305,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 17,
@@ -1333,7 +1318,7 @@
       "word": "want",
       "mfa_word": "want",
       "word_index": 5,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1348,7 +1333,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 18,
@@ -1361,7 +1346,7 @@
       "word": "want",
       "mfa_word": "want",
       "word_index": 5,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1376,7 +1361,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 19,
@@ -1389,7 +1374,7 @@
       "word": "want",
       "mfa_word": "want",
       "word_index": 5,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1404,7 +1389,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 20,
@@ -1417,7 +1402,7 @@
       "word": "a",
       "mfa_word": "a",
       "word_index": 6,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1432,7 +1417,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 21,
@@ -1445,7 +1430,7 @@
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 7,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1460,7 +1445,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 22,
@@ -1473,7 +1458,7 @@
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 7,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1488,7 +1473,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 23,
@@ -1501,7 +1486,7 @@
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 7,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1516,7 +1501,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 24,
@@ -1529,7 +1514,7 @@
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 7,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1544,7 +1529,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 25,
@@ -1557,7 +1542,7 @@
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 7,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1572,7 +1557,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 26,
@@ -1585,7 +1570,7 @@
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 7,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1600,7 +1585,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 27,
@@ -1613,7 +1598,7 @@
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 7,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1628,7 +1613,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     }
   ],
   "flags": [
@@ -1637,25 +1622,17 @@
       "count_mfa_words": 8,
       "count_transcript_words": 0,
       "note": "MFA word count does not match transcript-owned word count."
-    },
-    {
-      "kind": "speech_regions_split_on_mfa_phone_gaps",
-      "region_count": 2,
-      "gap_threshold_seconds": 0.12,
-      "largest_split_gap_seconds": 0.14,
-      "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
     }
   ],
   "notes": [],
   "summary": {
     "word_count": 8,
-    "speech_region_count": 2,
+    "speech_region_count": 1,
     "word_head_count": 8,
     "viseme_count": 28,
-    "flag_count": 2,
+    "flag_count": 1,
     "flags_by_kind": {
-      "word_count_mismatch": 1,
-      "speech_regions_split_on_mfa_phone_gaps": 1
+      "word_count_mismatch": 1
     },
     "commit_reasons": {
       "mfa_phone_interval": 28

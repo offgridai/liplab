@@ -156,9 +156,12 @@ private:
     float EndpointCandidateMaxPeriodicity = 0.0f;
     float EndpointCandidateMaxFlux = 0.0f;
     float ActiveIslandPeakRMS = 0.0001f;
+    TArray<float> ActiveIslandSpeechRMSHistory;
     float ActiveIslandSpeechSeconds = 0.0f;
     float ActiveLowEnergyAccumSeconds = 0.0f;
     float ActiveLowEnergyStartSeconds = 0.0f;
+    float ActiveHardCollapseAccumSeconds = 0.0f;
+    float ActiveHardCollapseStartSeconds = 0.0f;
     bool bHasObservedFirstSpeechStart = false;
     float FirstSpeechAudioBufferStartSec = 0.0f;
     float ObservedAudioBufferEndSec = 0.0f;

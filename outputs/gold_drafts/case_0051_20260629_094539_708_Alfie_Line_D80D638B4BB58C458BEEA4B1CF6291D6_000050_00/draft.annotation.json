@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0051_20260629_094539_708_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000050_00",
-  "created_utc": "2026-07-04T18:58:52.289975+00:00",
+  "created_utc": "2026-07-04T21:57:30.878440+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 120,
+    "speech_merge_gap_ms": 150,
     "source_run_dir": "outputs/offline_gold/latest/case_0051_20260629_094539_708_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000050_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-04T18:58:52.290042+00:00"
+    "reviewed_utc": "2026-07-04T21:57:30.878515+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -989,7 +989,7 @@
       "phone": "F",
       "phone_base": "F",
       "start": 3.23,
-      "end": 3.33,
+      "end": 3.32,
       "word_index": 6,
       "word": "rainforests"
     },
@@ -997,7 +997,7 @@
       "index_in_word": 4,
       "phone": "AO2",
       "phone_base": "AO",
-      "start": 3.33,
+      "start": 3.32,
       "end": 3.4,
       "word_index": 6,
       "word": "rainforests"
@@ -1007,7 +1007,7 @@
       "phone": "R",
       "phone_base": "R",
       "start": 3.4,
-      "end": 3.47,
+      "end": 3.46,
       "word_index": 6,
       "word": "rainforests"
     },
@@ -1015,7 +1015,7 @@
       "index_in_word": 6,
       "phone": "AH0",
       "phone_base": "AH",
-      "start": 3.47,
+      "start": 3.46,
       "end": 3.53,
       "word_index": 6,
       "word": "rainforests"
@@ -1427,21 +1427,21 @@
     {
       "phone": "F",
       "start": 3.23,
-      "end": 3.33
+      "end": 3.32
     },
     {
       "phone": "AO2",
-      "start": 3.33,
+      "start": 3.32,
       "end": 3.4
     },
     {
       "phone": "R",
       "start": 3.4,
-      "end": 3.47
+      "end": 3.46
     },
     {
       "phone": "AH0",
-      "start": 3.47,
+      "start": 3.46,
       "end": 3.53
     },
     {
@@ -2660,8 +2660,8 @@
       "pose": "F",
       "phone": "F",
       "start": 3.23,
-      "center": 3.2800000000000002,
-      "end": 3.33,
+      "center": 3.275,
+      "end": 3.32,
       "word": "rainforests",
       "mfa_word": "rainforests",
       "word_index": 6,
@@ -2687,8 +2687,8 @@
       "id": "AO2",
       "pose": "AO2",
       "phone": "AO2",
-      "start": 3.33,
-      "center": 3.365,
+      "start": 3.32,
+      "center": 3.36,
       "end": 3.4,
       "word": "rainforests",
       "mfa_word": "rainforests",
@@ -2716,8 +2716,8 @@
       "pose": "R",
       "phone": "R",
       "start": 3.4,
-      "center": 3.435,
-      "end": 3.47,
+      "center": 3.4299999999999997,
+      "end": 3.46,
       "word": "rainforests",
       "mfa_word": "rainforests",
       "word_index": 6,
@@ -2743,8 +2743,8 @@
       "id": "AH0",
       "pose": "AH0",
       "phone": "AH0",
-      "start": 3.47,
-      "center": 3.5,
+      "start": 3.46,
+      "center": 3.495,
       "end": 3.53,
       "word": "rainforests",
       "mfa_word": "rainforests",
@@ -3421,7 +3421,7 @@
     {
       "kind": "speech_regions_split_on_mfa_phone_gaps",
       "region_count": 2,
-      "gap_threshold_seconds": 0.12,
+      "gap_threshold_seconds": 0.15,
       "largest_split_gap_seconds": 0.71,
       "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
     }

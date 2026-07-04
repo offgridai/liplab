@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0106_20260629_104751_112_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000106_00",
-  "created_utc": "2026-07-04T18:58:52.652286+00:00",
+  "created_utc": "2026-07-04T21:57:31.339102+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 120,
+    "speech_merge_gap_ms": 150,
     "source_run_dir": "outputs/offline_gold/latest/case_0106_20260629_104751_112_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000106_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-04T18:58:52.652359+00:00"
+    "reviewed_utc": "2026-07-04T21:57:31.339185+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -46,28 +46,13 @@
     {
       "index": 0,
       "start": 0.56,
-      "end": 3.17,
-      "word_start_index": 0,
-      "word_end_index": 3,
-      "sentence_start_index": -1,
-      "sentence_end_index": -1,
-      "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
-      "approval": {
-        "status": "approved_gold",
-        "reviewed": true
-      }
-    },
-    {
-      "index": 1,
-      "start": 3.31,
       "end": 4.37,
-      "word_start_index": 4,
+      "word_start_index": 0,
       "word_end_index": 6,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -94,7 +79,7 @@
       "word_index": 1,
       "word": "mountainous",
       "mfa_word": "mountainous",
-      "start": 1.63,
+      "start": 1.62,
       "end": 2.4,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -148,7 +133,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "word_index": 5,
@@ -163,7 +148,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "word_index": 6,
@@ -178,7 +163,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     }
   ],
   "word_heads": [
@@ -201,7 +186,7 @@
     {
       "word_index": 1,
       "word": "mountainous",
-      "start": 1.63,
+      "start": 1.62,
       "end": 1.83,
       "pose": "M",
       "phrase_index": 0,
@@ -252,7 +237,7 @@
       "start": 3.31,
       "end": 3.56,
       "pose": "W",
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "source_phone": "W",
       "source_phone_index": 0,
@@ -268,7 +253,7 @@
       "start": 3.7,
       "end": 3.79,
       "pose": "S",
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "source_phone": "S",
       "source_phone_index": 0,
@@ -284,7 +269,7 @@
       "start": 3.88,
       "end": 4.01,
       "pose": "CH",
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "source_phone": "CH",
       "source_phone_index": 0,
@@ -315,7 +300,7 @@
       "word_index": 1,
       "word": "mountainous",
       "mfa_word": "mountainous",
-      "start": 1.63,
+      "start": 1.62,
       "end": 2.4,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -369,7 +354,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "word_index": 5,
@@ -384,7 +369,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "word_index": 6,
@@ -399,7 +384,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 1
+      "speech_region_index": 0
     }
   ],
   "mfa_phones": [
@@ -497,7 +482,7 @@
       "index_in_word": 0,
       "phone": "M",
       "phone_base": "M",
-      "start": 1.63,
+      "start": 1.62,
       "end": 1.83,
       "word_index": 1,
       "word": "mountainous"
@@ -799,7 +784,7 @@
     },
     {
       "phone": "M",
-      "start": 1.63,
+      "start": 1.62,
       "end": 1.83
     },
     {
@@ -1225,8 +1210,8 @@
       "id": "M",
       "pose": "M",
       "phone": "M",
-      "start": 1.63,
-      "center": 1.73,
+      "start": 1.62,
+      "center": 1.725,
       "end": 1.83,
       "word": "mountainous",
       "mfa_word": "mountainous",
@@ -1707,7 +1692,7 @@
       "word": "want",
       "mfa_word": "want",
       "word_index": 4,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1722,7 +1707,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 28,
@@ -1735,7 +1720,7 @@
       "word": "want",
       "mfa_word": "want",
       "word_index": 4,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1750,7 +1735,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 29,
@@ -1763,7 +1748,7 @@
       "word": "want",
       "mfa_word": "want",
       "word_index": 4,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1778,7 +1763,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 30,
@@ -1791,7 +1776,7 @@
       "word": "want",
       "mfa_word": "want",
       "word_index": 4,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1806,7 +1791,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 31,
@@ -1819,7 +1804,7 @@
       "word": "some",
       "mfa_word": "some",
       "word_index": 5,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1834,7 +1819,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 32,
@@ -1847,7 +1832,7 @@
       "word": "some",
       "mfa_word": "some",
       "word_index": 5,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1862,7 +1847,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 33,
@@ -1875,7 +1860,7 @@
       "word": "some",
       "mfa_word": "some",
       "word_index": 5,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1890,7 +1875,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 34,
@@ -1903,7 +1888,7 @@
       "word": "chips",
       "mfa_word": "chips",
       "word_index": 6,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1918,7 +1903,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 35,
@@ -1931,7 +1916,7 @@
       "word": "chips",
       "mfa_word": "chips",
       "word_index": 6,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1946,7 +1931,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 36,
@@ -1959,7 +1944,7 @@
       "word": "chips",
       "mfa_word": "chips",
       "word_index": 6,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1974,7 +1959,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     },
     {
       "index": 37,
@@ -1987,7 +1972,7 @@
       "word": "chips",
       "mfa_word": "chips",
       "word_index": 6,
-      "phrase_index": 1,
+      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2002,7 +1987,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 0
     }
   ],
   "flags": [
@@ -2011,25 +1996,17 @@
       "count_mfa_words": 7,
       "count_transcript_words": 0,
       "note": "MFA word count does not match transcript-owned word count."
-    },
-    {
-      "kind": "speech_regions_split_on_mfa_phone_gaps",
-      "region_count": 2,
-      "gap_threshold_seconds": 0.12,
-      "largest_split_gap_seconds": 0.14,
-      "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
     }
   ],
   "notes": [],
   "summary": {
     "word_count": 7,
-    "speech_region_count": 2,
+    "speech_region_count": 1,
     "word_head_count": 7,
     "viseme_count": 38,
-    "flag_count": 2,
+    "flag_count": 1,
     "flags_by_kind": {
-      "word_count_mismatch": 1,
-      "speech_regions_split_on_mfa_phone_gaps": 1
+      "word_count_mismatch": 1
     },
     "commit_reasons": {
       "mfa_phone_interval": 38

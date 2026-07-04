@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0013_20260629_093937_130_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000012_00",
-  "created_utc": "2026-07-04T18:58:52.021201+00:00",
+  "created_utc": "2026-07-04T21:57:30.565641+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 120,
+    "speech_merge_gap_ms": 150,
     "source_run_dir": "outputs/offline_gold/latest/case_0013_20260629_093937_130_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000012_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-04T18:58:52.021272+00:00"
+    "reviewed_utc": "2026-07-04T21:57:30.565733+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -893,7 +893,7 @@
       "phone": "S",
       "phone_base": "S",
       "start": 1.42,
-      "end": 1.51,
+      "end": 1.52,
       "word_index": 3,
       "word": "first"
     },
@@ -901,7 +901,7 @@
       "index_in_word": 3,
       "phone": "T",
       "phone_base": "T",
-      "start": 1.51,
+      "start": 1.52,
       "end": 1.62,
       "word_index": 3,
       "word": "first"
@@ -1426,11 +1426,11 @@
     {
       "phone": "S",
       "start": 1.42,
-      "end": 1.51
+      "end": 1.52
     },
     {
       "phone": "T",
-      "start": 1.51,
+      "start": 1.52,
       "end": 1.62
     },
     {
@@ -2056,8 +2056,8 @@
       "pose": "S",
       "phone": "S",
       "start": 1.42,
-      "center": 1.4649999999999999,
-      "end": 1.51,
+      "center": 1.47,
+      "end": 1.52,
       "word": "first",
       "mfa_word": "first",
       "word_index": 3,
@@ -2083,8 +2083,8 @@
       "id": "T",
       "pose": "T",
       "phone": "T",
-      "start": 1.51,
-      "center": 1.565,
+      "start": 1.52,
+      "center": 1.57,
       "end": 1.62,
       "word": "first",
       "mfa_word": "first",
@@ -3517,7 +3517,7 @@
     {
       "kind": "speech_regions_split_on_mfa_phone_gaps",
       "region_count": 2,
-      "gap_threshold_seconds": 0.12,
+      "gap_threshold_seconds": 0.15,
       "largest_split_gap_seconds": 0.21,
       "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
     }

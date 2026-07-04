@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0086_20260629_104220_891_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000086_00",
-  "created_utc": "2026-07-04T18:58:52.546884+00:00",
+  "created_utc": "2026-07-04T21:57:31.183786+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 120,
+    "speech_merge_gap_ms": 150,
     "source_run_dir": "outputs/offline_gold/latest/case_0086_20260629_104220_891_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000086_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-04T18:58:52.546960+00:00"
+    "reviewed_utc": "2026-07-04T21:57:31.183878+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -945,7 +945,7 @@
       "phone": "IY1",
       "phone_base": "IY",
       "start": 2.28,
-      "end": 2.38,
+      "end": 2.39,
       "word_index": 7,
       "word": "colosseum"
     },
@@ -953,7 +953,7 @@
       "index_in_word": 6,
       "phone": "AH0",
       "phone_base": "AH",
-      "start": 2.38,
+      "start": 2.39,
       "end": 2.47,
       "word_index": 7,
       "word": "colosseum"
@@ -1089,7 +1089,7 @@
       "phone": "D",
       "phone_base": "D",
       "start": 7.17,
-      "end": 7.22,
+      "end": 7.21,
       "word_index": 12,
       "word": "sandwich"
     },
@@ -1097,7 +1097,7 @@
       "index_in_word": 4,
       "phone": "W",
       "phone_base": "W",
-      "start": 7.22,
+      "start": 7.21,
       "end": 7.29,
       "word_index": 12,
       "word": "sandwich"
@@ -1107,7 +1107,7 @@
       "phone": "IH0",
       "phone_base": "IH",
       "start": 7.29,
-      "end": 7.37,
+      "end": 7.36,
       "word_index": 12,
       "word": "sandwich"
     },
@@ -1115,7 +1115,7 @@
       "index_in_word": 6,
       "phone": "CH",
       "phone_base": "CH",
-      "start": 7.37,
+      "start": 7.36,
       "end": 7.62,
       "word_index": 12,
       "word": "sandwich"
@@ -1270,11 +1270,11 @@
     {
       "phone": "IY1",
       "start": 2.28,
-      "end": 2.38
+      "end": 2.39
     },
     {
       "phone": "AH0",
-      "start": 2.38,
+      "start": 2.39,
       "end": 2.47
     },
     {
@@ -1350,21 +1350,21 @@
     {
       "phone": "D",
       "start": 7.17,
-      "end": 7.22
+      "end": 7.21
     },
     {
       "phone": "W",
-      "start": 7.22,
+      "start": 7.21,
       "end": 7.29
     },
     {
       "phone": "IH0",
       "start": 7.29,
-      "end": 7.37
+      "end": 7.36
     },
     {
       "phone": "CH",
-      "start": 7.37,
+      "start": 7.36,
       "end": 7.62
     }
   ],
@@ -2188,8 +2188,8 @@
       "pose": "IY1",
       "phone": "IY1",
       "start": 2.28,
-      "center": 2.33,
-      "end": 2.38,
+      "center": 2.335,
+      "end": 2.39,
       "word": "colosseum",
       "mfa_word": "colosseum",
       "word_index": 7,
@@ -2215,8 +2215,8 @@
       "id": "AH0",
       "pose": "AH0",
       "phone": "AH0",
-      "start": 2.38,
-      "center": 2.425,
+      "start": 2.39,
+      "center": 2.43,
       "end": 2.47,
       "word": "colosseum",
       "mfa_word": "colosseum",
@@ -2636,8 +2636,8 @@
       "pose": "D",
       "phone": "D",
       "start": 7.17,
-      "center": 7.195,
-      "end": 7.22,
+      "center": 7.1899999999999995,
+      "end": 7.21,
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 12,
@@ -2663,8 +2663,8 @@
       "id": "W",
       "pose": "W",
       "phone": "W",
-      "start": 7.22,
-      "center": 7.255,
+      "start": 7.21,
+      "center": 7.25,
       "end": 7.29,
       "word": "sandwich",
       "mfa_word": "sandwich",
@@ -2692,8 +2692,8 @@
       "pose": "IH0",
       "phone": "IH0",
       "start": 7.29,
-      "center": 7.33,
-      "end": 7.37,
+      "center": 7.325,
+      "end": 7.36,
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 12,
@@ -2719,8 +2719,8 @@
       "id": "CH",
       "pose": "CH",
       "phone": "CH",
-      "start": 7.37,
-      "center": 7.495,
+      "start": 7.36,
+      "center": 7.49,
       "end": 7.62,
       "word": "sandwich",
       "mfa_word": "sandwich",
@@ -2758,7 +2758,7 @@
     {
       "kind": "speech_regions_split_on_mfa_phone_gaps",
       "region_count": 2,
-      "gap_threshold_seconds": 0.12,
+      "gap_threshold_seconds": 0.15,
       "largest_split_gap_seconds": 3.24,
       "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
     }

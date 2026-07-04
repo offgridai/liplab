@@ -6,6 +6,14 @@ constexpr float DetectorGapBridgeMaxSec = 0.120f;
 constexpr float DetectorGapBridgeStrongQuietMaxSec = 0.120f;
 constexpr float DetectorEndpointBaseHangoverSec = 0.090f;
 constexpr float DetectorEndpointStrongQuietHangoverSec = 0.060f;
+constexpr float DetectorRelativeCollapseThreshold = 0.05f;
+constexpr float DetectorRelativeCollapseReleaseThreshold = 0.10f;
+constexpr float DetectorRelativeCollapseHoldSec = 0.120f;
+constexpr float DetectorHardRelativeCollapseThreshold = 0.02f;
+constexpr float DetectorHardRelativeCollapseReleaseThreshold = 0.04f;
+constexpr float DetectorHardRelativeCollapseHoldSec = 0.120f;
+constexpr float DetectorSpeechBaselinePercentile = 0.60f;
+constexpr int32 DetectorSpeechBaselineMinFrames = 12;
 
 static float DetectorSpeechEvidence(float RMSNorm, float Flux, float Periodicity, float MidBandNorm, float HighBandNorm, float SpectralCentroidNorm)
 {
@@ -103,6 +111,31 @@ static float SafeGapMean(float Sum, int32 Count)
     return Count > 0 ? Sum / static_cast<float>(Count) : 0.0f;
 }
 
+static float SpeechPercentileRMS(const TArray<float>& Samples, float Percentile)
+{
+    if (Samples.Num() <= 0)
+    {
+        return 0.0001f;
+    }
+
+    TArray<float> Sorted = Samples;
+    Sorted.Sort([](float A, float B) { return A < B; });
+    const float ClampedPercentile = FMath::Clamp(Percentile, 0.0f, 1.0f);
+    const float Position = ClampedPercentile * static_cast<float>(FMath::Max(Sorted.Num() - 1, 0));
+    const int32 LowerIndex = FMath::Clamp(static_cast<int32>(FMath::FloorToFloat(Position)), 0, Sorted.Num() - 1);
+    const int32 UpperIndex = FMath::Clamp(
+        LowerIndex + ((Position > static_cast<float>(LowerIndex)) ? 1 : 0),
+        0,
+        Sorted.Num() - 1);
+    if (LowerIndex == UpperIndex)
+    {
+        return FMath::Max(Sorted[LowerIndex], 0.0001f);
+    }
+
+    const float Alpha = Position - static_cast<float>(LowerIndex);
+    return FMath::Max(FMath::Lerp(Sorted[LowerIndex], Sorted[UpperIndex], Alpha), 0.0001f);
+}
+
 static void AccumulateGapFrame(
     FOffgridAIStreamingSpeechGapCandidate& Gap,
     float RMSNorm,
@@ -190,6 +223,16 @@ static FDetectorGapDecision ClassifyGapDecision(
         return { false, FName(TEXT("candidate_deep_quiet_split")) };
     }
 
+    const bool bDeepEnvelopeCollapseGap =
+        GapDurationSec >= 0.180f
+        && MeanRMSNorm <= 0.012f
+        && Gap.GapRMSNormMin <= 0.005f
+        && (LowEvidenceRatio >= 0.20f || StrongQuietRatio >= 0.15f);
+    if (bDeepEnvelopeCollapseGap)
+    {
+        return { false, FName(TEXT("candidate_deep_envelope_split")) };
+    }
+
     if (GapDurationSec >= 0.105f && SplitScore >= 8)
     {
         return { false, FName(TEXT("candidate_score_split")) };
@@ -225,9 +268,12 @@ void FOffgridAIStreamingSpeechDetector::Reset()
     EndpointCandidateMaxPeriodicity = 0.0f;
     EndpointCandidateMaxFlux = 0.0f;
     ActiveIslandPeakRMS = 0.0001f;
+    ActiveIslandSpeechRMSHistory.Reset();
     ActiveIslandSpeechSeconds = 0.0f;
     ActiveLowEnergyAccumSeconds = 0.0f;
     ActiveLowEnergyStartSeconds = 0.0f;
+    ActiveHardCollapseAccumSeconds = 0.0f;
+    ActiveHardCollapseStartSeconds = 0.0f;
     bHasObservedFirstSpeechStart = false;
     FirstSpeechAudioBufferStartSec = 0.0f;
     ObservedAudioBufferEndSec = 0.0f;
@@ -398,6 +444,18 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
         && Frame.Flux < 0.045f;
     const bool bLowEvidence = bStrongQuiet
         || (Evidence < 0.08f && RMS < CloseThreshold * 0.90f);
+    const float RecentSpeechBaselineRMS = ActiveIslandSpeechRMSHistory.Num() >= DetectorSpeechBaselineMinFrames
+        ? SpeechPercentileRMS(ActiveIslandSpeechRMSHistory, DetectorSpeechBaselinePercentile)
+        : FMath::Max(ActiveIslandPeakRMS, 0.0001f);
+    const float ActiveIslandRelativeRMS = RMS / FMath::Max(RecentSpeechBaselineRMS, 0.0001f);
+    const bool bRelativeCollapseFrame = bInSpeech
+        && ActiveIslandSpeechSeconds >= 0.120f
+        && ActiveIslandRelativeRMS <= DetectorRelativeCollapseThreshold;
+    const bool bRelativeCollapseRelease = ActiveIslandRelativeRMS >= DetectorRelativeCollapseReleaseThreshold;
+    const bool bHardRelativeCollapseFrame = bInSpeech
+        && ActiveIslandSpeechSeconds >= 0.120f
+        && ActiveIslandRelativeRMS <= DetectorHardRelativeCollapseThreshold;
+    const bool bHardRelativeCollapseRelease = ActiveIslandRelativeRMS >= DetectorHardRelativeCollapseReleaseThreshold;
 
     if (bPendingGapCandidateActive && !bInSpeech && !bOpen)
     {
@@ -525,7 +583,13 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                 bSpeechCandidateActive = false;
                 SpeechCandidatePeakEvidence = 0.0f;
                 ActiveIslandPeakRMS = RMS;
+                ActiveIslandSpeechRMSHistory.Reset();
+                ActiveIslandSpeechRMSHistory.Add(RMS);
                 ActiveIslandSpeechSeconds = 0.0f;
+                ActiveLowEnergyAccumSeconds = 0.0f;
+                ActiveLowEnergyStartSeconds = 0.0f;
+                ActiveHardCollapseAccumSeconds = 0.0f;
+                ActiveHardCollapseStartSeconds = 0.0f;
                 SilenceAccumSeconds = 0.0f;
                 bEndpointCandidateActive = false;
                 EndpointCandidateStartSeconds = 0.0f;
@@ -567,6 +631,60 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
         FOffgridAIStreamingSpeechIsland& Island = Islands.Last();
         Island.AudioBufferEndSec = FrameEndSeconds;
         ActiveIslandPeakRMS = FMath::Max(ActiveIslandPeakRMS, RMS);
+        if (bKeepOpen && Evidence >= 0.16f && RMS >= CloseThreshold)
+        {
+            ActiveIslandSpeechRMSHistory.Add(RMS);
+        }
+        const float Dt = FrameEndSeconds - FrameStartSeconds;
+        if (bRelativeCollapseFrame)
+        {
+            if (ActiveLowEnergyAccumSeconds <= 0.0f)
+            {
+                ActiveLowEnergyStartSeconds = FrameStartSeconds;
+            }
+            ActiveLowEnergyAccumSeconds += Dt;
+        }
+        else if (bRelativeCollapseRelease)
+        {
+            ActiveLowEnergyAccumSeconds = 0.0f;
+            ActiveLowEnergyStartSeconds = 0.0f;
+        }
+        else if (ActiveLowEnergyAccumSeconds > 0.0f)
+        {
+            ActiveLowEnergyAccumSeconds = FMath::Max(0.0f, ActiveLowEnergyAccumSeconds - Dt * 0.5f);
+            if (ActiveLowEnergyAccumSeconds <= 0.0f)
+            {
+                ActiveLowEnergyStartSeconds = 0.0f;
+            }
+        }
+        if (bHardRelativeCollapseFrame)
+        {
+            if (ActiveHardCollapseAccumSeconds <= 0.0f)
+            {
+                ActiveHardCollapseStartSeconds = FrameStartSeconds;
+            }
+            ActiveHardCollapseAccumSeconds += Dt;
+        }
+        else if (bHardRelativeCollapseRelease)
+        {
+            ActiveHardCollapseAccumSeconds = 0.0f;
+            ActiveHardCollapseStartSeconds = 0.0f;
+        }
+        else if (ActiveHardCollapseAccumSeconds > 0.0f)
+        {
+            ActiveHardCollapseAccumSeconds = FMath::Max(0.0f, ActiveHardCollapseAccumSeconds - Dt * 0.5f);
+            if (ActiveHardCollapseAccumSeconds <= 0.0f)
+            {
+                ActiveHardCollapseStartSeconds = 0.0f;
+            }
+        }
+
+        const bool bSustainedRelativeCollapse = ActiveLowEnergyAccumSeconds >= DetectorRelativeCollapseHoldSec;
+        const bool bSustainedHardRelativeCollapse = ActiveHardCollapseAccumSeconds >= DetectorHardRelativeCollapseHoldSec;
+        if (bHardRelativeCollapseFrame)
+        {
+            bKeepOpen = false;
+        }
         if (bKeepOpen)
         {
             Island.AudioBufferLastSpeechSec = FrameEndSeconds;
@@ -577,22 +695,45 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                 Island.ReopenCount += 1;
             }
             SilenceAccumSeconds = 0.0f;
-            bEndpointCandidateActive = false;
-            EndpointCandidateStartSeconds = 0.0f;
-            EndpointCandidateMinEvidence = 1.0f;
-            Island.ProvisionalEndSec = -1.0f;
-            OccupancyDecision = FName(TEXT("keep_open"));
+            if (bSustainedRelativeCollapse)
+            {
+                if (!bEndpointCandidateActive)
+                {
+                    bEndpointCandidateActive = true;
+                    EndpointCandidateStartSeconds = ActiveLowEnergyStartSeconds > 0.0f ? ActiveLowEnergyStartSeconds : FrameStartSeconds;
+                    EndpointCandidateMinEvidence = Evidence;
+                    Island.ProvisionalEndSec = EndpointCandidateStartSeconds;
+                    OccupancyDecision = FName(TEXT("relative_collapse_candidate_start"));
+                }
+                bKeepOpen = false;
+            }
+            else
+            {
+                bEndpointCandidateActive = false;
+                EndpointCandidateStartSeconds = 0.0f;
+                EndpointCandidateMinEvidence = 1.0f;
+                Island.ProvisionalEndSec = -1.0f;
+                OccupancyDecision = FName(TEXT("keep_open"));
+            }
         }
-        else
+        if (!bKeepOpen)
         {
             if (SilenceAccumSeconds <= 0.0f)
             {
-                SilenceStartSeconds = FrameStartSeconds;
+                SilenceStartSeconds = bSustainedHardRelativeCollapse && ActiveHardCollapseStartSeconds > 0.0f
+                    ? ActiveHardCollapseStartSeconds
+                    : (bSustainedRelativeCollapse && ActiveLowEnergyStartSeconds > 0.0f
+                        ? ActiveLowEnergyStartSeconds
+                        : FrameStartSeconds);
                 bEndpointCandidateActive = true;
-                EndpointCandidateStartSeconds = FrameStartSeconds;
+                EndpointCandidateStartSeconds = SilenceStartSeconds;
                 EndpointCandidateMinEvidence = Evidence;
-                Island.ProvisionalEndSec = FrameStartSeconds;
-                OccupancyDecision = FName(TEXT("endpoint_candidate_start"));
+                Island.ProvisionalEndSec = SilenceStartSeconds;
+                OccupancyDecision = bSustainedHardRelativeCollapse
+                    ? FName(TEXT("hard_relative_collapse_candidate_start"))
+                    : (bSustainedRelativeCollapse
+                        ? FName(TEXT("relative_collapse_candidate_start"))
+                        : FName(TEXT("endpoint_candidate_start")));
             }
             if (bEndpointCandidateActive)
             {
@@ -615,14 +756,21 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                     EndpointCandidateStrongQuietFrameCount += 1;
                 }
             }
-            const float Dt = FrameEndSeconds - FrameStartSeconds;
-            SilenceAccumSeconds += bLowEvidence ? Dt : Dt * 0.50f;
-            const float Hangover = bStrongQuiet ? DetectorEndpointStrongQuietHangoverSec : DetectorEndpointBaseHangoverSec;
+            SilenceAccumSeconds += bSustainedHardRelativeCollapse ? Dt : (bLowEvidence ? Dt : Dt * 0.50f);
+            const float Hangover = bSustainedHardRelativeCollapse
+                ? DetectorHardRelativeCollapseHoldSec
+                : (bSustainedRelativeCollapse
+                    ? DetectorRelativeCollapseHoldSec
+                    : (bStrongQuiet ? DetectorEndpointStrongQuietHangoverSec : DetectorEndpointBaseHangoverSec));
             if (SilenceAccumSeconds >= Hangover)
             {
                 Island.AudioBufferEndSec = EndpointCandidateStartSeconds;
                 Island.EndDecisionSec = FrameEndSeconds;
-                Island.EndReason = bStrongQuiet ? FName(TEXT("strong_quiet_hangover")) : FName(TEXT("weak_evidence_hangover"));
+                Island.EndReason = bSustainedHardRelativeCollapse
+                    ? FName(TEXT("hard_relative_collapse_hangover"))
+                    : (bSustainedRelativeCollapse
+                        ? FName(TEXT("relative_collapse_hangover"))
+                        : (bStrongQuiet ? FName(TEXT("strong_quiet_hangover")) : FName(TEXT("weak_evidence_hangover"))));
                 PendingGapCandidate = FOffgridAIStreamingSpeechGapCandidate();
                 PendingGapCandidate.PrevIslandIndex = Island.IslandIndex;
                 PendingGapCandidate.GapStartSec = EndpointCandidateStartSeconds;
@@ -651,6 +799,11 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                 OccupancyDecision = Island.EndReason;
                 bInSpeech = false;
                 SilenceAccumSeconds = 0.0f;
+                ActiveIslandSpeechRMSHistory.Reset();
+                ActiveLowEnergyAccumSeconds = 0.0f;
+                ActiveLowEnergyStartSeconds = 0.0f;
+                ActiveHardCollapseAccumSeconds = 0.0f;
+                ActiveHardCollapseStartSeconds = 0.0f;
                 bEndpointCandidateActive = false;
                 EndpointCandidateStartSeconds = 0.0f;
                 EndpointCandidateMinEvidence = 1.0f;
@@ -805,5 +958,9 @@ void FOffgridAIStreamingSpeechDetector::Finalize(float FinalObservedAudioBufferE
     EndpointCandidateStartSeconds = 0.0f;
     EndpointCandidateMinEvidence = 1.0f;
     SilenceAccumSeconds = 0.0f;
+    ActiveLowEnergyAccumSeconds = 0.0f;
+    ActiveLowEnergyStartSeconds = 0.0f;
+    ActiveHardCollapseAccumSeconds = 0.0f;
+    ActiveHardCollapseStartSeconds = 0.0f;
     bPendingGapCandidateActive = false;
 }
