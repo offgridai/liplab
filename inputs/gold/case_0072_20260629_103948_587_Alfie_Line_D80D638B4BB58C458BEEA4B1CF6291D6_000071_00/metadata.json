@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "case_id": "case_0072_20260629_103948_587_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000071_00",
-  "exported_utc": "2026-07-04T22:37:45.426723+00:00",
+  "exported_utc": "2026-07-05T02:57:01.029940+00:00",
   "approval": {
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-04T22:37:37.315397+00:00"
+    "reviewed_utc": "2026-07-05T02:56:56.257376+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -29,13 +29,14 @@
   "source_draft": "outputs/gold_drafts/case_0072_20260629_103948_587_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000071_00",
   "summary": {
     "word_count": 7,
-    "speech_region_count": 1,
+    "speech_region_count": 2,
     "word_head_count": 7,
     "viseme_count": 29,
-    "flag_count": 2,
+    "flag_count": 3,
     "flags_by_kind": {
       "word_count_mismatch": 1,
-      "mfa_timeline_truncated_tail": 1
+      "mfa_timeline_truncated_tail": 1,
+      "speech_regions_split_on_mfa_phone_gaps": 1
     },
     "commit_reasons": {
       "mfa_phone_interval": 29

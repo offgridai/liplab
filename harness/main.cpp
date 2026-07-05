@@ -35,7 +35,7 @@ struct HandmadeLabel
     std::string word;
     double confidence = 1.0;
     int word_index = -1;
-    int phrase_index = -1;
+    int speech_region_index = -1;
     int sentence_index = -1;
 };
 
@@ -45,7 +45,7 @@ struct GoldWordTiming
     std::string word;
     double start = 0.0;
     double end = 0.0;
-    int phrase_index = -1;
+    int speech_region_index = -1;
     int sentence_index = -1;
 };
 
@@ -60,7 +60,6 @@ struct GoldPhoneTiming
     double end = 0.0;
     int word_index = -1;
     int speech_region_index = -1;
-    int phrase_index = -1;
     int sentence_index = -1;
 };
 
@@ -190,6 +189,27 @@ static std::vector<std::string> parse_csv_cells(const std::string& line)
         cells.push_back(cell);
     }
     return cells;
+}
+
+static int header_index(const std::vector<std::string>& header, const std::string& name)
+{
+    for (size_t i = 0; i < header.size(); ++i)
+    {
+        if (header[i] == name)
+        {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
+}
+
+static std::string csv_cell(const std::vector<std::string>& cells, int index)
+{
+    if (index < 0 || static_cast<size_t>(index) >= cells.size())
+    {
+        return {};
+    }
+    return cells[static_cast<size_t>(index)];
 }
 
 static std::string read_text(const fs::path& path)
@@ -343,20 +363,54 @@ static std::vector<HandmadeLabel> read_handmade_csv(const fs::path& path)
 
     std::string line;
     std::getline(file, line);
+    const std::vector<std::string> header = parse_csv_cells(line);
+    const bool has_header = !header.empty() && (header[0] == "start" || header[0] == "pose");
+    const int start_col = has_header ? header_index(header, "start") : 0;
+    const int end_col = has_header ? header_index(header, "end") : 1;
+    const int pose_col = has_header ? header_index(header, "pose") : 2;
+    const int word_col = has_header ? header_index(header, "word") : 3;
+    int confidence_col = has_header ? header_index(header, "confidence") : 4;
+    int word_index_col = has_header ? header_index(header, "word_index") : 5;
+    int speech_region_index_col = has_header ? header_index(header, "speech_region_index") : 6;
+    int sentence_index_col = has_header ? header_index(header, "sentence_index") : 7;
+
+    if (confidence_col < 0 && !has_header)
+    {
+        confidence_col = 4;
+    }
+    if (word_index_col < 0 && !has_header)
+    {
+        word_index_col = 5;
+    }
+    if (speech_region_index_col < 0 && !has_header)
+    {
+        speech_region_index_col = 6;
+    }
+    if (sentence_index_col < 0 && !has_header)
+    {
+        sentence_index_col = 7;
+    }
+
     while (std::getline(file, line))
     {
         if (line.empty()) continue;
         const std::vector<std::string> cells = parse_csv_cells(line);
-        if (cells.size() < 4) continue;
+        if (start_col < 0 || end_col < 0 || pose_col < 0 || word_col < 0) continue;
         HandmadeLabel label;
-        label.start = std::stod(cells[0]);
-        label.end = std::stod(cells[1]);
-        label.pose = cells[2];
-        label.word = cells[3];
-        if (cells.size() > 4 && !cells[4].empty()) label.confidence = std::stod(cells[4]);
-        if (cells.size() > 5 && !cells[5].empty()) label.word_index = std::stoi(cells[5]);
-        if (cells.size() > 6 && !cells[6].empty()) label.phrase_index = std::stoi(cells[6]);
-        if (cells.size() > 7 && !cells[7].empty()) label.sentence_index = std::stoi(cells[7]);
+        label.start = std::stod(csv_cell(cells, start_col));
+        label.end = std::stod(csv_cell(cells, end_col));
+        label.pose = csv_cell(cells, pose_col);
+        label.word = csv_cell(cells, word_col);
+
+        const std::string confidence = csv_cell(cells, confidence_col);
+        const std::string word_index = csv_cell(cells, word_index_col);
+        const std::string speech_region_index = csv_cell(cells, speech_region_index_col);
+        const std::string sentence_index = csv_cell(cells, sentence_index_col);
+
+        if (!confidence.empty()) label.confidence = std::stod(confidence);
+        if (!word_index.empty()) label.word_index = std::stoi(word_index);
+        if (!speech_region_index.empty()) label.speech_region_index = std::stoi(speech_region_index);
+        if (!sentence_index.empty()) label.sentence_index = std::stoi(sentence_index);
         out.push_back(label);
     }
     return out;
@@ -385,36 +439,57 @@ static std::vector<GoldPhoneTiming> read_gold_phones_csv(const fs::path& path)
     std::string line;
     std::getline(file, line);
     const std::vector<std::string> header = parse_csv_cells(line);
-    const bool has_global_phone_index = !header.empty() && header[0] == "global_phone_index";
+    const bool has_header = !header.empty() && (header[0] == "global_phone_index" || header[0] == "start");
+    const int global_phone_index_col = header_index(header, "global_phone_index");
+    const int start_col = has_header ? header_index(header, "start") : 0;
+    const int end_col = has_header ? header_index(header, "end") : 1;
+    const int phone_col = has_header ? header_index(header, "phone") : 2;
+    const int word_col = has_header ? header_index(header, "word") : 3;
+    const int word_index_col = has_header ? header_index(header, "word_index") : 5;
+    int word_phone_index_col = has_header ? header_index(header, "phone_index") : -1;
+    if (word_phone_index_col < 0)
+    {
+        word_phone_index_col = has_header ? header_index(header, "word_phone_index") : 7;
+    }
+    int speech_region_index_col = has_header ? header_index(header, "speech_region_index") : 8;
+    if (speech_region_index_col < 0 && has_header)
+    {
+        speech_region_index_col = header_index(header, "phrase_index");
+    }
+    const int sentence_index_col = has_header ? header_index(header, "sentence_index") : 9;
     int global_index = 0;
     while (std::getline(file, line))
     {
         if (line.empty()) continue;
         const std::vector<std::string> cells = parse_csv_cells(line);
-        if (cells.size() < 7) continue;
+        if (start_col < 0 || end_col < 0 || phone_col < 0 || word_col < 0) continue;
 
         GoldPhoneTiming phone;
-        int offset = 0;
-        if (has_global_phone_index)
+        if (global_phone_index_col >= 0)
         {
-            phone.global_phone_index = cells[0].empty() ? global_index : std::stoi(cells[0]);
-            offset = 1;
+            const std::string global_phone_index = csv_cell(cells, global_phone_index_col);
+            phone.global_phone_index = global_phone_index.empty() ? global_index : std::stoi(global_phone_index);
         }
         else
         {
             phone.global_phone_index = global_index;
         }
 
-        phone.start = std::stod(cells[offset + 0]);
-        phone.end = std::stod(cells[offset + 1]);
-        phone.phone = cells[offset + 2];
+        phone.start = std::stod(csv_cell(cells, start_col));
+        phone.end = std::stod(csv_cell(cells, end_col));
+        phone.phone = csv_cell(cells, phone_col);
         phone.phone_base = strip_stress_digits(phone.phone);
-        phone.word = cells[offset + 3];
-        if (cells.size() > static_cast<size_t>(offset + 5) && !cells[offset + 5].empty()) phone.word_index = std::stoi(cells[offset + 5]);
-        if (cells.size() > static_cast<size_t>(offset + 6) && !cells[offset + 6].empty()) phone.speech_region_index = std::stoi(cells[offset + 6]);
-        if (cells.size() > static_cast<size_t>(offset + 7) && !cells[offset + 7].empty()) phone.word_phone_index = std::stoi(cells[offset + 7]);
-        if (cells.size() > static_cast<size_t>(offset + 8) && !cells[offset + 8].empty()) phone.phrase_index = std::stoi(cells[offset + 8]);
-        if (cells.size() > static_cast<size_t>(offset + 9) && !cells[offset + 9].empty()) phone.sentence_index = std::stoi(cells[offset + 9]);
+        phone.word = csv_cell(cells, word_col);
+
+        const std::string word_index = csv_cell(cells, word_index_col);
+        const std::string speech_region_index = csv_cell(cells, speech_region_index_col);
+        const std::string word_phone_index = csv_cell(cells, word_phone_index_col);
+        const std::string sentence_index = csv_cell(cells, sentence_index_col);
+
+        if (!word_index.empty()) phone.word_index = std::stoi(word_index);
+        if (!speech_region_index.empty()) phone.speech_region_index = std::stoi(speech_region_index);
+        if (!word_phone_index.empty()) phone.word_phone_index = std::stoi(word_phone_index);
+        if (!sentence_index.empty()) phone.sentence_index = std::stoi(sentence_index);
         out.push_back(phone);
         ++global_index;
     }
@@ -429,18 +504,33 @@ static std::vector<GoldWordTiming> read_gold_words_csv(const fs::path& path)
 
     std::string line;
     std::getline(file, line);
+    const std::vector<std::string> header = parse_csv_cells(line);
+    const bool has_header = !header.empty() && header[0] == "word_index";
+    const int word_index_col = has_header ? header_index(header, "word_index") : 0;
+    const int word_col = has_header ? header_index(header, "word") : 1;
+    const int start_col = has_header ? header_index(header, "start") : 2;
+    const int end_col = has_header ? header_index(header, "end") : 3;
+    int speech_region_index_col = has_header ? header_index(header, "speech_region_index") : 4;
+    int sentence_index_col = has_header ? header_index(header, "sentence_index") : 5;
+    if (speech_region_index_col < 0 && has_header)
+    {
+        speech_region_index_col = header_index(header, "phrase_index");
+    }
     while (std::getline(file, line))
     {
         if (line.empty()) continue;
         const std::vector<std::string> cells = parse_csv_cells(line);
-        if (cells.size() < 4) continue;
+        if (word_col < 0 || start_col < 0 || end_col < 0) continue;
         GoldWordTiming word;
-        if (!cells[0].empty()) word.word_index = std::stoi(cells[0]);
-        word.word = cells[1];
-        word.start = std::stod(cells[2]);
-        word.end = std::stod(cells[3]);
-        if (cells.size() > 4 && !cells[4].empty()) word.phrase_index = std::stoi(cells[4]);
-        if (cells.size() > 5 && !cells[5].empty()) word.sentence_index = std::stoi(cells[5]);
+        const std::string word_index = csv_cell(cells, word_index_col);
+        const std::string speech_region_index = csv_cell(cells, speech_region_index_col);
+        const std::string sentence_index = csv_cell(cells, sentence_index_col);
+        if (!word_index.empty()) word.word_index = std::stoi(word_index);
+        word.word = csv_cell(cells, word_col);
+        word.start = std::stod(csv_cell(cells, start_col));
+        word.end = std::stod(csv_cell(cells, end_col));
+        if (!speech_region_index.empty()) word.speech_region_index = std::stoi(speech_region_index);
+        if (!sentence_index.empty()) word.sentence_index = std::stoi(sentence_index);
         out.push_back(word);
     }
     return out;
@@ -454,16 +544,24 @@ static std::vector<GoldSpeechRegion> read_gold_speech_csv(const fs::path& path)
 
     std::string line;
     std::getline(file, line);
+    const std::vector<std::string> header = parse_csv_cells(line);
+    const bool has_header = !header.empty() && header[0] == "index";
+    const int index_col = has_header ? header_index(header, "index") : 0;
+    const int start_col = has_header ? header_index(header, "start") : 1;
+    const int end_col = has_header ? header_index(header, "end") : 2;
+    int last_speech_col = has_header ? header_index(header, "last_speech") : 3;
     while (std::getline(file, line))
     {
         if (line.empty()) continue;
         const std::vector<std::string> cells = parse_csv_cells(line);
-        if (cells.size() < 3) continue;
+        if (start_col < 0 || end_col < 0) continue;
         GoldSpeechRegion region;
-        if (!cells[0].empty()) region.index = std::stoi(cells[0]);
-        region.start = std::stod(cells[1]);
-        region.end = std::stod(cells[2]);
-        if (cells.size() > 3 && !cells[3].empty()) region.last_speech = std::stod(cells[3]);
+        const std::string index = csv_cell(cells, index_col);
+        const std::string last_speech = csv_cell(cells, last_speech_col);
+        if (!index.empty()) region.index = std::stoi(index);
+        region.start = std::stod(csv_cell(cells, start_col));
+        region.end = std::stod(csv_cell(cells, end_col));
+        if (!last_speech.empty()) region.last_speech = std::stod(last_speech);
         out.push_back(region);
     }
     return out;
@@ -472,7 +570,7 @@ static std::vector<GoldSpeechRegion> read_gold_speech_csv(const fs::path& path)
 static std::string gold_visible_visemes_csv(const std::vector<HandmadeLabel>& labels)
 {
     std::ostringstream out;
-    out << "start,end,pose,word,confidence,word_index,phrase_index,sentence_index\n";
+    out << "start,end,pose,word,confidence,word_index,speech_region_index,sentence_index\n";
     out << std::fixed << std::setprecision(6);
     for (const HandmadeLabel& label : labels)
     {
@@ -482,7 +580,7 @@ static std::string gold_visible_visemes_csv(const std::vector<HandmadeLabel>& la
             << label.word << ','
             << label.confidence << ','
             << label.word_index << ','
-            << label.phrase_index << ','
+            << label.speech_region_index << ','
             << label.sentence_index << '\n';
     }
     return out.str();
@@ -539,7 +637,7 @@ static std::vector<HandmadeLabel> build_gold_visible_labels(
         label.word = matched_phone->word.empty() ? to_std(event.SourceText) : matched_phone->word;
         label.confidence = 1.0;
         label.word_index = matched_phone->word_index;
-        label.phrase_index = matched_phone->phrase_index;
+        label.speech_region_index = matched_phone->speech_region_index;
         label.sentence_index = matched_phone->sentence_index;
         out.push_back(label);
     }
@@ -559,7 +657,7 @@ static std::vector<HandmadeLabel> build_gold_visible_labels(
 static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
 {
     std::ostringstream out;
-    out << "index,pose,word,word_index,phrase_index,sentence_index,text_center_norm,strength,source_phone,source_phone_index,generator\n";
+    out << "index,pose,word,word_index,sentence_index,text_center_norm,strength,source_phone,source_phone_index,generator\n";
     out << std::fixed << std::setprecision(6);
     for (int32 i = 0; i < plan.Events.Num(); ++i)
     {
@@ -569,8 +667,7 @@ static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
             << to_std(event.PoseID) << ','
             << to_std(event.SourceText) << ','
             << event.WordIndex << ','
-            << event.PhraseIndex << ','
-            << event.SentenceIslandIndex << ','
+            << event.SentenceIndex << ','
             << center << ','
             << event.Strength << ','
             << to_std(event.SourcePhoneBase) << ','
@@ -583,7 +680,7 @@ static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
 static std::string expected_phones_csv(const FOffgridAITextVisemePlan& plan)
 {
     std::ostringstream out;
-    out << "phone_index,word_phone_index,phone,base_phone,word,word_index,phrase_index,sentence_index,is_vowel,is_visible_viseme,first_visible_event_index,boundary_after_word,weight_seconds\n";
+    out << "phone_index,word_phone_index,phone,base_phone,word,word_index,sentence_index,is_vowel,is_visible_viseme,first_visible_event_index,boundary_after_word,weight_seconds\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& phone : plan.ExpectedPhones)
     {
@@ -593,8 +690,7 @@ static std::string expected_phones_csv(const FOffgridAITextVisemePlan& plan)
             << to_std(phone.BasePhone) << ','
             << to_std(phone.SourceWord) << ','
             << phone.WordIndex << ','
-            << phone.PhraseIndex << ','
-            << phone.SentenceIslandIndex << ','
+            << phone.SentenceIndex << ','
             << (phone.bIsVowel ? 1 : 0) << ','
             << (phone.bIsVisibleViseme ? 1 : 0) << ','
             << phone.FirstVisibleEventIndex << ','
@@ -604,23 +700,23 @@ static std::string expected_phones_csv(const FOffgridAITextVisemePlan& plan)
     return out.str();
 }
 
-static std::string speech_csv(const TArray<FOffgridAIStreamingSpeechIsland>& islands)
+static std::string speech_csv(const TArray<FOffgridAIStreamingSpeechRegion>& speech_regions)
 {
     std::ostringstream out;
     out << "index,start,end,last_speech,started,ended,provisional_end,end_decision,reopen_count,end_reason\n";
     out << std::fixed << std::setprecision(6);
-    for (const auto& island : islands)
+    for (const auto& speech_region : speech_regions)
     {
-        out << island.IslandIndex << ','
-            << island.AudioBufferStartSec << ','
-            << island.AudioBufferEndSec << ','
-            << island.AudioBufferLastSpeechSec << ','
-            << (island.bStarted ? 1 : 0) << ','
-            << (island.bEnded ? 1 : 0) << ','
-            << island.ProvisionalEndSec << ','
-            << island.EndDecisionSec << ','
-            << island.ReopenCount << ','
-            << to_std(island.EndReason) << '\n';
+        out << speech_region.SpeechRegionIndex << ','
+            << speech_region.AudioBufferStartSec << ','
+            << speech_region.AudioBufferEndSec << ','
+            << speech_region.AudioBufferLastSpeechSec << ','
+            << (speech_region.bStarted ? 1 : 0) << ','
+            << (speech_region.bEnded ? 1 : 0) << ','
+            << speech_region.ProvisionalEndSec << ','
+            << speech_region.EndDecisionSec << ','
+            << speech_region.ReopenCount << ','
+            << to_std(speech_region.EndReason) << '\n';
     }
     return out.str();
 }
@@ -628,7 +724,7 @@ static std::string speech_csv(const TArray<FOffgridAIStreamingSpeechIsland>& isl
 static std::string occupancy_frames_csv(const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames)
 {
     std::ostringstream out;
-    out << "index,start,end,center,rms,rms_norm,delta_rms,flux,zcr,low_band,mid_band,high_band,centroid,periodicity,evidence,open_threshold,close_threshold,in_speech_before,in_speech_after,open_candidate,keep_open,strong_onset,strong_quiet,low_evidence,endpoint_active,silence_accum,endpoint_start,active_island_start,active_island_end,frame_started,frame_closed,frame_bridged,decision,local_rms_peak,local_rms_valley,local_flux_peak,pause_family,pause_family_confidence,pause_gap_age\n";
+    out << "index,start,end,center,rms,rms_norm,delta_rms,flux,zcr,low_band,mid_band,high_band,centroid,periodicity,evidence,open_threshold,close_threshold,in_speech_before,in_speech_after,open_candidate,keep_open,strong_onset,strong_quiet,low_evidence,endpoint_active,silence_accum,endpoint_start,active_speech_region_start,active_speech_region_end,frame_started_speech_region,frame_closed_speech_region,frame_bridged_speech_region,decision,local_rms_peak,local_rms_valley,local_flux_peak,pause_family,pause_family_confidence,pause_gap_age\n";
     out << std::fixed << std::setprecision(6);
     for (int32 i = 0; i < frames.Num(); ++i)
     {
@@ -660,11 +756,11 @@ static std::string occupancy_frames_csv(const TArray<FOffgridAIStreamingAudioFea
             << (f.bEndpointCandidateActive ? 1 : 0) << ','
             << f.SilenceAccumSec << ','
             << f.EndpointCandidateStartSec << ','
-            << f.ActiveIslandStartSec << ','
-            << f.ActiveIslandEndSec << ','
-            << (f.bFrameStartedIsland ? 1 : 0) << ','
-            << (f.bFrameClosedIsland ? 1 : 0) << ','
-            << (f.bFrameBridgedIsland ? 1 : 0) << ','
+            << f.ActiveSpeechRegionStartSec << ','
+            << f.ActiveSpeechRegionEndSec << ','
+            << (f.bFrameStartedSpeechRegion ? 1 : 0) << ','
+            << (f.bFrameClosedSpeechRegion ? 1 : 0) << ','
+            << (f.bFrameBridgedSpeechRegion ? 1 : 0) << ','
             << to_std(f.OccupancyDecision) << ','
             << (f.bLocalRMSPeak ? 1 : 0) << ','
             << (f.bLocalRMSValley ? 1 : 0) << ','
@@ -752,18 +848,18 @@ static std::string phone_class_frames_csv(const TArray<FOffgridAIStreamingAudioF
 static std::string gap_candidates_csv(const TArray<FOffgridAIStreamingSpeechGapCandidate>& gaps)
 {
     std::ostringstream out;
-    out << "gap_index,prev_island_index,next_island_index,gap_start,gap_end,gap_duration,prev_island_duration,quiet_evidence,quiet_rms_norm,gap_frames,low_evidence_frames,strong_quiet_frames,mean_evidence,mean_rms_norm,mean_periodicity,mean_flux,mean_centroid,min_evidence,min_rms_norm,max_periodicity,max_flux,reopen_evidence,reopen_flux,strong_quiet_close,strong_onset_reopen,bridged,close_reason,decision_class\n";
+    out << "gap_index,prev_speech_region_index,next_speech_region_index,gap_start,gap_end,gap_duration,prev_speech_region_duration,quiet_evidence,quiet_rms_norm,gap_frames,low_evidence_frames,strong_quiet_frames,mean_evidence,mean_rms_norm,mean_periodicity,mean_flux,mean_centroid,min_evidence,min_rms_norm,max_periodicity,max_flux,reopen_evidence,reopen_flux,strong_quiet_close,strong_onset_reopen,bridged,close_reason,decision_class\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& gap : gaps)
     {
         const float inv_frames = gap.GapFrameCount > 0 ? 1.0f / static_cast<float>(gap.GapFrameCount) : 0.0f;
         out << gap.GapIndex << ','
-            << gap.PrevIslandIndex << ','
-            << gap.NextIslandIndex << ','
+            << gap.PrevSpeechRegionIndex << ','
+            << gap.NextSpeechRegionIndex << ','
             << gap.GapStartSec << ','
             << gap.GapEndSec << ','
             << gap.GapDurationSec << ','
-            << gap.PrevIslandDurationSec << ','
+            << gap.PrevSpeechRegionDurationSec << ','
             << gap.QuietEvidence << ','
             << gap.QuietRMSNorm << ','
             << gap.GapFrameCount << ','
@@ -792,7 +888,7 @@ static std::string gap_candidates_csv(const TArray<FOffgridAIStreamingSpeechGapC
 static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "index,start,center,end,pose,word,word_index,phrase_index,sentence_index,strength,reason,source_phone_index,source_phone_base,source_phone_class,text_center_norm,text_diagnostic_center,commit_playback,commit_lead,required_active_elapsed,observed_active_elapsed,active_progress_deficit,required_progress_norm,observed_progress_norm,active_progress_ratio,mapped_to_observed_speech,detected_word_start,detected_word_start_mapped\n";
+    out << "index,start,center,end,pose,word,word_index,speech_region_index,sentence_index,strength,reason,source_phone_index,source_phone_base,source_phone_class,text_center_norm,text_diagnostic_center,commit_playback,commit_lead,required_active_elapsed,observed_active_elapsed,active_progress_deficit,required_progress_norm,observed_progress_norm,active_progress_ratio,mapped_to_observed_speech,detected_word_start,detected_word_start_mapped\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.Events)
     {
@@ -803,7 +899,7 @@ static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
             << to_std(event.PoseID) << ','
             << to_std(event.SourceWord) << ','
             << event.WordIndex << ','
-            << event.PhraseIndex << ','
+            << event.SpeechRegionIndex << ','
             << event.SentenceIndex << ','
             << event.Strength << ','
             << to_std(event.CommitReason) << ','
@@ -865,7 +961,7 @@ static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& trac
 static std::string stream_tail_csv(const FOffgridAIStreamTailDiagnosticRow& row)
 {
     std::ostringstream out;
-    out << "line_id,pcm_chunk_count,pcm_bytes_received,pcm_samples_received,last_sample_rate,last_num_channels,last_chunk_start_sample,last_chunk_end_sample,observed_audio_buffer_end,first_speech_audio_buffer_start,speech_island_count,input_stream_closed,diagnostic_kind\n";
+    out << "line_id,pcm_chunk_count,pcm_bytes_received,pcm_samples_received,last_sample_rate,last_num_channels,last_chunk_start_sample,last_chunk_end_sample,observed_audio_buffer_end,first_speech_audio_buffer_start,speech_region_count,input_stream_closed,diagnostic_kind\n";
     out << std::fixed << std::setprecision(6);
     out << to_std(row.LineID) << ','
         << row.PCMChunkCount << ','
@@ -877,7 +973,7 @@ static std::string stream_tail_csv(const FOffgridAIStreamTailDiagnosticRow& row)
         << row.LastChunkEndSample << ','
         << row.ObservedAudioBufferEndSec << ','
         << row.FirstSpeechAudioBufferStartSec << ','
-        << row.SpeechIslandCount << ','
+        << row.SpeechRegionCount << ','
         << (row.bInputStreamClosed ? 1 : 0) << ','
         << to_std(row.DiagnosticKind) << '\n';
     return out.str();
@@ -1227,18 +1323,18 @@ static std::string streaming_detector_frames_csv(
     return out.str();
 }
 
-static std::vector<TimeSpan> build_predicted_speech_regions(const TArray<FOffgridAIStreamingSpeechIsland>& islands)
+static std::vector<TimeSpan> build_predicted_speech_regions(const TArray<FOffgridAIStreamingSpeechRegion>& speech_regions)
 {
     std::vector<TimeSpan> spans;
-    for (const auto& island : islands)
+    for (const auto& speech_region : speech_regions)
     {
-        const double start = static_cast<double>(island.AudioBufferStartSec);
-        const double end = static_cast<double>(std::max(island.AudioBufferLastSpeechSec, island.AudioBufferEndSec));
+        const double start = static_cast<double>(speech_region.AudioBufferStartSec);
+        const double end = static_cast<double>(std::max(speech_region.AudioBufferLastSpeechSec, speech_region.AudioBufferEndSec));
         if (end <= start)
         {
             continue;
         }
-        spans.push_back(TimeSpan{island.IslandIndex, start, end});
+        spans.push_back(TimeSpan{speech_region.SpeechRegionIndex, start, end});
     }
     return spans;
 }
@@ -1279,13 +1375,13 @@ static std::vector<TimeSpan> build_gold_clause_regions(const std::vector<GoldWor
     int synthetic_key = -1;
     for (const auto& word : words)
     {
-        if (word.phrase_index < 0) continue;
-        if (spans.empty() || word.sentence_index != last_sentence || word.phrase_index != last_phrase)
+        if (word.speech_region_index < 0) continue;
+        if (spans.empty() || word.sentence_index != last_sentence || word.speech_region_index != last_phrase)
         {
             ++synthetic_key;
             spans.push_back(TimeSpan{synthetic_key, word.start, word.end});
             last_sentence = word.sentence_index;
-            last_phrase = word.phrase_index;
+            last_phrase = word.speech_region_index;
         }
         else
         {
@@ -1323,15 +1419,15 @@ static std::vector<TimeSpan> build_predicted_clause_regions(const FOffgridAIAlig
     int synthetic_key = -1;
     for (const auto& event : track.Events)
     {
-        if (event.PhraseIndex < 0) continue;
+        if (event.SpeechRegionIndex < 0) continue;
         const double start = static_cast<double>(event.RenderStartSeconds);
         const double end = static_cast<double>(event.RenderEndSeconds);
-        if (spans.empty() || event.SentenceIndex != last_sentence || event.PhraseIndex != last_phrase)
+        if (spans.empty() || event.SentenceIndex != last_sentence || event.SpeechRegionIndex != last_phrase)
         {
             ++synthetic_key;
             spans.push_back(TimeSpan{synthetic_key, start, end});
             last_sentence = event.SentenceIndex;
-            last_phrase = event.PhraseIndex;
+            last_phrase = event.SpeechRegionIndex;
         }
         else
         {
@@ -1525,7 +1621,7 @@ static IntraWordAlignmentReport grade_intra_word_alignment(
 
 static GradeReport grade(
     const FOffgridAIAlignedVisemeTrack& track,
-    const TArray<FOffgridAIStreamingSpeechIsland>& speech_islands,
+    const TArray<FOffgridAIStreamingSpeechRegion>& speech_regions,
     const std::vector<HandmadeLabel>& handmade,
     const std::vector<GoldWordTiming>& gold_words,
     const std::vector<GoldSpeechRegion>& gold_speech)
@@ -1581,7 +1677,7 @@ static GradeReport grade(
 
     report.pause_alignment.speech_regions = grade_region_boundaries(
         build_gold_speech_regions(gold_speech),
-        build_predicted_speech_regions(speech_islands));
+        build_predicted_speech_regions(speech_regions));
     report.pause_alignment.sentence_regions = grade_region_boundaries(
         build_gold_sentence_regions(gold_words),
         build_predicted_sentence_regions(track));
@@ -1979,7 +2075,7 @@ int main(int argc, char** argv)
             run_streamed_runtime_session(session, wav, stream);
 
             const auto& plan = session.GetTextPlan();
-            const auto& speech = session.GetSpeechIslands();
+            const auto& speech = session.GetSpeechRegions();
             const auto& gap_candidates = session.GetSpeechDetector().GetGapCandidates();
             const auto& committed = session.GetCommittedTrack();
 

@@ -10,7 +10,7 @@
 struct FOffgridAILipsyncRuntimeUpdateInput
 {
     const FOffgridAITextVisemePlan* TextPlan = nullptr;
-    const TArray<FOffgridAIStreamingSpeechIsland>* SpeechIslands = nullptr;
+    const TArray<FOffgridAIStreamingSpeechRegion>* SpeechRegions = nullptr;
     const TArray<FOffgridAIStreamingAudioFeatureFrame>* AudioFeatureFrames = nullptr;
 
     float CurrentPlaybackSec = 0.0f;
@@ -67,7 +67,7 @@ struct FOffgridAIStreamTailDiagnosticRow
     int64 LastChunkEndSample = -1;
     float ObservedAudioBufferEndSec = 0.0f;
     float FirstSpeechAudioBufferStartSec = 0.0f;
-    int32 SpeechIslandCount = 0;
+    int32 SpeechRegionCount = 0;
     bool bInputStreamClosed = false;
     FName DiagnosticKind = NAME_None;
 };
@@ -92,7 +92,8 @@ public:
 
     const FOffgridAITextVisemePlan& GetTextPlan() const { return TextPlan; }
     const FOffgridAIStreamingSpeechDetector& GetSpeechDetector() const { return Detector; }
-    const TArray<FOffgridAIStreamingSpeechIsland>& GetSpeechIslands() const { return ResolvedSpeechIslands; }
+    const TArray<FOffgridAIStreamingSpeechRegion>& GetSpeechRegions() const { return ResolvedSpeechRegions; }
+    const TArray<FOffgridAIStreamingSpeechRegion>& GetSpeechIslands() const { return ResolvedSpeechRegions; }
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& GetAudioFeatureFrames() const { return Detector.GetFeatureFrames(); }
     const FOffgridAIAlignedVisemeTrack& GetCommittedTrack() const { return CommittedTrack; }
     const TArray<FOffgridAIAudioOccupancyDiagnosticRow>& GetAudioOccupancyDiagnosticRows() const { return AudioOccupancyDiagnosticRows; }
@@ -105,7 +106,7 @@ public:
 
 private:
     void UpdatePlaybackGate(float ObservedEndSec);
-    void RefreshResolvedSpeechIslands();
+    void RefreshResolvedSpeechRegions();
     void RecordRuntimeDiagnostics(float CurrentPlaybackSec, bool bFinalReplay);
 
     FName NPCID = NAME_None;
@@ -120,7 +121,7 @@ private:
 
     FOffgridAITextVisemePlan TextPlan;
     FOffgridAIStreamingSpeechDetector Detector;
-    TArray<FOffgridAIStreamingSpeechIsland> ResolvedSpeechIslands;
+    TArray<FOffgridAIStreamingSpeechRegion> ResolvedSpeechRegions;
     FOffgridAIAlignedVisemeTrack CommittedTrack;
     TArray<FOffgridAIAudioOccupancyDiagnosticRow> AudioOccupancyDiagnosticRows;
     int32 AudioOccupancyDiagnosticUpdateOrdinal = 0;

@@ -73,7 +73,7 @@ struct FOffgridAIOnlinePhoneAlignmentInput
 {
     const FOffgridAITextVisemePlan* Plan = nullptr;
     const TArray<FOffgridAIStreamingAudioFeatureFrame>* AudioFeatureFrames = nullptr;
-    const TArray<FOffgridAIStreamingSpeechIsland>* SpeechIslands = nullptr;
+    const TArray<FOffgridAIStreamingSpeechRegion>* SpeechRegions = nullptr;
     float ObservedAudioEndSec = 0.0f;
     float PlaybackSec = 0.0f;
     float LookaheadSec = 0.350f;

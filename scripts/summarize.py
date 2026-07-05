@@ -25,6 +25,20 @@ def _as_int(row: dict, key: str, default: int = 0) -> int:
         return default
 
 
+def _as_float_any(row: dict, *keys: str, default: float = 0.0) -> float:
+    for key in keys:
+        if key in row and row.get(key, "") != "":
+            return _as_float(row, key, default)
+    return default
+
+
+def _as_int_any(row: dict, *keys: str, default: int = 0) -> int:
+    for key in keys:
+        if key in row and row.get(key, "") != "":
+            return _as_int(row, key, default)
+    return default
+
+
 def _read_csv_rows(path: pathlib.Path) -> list[dict]:
     if not path.exists():
         return []
@@ -70,9 +84,9 @@ def load_occupancy_summary(case_dir: pathlib.Path) -> dict:
         "frames": len(rows),
         "occupied": occupied,
         "occupied_pct": (100.0 * occupied / len(rows)) if rows else 0.0,
-        "started": sum(1 for row in rows if _as_int(row, "frame_started") != 0),
-        "closed": sum(1 for row in rows if _as_int(row, "frame_closed") != 0),
-        "bridged": sum(1 for row in rows if _as_int(row, "frame_bridged") != 0),
+        "started": sum(1 for row in rows if _as_int_any(row, "frame_started_speech_region", "frame_started") != 0),
+        "closed": sum(1 for row in rows if _as_int_any(row, "frame_closed_speech_region", "frame_closed") != 0),
+        "bridged": sum(1 for row in rows if _as_int_any(row, "frame_bridged_speech_region", "frame_bridged") != 0),
         "open_candidate": sum(1 for row in rows if _as_int(row, "open_candidate") != 0),
         "keep_open": sum(1 for row in rows if _as_int(row, "keep_open") != 0),
         "low_evidence": sum(1 for row in rows if _as_int(row, "low_evidence") != 0),
@@ -123,17 +137,17 @@ def load_close_suppressions(case_dir: pathlib.Path) -> dict:
         next_row = rows[i] if i < n else None
         prev_row = rows[start_i - 1] if start_i > 0 else None
         duration_ms = sum(max(0.0, _as_float(r, "end") - _as_float(r, "start")) * 1000.0 for r in run_rows)
-        successful = any(_as_int(r, "frame_closed") != 0 or (r.get("decision", "") == "closed_frame") for r in run_rows)
+        successful = any(_as_int_any(r, "frame_closed_speech_region", "frame_closed") != 0 or (r.get("decision", "") == "closed_frame") for r in run_rows)
         if not successful and next_row is not None:
             # A close is often recorded on the first frame after the strictly-below-close run.
             # Count that as successful if the detector closed immediately on exit.
-            successful = (_as_int(next_row, "frame_closed") != 0 or next_row.get("decision", "") == "closed_frame")
+            successful = (_as_int_any(next_row, "frame_closed_speech_region", "frame_closed") != 0 or next_row.get("decision", "") == "closed_frame")
         terminated_by = "end_of_file"
         if successful:
             terminated_by = "successful_close"
         elif next_row is not None:
             decision = next_row.get("decision", "") or "none"
-            if _as_int(next_row, "frame_started") != 0 or decision == "new_island_open":
+            if _as_int_any(next_row, "frame_started_speech_region", "frame_started") != 0 or decision == "new_island_open":
                 terminated_by = "reopen"
             elif decision == "candidate_decay":
                 terminated_by = "candidate_decay"
@@ -160,7 +174,7 @@ def load_close_suppressions(case_dir: pathlib.Path) -> dict:
             "endpoint_frames": sum(1 for r in run_rows if _as_int(r, "endpoint_active") != 0),
             "low_frames": sum(1 for r in run_rows if _as_int(r, "low_evidence") != 0),
             "keep_open_frames": sum(1 for r in run_rows if _as_int(r, "keep_open") != 0),
-            "closed_frames": sum(1 for r in run_rows if _as_int(r, "frame_closed") != 0),
+            "closed_frames": sum(1 for r in run_rows if _as_int_any(r, "frame_closed_speech_region", "frame_closed") != 0),
             "prev_evidence": _as_float(prev_row, "evidence") if prev_row is not None else 0.0,
             "next_evidence": _as_float(next_row, "evidence") if next_row is not None else 0.0,
             "next_decision": next_row.get("decision", "") if next_row is not None else "",
@@ -244,8 +258,8 @@ def load_island_lifecycle(case_dir: pathlib.Path) -> dict:
         end = _as_float(row, "end")
         if end <= start:
             continue
-        open_row = _nearest_frame(frames, start, "frame_started")
-        close_row = _nearest_frame(frames, end, "frame_closed")
+        open_row = _nearest_frame(frames, start, "frame_started_speech_region")
+        close_row = _nearest_frame(frames, end, "frame_closed_speech_region")
         islands.append({
             "index": len(islands),
             "start": start,
@@ -281,8 +295,8 @@ def load_island_lifecycle(case_dir: pathlib.Path) -> dict:
             "source": island.get("source", source),
             "open_decision": open_row.get("decision", "") if isinstance(open_row, dict) else "",
             "close_decision": close_row.get("decision", "") if isinstance(close_row, dict) else "",
-            "open_frame_started": _as_int(open_row, "frame_started") if isinstance(open_row, dict) else 0,
-            "close_frame_closed": _as_int(close_row, "frame_closed") if isinstance(close_row, dict) else 0,
+            "open_frame_started": _as_int_any(open_row, "frame_started_speech_region", "frame_started") if isinstance(open_row, dict) else 0,
+            "close_frame_closed": _as_int_any(close_row, "frame_closed_speech_region", "frame_closed") if isinstance(close_row, dict) else 0,
             "open_evidence": _as_float(open_row, "evidence") if isinstance(open_row, dict) else 0.0,
             "close_evidence": _as_float(close_row, "evidence") if isinstance(close_row, dict) else 0.0,
             "open_time_error_ms": (_as_float(open_row, "center") - start) * 1000.0 if isinstance(open_row, dict) and open_row else 0.0,
@@ -334,11 +348,11 @@ def load_attach_traces(case_dir: pathlib.Path) -> list[dict]:
         gap_duration = _as_float(gap, "gap_duration", max(0.0, gap_end - gap_start))
         bridged = _as_int(gap, "bridged") != 0
 
-        prev_region = regions_by_index.get(_as_int(gap, "prev_island_index", -1))
-        next_region = None if bridged else regions_by_index.get(_as_int(gap, "next_island_index", -1))
+        prev_region = regions_by_index.get(_as_int_any(gap, "prev_speech_region_index", "prev_island_index", default=-1))
+        next_region = None if bridged else regions_by_index.get(_as_int_any(gap, "next_speech_region_index", "next_island_index", default=-1))
 
-        onset_row = _nearest_frame(frames, gap_end, "frame_started")
-        quiet_row = _nearest_frame(frames, gap_start, "frame_closed")
+        onset_row = _nearest_frame(frames, gap_end, "frame_started_speech_region")
+        quiet_row = _nearest_frame(frames, gap_start, "frame_closed_speech_region")
         emitted_gap = 0.0
         if bridged:
             emitted_gap = 0.0
@@ -374,10 +388,10 @@ def load_attach_traces(case_dir: pathlib.Path) -> list[dict]:
             "strong_quiet_close": _as_int(gap, "strong_quiet_close"),
             "strong_onset_reopen": _as_int(gap, "strong_onset_reopen"),
             "onset_decision": onset_row.get("decision", "") if isinstance(onset_row, dict) and onset_row else "",
-            "onset_started": _as_int(onset_row, "frame_started") if isinstance(onset_row, dict) else 0,
+            "onset_started": _as_int_any(onset_row, "frame_started_speech_region", "frame_started") if isinstance(onset_row, dict) else 0,
             "onset_evidence": _as_float(onset_row, "evidence") if isinstance(onset_row, dict) else 0.0,
             "quiet_decision": quiet_row.get("decision", "") if isinstance(quiet_row, dict) and quiet_row else "",
-            "quiet_closed": _as_int(quiet_row, "frame_closed") if isinstance(quiet_row, dict) else 0,
+            "quiet_closed": _as_int_any(quiet_row, "frame_closed_speech_region", "frame_closed") if isinstance(quiet_row, dict) else 0,
         })
     return traces
 
@@ -412,9 +426,59 @@ def load_gap_traces(case_dir: pathlib.Path) -> list[dict]:
             "rms_mean": _mean(rms_norm),
             "low_frames": sum(1 for row in in_gap if _as_int(row, "low_evidence") != 0),
             "endpoint_frames": sum(1 for row in in_gap if _as_int(row, "endpoint_active") != 0),
-            "closed_frames": sum(1 for row in in_gap if _as_int(row, "frame_closed") != 0),
-            "bridged_frames": sum(1 for row in in_gap if _as_int(row, "frame_bridged") != 0),
+            "closed_frames": sum(1 for row in in_gap if _as_int_any(row, "frame_closed_speech_region", "frame_closed") != 0),
+            "bridged_frames": sum(1 for row in in_gap if _as_int_any(row, "frame_bridged_speech_region", "frame_bridged") != 0),
             "longest_below_close_ms": _run_length_ms(in_gap, lambda r: _as_float(r, "evidence") < _as_float(r, "close_threshold")),
+        })
+    return traces
+
+
+def load_phrase_burst_traces(case_dir: pathlib.Path) -> list[dict]:
+    rows = _read_csv_rows(case_dir / "committed.csv")
+    if not rows:
+        return []
+
+    by_phrase: dict[int, list[dict]] = {}
+    for row in rows:
+        phrase_index = _as_int(row, "phrase_index", 0)
+        if phrase_index <= 0:
+            continue
+        by_phrase.setdefault(phrase_index, []).append(row)
+
+    traces = []
+    for phrase_index, phrase_rows in sorted(by_phrase.items()):
+        if len(phrase_rows) < 2:
+            continue
+        phrase_rows = sorted(phrase_rows, key=lambda r: _as_int(r, "index"))
+        first_rows = phrase_rows[: min(4, len(phrase_rows))]
+        first_commit = _as_float(first_rows[0], "commit_playback")
+        same_commit_first4 = sum(
+            1 for row in first_rows
+            if abs(_as_float(row, "commit_playback") - first_commit) <= 1e-6
+        )
+        nonpositive_first4 = sum(1 for row in first_rows if _as_float(row, "commit_lead") <= 0.0)
+        sub100_first4 = sum(1 for row in first_rows if _as_float(row, "commit_lead") < 0.100)
+        mean_lead_first4 = _mean([_as_float(row, "commit_lead") for row in first_rows])
+        center_span_first4_ms = (
+            _as_float(first_rows[-1], "center") - _as_float(first_rows[0], "center")
+        ) * 1000.0
+        traces.append({
+            "phrase_index": phrase_index,
+            "event_count": len(phrase_rows),
+            "same_commit_first4": same_commit_first4,
+            "nonpositive_first4": nonpositive_first4,
+            "sub100_first4": sub100_first4,
+            "mean_lead_first4_ms": mean_lead_first4 * 1000.0,
+            "center_span_first4_ms": center_span_first4_ms,
+            "first_commit_playback_ms": first_commit * 1000.0,
+            "first_center_ms": _as_float(first_rows[0], "center") * 1000.0,
+            "first4_words": "/".join((row.get("word", "") or "?") for row in first_rows),
+            "first4_poses": "/".join((row.get("pose", "") or "?") for row in first_rows),
+            "flagged": 1 if (
+                same_commit_first4 >= 3
+                or nonpositive_first4 >= 1
+                or sub100_first4 >= 2
+            ) else 0,
         })
     return traces
 
@@ -560,36 +624,36 @@ def main() -> int:
                 )
 
 
-        islands = load_island_lifecycle(case_dir)
-        if islands:
+        speech_regions = load_island_lifecycle(case_dir)
+        if speech_regions:
             print(
-                f"CASE_ISLANDS {case} "
-                f"count={int(islands.get('count', 0))} "
-                f"source={islands.get('source', '')} "
-                f"first_open_ms={float(islands.get('first_open_ms', 0.0)):.1f} "
-                f"last_close_ms={float(islands.get('last_close_ms', 0.0)):.1f} "
-                f"total_ms={float(islands.get('total_ms', 0.0)):.1f} "
-                f"mean_duration_ms={float(islands.get('mean_duration_ms', 0.0)):.1f} "
-                f"mean_gap_ms={float(islands.get('mean_gap_ms', 0.0)):.1f} "
-                f"max_gap_ms={float(islands.get('max_gap_ms', 0.0)):.1f}"
+                f"CASE_SPEECH_REGIONS {case} "
+                f"count={int(speech_regions.get('count', 0))} "
+                f"source={speech_regions.get('source', '')} "
+                f"first_open_ms={float(speech_regions.get('first_open_ms', 0.0)):.1f} "
+                f"last_close_ms={float(speech_regions.get('last_close_ms', 0.0)):.1f} "
+                f"total_ms={float(speech_regions.get('total_ms', 0.0)):.1f} "
+                f"mean_duration_ms={float(speech_regions.get('mean_duration_ms', 0.0)):.1f} "
+                f"mean_gap_ms={float(speech_regions.get('mean_gap_ms', 0.0)):.1f} "
+                f"max_gap_ms={float(speech_regions.get('max_gap_ms', 0.0)):.1f}"
             )
-            for island in islands.get('islands', [])[:12]:
+            for speech_region in speech_regions.get('islands', [])[:12]:
                 print(
-                    f"CASE_ISLAND_TRACE {case} "
-                    f"island={int(island.get('index', 0))} "
-                    f"start_ms={float(island.get('start_ms', 0.0)):.1f} "
-                    f"end_ms={float(island.get('end_ms', 0.0)):.1f} "
-                    f"dur_ms={float(island.get('duration_ms', 0.0)):.1f} "
-                    f"gap_after_ms={float(island.get('gap_after_ms', 0.0)):.1f} "
-                    f"source={island.get('source', '')} "
-                    f"open_started={int(island.get('open_frame_started', 0))} "
-                    f"close_closed={int(island.get('close_frame_closed', 0))} "
-                    f"open_decision={island.get('open_decision', '')} "
-                    f"close_decision={island.get('close_decision', '')} "
-                    f"open_evidence={float(island.get('open_evidence', 0.0)):.3f} "
-                    f"close_evidence={float(island.get('close_evidence', 0.0)):.3f} "
-                    f"open_time_error_ms={float(island.get('open_time_error_ms', 0.0)):.1f} "
-                    f"close_time_error_ms={float(island.get('close_time_error_ms', 0.0)):.1f}"
+                    f"CASE_SPEECH_REGION_TRACE {case} "
+                    f"region={int(speech_region.get('index', 0))} "
+                    f"start_ms={float(speech_region.get('start_ms', 0.0)):.1f} "
+                    f"end_ms={float(speech_region.get('end_ms', 0.0)):.1f} "
+                    f"dur_ms={float(speech_region.get('duration_ms', 0.0)):.1f} "
+                    f"gap_after_ms={float(speech_region.get('gap_after_ms', 0.0)):.1f} "
+                    f"source={speech_region.get('source', '')} "
+                    f"open_started={int(speech_region.get('open_frame_started', 0))} "
+                    f"close_closed={int(speech_region.get('close_frame_closed', 0))} "
+                    f"open_decision={speech_region.get('open_decision', '')} "
+                    f"close_decision={speech_region.get('close_decision', '')} "
+                    f"open_evidence={float(speech_region.get('open_evidence', 0.0)):.3f} "
+                    f"close_evidence={float(speech_region.get('close_evidence', 0.0)):.3f} "
+                    f"open_time_error_ms={float(speech_region.get('open_time_error_ms', 0.0)):.1f} "
+                    f"close_time_error_ms={float(speech_region.get('close_time_error_ms', 0.0)):.1f}"
                 )
 
         attach_traces = load_attach_traces(case_dir)
@@ -654,6 +718,7 @@ def main() -> int:
                 f"longest_below_close_ms={float(gap.get('longest_below_close_ms', 0.0)):.1f}"
             )
 
+
     print(
         f"CASES total={summary['total_cases']} graded={summary['graded_cases']} "
         f"ungraded={summary['ungraded_cases']} degenerate={summary['degenerate_cases']}"
@@ -679,8 +744,7 @@ def main() -> int:
     print(
         f"REGIONS speech_start_ms={summary['speech_boundary_start_ms']:.3f} "
         f"speech_end_ms={summary['speech_boundary_end_ms']:.3f} "
-        f"sentence_mismatch={summary['sentence_region_count_mismatch_cases']} "
-        f"clause_mismatch={summary['clause_region_count_mismatch_cases']}"
+        f"count_mismatch={summary['speech_region_count_mismatch_cases']}"
     )
     print(
         f"REGIONS_INDEXED gold_count={summary.get('speech_region_gold_count', 0.0):.3f} "
@@ -767,28 +831,28 @@ def main() -> int:
             f"broken_by={json.dumps(dict(sorted(close_broken.items())), sort_keys=True, separators=(',', ':'))}"
         )
 
-    island_case_count = 0
-    island_count_total = 0
-    island_duration_means = []
-    island_gap_maxes = []
-    island_sources = Counter()
+    speech_region_case_count = 0
+    speech_region_count_total = 0
+    speech_region_duration_means = []
+    speech_region_gap_maxes = []
+    speech_region_sources = Counter()
     for row in graded:
         case_dir = root / row.get("case", "")
-        islands = load_island_lifecycle(case_dir)
-        if not islands:
+        speech_regions = load_island_lifecycle(case_dir)
+        if not speech_regions:
             continue
-        island_case_count += 1
-        island_count_total += int(islands.get("count", 0))
-        island_duration_means.append(float(islands.get("mean_duration_ms", 0.0)))
-        island_gap_maxes.append(float(islands.get("max_gap_ms", 0.0)))
-        island_sources[islands.get("source", "unknown")] += 1
-    if island_case_count:
+        speech_region_case_count += 1
+        speech_region_count_total += int(speech_regions.get("count", 0))
+        speech_region_duration_means.append(float(speech_regions.get("mean_duration_ms", 0.0)))
+        speech_region_gap_maxes.append(float(speech_regions.get("max_gap_ms", 0.0)))
+        speech_region_sources[speech_regions.get("source", "unknown")] += 1
+    if speech_region_case_count:
         print(
-            f"ISLAND_SUMMARY cases={island_case_count} "
-            f"islands={island_count_total} "
-            f"mean_duration_ms={_mean(island_duration_means):.1f} "
-            f"max_gap_ms={max(island_gap_maxes) if island_gap_maxes else 0.0:.1f} "
-            f"sources={json.dumps(dict(sorted(island_sources.items())), sort_keys=True, separators=(',', ':'))}"
+            f"SPEECH_REGION_SUMMARY cases={speech_region_case_count} "
+            f"regions={speech_region_count_total} "
+            f"mean_duration_ms={_mean(speech_region_duration_means):.1f} "
+            f"max_gap_ms={max(speech_region_gap_maxes) if speech_region_gap_maxes else 0.0:.1f} "
+            f"sources={json.dumps(dict(sorted(speech_region_sources.items())), sort_keys=True, separators=(',', ':'))}"
         )
 
     attach_case_count = 0

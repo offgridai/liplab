@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0072_20260629_103948_587_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000071_00",
-  "created_utc": "2026-07-04T22:37:37.315345+00:00",
+  "created_utc": "2026-07-05T02:56:56.257315+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 200,
+    "speech_merge_gap_ms": 120,
     "source_run_dir": "outputs/offline_gold/latest/case_0072_20260629_103948_587_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000071_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-04T22:37:37.315397+00:00"
+    "reviewed_utc": "2026-07-05T02:56:56.257376+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -46,13 +46,28 @@
     {
       "index": 0,
       "start": 0.0,
-      "end": 3.26,
+      "end": 2.09,
       "word_start_index": 0,
+      "word_end_index": 3,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_non_silence_phone_gap_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    },
+    {
+      "index": 1,
+      "start": 2.23,
+      "end": 3.26,
+      "word_start_index": 4,
       "word_end_index": 6,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.2,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -95,7 +110,7 @@
       "word": "is",
       "mfa_word": "is",
       "start": 1.12,
-      "end": 1.38,
+      "end": 1.36,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -109,8 +124,8 @@
       "word_index": 3,
       "word": "tasty",
       "mfa_word": "tasty",
-      "start": 1.42,
-      "end": 2.08,
+      "start": 1.36,
+      "end": 2.09,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -133,7 +148,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 5,
@@ -148,7 +163,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 6,
@@ -163,7 +178,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 0
+      "speech_region_index": 1
     }
   ],
   "word_heads": [
@@ -218,7 +233,7 @@
     {
       "word_index": 3,
       "word": "tasty",
-      "start": 1.42,
+      "start": 1.36,
       "end": 1.52,
       "pose": "T",
       "phrase_index": 0,
@@ -237,7 +252,7 @@
       "start": 2.23,
       "end": 2.37,
       "pose": "W",
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "source_phone": "W",
       "source_phone_index": 0,
@@ -253,7 +268,7 @@
       "start": 2.49,
       "end": 2.52,
       "pose": "AH0",
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "source_phone": "AH0",
       "source_phone_index": 0,
@@ -269,7 +284,7 @@
       "start": 2.52,
       "end": 2.65,
       "pose": "S",
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "source_phone": "S",
       "source_phone_index": 0,
@@ -316,7 +331,7 @@
       "word": "is",
       "mfa_word": "is",
       "start": 1.12,
-      "end": 1.38,
+      "end": 1.36,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -330,8 +345,8 @@
       "word_index": 3,
       "word": "tasty",
       "mfa_word": "tasty",
-      "start": 1.42,
-      "end": 2.08,
+      "start": 1.36,
+      "end": 2.09,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -354,7 +369,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 5,
@@ -369,7 +384,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 6,
@@ -384,7 +399,7 @@
         "status": "draft_auto",
         "reviewed": false
       },
-      "speech_region_index": 0
+      "speech_region_index": 1
     }
   ],
   "mfa_phones": [
@@ -465,7 +480,7 @@
       "phone": "EH1",
       "phone_base": "EH",
       "start": 0.73,
-      "end": 0.91,
+      "end": 0.9,
       "word_index": 1,
       "word": "pelele"
     },
@@ -473,7 +488,7 @@
       "index_in_word": 4,
       "phone": "L",
       "phone_base": "L",
-      "start": 0.91,
+      "start": 0.9,
       "end": 1.07,
       "word_index": 1,
       "word": "pelele"
@@ -492,7 +507,7 @@
       "phone": "Z",
       "phone_base": "Z",
       "start": 1.25,
-      "end": 1.38,
+      "end": 1.36,
       "word_index": 2,
       "word": "is"
     },
@@ -500,7 +515,7 @@
       "index_in_word": 0,
       "phone": "T",
       "phone_base": "T",
-      "start": 1.42,
+      "start": 1.36,
       "end": 1.52,
       "word_index": 3,
       "word": "tasty"
@@ -537,7 +552,7 @@
       "phone": "IY0",
       "phone_base": "IY",
       "start": 1.84,
-      "end": 2.08,
+      "end": 2.09,
       "word_index": 3,
       "word": "tasty"
     },
@@ -694,11 +709,11 @@
     {
       "phone": "EH1",
       "start": 0.73,
-      "end": 0.91
+      "end": 0.9
     },
     {
       "phone": "L",
-      "start": 0.91,
+      "start": 0.9,
       "end": 1.07
     },
     {
@@ -709,11 +724,11 @@
     {
       "phone": "Z",
       "start": 1.25,
-      "end": 1.38
+      "end": 1.36
     },
     {
       "phone": "T",
-      "start": 1.42,
+      "start": 1.36,
       "end": 1.52
     },
     {
@@ -734,7 +749,7 @@
     {
       "phone": "IY0",
       "start": 1.84,
-      "end": 2.08
+      "end": 2.09
     },
     {
       "phone": "W",
@@ -1029,8 +1044,8 @@
       "pose": "EH1",
       "phone": "EH1",
       "start": 0.73,
-      "center": 0.8200000000000001,
-      "end": 0.91,
+      "center": 0.815,
+      "end": 0.9,
       "word": "pelele",
       "mfa_word": "pelele",
       "word_index": 1,
@@ -1056,8 +1071,8 @@
       "id": "L",
       "pose": "L",
       "phone": "L",
-      "start": 0.91,
-      "center": 0.99,
+      "start": 0.9,
+      "center": 0.9850000000000001,
       "end": 1.07,
       "word": "pelele",
       "mfa_word": "pelele",
@@ -1113,8 +1128,8 @@
       "pose": "Z",
       "phone": "Z",
       "start": 1.25,
-      "center": 1.315,
-      "end": 1.38,
+      "center": 1.3050000000000002,
+      "end": 1.36,
       "word": "is",
       "mfa_word": "is",
       "word_index": 2,
@@ -1140,8 +1155,8 @@
       "id": "T",
       "pose": "T",
       "phone": "T",
-      "start": 1.42,
-      "center": 1.47,
+      "start": 1.36,
+      "center": 1.44,
       "end": 1.52,
       "word": "tasty",
       "mfa_word": "tasty",
@@ -1253,8 +1268,8 @@
       "pose": "IY0",
       "phone": "IY0",
       "start": 1.84,
-      "center": 1.96,
-      "end": 2.08,
+      "center": 1.9649999999999999,
+      "end": 2.09,
       "word": "tasty",
       "mfa_word": "tasty",
       "word_index": 3,
@@ -1286,7 +1301,7 @@
       "word": "want",
       "mfa_word": "want",
       "word_index": 4,
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1301,7 +1316,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 18,
@@ -1314,7 +1329,7 @@
       "word": "want",
       "mfa_word": "want",
       "word_index": 4,
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1329,7 +1344,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 19,
@@ -1342,7 +1357,7 @@
       "word": "want",
       "mfa_word": "want",
       "word_index": 4,
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1357,7 +1372,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 20,
@@ -1370,7 +1385,7 @@
       "word": "want",
       "mfa_word": "want",
       "word_index": 4,
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1385,7 +1400,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 21,
@@ -1398,7 +1413,7 @@
       "word": "a",
       "mfa_word": "a",
       "word_index": 5,
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1413,7 +1428,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 22,
@@ -1426,7 +1441,7 @@
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 6,
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1441,7 +1456,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 23,
@@ -1454,7 +1469,7 @@
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 6,
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1469,7 +1484,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 24,
@@ -1482,7 +1497,7 @@
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 6,
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1497,7 +1512,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 25,
@@ -1510,7 +1525,7 @@
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 6,
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1525,7 +1540,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 26,
@@ -1538,7 +1553,7 @@
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 6,
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1553,7 +1568,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 27,
@@ -1566,7 +1581,7 @@
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 6,
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1581,7 +1596,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 28,
@@ -1594,7 +1609,7 @@
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 6,
-      "phrase_index": 0,
+      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -1609,7 +1624,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     }
   ],
   "flags": [
@@ -1623,18 +1638,26 @@
       "kind": "mfa_timeline_truncated_tail",
       "seconds": 0.957,
       "note": "The final MFA word ends well before the WAV ends."
+    },
+    {
+      "kind": "speech_regions_split_on_mfa_phone_gaps",
+      "region_count": 2,
+      "gap_threshold_seconds": 0.12,
+      "largest_split_gap_seconds": 0.14,
+      "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
     }
   ],
   "notes": [],
   "summary": {
     "word_count": 7,
-    "speech_region_count": 1,
+    "speech_region_count": 2,
     "word_head_count": 7,
     "viseme_count": 29,
-    "flag_count": 2,
+    "flag_count": 3,
     "flags_by_kind": {
       "word_count_mismatch": 1,
-      "mfa_timeline_truncated_tail": 1
+      "mfa_timeline_truncated_tail": 1,
+      "speech_regions_split_on_mfa_phone_gaps": 1
     },
     "commit_reasons": {
       "mfa_phone_interval": 29

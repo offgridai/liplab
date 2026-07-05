@@ -2,9 +2,13 @@
 
 #include "CoreMinimal.h"
 
-struct FOffgridAIStreamingSpeechIsland
+struct FOffgridAIStreamingSpeechRegion
 {
-    int32 IslandIndex = INDEX_NONE;
+    union
+    {
+        int32 SpeechRegionIndex = INDEX_NONE;
+        int32 IslandIndex;
+    };
     float AudioBufferStartSec = 0.0f;
     float AudioBufferLastSpeechSec = 0.0f;
     float AudioBufferEndSec = 0.0f;
@@ -12,9 +16,9 @@ struct FOffgridAIStreamingSpeechIsland
     bool bEnded = false;
 
     // Endpoint diagnostics. ProvisionalEndSec is the first quiet frame that
-    // eventually closed or nearly closed this island; EndDecisionSec is when
+    // eventually closed or nearly closed this speech region; EndDecisionSec is when
     // the detector had enough trailing evidence to commit the close. ReopenCount
-    // increments when speech resumes inside the reopen window and the island is
+    // increments when speech resumes inside the reopen window and the region is
     // merged instead of split.
     float ProvisionalEndSec = -1.0f;
     float EndDecisionSec = -1.0f;
@@ -25,12 +29,24 @@ struct FOffgridAIStreamingSpeechIsland
 struct FOffgridAIStreamingSpeechGapCandidate
 {
     int32 GapIndex = INDEX_NONE;
-    int32 PrevIslandIndex = INDEX_NONE;
-    int32 NextIslandIndex = INDEX_NONE;
+    union
+    {
+        int32 PrevSpeechRegionIndex = INDEX_NONE;
+        int32 PrevIslandIndex;
+    };
+    union
+    {
+        int32 NextSpeechRegionIndex = INDEX_NONE;
+        int32 NextIslandIndex;
+    };
     float GapStartSec = 0.0f;
     float GapEndSec = 0.0f;
     float GapDurationSec = 0.0f;
-    float PrevIslandDurationSec = 0.0f;
+    union
+    {
+        float PrevSpeechRegionDurationSec = 0.0f;
+        float PrevIslandDurationSec;
+    };
     float QuietEvidence = 0.0f;
     float QuietRMSNorm = 0.0f;
     int32 GapFrameCount = 0;
@@ -78,8 +94,16 @@ struct FOffgridAIStreamingAudioFeatureFrame
     float CloseThreshold = 0.0f;
     float SilenceAccumSec = 0.0f;
     float EndpointCandidateStartSec = -1.0f;
-    float ActiveIslandStartSec = -1.0f;
-    float ActiveIslandEndSec = -1.0f;
+    union
+    {
+        float ActiveSpeechRegionStartSec = -1.0f;
+        float ActiveIslandStartSec;
+    };
+    union
+    {
+        float ActiveSpeechRegionEndSec = -1.0f;
+        float ActiveIslandEndSec;
+    };
     bool bInSpeechBeforeFrame = false;
     bool bInSpeechAfterFrame = false;
     bool bOpenCandidate = false;
@@ -88,9 +112,21 @@ struct FOffgridAIStreamingAudioFeatureFrame
     bool bStrongQuiet = false;
     bool bLowEvidence = false;
     bool bEndpointCandidateActive = false;
-    bool bFrameStartedIsland = false;
-    bool bFrameClosedIsland = false;
-    bool bFrameBridgedIsland = false;
+    union
+    {
+        bool bFrameStartedSpeechRegion = false;
+        bool bFrameStartedIsland;
+    };
+    union
+    {
+        bool bFrameClosedSpeechRegion = false;
+        bool bFrameClosedIsland;
+    };
+    union
+    {
+        bool bFrameBridgedSpeechRegion = false;
+        bool bFrameBridgedIsland;
+    };
     FName OccupancyDecision = NAME_None;
 
     bool bLocalRMSPeak = false;
@@ -119,7 +155,8 @@ public:
     void AppendPCM16(const TArray<uint8>& PCMChunk, int32 BytesToUse, int32 SampleRate, int32 NumChannels, int64 ChunkStartSample = -1);
     void Finalize(float FinalObservedAudioBufferEndSec = -1.0f);
 
-    const TArray<FOffgridAIStreamingSpeechIsland>& GetIslands() const { return Islands; }
+    const TArray<FOffgridAIStreamingSpeechRegion>& GetSpeechRegions() const { return SpeechRegions; }
+    const TArray<FOffgridAIStreamingSpeechRegion>& GetIslands() const { return SpeechRegions; }
     const TArray<FOffgridAIStreamingSpeechGapCandidate>& GetGapCandidates() const { return GapCandidates; }
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& GetFeatureFrames() const { return FeatureFrames; }
     const FOffgridAIStreamingPauseCue& GetLatestPauseCue() const { return LatestPauseCue; }
@@ -129,9 +166,13 @@ public:
 
 private:
     void ProcessAnalysisFrame(float FrameStartSeconds, float FrameEndSeconds, float RMS, float ZCR, float LowBandNorm, float MidBandNorm, float HighBandNorm, float SpectralCentroidNorm, float Periodicity);
+    void SuppressRecentMicroSpeechRegionIfNeeded();
+    void SuppressRecentMicroIslandIfNeeded();
     void RefreshLocalFeatureFlags();
 
-    TArray<FOffgridAIStreamingSpeechIsland> Islands;
+    using FOffgridAIStreamingSpeechIsland = FOffgridAIStreamingSpeechRegion;
+    TArray<FOffgridAIStreamingSpeechRegion> SpeechRegions;
+    TArray<FOffgridAIStreamingSpeechRegion>& Islands = SpeechRegions;
     TArray<FOffgridAIStreamingSpeechGapCandidate> GapCandidates;
     TArray<FOffgridAIStreamingAudioFeatureFrame> FeatureFrames;
     bool bInSpeech = false;
@@ -155,9 +196,20 @@ private:
     float EndpointCandidateMinRMSNorm = 1.0f;
     float EndpointCandidateMaxPeriodicity = 0.0f;
     float EndpointCandidateMaxFlux = 0.0f;
-    float ActiveIslandPeakRMS = 0.0001f;
-    TArray<float> ActiveIslandSpeechRMSHistory;
-    float ActiveIslandSpeechSeconds = 0.0f;
+    union
+    {
+        float ActiveSpeechRegionPeakRMS = 0.0001f;
+        float ActiveIslandPeakRMS;
+    };
+    TArray<float> ActiveSpeechRegionRMSHistory;
+    TArray<float>& ActiveIslandSpeechRMSHistory = ActiveSpeechRegionRMSHistory;
+    union
+    {
+        float ActiveSpeechRegionSeconds = 0.0f;
+        float ActiveIslandSpeechSeconds;
+    };
+    float ActiveSoftCollapseAccumSeconds = 0.0f;
+    float ActiveSoftCollapseStartSeconds = 0.0f;
     float ActiveLowEnergyAccumSeconds = 0.0f;
     float ActiveLowEnergyStartSeconds = 0.0f;
     float ActiveHardCollapseAccumSeconds = 0.0f;
@@ -176,3 +228,5 @@ private:
     float NoiseFloorRMS = 0.0001f;
     FOffgridAIStreamingPauseCue LatestPauseCue;
 };
+
+using FOffgridAIStreamingSpeechIsland = FOffgridAIStreamingSpeechRegion;

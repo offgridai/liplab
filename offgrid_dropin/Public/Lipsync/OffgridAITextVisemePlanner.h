@@ -26,10 +26,9 @@ struct FOffgridAITextVisemeEvent
     float Strength = 0.0f;
     FString SourceText;
     int32 WordIndex = INDEX_NONE;
-    int32 PhraseIndex = 0;
 
-    // Text phrase/sentence metadata for diagnostics and weak boundary metadata only; runtime audio occupancy remains the timing authority.
-    int32 SentenceIslandIndex = 0;
+    // Text sentence metadata for diagnostics only; runtime audio occupancy remains the timing authority.
+    int32 SentenceIndex = 0;
     int32 SourcePhoneIndex = INDEX_NONE;
     int32 SourcePhoneGlobalIndex = INDEX_NONE;
     FString SourcePhone;
@@ -48,8 +47,7 @@ struct FOffgridAIExpectedPhone
     FString BasePhone;
     FString SourceWord;
     int32 WordIndex = INDEX_NONE;
-    int32 PhraseIndex = 0;
-    int32 SentenceIslandIndex = 0;
+    int32 SentenceIndex = 0;
     bool bIsVowel = false;
     bool bIsVisibleViseme = false;
     int32 FirstVisibleEventIndex = INDEX_NONE;
@@ -62,16 +60,15 @@ struct FOffgridAITextVisemePlan
     TArray<FOffgridAITextVisemeEvent> Events;
     TArray<FOffgridAIExpectedPhone> ExpectedPhones;
     float EstimatedDurationSeconds = 0.0f;
-    // Word metadata used for text planning, phrase/sentence diagnostics, and soft boundary metadata.
-    TArray<int32> WordSentenceIslandIndices;
-    TArray<int32> WordPhraseIndices;
+    // Word metadata used for text planning and sentence diagnostics.
+    TArray<int32> WordSentenceIndices;
     TArray<int32> WordSyllableCounts;
     TArray<int32> WordPhoneBeginIndices;
     TArray<int32> WordPhoneEndIndices;
     TArray<int32> WordVisibleEventBeginIndices;
     TArray<int32> WordVisibleEventEndIndices;
 
-    // Boundary punctuation following each tokenized word. Zero means no boundary. Runtime code treats this as a soft boundary metadata only.
+    // Boundary punctuation following each tokenized word. Zero means no boundary.
     TArray<TCHAR> WordBoundaryPunctuationAfter;
 };
 

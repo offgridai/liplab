@@ -26,19 +26,19 @@ static bool IsSpeechFrame(const FOffgridAIStreamingAudioFeatureFrame& F)
     return SpeechScore(F) >= 0.055f;
 }
 
-static bool IsConfirmedByIsland(const TArray<FOffgridAIStreamingSpeechIsland>* Islands, const FOffgridAIStreamingAudioFeatureFrame& F)
+static bool IsConfirmedBySpeechRegion(const TArray<FOffgridAIStreamingSpeechRegion>* SpeechRegions, const FOffgridAIStreamingAudioFeatureFrame& F)
 {
-    if (!Islands || Islands->Num() == 0)
+    if (!SpeechRegions || SpeechRegions->Num() == 0)
     {
         return IsSpeechFrame(F);
     }
 
     const float Center = F.AudioBufferCenterSec;
-    for (const FOffgridAIStreamingSpeechIsland& Island : *Islands)
+    for (const FOffgridAIStreamingSpeechRegion& SpeechRegion : *SpeechRegions)
     {
-        const float IslandStart = Island.AudioBufferStartSec - 0.001f;
-        const float IslandEnd = FMath::Max(Island.AudioBufferLastSpeechSec, Island.AudioBufferEndSec) + 0.001f;
-        if (Center >= IslandStart && Center <= IslandEnd)
+        const float SpeechRegionStart = SpeechRegion.AudioBufferStartSec - 0.001f;
+        const float SpeechRegionEnd = FMath::Max(SpeechRegion.AudioBufferLastSpeechSec, SpeechRegion.AudioBufferEndSec) + 0.001f;
+        if (Center >= SpeechRegionStart && Center <= SpeechRegionEnd)
         {
             return true;
         }
@@ -238,7 +238,7 @@ static float SegmentScore(const TArray<FAlignFrame>& Frames, int32 StartFrame, i
 
 static float SourceBoundarySalienceAt(
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& SourceFrames,
-    const TArray<FOffgridAIStreamingSpeechIsland>* Islands,
+    const TArray<FOffgridAIStreamingSpeechRegion>* SpeechRegions,
     int32 Index)
 {
     const int32 N = SourceFrames.Num();
@@ -248,7 +248,7 @@ static float SourceBoundarySalienceAt(
     }
 
     const FOffgridAIStreamingAudioFeatureFrame& F = SourceFrames[Index];
-    if (!IsConfirmedByIsland(Islands, F))
+    if (!IsConfirmedBySpeechRegion(SpeechRegions, F))
     {
         return 0.0f;
     }
@@ -617,7 +617,7 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
     SourceBoundarySalience.SetNum(Input.AudioFeatureFrames->Num());
     for (int32 SourceIndex = 0; SourceIndex < Input.AudioFeatureFrames->Num(); ++SourceIndex)
     {
-        SourceBoundarySalience[SourceIndex] = SourceBoundarySalienceAt(*Input.AudioFeatureFrames, Input.SpeechIslands, SourceIndex);
+        SourceBoundarySalience[SourceIndex] = SourceBoundarySalienceAt(*Input.AudioFeatureFrames, Input.SpeechRegions, SourceIndex);
     }
 
     TArray<FAlignFrame> Frames;
@@ -629,7 +629,7 @@ FOffgridAIOnlinePhoneAlignmentResult FOffgridAIOnlinePhoneAligner::Compute(const
         {
             break;
         }
-        if (!IsSpeechFrame(SourceFrame) || !IsConfirmedByIsland(Input.SpeechIslands, SourceFrame))
+        if (!IsSpeechFrame(SourceFrame) || !IsConfirmedBySpeechRegion(Input.SpeechRegions, SourceFrame))
         {
             continue;
         }

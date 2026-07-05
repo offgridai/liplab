@@ -9,7 +9,11 @@ struct FOffgridAIAlignedVisemeEvent
     float Strength = 0.0f;
     FString SourceWord;
     int32 WordIndex = INDEX_NONE;
-    int32 PhraseIndex = 0;
+    union
+    {
+        int32 SpeechRegionIndex = INDEX_NONE;
+        int32 PhraseIndex;
+    };
     int32 SentenceIndex = INDEX_NONE;
     // Strong visible event metadata for diagnostics/render emphasis only. It is not a scheduling landmark.
     bool bIsStrongVisibleEvent = false;

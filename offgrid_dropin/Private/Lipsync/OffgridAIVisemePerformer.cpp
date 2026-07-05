@@ -82,15 +82,15 @@ static float PeakForPose(FName PoseID, float SourceStrength)
     return Peak;
 }
 
-static bool SameContinuousPhrase(const FOffgridAIAlignedVisemeEvent* A, const FOffgridAIAlignedVisemeEvent* B)
+static bool SameContinuousSpeechGroup(const FOffgridAIAlignedVisemeEvent* A, const FOffgridAIAlignedVisemeEvent* B)
 {
     if (!A || !B) return false;
-    if (A->PhraseIndex != B->PhraseIndex) return false;
     if (A->SentenceIndex != INDEX_NONE && B->SentenceIndex != INDEX_NONE && A->SentenceIndex != B->SentenceIndex) return false;
 
-    // Occupancy-committed events are already split by speech islands; do not
-    // add any phone-alignment continuity test here. Sentence/terminal
-    // boundaries are already rejected above by SentenceIndex.
+    // Runtime continuity should follow the active speech group rather than
+    // comma/phrase punctuation. Phrase metadata remains useful for logs, but
+    // playback must stay alive across soft textual boundaries inside the same
+    // detected speech run.
     const float CenterGap = B->FinalRenderCenterSeconds - A->FinalRenderCenterSeconds;
     if (CenterGap > 0.420f)
     {
@@ -117,7 +117,7 @@ static float EventWeightAt(const FOffgridAIAlignedVisemeEvent& E, const FOffgrid
     // the performer should therefore keep a mouth state alive until the next
     // same-phrase state takes over. This fixes perceptual dead zones without
     // moving the committed alignment centers or adding a scheduler.
-    if (SameContinuousPhrase(Prev, &E) && FMath::IsFinite(Prev->FinalRenderCenterSeconds))
+    if (SameContinuousSpeechGroup(Prev, &E) && FMath::IsFinite(Prev->FinalRenderCenterSeconds))
     {
         const float PrevCenter = Prev->FinalRenderCenterSeconds;
         if (Center > PrevCenter)
@@ -127,7 +127,7 @@ static float EventWeightAt(const FOffgridAIAlignedVisemeEvent& E, const FOffgrid
         }
     }
 
-    if (SameContinuousPhrase(&E, Next) && Next && FMath::IsFinite(Next->FinalRenderCenterSeconds))
+    if (SameContinuousSpeechGroup(&E, Next) && Next && FMath::IsFinite(Next->FinalRenderCenterSeconds))
     {
         const float NextCenter = Next->FinalRenderCenterSeconds;
         if (NextCenter > Center)
