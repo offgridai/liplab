@@ -72,6 +72,30 @@ struct FOffgridAIStreamTailDiagnosticRow
     FName DiagnosticKind = NAME_None;
 };
 
+struct FOffgridAIRuntimeSpeechRegionDiagnosticRow
+{
+    FName LineID = NAME_None;
+    int32 UpdateOrdinal = 0;
+    bool bFinalReplay = false;
+    float CurrentPlaybackSec = 0.0f;
+
+    int32 RegionIndex = INDEX_NONE;
+    float RegionOpenSec = 0.0f;
+    float RegionCloseSec = 0.0f;
+    float LastSpeechSec = 0.0f;
+    float ProvisionalEndSec = 0.0f;
+    float EndDecisionSec = 0.0f;
+    int32 ReopenCount = 0;
+    bool bStarted = false;
+    bool bEnded = false;
+    bool bContainsPlaybackSec = false;
+
+    int32 CommittedEventCount = 0;
+    int32 DroppedEventCount = 0;
+    FName CloseReason = NAME_None;
+    FName DiagnosticKind = NAME_None;
+};
+
 struct FOffgridAILipsyncRuntimeBeginInput
 {
     FString DialogueText;
@@ -124,6 +148,7 @@ public:
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& GetAudioFeatureFrames() const { return Detector.GetFeatureFrames(); }
     const FOffgridAIAlignedVisemeTrack& GetCommittedTrack() const { return CommittedTrack; }
     const TArray<FOffgridAIAudioOccupancyDiagnosticRow>& GetAudioOccupancyDiagnosticRows() const { return AudioOccupancyDiagnosticRows; }
+    const TArray<FOffgridAIRuntimeSpeechRegionDiagnosticRow>& GetRuntimeSpeechRegionDiagnosticRows() const { return RuntimeSpeechRegionDiagnosticRows; }
     const FOffgridAIStreamTailDiagnosticRow& GetStreamTailDiagnosticRow() const { return StreamTailDiagnosticRow; }
     FOffgridAIAlignedVisemeTrack& GetMutableCommittedTrack() { return CommittedTrack; }
     bool IsCommittedTrackBuilt() const { return bCommittedTrackBuilt; }
@@ -151,6 +176,7 @@ private:
     TArray<FOffgridAIStreamingSpeechRegion> ResolvedSpeechRegions;
     FOffgridAIAlignedVisemeTrack CommittedTrack;
     TArray<FOffgridAIAudioOccupancyDiagnosticRow> AudioOccupancyDiagnosticRows;
+    TArray<FOffgridAIRuntimeSpeechRegionDiagnosticRow> RuntimeSpeechRegionDiagnosticRows;
     int32 AudioOccupancyDiagnosticUpdateOrdinal = 0;
     FOffgridAIStreamTailDiagnosticRow StreamTailDiagnosticRow;
 

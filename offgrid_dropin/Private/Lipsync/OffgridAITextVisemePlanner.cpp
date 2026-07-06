@@ -26,6 +26,91 @@ static bool IsSpeechRegionBoundary(TCHAR C)
     return IsHardSentenceBoundary(C) || C == TEXT(',') || C == TEXT(';') || C == TEXT(':');
 }
 
+static bool IsListConjunctionWord(const FString& Word)
+{
+    return Word == TEXT("and") || Word == TEXT("or");
+}
+
+static bool IsClauseStarterWord(const FString& Word)
+{
+    static const TSet<FString> ClauseStarters = {
+        TEXT("what"), TEXT("when"), TEXT("where"), TEXT("why"), TEXT("how"),
+        TEXT("who"), TEXT("whom"), TEXT("whose"), TEXT("which"),
+        TEXT("can"), TEXT("could"), TEXT("would"), TEXT("will"), TEXT("did"),
+        TEXT("do"), TEXT("does"), TEXT("is"), TEXT("are"), TEXT("was"), TEXT("were"),
+        TEXT("have"), TEXT("has"), TEXT("had"),
+        TEXT("i"), TEXT("you"), TEXT("we"), TEXT("they"), TEXT("he"), TEXT("she"), TEXT("it"),
+        TEXT("though"), TEXT("because"), TEXT("but"), TEXT("so"), TEXT("then"), TEXT("well")
+    };
+    return ClauseStarters.Contains(Word);
+}
+
+static EOffgridAIBoundaryPauseClass ClassifyBoundaryPause(
+    const TArray<FString>& Words,
+    const TArray<TCHAR>& Boundaries,
+    int32 WordIndex)
+{
+    const TCHAR Boundary = Boundaries.IsValidIndex(WordIndex) ? Boundaries[WordIndex] : TCHAR(0);
+    if (Boundary == TCHAR(0))
+    {
+        return EOffgridAIBoundaryPauseClass::None;
+    }
+
+    if (IsHardSentenceBoundary(Boundary) || Boundary == TEXT(';') || Boundary == TEXT(':'))
+    {
+        return EOffgridAIBoundaryPauseClass::HardBreakPause;
+    }
+
+    if (Boundary != TEXT(','))
+    {
+        return EOffgridAIBoundaryPauseClass::None;
+    }
+
+    int32 SentenceStart = 0;
+    for (int32 I = WordIndex - 1; I >= 0; --I)
+    {
+        if (Boundaries.IsValidIndex(I) && IsHardSentenceBoundary(Boundaries[I]))
+        {
+            SentenceStart = I + 1;
+            break;
+        }
+    }
+
+    int32 SentenceEnd = Words.Num() - 1;
+    for (int32 I = WordIndex + 1; I < Boundaries.Num(); ++I)
+    {
+        if (IsHardSentenceBoundary(Boundaries[I]))
+        {
+            SentenceEnd = I;
+            break;
+        }
+    }
+
+    int32 CommaCountInSentence = 0;
+    bool bHasListConjunctionAhead = false;
+    for (int32 I = SentenceStart; I <= SentenceEnd && I < Boundaries.Num(); ++I)
+    {
+        if (Boundaries[I] == TEXT(','))
+        {
+            ++CommaCountInSentence;
+        }
+        if (I > WordIndex && I < Words.Num() && IsListConjunctionWord(Words[I]))
+        {
+            bHasListConjunctionAhead = true;
+        }
+    }
+
+    const FString NextWord = Words.IsValidIndex(WordIndex + 1) ? Words[WordIndex + 1] : FString();
+    const bool bClauseStarterAhead = !NextWord.IsEmpty() && IsClauseStarterWord(NextWord);
+    const bool bLooksLikeListComma =
+        (CommaCountInSentence >= 2 || bHasListConjunctionAhead)
+        && !bClauseStarterAhead;
+
+    return bLooksLikeListComma
+        ? EOffgridAIBoundaryPauseClass::SoftListPause
+        : EOffgridAIBoundaryPauseClass::HardBreakPause;
+}
+
 static TCHAR PreferBoundary(TCHAR Existing, TCHAR Candidate)
 {
     if (IsHardSentenceBoundary(Candidate))
@@ -480,6 +565,7 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
 
     TArray<TArray<FString>> WordPhones;
     TArray<bool> WordCmuHit;
+    TArray<EOffgridAIBoundaryPauseClass> BoundaryPauseClasses;
     Plan.WordPhoneBeginIndices.Init(INDEX_NONE, Words.Num());
     Plan.WordPhoneEndIndices.Init(INDEX_NONE, Words.Num());
     Plan.WordVisibleEventBeginIndices.Init(INDEX_NONE, Words.Num());
@@ -506,6 +592,8 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
         Plan.WordSentenceIndices.Add(Sentence);
         Plan.WordSyllableCounts.Add(Syllables);
         Plan.WordBoundaryPunctuationAfter.Add(Boundaries.IsValidIndex(W) ? Boundaries[W] : TCHAR(0));
+        BoundaryPauseClasses.Add(ClassifyBoundaryPause(Words, Boundaries, W));
+        Plan.WordBoundaryPauseClassAfter.Add(BoundaryPauseClasses.Last());
         const TCHAR B = Boundaries.IsValidIndex(W) ? Boundaries[W] : TCHAR(0);
         if (IsHardSentenceBoundary(B)) { ++Sentence; }
     }

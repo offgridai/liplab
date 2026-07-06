@@ -12,8 +12,11 @@ struct FOffgridAIAlignedVisemeEvent
     union
     {
         int32 SpeechRegionIndex = INDEX_NONE;
+        // Deprecated compatibility alias for older Offgrid-side log/export code.
         int32 PhraseIndex;
     };
+    // Text sentence metadata only. Runtime speech region ownership comes from
+    // occupancy detection, not from this field.
     int32 SentenceIndex = INDEX_NONE;
     // Strong visible event metadata for diagnostics/render emphasis only. It is not a scheduling landmark.
     bool bIsStrongVisibleEvent = false;
@@ -24,6 +27,15 @@ struct FOffgridAIAlignedVisemeEvent
     float FinalRenderCenterSeconds = 0.0f;
     float RenderStartSeconds = 0.0f;
     float RenderEndSeconds = 0.0f;
+    float PriorStartSeconds = 0.0f;
+    float PriorCenterSeconds = 0.0f;
+    float PriorEndSeconds = 0.0f;
+    float LeadAdjustedCenterSeconds = 0.0f;
+    float PlaybackOffsetSeconds = 0.0f;
+    float TotalPausedSecondsAtCommit = 0.0f;
+    float MinLiveLeadDelaySeconds = 0.0f;
+    float InterEventFloorDelaySeconds = 0.0f;
+    float TotalCenterDelaySeconds = 0.0f;
 
     int32 SourcePhoneIndex = INDEX_NONE;
     FString SourcePhoneBase;
@@ -52,6 +64,8 @@ struct FOffgridAIDroppedVisemeEvent
     FString SourceWord;
     int32 WordIndex = INDEX_NONE;
     int32 SpeechRegionIndex = INDEX_NONE;
+    // Text sentence metadata only. Runtime speech region ownership comes from
+    // occupancy detection, not from this field.
     int32 SentenceIndex = INDEX_NONE;
     bool bIsStrongVisibleEvent = false;
 

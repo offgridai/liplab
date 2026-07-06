@@ -123,28 +123,53 @@ def _nested(row: dict[str, Any], *keys: str, default: float = 0.0) -> float:
 
 def _pause_metric(row: dict[str, Any], prefix: str, field: str, default: float = 0.0) -> float:
     pause = row.get("grade", {}).get("pause_alignment", {})
-    key_map = {
-        "reference_count": f"{prefix}_reference_count",
-        "predicted_count": f"{prefix}_predicted_count",
-        "matched_count": f"{prefix}_matched_count",
-        "missing_count": f"{prefix}_missing_count",
-        "extra_count": f"{prefix}_extra_count",
-        "start_error_ms": f"mean_abs_{prefix}_start_error_ms",
-        "end_error_ms": f"mean_abs_{prefix}_end_error_ms",
-        "tail_out_ms": f"mean_{prefix}_tail_out_ms",
-        "lead_in_ms": f"mean_{prefix}_lead_in_ms",
+    prefix_aliases = {
+        "speech_region": ["speech_region"],
+        "text_sentence_span": ["text_sentence_span", "sentence_region"],
+        "text_sentence_region_subspan": ["text_sentence_region_subspan", "clause_region"],
+        "sentence_region": ["sentence_region", "text_sentence_span"],
+        "clause_region": ["clause_region", "text_sentence_region_subspan"],
     }
-    key = key_map.get(field, f"{prefix}_{field}")
+    field_templates = {
+        "reference_count": "{prefix}_reference_count",
+        "predicted_count": "{prefix}_predicted_count",
+        "matched_count": "{prefix}_matched_count",
+        "missing_count": "{prefix}_missing_count",
+        "extra_count": "{prefix}_extra_count",
+        "start_error_ms": "mean_abs_{prefix}_start_error_ms",
+        "end_error_ms": "mean_abs_{prefix}_end_error_ms",
+        "tail_out_ms": "mean_{prefix}_tail_out_ms",
+        "lead_in_ms": "mean_{prefix}_lead_in_ms",
+    }
+    template = field_templates.get(field, "{prefix}_" + field)
+    candidate_keys = [
+        template.format(prefix=alias)
+        for alias in prefix_aliases.get(prefix, [prefix])
+    ]
     try:
-        return float(pause.get(key, default))
+        for key in candidate_keys:
+            if key in pause:
+                return float(pause.get(key, default))
+        return float(default)
     except Exception:
         return default
 
 
 def _pause_flag(row: dict[str, Any], prefix: str, field: str, default: bool = False) -> bool:
     pause = row.get("grade", {}).get("pause_alignment", {})
-    key = f"{prefix}_{field}"
-    value = pause.get(key, default)
+    prefix_aliases = {
+        "speech_region": ["speech_region"],
+        "text_sentence_span": ["text_sentence_span", "sentence_region"],
+        "text_sentence_region_subspan": ["text_sentence_region_subspan", "clause_region"],
+        "sentence_region": ["sentence_region", "text_sentence_span"],
+        "clause_region": ["clause_region", "text_sentence_region_subspan"],
+    }
+    value = default
+    for alias in prefix_aliases.get(prefix, [prefix]):
+        key = f"{alias}_{field}"
+        if key in pause:
+            value = pause.get(key, default)
+            break
     if isinstance(value, bool):
         return value
     if isinstance(value, (int, float)):
@@ -669,8 +694,8 @@ def compute_summary(rows, graded, ungraded):
         "speech_region_count_mismatch_cases": sum(1 for row in graded if _pause_flag(row, "speech_region", "count_mismatch")),
         "phone_occupancy_region_count_mismatch_cases": 0,
         "visible_speech_region_count_mismatch_cases": 0,
-        "sentence_region_count_mismatch_cases": sum(1 for row in qualified if _pause_flag(row, "sentence_region", "count_mismatch")),
-        "clause_region_count_mismatch_cases": sum(1 for row in qualified if _pause_flag(row, "clause_region", "count_mismatch")),
+        "text_sentence_span_count_mismatch_cases": sum(1 for row in qualified if _pause_flag(row, "text_sentence_span", "count_mismatch")),
+        "text_sentence_region_subspan_count_mismatch_cases": sum(1 for row in qualified if _pause_flag(row, "text_sentence_region_subspan", "count_mismatch")),
         "runtime_phone_alignment_available": runtime_phone_available,
         "direct_aligner_available": direct_aligner_available,
         "audio_progress_available": audio_progress_available,
@@ -769,6 +794,12 @@ def compute_summary(rows, graded, ungraded):
         "speech_region_nearest_matched_count": _mean(s.get("overlap", {}).get("nearest_matched_count", 0) for s in speech_region_summaries),
         "speech_region_predicted_only_count": _mean(s.get("overlap", {}).get("predicted_only_count", 0) for s in speech_region_summaries),
         "speech_region_gold_only_count": _mean(s.get("overlap", {}).get("gold_only_count", 0) for s in speech_region_summaries),
+        "text_sentence_span_start_ms": _mean(_pause_metric(row, "text_sentence_span", "start_error_ms") for row in qualified),
+        "text_sentence_span_end_ms": _mean(_pause_metric(row, "text_sentence_span", "end_error_ms") for row in qualified),
+        "text_sentence_span_tail_out_ms": _mean(_pause_metric(row, "text_sentence_span", "tail_out_ms") for row in qualified),
+        "text_sentence_region_subspan_start_ms": _mean(_pause_metric(row, "text_sentence_region_subspan", "start_error_ms") for row in qualified),
+        "text_sentence_region_subspan_end_ms": _mean(_pause_metric(row, "text_sentence_region_subspan", "end_error_ms") for row in qualified),
+        "text_sentence_region_subspan_tail_out_ms": _mean(_pause_metric(row, "text_sentence_region_subspan", "tail_out_ms") for row in qualified),
         "gap_candidate_count": sum(int(s.get("count", 0)) for s in gap_candidate_summaries),
         "gap_candidate_bridged": sum(int(s.get("bridged", 0)) for s in gap_candidate_summaries),
         "gap_candidate_split": sum(int(s.get("split", 0)) for s in gap_candidate_summaries),
@@ -852,6 +883,14 @@ def compute_summary(rows, graded, ungraded):
     summary["phoneme_start_ms"] = summary["phoneme_start_mean_ms"]
     summary["phoneme_end_ms"] = summary["phoneme_end_mean_ms"]
     summary["intra_word_center_ms"] = summary["intra_word_center_mean_ms"]
+    summary["sentence_region_count_mismatch_cases"] = summary["text_sentence_span_count_mismatch_cases"]
+    summary["clause_region_count_mismatch_cases"] = summary["text_sentence_region_subspan_count_mismatch_cases"]
+    summary["sentence_region_start_ms"] = summary["text_sentence_span_start_ms"]
+    summary["sentence_region_end_ms"] = summary["text_sentence_span_end_ms"]
+    summary["sentence_region_tail_out_ms"] = summary["text_sentence_span_tail_out_ms"]
+    summary["clause_region_start_ms"] = summary["text_sentence_region_subspan_start_ms"]
+    summary["clause_region_end_ms"] = summary["text_sentence_region_subspan_end_ms"]
+    summary["clause_region_tail_out_ms"] = summary["text_sentence_region_subspan_tail_out_ms"]
     if direct_aligner_available:
         summary["direct_aligner_center_ms"] = summary["direct_aligner_center_mean_ms"]
     return summary

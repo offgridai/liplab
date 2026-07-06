@@ -14,6 +14,13 @@ enum class EOffgridAITextViseme : uint8
     FVS  // F / V / S teeth/fricative family
 };
 
+enum class EOffgridAIBoundaryPauseClass : uint8
+{
+    None,
+    SoftListPause,
+    HardBreakPause,
+};
+
 struct FOffgridAITextVisemeEvent
 {
     float StartNorm = 0.0f;
@@ -77,6 +84,7 @@ struct FOffgridAITextVisemePlan
 
     // Boundary punctuation following each tokenized word. Zero means no boundary.
     TArray<TCHAR> WordBoundaryPunctuationAfter;
+    TArray<EOffgridAIBoundaryPauseClass> WordBoundaryPauseClassAfter;
 };
 
 

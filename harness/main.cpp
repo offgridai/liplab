@@ -104,8 +104,8 @@ struct BoundaryAlignmentReport
 struct PauseAlignmentReport
 {
     BoundaryAlignmentReport speech_regions;
-    BoundaryAlignmentReport sentence_regions;
-    BoundaryAlignmentReport clause_regions;
+    BoundaryAlignmentReport text_sentence_spans;
+    BoundaryAlignmentReport text_sentence_region_subspans;
 };
 
 struct WordOnsetAlignmentReport
@@ -411,7 +411,7 @@ static std::vector<HandmadeLabel> read_handmade_csv(const fs::path& path)
     int confidence_col = has_header ? header_index(header, "confidence") : 4;
     int word_index_col = has_header ? header_index(header, "word_index") : 5;
     int speech_region_index_col = has_header ? header_index(header, "speech_region_index") : 6;
-    int sentence_index_col = has_header ? header_index(header, "sentence_index") : 7;
+    int sentence_index_col = has_header ? header_index(header, "text_sentence_index") : 7;
 
     if (confidence_col < 0 && !has_header)
     {
@@ -428,6 +428,10 @@ static std::vector<HandmadeLabel> read_handmade_csv(const fs::path& path)
     if (sentence_index_col < 0 && !has_header)
     {
         sentence_index_col = 7;
+    }
+    if (sentence_index_col < 0 && has_header)
+    {
+        sentence_index_col = header_index(header, "sentence_index");
     }
 
     while (std::getline(file, line))
@@ -495,7 +499,11 @@ static std::vector<GoldPhoneTiming> read_gold_phones_csv(const fs::path& path)
     {
         speech_region_index_col = header_index(header, "phrase_index");
     }
-    const int sentence_index_col = has_header ? header_index(header, "sentence_index") : 9;
+    int sentence_index_col = has_header ? header_index(header, "text_sentence_index") : 9;
+    if (sentence_index_col < 0 && has_header)
+    {
+        sentence_index_col = header_index(header, "sentence_index");
+    }
     int global_index = 0;
     while (std::getline(file, line))
     {
@@ -550,10 +558,14 @@ static std::vector<GoldWordTiming> read_gold_words_csv(const fs::path& path)
     const int start_col = has_header ? header_index(header, "start") : 2;
     const int end_col = has_header ? header_index(header, "end") : 3;
     int speech_region_index_col = has_header ? header_index(header, "speech_region_index") : 4;
-    int sentence_index_col = has_header ? header_index(header, "sentence_index") : 5;
+    int sentence_index_col = has_header ? header_index(header, "text_sentence_index") : 5;
     if (speech_region_index_col < 0 && has_header)
     {
         speech_region_index_col = header_index(header, "phrase_index");
+    }
+    if (sentence_index_col < 0 && has_header)
+    {
+        sentence_index_col = header_index(header, "sentence_index");
     }
     while (std::getline(file, line))
     {
@@ -684,7 +696,7 @@ static OraclePhoneDurationReport apply_gold_phone_durations_to_plan(
 static std::string gold_visible_visemes_csv(const std::vector<HandmadeLabel>& labels)
 {
     std::ostringstream out;
-    out << "start,end,pose,word,confidence,word_index,speech_region_index,sentence_index\n";
+    out << "start,end,pose,word,confidence,word_index,speech_region_index,text_sentence_index\n";
     out << std::fixed << std::setprecision(6);
     for (const HandmadeLabel& label : labels)
     {
@@ -771,7 +783,7 @@ static std::vector<HandmadeLabel> build_gold_visible_labels(
 static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
 {
     std::ostringstream out;
-    out << "index,pose,word,word_index,sentence_index,text_center_norm,strength,source_phone,source_phone_index,generator\n";
+    out << "index,pose,word,word_index,text_sentence_index,text_center_norm,strength,source_phone,source_phone_index,generator\n";
     out << std::fixed << std::setprecision(6);
     for (int32 i = 0; i < plan.Events.Num(); ++i)
     {
@@ -794,7 +806,7 @@ static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
 static std::string expected_phones_csv(const FOffgridAITextVisemePlan& plan)
 {
     std::ostringstream out;
-    out << "phone_index,word_phone_index,phone,base_phone,word,word_index,sentence_index,is_vowel,is_visible_viseme,first_visible_event_index,boundary_after_word,weight_seconds\n";
+    out << "phone_index,word_phone_index,phone,base_phone,word,word_index,text_sentence_index,is_vowel,is_visible_viseme,first_visible_event_index,boundary_after_word,weight_seconds\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& phone : plan.ExpectedPhones)
     {
@@ -1002,7 +1014,7 @@ static std::string gap_candidates_csv(const TArray<FOffgridAIStreamingSpeechGapC
 static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "index,start,center,end,pose,word,word_index,speech_region_index,sentence_index,strength,reason,source_phone_index,source_phone_base,source_phone_class,text_center_norm,text_diagnostic_center,commit_playback,commit_lead,required_active_elapsed,observed_active_elapsed,active_progress_deficit,required_progress_norm,observed_progress_norm,active_progress_ratio,mapped_to_observed_speech,detected_word_start,detected_word_start_mapped\n";
+    out << "index,start,center,end,pose,word,word_index,speech_region_index,text_sentence_index,strength,reason,source_phone_index,source_phone_base,source_phone_class,text_center_norm,text_diagnostic_center,prior_start,prior_center,prior_end,lead_adjusted_center,playback_offset,total_paused_at_commit,min_live_lead_delay,inter_event_floor_delay,total_center_delay,commit_playback,commit_lead,required_active_elapsed,observed_active_elapsed,active_progress_deficit,required_progress_norm,observed_progress_norm,active_progress_ratio,mapped_to_observed_speech,detected_word_start,detected_word_start_mapped\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.Events)
     {
@@ -1022,6 +1034,15 @@ static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
             << to_std(event.SourcePhoneClass) << ','
             << event.TextCenterNorm << ','
             << event.TextDiagnosticCenterSeconds << ','
+            << event.PriorStartSeconds << ','
+            << event.PriorCenterSeconds << ','
+            << event.PriorEndSeconds << ','
+            << event.LeadAdjustedCenterSeconds << ','
+            << event.PlaybackOffsetSeconds << ','
+            << event.TotalPausedSecondsAtCommit << ','
+            << event.MinLiveLeadDelaySeconds << ','
+            << event.InterEventFloorDelaySeconds << ','
+            << event.TotalCenterDelaySeconds << ','
             << event.CommitPlaybackSeconds << ','
             << event.CommitLeadSeconds << ','
             << event.RequiredActiveElapsedSeconds << ','
@@ -1040,7 +1061,7 @@ static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
 static std::string dropped_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "index,pose,word,word_index,speech_region_index,sentence_index,strong_visible,source_phone_index,source_phone_base,source_phone_class,drop_playback,region_start,region_end,required_active_elapsed,observed_active_elapsed,drop_reason\n";
+    out << "index,pose,word,word_index,speech_region_index,text_sentence_index,strong_visible,source_phone_index,source_phone_base,source_phone_class,drop_playback,region_start,region_end,required_active_elapsed,observed_active_elapsed,drop_reason\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.DroppedEvents)
     {
@@ -1186,7 +1207,7 @@ static std::string region_drop_diagnostics_csv(
 static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "event_index,pose,word,word_index,source_phone_index,source_phone_base,source_phone_class,commit_reason,render_start,render_center,render_end,commit_playback,commit_lead,required_active_elapsed,observed_active_elapsed,active_progress_deficit,required_progress_norm,observed_progress_norm,active_progress_ratio,mapped_to_observed_speech,detected_word_start,detected_word_start_mapped\n";
+    out << "event_index,pose,word,word_index,source_phone_index,source_phone_base,source_phone_class,commit_reason,render_start,render_center,render_end,prior_start,prior_center,prior_end,lead_adjusted_center,playback_offset,total_paused_at_commit,min_live_lead_delay,inter_event_floor_delay,total_center_delay,commit_playback,commit_lead,required_active_elapsed,observed_active_elapsed,active_progress_deficit,required_progress_norm,observed_progress_norm,active_progress_ratio,mapped_to_observed_speech,detected_word_start,detected_word_start_mapped\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.Events)
     {
@@ -1201,6 +1222,15 @@ static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& trac
             << event.RenderStartSeconds << ','
             << event.FinalRenderCenterSeconds << ','
             << event.RenderEndSeconds << ','
+            << event.PriorStartSeconds << ','
+            << event.PriorCenterSeconds << ','
+            << event.PriorEndSeconds << ','
+            << event.LeadAdjustedCenterSeconds << ','
+            << event.PlaybackOffsetSeconds << ','
+            << event.TotalPausedSecondsAtCommit << ','
+            << event.MinLiveLeadDelaySeconds << ','
+            << event.InterEventFloorDelaySeconds << ','
+            << event.TotalCenterDelaySeconds << ','
             << event.CommitPlaybackSeconds << ','
             << event.CommitLeadSeconds << ','
             << event.RequiredActiveElapsedSeconds << ','
@@ -1236,6 +1266,35 @@ static std::string stream_tail_csv(const FOffgridAIStreamTailDiagnosticRow& row)
         << row.SpeechRegionCount << ','
         << (row.bInputStreamClosed ? 1 : 0) << ','
         << to_std(row.DiagnosticKind) << '\n';
+    return out.str();
+}
+
+static std::string runtime_speech_regions_csv(const TArray<FOffgridAIRuntimeSpeechRegionDiagnosticRow>& rows)
+{
+    std::ostringstream out;
+    out << "line_id,update_ordinal,final_replay,current_playback_sec,region_index,region_open_sec,region_close_sec,last_speech_sec,provisional_end_sec,end_decision_sec,reopen_count,started,ended,contains_playback_sec,committed_event_count,dropped_event_count,close_reason,diagnostic_kind\n";
+    out << std::fixed << std::setprecision(6);
+    for (const auto& row : rows)
+    {
+        out << to_std(row.LineID) << ','
+            << row.UpdateOrdinal << ','
+            << (row.bFinalReplay ? 1 : 0) << ','
+            << row.CurrentPlaybackSec << ','
+            << row.RegionIndex << ','
+            << row.RegionOpenSec << ','
+            << row.RegionCloseSec << ','
+            << row.LastSpeechSec << ','
+            << row.ProvisionalEndSec << ','
+            << row.EndDecisionSec << ','
+            << row.ReopenCount << ','
+            << (row.bStarted ? 1 : 0) << ','
+            << (row.bEnded ? 1 : 0) << ','
+            << (row.bContainsPlaybackSec ? 1 : 0) << ','
+            << row.CommittedEventCount << ','
+            << row.DroppedEventCount << ','
+            << to_std(row.CloseReason) << ','
+            << to_std(row.DiagnosticKind) << '\n';
+    }
     return out.str();
 }
 
@@ -2006,10 +2065,10 @@ static GradeReport grade(
     report.pause_alignment.speech_regions = grade_region_boundaries(
         build_gold_speech_regions(gold_speech),
         build_predicted_speech_regions(speech_regions));
-    report.pause_alignment.sentence_regions = grade_region_boundaries(
+    report.pause_alignment.text_sentence_spans = grade_region_boundaries(
         build_gold_sentence_regions(gold_words),
         build_predicted_sentence_regions(track));
-    report.pause_alignment.clause_regions = grade_region_boundaries(
+    report.pause_alignment.text_sentence_region_subspans = grade_region_boundaries(
         build_gold_clause_regions(gold_words),
         build_predicted_clause_regions(track));
     report.word_onset_alignment = grade_word_onsets(track, handmade, gold_words);
@@ -2106,34 +2165,34 @@ static std::string grade_json(const GradeReport& grade_report)
         << "    \"speech_region_count_mismatch\": " << (grade_report.pause_alignment.speech_regions.count_mismatch ? "true" : "false") << ",\n"
         << "    \"mean_speech_region_lead_in_ms\": " << grade_report.pause_alignment.speech_regions.mean_lead_in_ms << ",\n"
         << "    \"mean_speech_region_tail_out_ms\": " << grade_report.pause_alignment.speech_regions.mean_tail_out_ms << ",\n"
-        << "    \"sentence_region_reference_count\": " << grade_report.pause_alignment.sentence_regions.reference_count << ",\n"
-        << "    \"sentence_region_predicted_count\": " << grade_report.pause_alignment.sentence_regions.predicted_count << ",\n"
-        << "    \"sentence_region_matched_count\": " << grade_report.pause_alignment.sentence_regions.matched_count << ",\n"
-        << "    \"sentence_region_missing_count\": " << grade_report.pause_alignment.sentence_regions.missing_count << ",\n"
-        << "    \"sentence_region_extra_count\": " << grade_report.pause_alignment.sentence_regions.extra_count << ",\n"
-        << "    \"mean_abs_sentence_region_start_error_ms\": " << grade_report.pause_alignment.sentence_regions.mean_abs_start_error_ms << ",\n"
-        << "    \"median_abs_sentence_region_start_error_ms\": " << grade_report.pause_alignment.sentence_regions.median_abs_start_error_ms << ",\n"
-        << "    \"p90_abs_sentence_region_start_error_ms\": " << grade_report.pause_alignment.sentence_regions.p90_abs_start_error_ms << ",\n"
-        << "    \"mean_abs_sentence_region_end_error_ms\": " << grade_report.pause_alignment.sentence_regions.mean_abs_end_error_ms << ",\n"
-        << "    \"median_abs_sentence_region_end_error_ms\": " << grade_report.pause_alignment.sentence_regions.median_abs_end_error_ms << ",\n"
-        << "    \"p90_abs_sentence_region_end_error_ms\": " << grade_report.pause_alignment.sentence_regions.p90_abs_end_error_ms << ",\n"
-        << "    \"sentence_region_count_mismatch\": " << (grade_report.pause_alignment.sentence_regions.count_mismatch ? "true" : "false") << ",\n"
-        << "    \"mean_sentence_region_lead_in_ms\": " << grade_report.pause_alignment.sentence_regions.mean_lead_in_ms << ",\n"
-        << "    \"mean_sentence_region_tail_out_ms\": " << grade_report.pause_alignment.sentence_regions.mean_tail_out_ms << ",\n"
-        << "    \"clause_region_reference_count\": " << grade_report.pause_alignment.clause_regions.reference_count << ",\n"
-        << "    \"clause_region_predicted_count\": " << grade_report.pause_alignment.clause_regions.predicted_count << ",\n"
-        << "    \"clause_region_matched_count\": " << grade_report.pause_alignment.clause_regions.matched_count << ",\n"
-        << "    \"clause_region_missing_count\": " << grade_report.pause_alignment.clause_regions.missing_count << ",\n"
-        << "    \"clause_region_extra_count\": " << grade_report.pause_alignment.clause_regions.extra_count << ",\n"
-        << "    \"mean_abs_clause_region_start_error_ms\": " << grade_report.pause_alignment.clause_regions.mean_abs_start_error_ms << ",\n"
-        << "    \"median_abs_clause_region_start_error_ms\": " << grade_report.pause_alignment.clause_regions.median_abs_start_error_ms << ",\n"
-        << "    \"p90_abs_clause_region_start_error_ms\": " << grade_report.pause_alignment.clause_regions.p90_abs_start_error_ms << ",\n"
-        << "    \"mean_abs_clause_region_end_error_ms\": " << grade_report.pause_alignment.clause_regions.mean_abs_end_error_ms << ",\n"
-        << "    \"median_abs_clause_region_end_error_ms\": " << grade_report.pause_alignment.clause_regions.median_abs_end_error_ms << ",\n"
-        << "    \"p90_abs_clause_region_end_error_ms\": " << grade_report.pause_alignment.clause_regions.p90_abs_end_error_ms << ",\n"
-        << "    \"clause_region_count_mismatch\": " << (grade_report.pause_alignment.clause_regions.count_mismatch ? "true" : "false") << ",\n"
-        << "    \"mean_clause_region_lead_in_ms\": " << grade_report.pause_alignment.clause_regions.mean_lead_in_ms << ",\n"
-        << "    \"mean_clause_region_tail_out_ms\": " << grade_report.pause_alignment.clause_regions.mean_tail_out_ms << "\n"
+        << "    \"text_sentence_span_reference_count\": " << grade_report.pause_alignment.text_sentence_spans.reference_count << ",\n"
+        << "    \"text_sentence_span_predicted_count\": " << grade_report.pause_alignment.text_sentence_spans.predicted_count << ",\n"
+        << "    \"text_sentence_span_matched_count\": " << grade_report.pause_alignment.text_sentence_spans.matched_count << ",\n"
+        << "    \"text_sentence_span_missing_count\": " << grade_report.pause_alignment.text_sentence_spans.missing_count << ",\n"
+        << "    \"text_sentence_span_extra_count\": " << grade_report.pause_alignment.text_sentence_spans.extra_count << ",\n"
+        << "    \"mean_abs_text_sentence_span_start_error_ms\": " << grade_report.pause_alignment.text_sentence_spans.mean_abs_start_error_ms << ",\n"
+        << "    \"median_abs_text_sentence_span_start_error_ms\": " << grade_report.pause_alignment.text_sentence_spans.median_abs_start_error_ms << ",\n"
+        << "    \"p90_abs_text_sentence_span_start_error_ms\": " << grade_report.pause_alignment.text_sentence_spans.p90_abs_start_error_ms << ",\n"
+        << "    \"mean_abs_text_sentence_span_end_error_ms\": " << grade_report.pause_alignment.text_sentence_spans.mean_abs_end_error_ms << ",\n"
+        << "    \"median_abs_text_sentence_span_end_error_ms\": " << grade_report.pause_alignment.text_sentence_spans.median_abs_end_error_ms << ",\n"
+        << "    \"p90_abs_text_sentence_span_end_error_ms\": " << grade_report.pause_alignment.text_sentence_spans.p90_abs_end_error_ms << ",\n"
+        << "    \"text_sentence_span_count_mismatch\": " << (grade_report.pause_alignment.text_sentence_spans.count_mismatch ? "true" : "false") << ",\n"
+        << "    \"mean_text_sentence_span_lead_in_ms\": " << grade_report.pause_alignment.text_sentence_spans.mean_lead_in_ms << ",\n"
+        << "    \"mean_text_sentence_span_tail_out_ms\": " << grade_report.pause_alignment.text_sentence_spans.mean_tail_out_ms << ",\n"
+        << "    \"text_sentence_region_subspan_reference_count\": " << grade_report.pause_alignment.text_sentence_region_subspans.reference_count << ",\n"
+        << "    \"text_sentence_region_subspan_predicted_count\": " << grade_report.pause_alignment.text_sentence_region_subspans.predicted_count << ",\n"
+        << "    \"text_sentence_region_subspan_matched_count\": " << grade_report.pause_alignment.text_sentence_region_subspans.matched_count << ",\n"
+        << "    \"text_sentence_region_subspan_missing_count\": " << grade_report.pause_alignment.text_sentence_region_subspans.missing_count << ",\n"
+        << "    \"text_sentence_region_subspan_extra_count\": " << grade_report.pause_alignment.text_sentence_region_subspans.extra_count << ",\n"
+        << "    \"mean_abs_text_sentence_region_subspan_start_error_ms\": " << grade_report.pause_alignment.text_sentence_region_subspans.mean_abs_start_error_ms << ",\n"
+        << "    \"median_abs_text_sentence_region_subspan_start_error_ms\": " << grade_report.pause_alignment.text_sentence_region_subspans.median_abs_start_error_ms << ",\n"
+        << "    \"p90_abs_text_sentence_region_subspan_start_error_ms\": " << grade_report.pause_alignment.text_sentence_region_subspans.p90_abs_start_error_ms << ",\n"
+        << "    \"mean_abs_text_sentence_region_subspan_end_error_ms\": " << grade_report.pause_alignment.text_sentence_region_subspans.mean_abs_end_error_ms << ",\n"
+        << "    \"median_abs_text_sentence_region_subspan_end_error_ms\": " << grade_report.pause_alignment.text_sentence_region_subspans.median_abs_end_error_ms << ",\n"
+        << "    \"p90_abs_text_sentence_region_subspan_end_error_ms\": " << grade_report.pause_alignment.text_sentence_region_subspans.p90_abs_end_error_ms << ",\n"
+        << "    \"text_sentence_region_subspan_count_mismatch\": " << (grade_report.pause_alignment.text_sentence_region_subspans.count_mismatch ? "true" : "false") << ",\n"
+        << "    \"mean_text_sentence_region_subspan_lead_in_ms\": " << grade_report.pause_alignment.text_sentence_region_subspans.mean_lead_in_ms << ",\n"
+        << "    \"mean_text_sentence_region_subspan_tail_out_ms\": " << grade_report.pause_alignment.text_sentence_region_subspans.mean_tail_out_ms << "\n"
         << "  },\n"
         << "  \"word_onset_alignment\": {\n"
         << "    \"reference_count\": " << grade_report.word_onset_alignment.reference_count << ",\n"
@@ -2493,6 +2552,7 @@ int main(int argc, char** argv)
                 write_text(case_dir / "occupancy_frames.csv", occupancy_frames_csv(session.GetSpeechDetector().GetFeatureFrames()));
                 write_text(case_dir / "phone_class_frames.csv", phone_class_frames_csv(session.GetSpeechDetector().GetFeatureFrames()));
                 write_text(case_dir / "commit_decisions.csv", commit_decisions_csv(committed));
+                write_text(case_dir / "runtime_speech_regions.csv", runtime_speech_regions_csv(session.GetRuntimeSpeechRegionDiagnosticRows()));
                 write_text(case_dir / "stream_tail.csv", stream_tail_csv(session.GetStreamTailDiagnosticRow()));
             }
             GradeReport report;

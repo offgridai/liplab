@@ -22,6 +22,15 @@ constexpr float DetectorStickyEndpointRelativeRMSMax = 0.08f;
 constexpr float DetectorStickyEndpointFluxMax = 0.030f;
 constexpr float DetectorShortGapBridgeMaxSec = 0.180f;
 constexpr float DetectorShortGapBridgeReopenFluxMax = 0.060f;
+constexpr float DetectorClosureLikeBridgeMinSec = 0.085f;
+constexpr float DetectorClosureLikeBridgeMaxSec = 0.135f;
+constexpr float DetectorClosureLikeBridgeMeanRMSMax = 0.055f;
+constexpr float DetectorClosureLikeBridgeMinRMSMax = 0.010f;
+constexpr float DetectorClosureLikeBridgeLowEvidenceRatioMax = 0.82f;
+constexpr float DetectorClosureLikeBridgeStrongQuietRatioMax = 0.38f;
+constexpr float DetectorClosureLikeBridgeReopenFluxMin = 0.020f;
+constexpr float DetectorClosureLikeBridgeReopenFluxMax = 0.220f;
+constexpr float DetectorClosureLikeBridgeReopenEvidenceMin = 0.200f;
 constexpr float DetectorShortDeepValleySplitMinSec = 0.135f;
 constexpr float DetectorShortDeepValleySplitMaxSec = 0.150f;
 constexpr float DetectorShortDeepValleySplitMeanRMSMax = 0.020f;
@@ -74,6 +83,12 @@ constexpr float DetectorMicroIslandNextGapMinSec = 0.180f;
 constexpr float DetectorMicroIslandCombinedGapMinSec = 0.350f;
 constexpr float DetectorSpeechBaselinePercentile = 0.60f;
 constexpr int32 DetectorSpeechBaselineMinFrames = 12;
+constexpr float DetectorSoftBridgePeriodicityMin = 0.20f;
+constexpr float DetectorSoftBridgeFluxMin = 0.020f;
+constexpr float DetectorSoftBridgeHighBandMin = 0.24f;
+constexpr float DetectorSoftBridgeCentroidMin = 0.28f;
+constexpr float DetectorSoftBridgeRMSNormMin = 0.018f;
+constexpr float DetectorSoftBridgeEvidenceMin = 0.100f;
 
 static float DetectorSpeechEvidence(float RMSNorm, float Flux, float Periodicity, float MidBandNorm, float HighBandNorm, float SpectralCentroidNorm)
 {
@@ -87,6 +102,28 @@ static bool DetectorStrongOnsetAnchor(float Evidence, float RMS, float NoiseFloo
     return Evidence >= 0.23f
         || (Periodicity >= 0.42f && RMS >= NoiseFloorRMS * 2.2f)
         || (Flux >= 0.18f && RMS >= NoiseFloorRMS * 2.8f);
+}
+
+static bool DetectorSoftCollapseBridge(
+    float Evidence,
+    float RMSNorm,
+    float Flux,
+    float Periodicity,
+    float HighBandNorm,
+    float SpectralCentroidNorm)
+{
+    const bool bVoicedBridge =
+        Periodicity >= DetectorSoftBridgePeriodicityMin
+        && RMSNorm >= DetectorSoftBridgeRMSNormMin;
+    const bool bTurbulentBridge =
+        Flux >= DetectorSoftBridgeFluxMin
+        && HighBandNorm >= DetectorSoftBridgeHighBandMin
+        && SpectralCentroidNorm >= DetectorSoftBridgeCentroidMin;
+    const bool bBroadWeakSpeech =
+        Evidence >= DetectorSoftBridgeEvidenceMin
+        && RMSNorm >= DetectorSoftBridgeRMSNormMin
+        && (Periodicity >= 0.12f || HighBandNorm >= 0.16f || SpectralCentroidNorm >= 0.18f);
+    return bVoicedBridge || bTurbulentBridge || bBroadWeakSpeech;
 }
 
 static float DetectorBridgeWindowSec(FName EndReason)
@@ -252,6 +289,26 @@ static FDetectorGapDecision ClassifyGapDecision(
         ? static_cast<float>(Gap.StrongQuietFrameCount) / static_cast<float>(Gap.GapFrameCount)
         : 0.0f;
     const bool bStrongRestart = bStrongOnsetReopen || ReopenEvidence >= 0.23f || ReopenFlux >= 0.14f;
+    const bool bSoftOrRelativeCollapseClose =
+        PrevIsland.EndReason == FName(TEXT("soft_collapse_hangover"))
+        || PrevIsland.EndReason == FName(TEXT("relative_collapse_hangover"))
+        || PrevIsland.EndReason == FName(TEXT("hard_relative_collapse_hangover"));
+
+    const bool bClosureLikeBridge =
+        bSoftOrRelativeCollapseClose
+        && GapDurationSec >= DetectorClosureLikeBridgeMinSec
+        && GapDurationSec <= DetectorClosureLikeBridgeMaxSec
+        && MeanRMSNorm <= DetectorClosureLikeBridgeMeanRMSMax
+        && Gap.GapRMSNormMin <= DetectorClosureLikeBridgeMinRMSMax
+        && LowEvidenceRatio <= DetectorClosureLikeBridgeLowEvidenceRatioMax
+        && StrongQuietRatio <= DetectorClosureLikeBridgeStrongQuietRatioMax
+        && ReopenFlux >= DetectorClosureLikeBridgeReopenFluxMin
+        && ReopenFlux <= DetectorClosureLikeBridgeReopenFluxMax
+        && ReopenEvidence >= DetectorClosureLikeBridgeReopenEvidenceMin;
+    if (bClosureLikeBridge)
+    {
+        return { true, FName(TEXT("candidate_closure_like_bridge")) };
+    }
 
     const bool bCollapsedRhetoricalSplit =
         GapDurationSec >= DetectorCollapsedRhetoricalSplitMinSec
@@ -721,6 +778,13 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
         && Frame.Flux < 0.045f;
     const bool bLowEvidence = bStrongQuiet
         || (Evidence < 0.08f && RMS < CloseThreshold * 0.90f);
+    const bool bSoftBridge = DetectorSoftCollapseBridge(
+        Evidence,
+        Frame.RMSNorm,
+        Frame.Flux,
+        Periodicity,
+        HighBandNorm,
+        SpectralCentroidNorm);
     const float RecentSpeechBaselineRMS = ActiveIslandSpeechRMSHistory.Num() >= DetectorSpeechBaselineMinFrames
         ? SpeechPercentileRMS(ActiveIslandSpeechRMSHistory, DetectorSpeechBaselinePercentile)
         : FMath::Max(ActiveIslandPeakRMS, 0.0001f);
@@ -729,11 +793,13 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
         && ActiveIslandSpeechSeconds >= 0.120f
         && ActiveIslandRelativeRMS <= DetectorSoftRelativeCollapseThreshold
         && Evidence <= DetectorSoftRelativeCollapseEvidenceMax
-        && Frame.Flux <= DetectorSoftRelativeCollapseFluxMax;
+        && Frame.Flux <= DetectorSoftRelativeCollapseFluxMax
+        && !bSoftBridge;
     const bool bSoftCollapseRelease =
         ActiveIslandRelativeRMS >= DetectorSoftRelativeCollapseReleaseThreshold
         || Evidence >= 0.18f
-        || Frame.Flux >= 0.060f;
+        || Frame.Flux >= 0.060f
+        || bSoftBridge;
     const bool bRelativeCollapseFrame = bInSpeech
         && ActiveIslandSpeechSeconds >= 0.120f
         && ActiveIslandRelativeRMS <= DetectorRelativeCollapseThreshold;
@@ -1114,7 +1180,9 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                 EndpointCandidateStartSeconds = 0.0f;
                 EndpointCandidateMinEvidence = 1.0f;
                 Island.ProvisionalEndSec = -1.0f;
-                OccupancyDecision = FName(TEXT("keep_open"));
+                OccupancyDecision = bSoftBridge
+                    ? FName(TEXT("audible_bridge_keep_open"))
+                    : FName(TEXT("keep_open"));
             }
         }
         if (!bKeepOpen)

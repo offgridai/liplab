@@ -34,16 +34,16 @@ static void EnvelopeForPose(FName PoseID, float& OutAttack, float& OutRelease, f
     OutHoldHalf = 0.012f;
     if (IsPose(PoseID, TEXT("22_MBP")))
     {
-        OutAttack = 0.030f;
-        OutRelease = 0.060f;
-        OutHoldHalf = 0.030f;
+        OutAttack = 0.022f;
+        OutRelease = 0.085f;
+        OutHoldHalf = 0.040f;
         return;
     }
     if (IsPose(PoseID, TEXT("20_FV")))
     {
-        OutAttack = 0.036f;
-        OutRelease = 0.070f;
-        OutHoldHalf = 0.026f;
+        OutAttack = 0.028f;
+        OutRelease = 0.090f;
+        OutHoldHalf = 0.034f;
         return;
     }
     if (IsPose(PoseID, TEXT("14_ChJjSh")))
@@ -72,8 +72,8 @@ static void EnvelopeForPose(FName PoseID, float& OutAttack, float& OutRelease, f
 static float PeakForPose(FName PoseID, float SourceStrength)
 {
     float Peak = FMath::Clamp(SourceStrength, 0.0f, 1.0f);
-    if (IsPose(PoseID, TEXT("22_MBP"))) return FMath::Max(Peak, 0.98f);
-    if (IsPose(PoseID, TEXT("20_FV"))) return FMath::Max(Peak, 0.96f);
+    if (IsPose(PoseID, TEXT("22_MBP"))) return 1.0f;
+    if (IsPose(PoseID, TEXT("20_FV"))) return 1.0f;
     if (IsPose(PoseID, TEXT("14_ChJjSh"))) return SourceStrength >= 0.72f ? FMath::Max(Peak, 0.88f) : FMath::Min(Peak, 0.58f);
     if (IsPose(PoseID, TEXT("12_Ww-Oo-")) || IsPose(PoseID, TEXT("11_Oo")) || IsPose(PoseID, TEXT("10_Or"))) return FMath::Max(Peak, 0.88f);
     if (IsPose(PoseID, TEXT("07_Aa")) || IsPose(PoseID, TEXT("08_Ah")) || IsPose(PoseID, TEXT("09_Oh"))) return FMath::Max(Peak, 0.82f);

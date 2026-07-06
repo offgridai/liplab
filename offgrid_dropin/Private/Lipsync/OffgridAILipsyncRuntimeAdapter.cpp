@@ -6,6 +6,7 @@ static const FName OccupancyReason(TEXT("speech_occupancy_playhead"));
 static const FName RegionClosedDropReason(TEXT("speech_region_closed_drop"));
 static const FName MissingRegionDropReason(TEXT("speech_region_missing_drop"));
 static constexpr float InterWordSpacerSeconds = 0.020f;
+static constexpr float ActiveDurationScale = 0.90f;
 
 static float SpanForPose(const FName& PoseID)
 {
@@ -48,7 +49,7 @@ static void BuildPhoneActiveTimings(
     for (int32 PhoneIndex = 0; PhoneIndex < Plan.ExpectedPhones.Num(); ++PhoneIndex)
     {
         const FOffgridAIExpectedPhone& Phone = Plan.ExpectedPhones[PhoneIndex];
-        const float Weight = FMath::Max(Phone.WeightSeconds, 0.020f);
+        const float Weight = FMath::Max(Phone.WeightSeconds * ActiveDurationScale, 0.018f);
         OutPhoneStartActiveSeconds[PhoneIndex] = OutTotalActiveSeconds;
         OutPhoneCenterActiveSeconds[PhoneIndex] = OutTotalActiveSeconds + Weight * 0.5f;
         OutPhoneEndActiveSeconds[PhoneIndex] = OutTotalActiveSeconds + Weight;
@@ -156,6 +157,20 @@ static float HoldSecondsForBoundary(TCHAR C)
         return 0.260f;
     }
     return 0.0f;
+}
+
+static float HoldSecondsForBoundary(TCHAR C, EOffgridAIBoundaryPauseClass PauseClass)
+{
+    switch (PauseClass)
+    {
+    case EOffgridAIBoundaryPauseClass::SoftListPause:
+        return 0.200f;
+    case EOffgridAIBoundaryPauseClass::HardBreakPause:
+        return 0.260f;
+    case EOffgridAIBoundaryPauseClass::None:
+    default:
+        return HoldSecondsForBoundary(C);
+    }
 }
 
 static int32 FindRegionIndexAtPlayback(const TArray<FEffectiveSpeechRegion>& Regions, float PlaybackSec)
@@ -610,6 +625,7 @@ void FOffgridAILipsyncRuntimeSession::Reset()
     ResolvedSpeechRegions.Reset();
     CommittedTrack = FOffgridAIAlignedVisemeTrack();
     AudioOccupancyDiagnosticRows.Reset();
+    RuntimeSpeechRegionDiagnosticRows.Reset();
     AudioOccupancyDiagnosticUpdateOrdinal = 0;
     StreamTailDiagnosticRow = FOffgridAIStreamTailDiagnosticRow();
 
@@ -740,6 +756,7 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(float CurrentPlay
     StreamTailDiagnosticRow.DiagnosticKind = FName(TEXT("runtime_stream_tail"));
 
     AudioOccupancyDiagnosticRows.Reset();
+    RuntimeSpeechRegionDiagnosticRows.Reset();
     for (const FOffgridAIAlignedVisemeEvent& E : CommittedTrack.Events)
     {
         FOffgridAIAudioOccupancyDiagnosticRow R;
@@ -768,6 +785,47 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(float CurrentPlay
         R.bMappedToObservedSpeech = E.bMappedToObservedSpeech;
         R.DiagnosticKind = E.CommitReason;
         AudioOccupancyDiagnosticRows.Add(R);
+    }
+
+    for (const FOffgridAIStreamingSpeechRegion& SpeechRegion : ResolvedSpeechRegions)
+    {
+        FOffgridAIRuntimeSpeechRegionDiagnosticRow RegionRow;
+        RegionRow.LineID = LineID;
+        RegionRow.UpdateOrdinal = AudioOccupancyDiagnosticUpdateOrdinal;
+        RegionRow.bFinalReplay = bFinalReplay;
+        RegionRow.CurrentPlaybackSec = CurrentPlaybackSec;
+        RegionRow.RegionIndex = SpeechRegion.SpeechRegionIndex;
+        RegionRow.RegionOpenSec = SpeechRegion.AudioBufferStartSec;
+        RegionRow.RegionCloseSec = SpeechRegion.AudioBufferEndSec;
+        RegionRow.LastSpeechSec = SpeechRegion.AudioBufferLastSpeechSec;
+        RegionRow.ProvisionalEndSec = SpeechRegion.ProvisionalEndSec;
+        RegionRow.EndDecisionSec = SpeechRegion.EndDecisionSec;
+        RegionRow.ReopenCount = SpeechRegion.ReopenCount;
+        RegionRow.bStarted = SpeechRegion.bStarted;
+        RegionRow.bEnded = SpeechRegion.bEnded;
+        RegionRow.bContainsPlaybackSec =
+            SpeechRegion.bStarted
+            && CurrentPlaybackSec >= SpeechRegion.AudioBufferStartSec
+            && CurrentPlaybackSec <= SpeechRegion.AudioBufferEndSec;
+        RegionRow.CloseReason = SpeechRegion.EndReason;
+        RegionRow.DiagnosticKind = FName(TEXT("runtime_speech_region"));
+
+        for (const FOffgridAIAlignedVisemeEvent& E : CommittedTrack.Events)
+        {
+            if (E.SpeechRegionIndex == SpeechRegion.SpeechRegionIndex)
+            {
+                ++RegionRow.CommittedEventCount;
+            }
+        }
+        for (const FOffgridAIDroppedVisemeEvent& E : CommittedTrack.DroppedEvents)
+        {
+            if (E.SpeechRegionIndex == SpeechRegion.SpeechRegionIndex)
+            {
+                ++RegionRow.DroppedEventCount;
+            }
+        }
+
+        RuntimeSpeechRegionDiagnosticRows.Add(RegionRow);
     }
     ++AudioOccupancyDiagnosticUpdateOrdinal;
 }
@@ -866,7 +924,11 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             const TCHAR Boundary = Plan.WordBoundaryPunctuationAfter.IsValidIndex(BoundaryWordIndex)
                 ? Plan.WordBoundaryPunctuationAfter[BoundaryWordIndex]
                 : TCHAR(0);
-            const float HoldSeconds = HoldSecondsForBoundary(Boundary);
+            const EOffgridAIBoundaryPauseClass BoundaryPauseClass =
+                Plan.WordBoundaryPauseClassAfter.IsValidIndex(BoundaryWordIndex)
+                    ? Plan.WordBoundaryPauseClassAfter[BoundaryWordIndex]
+                    : EOffgridAIBoundaryPauseClass::None;
+            const float HoldSeconds = HoldSecondsForBoundary(Boundary, BoundaryPauseClass);
             if (HoldSeconds > 0.0f && InOutHoldState.BoundaryWordIndex != BoundaryWordIndex)
             {
                 InOutHoldState.bHoldActive = true;
@@ -903,10 +965,14 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         float BaseStart = PlaybackOffsetSec + RequiredPhoneStartActiveSec;
         float Center = PlaybackOffsetSec + RequiredActiveSec;
         float BaseEnd = PlaybackOffsetSec + RequiredPhoneEndActiveSec;
+        const float PriorCenter = Center;
 
         const float BaseSpan = FMath::Max(BaseEnd - BaseStart, 0.020f);
         const float Span = FMath::Max(SpanForPose(T.PoseID), BaseSpan);
         Center = FMath::Max(Center - LeadForPose(T.PoseID), 0.0f);
+        const float LeadAdjustedCenter = Center;
+        float MinLiveLeadDelay = 0.0f;
+        float InterEventFloorDelay = 0.0f;
 
         if (RequiredActiveSec <= 0.001f)
         {
@@ -914,11 +980,21 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         }
         if (!bPlaybackFinal)
         {
-            Center = FMath::Max(Center, Input.CurrentPlaybackSec + MinLiveLeadSec);
+            const float MinAllowedCenter = Input.CurrentPlaybackSec + MinLiveLeadSec;
+            if (Center < MinAllowedCenter)
+            {
+                MinLiveLeadDelay = MinAllowedCenter - Center;
+                Center = MinAllowedCenter;
+            }
         }
         if (LastCenter >= 0.0f)
         {
-            Center = FMath::Max(Center, LastCenter + 0.050f);
+            const float MinSpacingCenter = LastCenter + 0.050f;
+            if (Center < MinSpacingCenter)
+            {
+                InterEventFloorDelay = MinSpacingCenter - Center;
+                Center = MinSpacingCenter;
+            }
         }
         if (!bPlaybackFinal && Center - Input.CurrentPlaybackSec > MaxLiveLeadSec)
         {
@@ -941,6 +1017,15 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             WordStartSeconds,
             Input,
             E);
+        E.PriorStartSeconds = BaseStart;
+        E.PriorCenterSeconds = PriorCenter;
+        E.PriorEndSeconds = BaseEnd;
+        E.LeadAdjustedCenterSeconds = LeadAdjustedCenter;
+        E.PlaybackOffsetSeconds = PlaybackOffsetSec;
+        E.TotalPausedSecondsAtCommit = InOutHoldState.TotalPausedSec;
+        E.MinLiveLeadDelaySeconds = MinLiveLeadDelay;
+        E.InterEventFloorDelaySeconds = InterEventFloorDelay;
+        E.TotalCenterDelaySeconds = FMath::Max(Center - PriorCenter, 0.0f);
         E.SpeechRegionIndex = FMath::Max(FindRegionIndexAtPlayback(EffectiveRegions, Input.CurrentPlaybackSec), 0);
         E.CommitReason = OccupancyReason;
         if (LastCenter >= 0.0f && E.FinalRenderCenterSeconds < LastCenter + 0.001f)
