@@ -27,7 +27,12 @@ struct FOffgridAITextVisemeEvent
     FString SourceText;
     int32 WordIndex = INDEX_NONE;
 
-    // Text sentence metadata for diagnostics only; runtime audio occupancy remains the timing authority.
+    // Text-derived speech-region ownership. Runtime audio occupancy still owns
+    // when a region opens/closes, but event identity is assigned to one planned
+    // region and must not leak into later regions.
+    int32 SpeechRegionIndex = 0;
+
+    // Text sentence metadata for diagnostics only.
     int32 SentenceIndex = 0;
     int32 SourcePhoneIndex = INDEX_NONE;
     int32 SourcePhoneGlobalIndex = INDEX_NONE;
@@ -47,6 +52,7 @@ struct FOffgridAIExpectedPhone
     FString BasePhone;
     FString SourceWord;
     int32 WordIndex = INDEX_NONE;
+    int32 SpeechRegionIndex = 0;
     int32 SentenceIndex = 0;
     bool bIsVowel = false;
     bool bIsVisibleViseme = false;
@@ -61,6 +67,7 @@ struct FOffgridAITextVisemePlan
     TArray<FOffgridAIExpectedPhone> ExpectedPhones;
     float EstimatedDurationSeconds = 0.0f;
     // Word metadata used for text planning and sentence diagnostics.
+    TArray<int32> WordSpeechRegionIndices;
     TArray<int32> WordSentenceIndices;
     TArray<int32> WordSyllableCounts;
     TArray<int32> WordPhoneBeginIndices;

@@ -1,6 +1,6 @@
 # Phone-First Planning and Playback Spec
 
-Status: proposed replacement direction after the refreshed MFA gold corpus.
+Status: partially implemented current direction after the refreshed MFA gold corpus.
 
 ## 1. Core conclusion
 
@@ -39,9 +39,18 @@ The new corpus shows:
 Implications:
 
 - we should stop expecting ordinary word boundaries to be recoverable from pauses
-- we should stop inserting or preserving synthetic inter-word dead time inside active speech
 - non-visible phones still matter because they consume time and separate neighboring visible phones
 - the planner should become more explicitly `phone-first`, while playback remains `absolute-time viseme event` based
+- punctuation should remain a runtime close prior, not a text-owned splitter
+- a small inter-word timing spacer may still be useful as a pacing prior even when ordinary words remain acoustically contiguous
+
+Current repo state:
+
+- punctuation close probes are implemented in the runtime adapter
+- soft punctuation currently uses a `120ms` probe
+- hard punctuation currently uses a `260ms` probe
+- a small `20ms` inter-word spacer is currently part of the phone-duration prior
+- that spacer is a pacing bias only, not a guaranteed silence event
 
 Before deleting any remaining word-gap logic wholesale, the repo should measure
 the actual intra-region inter-word-gap distribution across the full approved
@@ -152,6 +161,10 @@ Requirements:
 - do not merge same-pose adjacent phones at planning time just to simplify playback
 - do not add fake inter-word rest events
 
+A small invisible inter-word timing spacer is acceptable when used only as a
+duration prior. The current runtime uses a fixed `20ms` spacer between adjacent
+words in the dense phone timeline. This does not create a rendered rest viseme.
+
 Important consequence:
 
 ```text
@@ -210,6 +223,13 @@ Meaning:
 - neither hard nor soft punctuation may directly create silent time inside the plan
 
 The refreshed gold says silence is an acoustic fact, not a text fact.
+
+Current implementation:
+
+- planner punctuation remains metadata only
+- runtime converts punctuation into bounded close probes
+- if occupancy stays open, playback resumes
+- if occupancy closes, playback waits for the next observed region onset
 
 ## 5. Playback revisions
 
@@ -385,6 +405,8 @@ These behaviors are no longer justified by the gold and should be removed or dow
 ### 6.1 Treating word boundaries as expected silent gaps
 
 Delete the assumption that ordinary word boundaries should create pause-like timing unless occupancy confirms real silence.
+Keep open the narrower assumption that word boundaries may deserve a small
+duration-prior bias even when they do not justify a true pause/resume event.
 
 ### 6.2 Planner-inserted fake visible filler for invisible-phone words
 

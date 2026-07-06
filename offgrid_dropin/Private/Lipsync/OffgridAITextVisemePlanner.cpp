@@ -21,6 +21,24 @@ static bool IsHardSentenceBoundary(TCHAR C)
     return C == TEXT('.') || C == TEXT('!') || C == TEXT('?');
 }
 
+static bool IsSpeechRegionBoundary(TCHAR C)
+{
+    return IsHardSentenceBoundary(C) || C == TEXT(',') || C == TEXT(';') || C == TEXT(':');
+}
+
+static TCHAR PreferBoundary(TCHAR Existing, TCHAR Candidate)
+{
+    if (IsHardSentenceBoundary(Candidate))
+    {
+        return Candidate;
+    }
+    if (Existing == TCHAR(0))
+    {
+        return Candidate;
+    }
+    return Existing;
+}
+
 static FString StripCmuVariantSuffix(const FString& In)
 {
     int32 ParenIndex = INDEX_NONE;
@@ -182,7 +200,7 @@ static FName DefaultPoseFor(EOffgridAITextViseme V)
     }
 }
 
-static void AddEvent(TArray<FOffgridAITextVisemeEvent>& Events, EOffgridAITextViseme V, FName PoseID, int32 WordIndex, int32 SentenceIndex, const FString& Word, float Strength, FName Generator, float LocalOrder, int32 SourcePhoneIndex = INDEX_NONE, const FString& SourcePhone = FString(), const FString& SourcePhoneBase = FString())
+static void AddEvent(TArray<FOffgridAITextVisemeEvent>& Events, EOffgridAITextViseme V, FName PoseID, int32 WordIndex, int32 SpeechRegionIndex, int32 SentenceIndex, const FString& Word, float Strength, FName Generator, float LocalOrder, int32 SourcePhoneIndex = INDEX_NONE, const FString& SourcePhone = FString(), const FString& SourcePhoneBase = FString())
 {
     if (V == EOffgridAITextViseme::Rest)
     {
@@ -201,6 +219,7 @@ static void AddEvent(TArray<FOffgridAITextVisemeEvent>& Events, EOffgridAITextVi
     E.Strength = Strength;
     E.SourceText = Word;
     E.WordIndex = WordIndex;
+    E.SpeechRegionIndex = SpeechRegionIndex;
     E.SentenceIndex = SentenceIndex;
     E.SourcePhoneIndex = SourcePhoneIndex;
     E.SourcePhoneGlobalIndex = INDEX_NONE;
@@ -219,7 +238,7 @@ static bool IsStress1Or2(const FString& Phone)
     return Phone.Contains(TEXT("1")) || Phone.Contains(TEXT("2"));
 }
 
-static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FString& Word, const TArray<FString>& WordPhones, const FString& Phone, int32 PhoneIndex, int32 PhoneCount, int32 WordIndex, int32 SentenceIndex)
+static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FString& Word, const TArray<FString>& WordPhones, const FString& Phone, int32 PhoneIndex, int32 PhoneCount, int32 WordIndex, int32 SpeechRegionIndex, int32 SentenceIndex)
 {
     const FString Base = StripStressDigits(Phone);
     const float LocalOrder = (static_cast<float>(PhoneIndex) + 0.5f) / FMath::Max(static_cast<float>(PhoneCount), 1.0f);
@@ -229,100 +248,100 @@ static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FStr
     // Strong visible consonants. These are CMU phonemes, not letters.
     if (Base == TEXT("M") || Base == TEXT("B") || Base == TEXT("P"))
     {
-        AddEvent(Events, EOffgridAITextViseme::MBP, TEXT("22_MBP"), WordIndex, SentenceIndex, Word, 1.00f, TEXT("cmu_bilabial"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::MBP, TEXT("22_MBP"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 1.00f, TEXT("cmu_bilabial"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("F") || Base == TEXT("V"))
     {
-        AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("20_FV"), WordIndex, SentenceIndex, Word, 0.96f, TEXT("cmu_fv"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("20_FV"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.96f, TEXT("cmu_fv"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("W"))
     {
-        AddEvent(Events, EOffgridAITextViseme::WUH, TEXT("12_Ww-Oo-"), WordIndex, SentenceIndex, Word, 0.88f, TEXT("cmu_w"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::WUH, TEXT("12_Ww-Oo-"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.88f, TEXT("cmu_w"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("R"))
     {
-        AddEvent(Events, EOffgridAITextViseme::OOO, TEXT("17_Rr"), WordIndex, SentenceIndex, Word, 0.78f, TEXT("cmu_rhotic"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::OOO, TEXT("17_Rr"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.78f, TEXT("cmu_rhotic"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
 
     // Consonant articulation poses supported by the MetaHuman viseme library.
     if (Base == TEXT("S") || Base == TEXT("Z"))
     {
-        AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("21_FV-Ee-"), WordIndex, SentenceIndex, Word, 0.42f, TEXT("cmu_sibilant_teeth_wide"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("21_FV-Ee-"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.42f, TEXT("cmu_sibilant_teeth_wide"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("TH") || Base == TEXT("DH"))
     {
-        AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("24_Tongue_Th"), WordIndex, SentenceIndex, Word, 0.62f, TEXT("cmu_dental_tongue"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("24_Tongue_Th"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.62f, TEXT("cmu_dental_tongue"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("T") || Base == TEXT("D"))
     {
-        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("01_TDS-Ah-"), WordIndex, SentenceIndex, Word, 0.40f, TEXT("cmu_alveolar_stop"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("01_TDS-Ah-"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.40f, TEXT("cmu_alveolar_stop"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("L") || Base == TEXT("N"))
     {
-        AddEvent(Events, EOffgridAITextViseme::EEE, TEXT("23_Tongue_LNTDS"), WordIndex, SentenceIndex, Word, 0.46f, TEXT("cmu_lingual"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::EEE, TEXT("23_Tongue_LNTDS"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.46f, TEXT("cmu_lingual"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("K") || Base == TEXT("G"))
     {
-        AddEvent(Events, EOffgridAITextViseme::EEE, TEXT("13_KGY_TDS"), WordIndex, SentenceIndex, Word, 0.34f, TEXT("cmu_velar_stop"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::EEE, TEXT("13_KGY_TDS"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.34f, TEXT("cmu_velar_stop"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("Y"))
     {
-        AddEvent(Events, EOffgridAITextViseme::EEE, TEXT("02_TDS_KGY-Ee-"), WordIndex, SentenceIndex, Word, 0.40f, TEXT("cmu_palatal_glide"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::EEE, TEXT("02_TDS_KGY-Ee-"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.40f, TEXT("cmu_palatal_glide"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("CH") || Base == TEXT("JH") || Base == TEXT("SH") || Base == TEXT("ZH"))
     {
-        AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("14_ChJjSh"), WordIndex, SentenceIndex, Word, 0.42f, TEXT("cmu_affricate_sibilant"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("14_ChJjSh"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.42f, TEXT("cmu_affricate_sibilant"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("HH"))
     {
-        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("08_Ah"), WordIndex, SentenceIndex, Word, 0.24f, TEXT("cmu_glottal_open"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("08_Ah"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.24f, TEXT("cmu_glottal_open"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
 
     if (Base == TEXT("AY"))
     {
-        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("05_Ay"), WordIndex, SentenceIndex, Word, bStressed ? 0.94f : 0.68f, TEXT("cmu_ay"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("05_Ay"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, bStressed ? 0.94f : 0.68f, TEXT("cmu_ay"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("AA") || Base == TEXT("AE") || Base == TEXT("AH") || Base == TEXT("AW"))
     {
-        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("07_Aa"), WordIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_open_vowel"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("07_Aa"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_open_vowel"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("ER"))
     {
-        AddEvent(Events, EOffgridAITextViseme::OOO, TEXT("17_Rr"), WordIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_rhotic_vowel"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::OOO, TEXT("17_Rr"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_rhotic_vowel"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("EH") || Base == TEXT("EY"))
     {
-        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("06_Eh"), WordIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_eh_vowel"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("06_Eh"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_eh_vowel"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("IH") || Base == TEXT("IY"))
     {
-        AddEvent(Events, EOffgridAITextViseme::EEE, TEXT("03_Ee"), WordIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_front_vowel"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::EEE, TEXT("03_Ee"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_front_vowel"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("AO") || Base == TEXT("OW") || Base == TEXT("OY"))
     {
-        AddEvent(Events, EOffgridAITextViseme::OOO, TEXT("09_Oh"), WordIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_oh_vowel"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::OOO, TEXT("09_Oh"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_oh_vowel"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("UH") || Base == TEXT("UW"))
     {
-        AddEvent(Events, EOffgridAITextViseme::OOO, TEXT("11_Oo"), WordIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_oo_vowel"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::OOO, TEXT("11_Oo"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_oo_vowel"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
 
@@ -330,25 +349,65 @@ static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FStr
     return false;
 }
 
-static void AddCmuWordVisemeEvents(TArray<FOffgridAITextVisemeEvent>& Events, const FString& Word, const TArray<FString>& Phones, int32 WordIndex, int32 SentenceIndex)
+static void AddCmuWordVisemeEvents(TArray<FOffgridAITextVisemeEvent>& Events, const FString& Word, const TArray<FString>& Phones, int32 WordIndex, int32 SpeechRegionIndex, int32 SentenceIndex)
 {
     for (int32 I = 0; I < Phones.Num(); ++I)
     {
-        AddPhoneViseme(Events, Word, Phones, Phones[I], I, Phones.Num(), WordIndex, SentenceIndex);
+        AddPhoneViseme(Events, Word, Phones, Phones[I], I, Phones.Num(), WordIndex, SpeechRegionIndex, SentenceIndex);
     }
 }
 
 
 static float ExpectedPhoneWeightSeconds(const FString& Base)
 {
-    if (IsVowelPhonemeBase(Base)) return 0.105f;
-    if (Base == TEXT("M") || Base == TEXT("B") || Base == TEXT("P")) return 0.080f;
+    // Use MFA-derived consonant medians where they helped, but keep vowels
+    // deliberately conservative so the plan does not consume whole regions too
+    // early when a speaker stretches nuclei or inserts intra-region pauses.
+    if (IsVowelPhonemeBase(Base))
+    {
+        if (Base == TEXT("AW") || Base == TEXT("AY") || Base == TEXT("EY") || Base == TEXT("OW") || Base == TEXT("OY") || Base == TEXT("UH"))
+        {
+            return 0.120f;
+        }
+        if (Base == TEXT("AE") || Base == TEXT("ER") || Base == TEXT("IY"))
+        {
+            return 0.100f;
+        }
+        return 0.090f;
+    }
+
+    struct FCorpusPhoneDuration
+    {
+        const TCHAR* Base;
+        float Seconds;
+    };
+
+    static const FCorpusPhoneDuration CorpusDurations[] = {
+        { TEXT("B"), 0.070f },  { TEXT("CH"), 0.130f }, { TEXT("D"), 0.050f },
+        { TEXT("DH"), 0.040f }, { TEXT("F"), 0.100f },  { TEXT("G"), 0.060f },
+        { TEXT("HH"), 0.070f }, { TEXT("JH"), 0.100f }, { TEXT("K"), 0.080f },
+        { TEXT("L"), 0.080f },  { TEXT("M"), 0.070f },  { TEXT("N"), 0.040f },
+        { TEXT("NG"), 0.070f }, { TEXT("P"), 0.080f },  { TEXT("R"), 0.070f },
+        { TEXT("S"), 0.110f },  { TEXT("SH"), 0.100f }, { TEXT("T"), 0.060f },
+        { TEXT("TH"), 0.070f }, { TEXT("V"), 0.060f },  { TEXT("W"), 0.080f },
+        { TEXT("Y"), 0.080f },  { TEXT("Z"), 0.070f },  { TEXT("ZH"), 0.090f },
+    };
+
+    for (const FCorpusPhoneDuration& Entry : CorpusDurations)
+    {
+        if (Base == Entry.Base)
+        {
+            return Entry.Seconds;
+        }
+    }
+
+    if (Base == TEXT("M") || Base == TEXT("B") || Base == TEXT("P")) return 0.070f;
     if (Base == TEXT("W") || Base == TEXT("R")) return 0.080f;
-    if (Base == TEXT("F") || Base == TEXT("V") || Base == TEXT("CH") || Base == TEXT("JH") || Base == TEXT("SH") || Base == TEXT("ZH")) return 0.085f;
-    if (Base == TEXT("TH") || Base == TEXT("DH") || Base == TEXT("L") || Base == TEXT("N")) return 0.075f;
-    if (Base == TEXT("T") || Base == TEXT("D") || Base == TEXT("K") || Base == TEXT("G") || Base == TEXT("Y") || Base == TEXT("HH")) return 0.065f;
-    if (Base == TEXT("S") || Base == TEXT("Z") || Base == TEXT("TH") || Base == TEXT("DH") || Base == TEXT("CH") || Base == TEXT("JH") || Base == TEXT("SH") || Base == TEXT("ZH")) return 0.060f;
-    return 0.055f;
+    if (Base == TEXT("F") || Base == TEXT("V") || Base == TEXT("CH") || Base == TEXT("JH") || Base == TEXT("SH") || Base == TEXT("ZH")) return 0.100f;
+    if (Base == TEXT("TH") || Base == TEXT("DH") || Base == TEXT("L") || Base == TEXT("N")) return 0.060f;
+    if (Base == TEXT("T") || Base == TEXT("D") || Base == TEXT("K") || Base == TEXT("G") || Base == TEXT("Y") || Base == TEXT("HH")) return 0.060f;
+    if (Base == TEXT("S") || Base == TEXT("Z")) return 0.090f;
+    return 0.060f;
 }
 
 static bool PhoneHasVisibleViseme(const TArray<FOffgridAITextVisemeEvent>& Events, int32 WordIndex, int32 SourcePhoneIndex)
@@ -377,11 +436,11 @@ static int32 EstimateUnknownWordSyllables(const FString& Word)
     return FMath::Max(Count, 1);
 }
 
-static void AddConservativeUnknownWordEvents(TArray<FOffgridAITextVisemeEvent>& Events, const FString& Word, int32 WordIndex, int32 SentenceIndex)
+static void AddConservativeUnknownWordEvents(TArray<FOffgridAITextVisemeEvent>& Events, const FString& Word, int32 WordIndex, int32 SpeechRegionIndex, int32 SentenceIndex)
 {
     // Unknown words should not fall back to letter soup. Emit one low-strength
     // generic vowel so timing can continue, and make CMU misses obvious in logs.
-    AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("06_Eh"), WordIndex, SentenceIndex, Word, 0.28f, TEXT("cmu_miss_conservative_single_vowel"), 0.5f, 0, TEXT("UNK"), TEXT("UNK"));
+    AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("06_Eh"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.28f, TEXT("cmu_miss_conservative_single_vowel"), 0.5f, 0, TEXT("UNK"), TEXT("UNK"));
 }
 }
 
@@ -404,12 +463,12 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
             if (!Current.IsEmpty())
             {
                 Words.Add(NormalizeWord(Current));
-                Boundaries.Add(IsHardSentenceBoundary(C) ? C : TCHAR(0));
+                Boundaries.Add(IsSpeechRegionBoundary(C) ? C : TCHAR(0));
                 Current.Reset();
             }
-            else if (Boundaries.Num() > 0 && IsHardSentenceBoundary(C))
+            else if (Boundaries.Num() > 0 && IsSpeechRegionBoundary(C))
             {
-                Boundaries.Last() = C;
+                Boundaries.Last() = PreferBoundary(Boundaries.Last(), C);
             }
         }
     }
@@ -443,6 +502,7 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
         WordUnits.Add(Units);
         TotalUnits += Units;
 
+        Plan.WordSpeechRegionIndices.Add(0);
         Plan.WordSentenceIndices.Add(Sentence);
         Plan.WordSyllableCounts.Add(Syllables);
         Plan.WordBoundaryPunctuationAfter.Add(Boundaries.IsValidIndex(W) ? Boundaries[W] : TCHAR(0));
@@ -463,11 +523,11 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
 
         if (WordCmuHit.IsValidIndex(W) && WordCmuHit[W])
         {
-            AddCmuWordVisemeEvents(Plan.Events, Word, WordPhones[W], W, Sentence);
+            AddCmuWordVisemeEvents(Plan.Events, Word, WordPhones[W], W, 0, Sentence);
         }
         else
         {
-            AddConservativeUnknownWordEvents(Plan.Events, Word, W, Sentence);
+            AddConservativeUnknownWordEvents(Plan.Events, Word, W, 0, Sentence);
         }
 
         const TArray<FString>* PhonesForWordPtr = (WordCmuHit.IsValidIndex(W) && WordCmuHit[W]) ? &WordPhones[W] : nullptr;
@@ -485,6 +545,7 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
                 Expected.BasePhone = Base;
                 Expected.SourceWord = Word;
                 Expected.WordIndex = W;
+                Expected.SpeechRegionIndex = 0;
                 Expected.SentenceIndex = Sentence;
                 Expected.bIsVowel = IsVowelPhonemeBase(Base);
                 Expected.bIsVisibleViseme = PhoneHasVisibleViseme(Plan.Events, W, PIdx);
@@ -536,6 +597,7 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
             Expected.BasePhone = TEXT("UNK");
             Expected.SourceWord = Word;
             Expected.WordIndex = W;
+            Expected.SpeechRegionIndex = 0;
             Expected.SentenceIndex = Sentence;
             Expected.bIsVisibleViseme = (Plan.Events.Num() > FirstEventIndex);
             Expected.FirstVisibleEventIndex = Expected.bIsVisibleViseme ? FirstEventIndex : INDEX_NONE;

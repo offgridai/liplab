@@ -74,6 +74,7 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
         runtime_phone_rows = read_csv_rows(case_dir / "runtime_phone_alignment.csv")
         progress_rows = read_csv_rows(case_dir / "audio_progress_measurements.csv")
         committed_rows = read_csv_rows(case_dir / "committed.csv")
+        region_drop_rows = read_csv_rows(case_dir / "region_drop_diagnostics.csv")
         predicted_speech_rows = read_csv_rows(case_dir / "speech_regions.csv")
         gap_candidate_rows = read_csv_rows(case_dir / "gap_candidates.csv")
         gold_speech_rows = read_csv_rows(gold_root / case_dir.name / "speech.csv") if gold_root else []
@@ -85,6 +86,7 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "runtime_phone_rows": runtime_phone_rows,
             "audio_progress_rows": progress_rows,
             "committed_rows": committed_rows,
+            "region_drop_rows": region_drop_rows,
             "predicted_speech_rows": predicted_speech_rows,
             "gap_candidate_rows": gap_candidate_rows,
             "gold_speech_rows": gold_speech_rows,
@@ -574,11 +576,13 @@ def summarize_phone_classes(row: dict[str, Any]) -> dict[str, Any]:
 
 def compute_summary(rows, graded, ungraded):
     graded_cases = len(graded)
+    qualified = [row for row in graded if not _pause_flag(row, "speech_region", "count_mismatch")]
+    qualified_cases = len(qualified)
     phoneme_coverage = []
     runtime_phone_available = any(row.get("runtime_phone_rows") for row in rows)
     direct_aligner_available = any(bool(row.get("direct_aligner")) for row in rows)
     audio_progress_available = any(row.get("audio_progress_rows") for row in rows)
-    for row in rows:
+    for row in qualified:
         phone_rows = row.get("runtime_phone_rows", [])
         if phone_rows:
             mapped = sum(1 for r in phone_rows if str(r.get("mapped_to_observed_speech", "0")) == "1")
@@ -589,12 +593,12 @@ def compute_summary(rows, graded, ungraded):
             if reference_count > 0.0:
                 phoneme_coverage.append(matched_count / reference_count)
 
-    direct_refs = sum(int(row.get("direct_aligner", {}).get("reference_count", 0)) for row in graded)
-    direct_matches = sum(int(row.get("direct_aligner", {}).get("matched_count", 0)) for row in graded)
+    direct_refs = sum(int(row.get("direct_aligner", {}).get("reference_count", 0)) for row in qualified)
+    direct_matches = sum(int(row.get("direct_aligner", {}).get("matched_count", 0)) for row in qualified)
 
-    progress_summaries = [row.get("audio_progress_summary", {}) for row in graded]
-    speech_region_summaries = [row.get("speech_region_diagnostics", {}) for row in graded]
-    gap_candidate_summaries = [row.get("gap_candidate_summary", {}) for row in graded]
+    progress_summaries = [row.get("audio_progress_summary", {}) for row in qualified]
+    speech_region_summaries = [row.get("speech_region_diagnostics", {}) for row in qualified]
+    gap_candidate_summaries = [row.get("gap_candidate_summary", {}) for row in qualified]
     advance_reason_counts: Counter[str] = Counter()
     gap_decision_counts: Counter[str] = Counter()
     for progress_summary in progress_summaries:
@@ -602,7 +606,7 @@ def compute_summary(rows, graded, ungraded):
     for gap_summary in gap_candidate_summaries:
         gap_decision_counts.update(gap_summary.get("decision_counts", {}))
     phone_class_rollup: dict[str, dict[str, Any]] = {}
-    for row in graded:
+    for row in qualified:
         for klass, stats in row.get("phone_class_summary", {}).items():
             bucket = phone_class_rollup.setdefault(klass, {"n": 0, "matched": 0, "unmapped": 0, "center": [], "start": [], "end": []})
             n = int(stats.get("n", 0))
@@ -626,37 +630,130 @@ def compute_summary(rows, graded, ungraded):
         for klass, b in sorted(phone_class_rollup.items())
     }
 
-    detected_word_onset_values = [_nested(row, "word_onset_alignment", "mean_abs_start_error_ms") for row in graded]
-    detected_word_onset_event_medians = [_nested(row, "word_onset_alignment", "median_abs_start_error_ms") for row in graded]
-    word_duration_values = [_metric(row, "mean_abs_duration_error_ms") for row in graded]
-    phoneme_center_values = [_metric(row, "mean_abs_center_error_ms") for row in graded]
-    phoneme_start_values = [_metric(row, "mean_abs_start_error_ms") for row in graded]
-    phoneme_end_values = [_metric(row, "mean_abs_end_error_ms") for row in graded]
-    intra_word_center_values = [_nested(row, "intra_word_alignment", "mean_abs_center_error_ms") for row in graded]
-    direct_center_values = [_direct(row, "mean_abs_center_error_ms") for row in graded if row.get("direct_aligner")]
+    region_drop_rows = [drop_row for row in qualified for drop_row in row.get("region_drop_rows", [])]
+    drop_regions_with_drops = [r for r in region_drop_rows if _safe_int(r, "dropped_event_count", 0) > 0]
+    drop_regions_without_observed_region = [
+        r for r in drop_regions_with_drops
+        if _safe_float(r, "region_start", -1.0) < 0.0 or _safe_float(r, "region_end", -1.0) < 0.0
+    ]
+    drop_regions_with_observed_region = [
+        r for r in drop_regions_with_drops
+        if _safe_float(r, "region_start", -1.0) >= 0.0 and _safe_float(r, "region_end", -1.0) >= 0.0
+    ]
+    drop_regions_with_commits = [
+        r for r in drop_regions_with_observed_region
+        if _safe_int(r, "committed_event_count", 0) > 0
+    ]
+    underrun_regions = [
+        r for r in region_drop_rows
+        if _safe_float(r, "underrun_idle_tail_ms", 0.0) > 100.0
+    ]
+
+    detected_word_onset_values = [_nested(row, "word_onset_alignment", "mean_abs_start_error_ms") for row in qualified]
+    detected_word_onset_event_medians = [_nested(row, "word_onset_alignment", "median_abs_start_error_ms") for row in qualified]
+    word_duration_values = [_metric(row, "mean_abs_duration_error_ms") for row in qualified]
+    phoneme_center_values = [_metric(row, "mean_abs_center_error_ms") for row in qualified]
+    phoneme_start_values = [_metric(row, "mean_abs_start_error_ms") for row in qualified]
+    phoneme_end_values = [_metric(row, "mean_abs_end_error_ms") for row in qualified]
+    intra_word_center_values = [_nested(row, "intra_word_alignment", "mean_abs_center_error_ms") for row in qualified]
+    direct_center_values = [_direct(row, "mean_abs_center_error_ms") for row in qualified if row.get("direct_aligner")]
 
     summary = {
         "total_cases": len(rows),
         "graded_cases": graded_cases,
+        "qualified_cases": qualified_cases,
+        "disqualified_speech_region_mismatch_cases": graded_cases - qualified_cases,
         "ungraded_cases": len(ungraded),
-        "degenerate_cases": sum(1 for row in graded if _metric(row, "committed_count") <= 0),
-        "order_fail_cases": sum(1 for row in graded if _metric(row, "order_violations") > 0),
+        "degenerate_cases": sum(1 for row in qualified if _metric(row, "committed_count") <= 0),
+        "order_fail_cases": sum(1 for row in qualified if _metric(row, "order_violations") > 0),
         "speech_region_count_mismatch_cases": sum(1 for row in graded if _pause_flag(row, "speech_region", "count_mismatch")),
         "phone_occupancy_region_count_mismatch_cases": 0,
         "visible_speech_region_count_mismatch_cases": 0,
-        "sentence_region_count_mismatch_cases": sum(1 for row in graded if _pause_flag(row, "sentence_region", "count_mismatch")),
-        "clause_region_count_mismatch_cases": sum(1 for row in graded if _pause_flag(row, "clause_region", "count_mismatch")),
+        "sentence_region_count_mismatch_cases": sum(1 for row in qualified if _pause_flag(row, "sentence_region", "count_mismatch")),
+        "clause_region_count_mismatch_cases": sum(1 for row in qualified if _pause_flag(row, "clause_region", "count_mismatch")),
         "runtime_phone_alignment_available": runtime_phone_available,
         "direct_aligner_available": direct_aligner_available,
         "audio_progress_available": audio_progress_available,
         "speech_f1": _mean(
             _pause_metric(row, "speech_region", "matched_count")
             / max(_pause_metric(row, "speech_region", "reference_count"), 1.0)
-            for row in graded
+            for row in qualified
         ),
-        "speech_boundary_start_ms": _mean(_pause_metric(row, "speech_region", "start_error_ms") for row in graded),
-        "speech_boundary_end_ms": _mean(_pause_metric(row, "speech_region", "end_error_ms") for row in graded),
-        "speech_tail_leakage_ms": _mean(_pause_metric(row, "speech_region", "tail_out_ms") for row in graded),
+        "speech_boundary_start_ms": _mean(_pause_metric(row, "speech_region", "start_error_ms") for row in qualified),
+        "speech_boundary_end_ms": _mean(_pause_metric(row, "speech_region", "end_error_ms") for row in qualified),
+        "speech_tail_leakage_ms": _mean(_pause_metric(row, "speech_region", "tail_out_ms") for row in qualified),
+        "speech_region_containment_invalid_cases": sum(
+            1 for row in qualified if _nested(row, "speech_region_containment", "events_with_invalid_region") > 0
+        ),
+        "speech_region_containment_leak_cases": sum(
+            1 for row in qualified if _nested(row, "speech_region_containment", "events_outside_region") > 0
+        ),
+        "speech_region_containment_invalid_events": sum(
+            _nested(row, "speech_region_containment", "events_with_invalid_region") for row in qualified
+        ),
+        "speech_region_containment_leak_events": sum(
+            _nested(row, "speech_region_containment", "events_outside_region") for row in qualified
+        ),
+        "speech_region_containment_early_entry_events": sum(
+            _nested(row, "speech_region_containment", "events_starting_before_region") for row in qualified
+        ),
+        "speech_region_containment_late_tail_events": sum(
+            _nested(row, "speech_region_containment", "events_ending_after_region") for row in qualified
+        ),
+        "speech_region_containment_early_leak_ms": _mean(
+            _nested(row, "speech_region_containment", "mean_early_start_leak_ms") for row in qualified
+        ),
+        "speech_region_containment_late_leak_ms": _mean(
+            _nested(row, "speech_region_containment", "mean_late_end_leak_ms") for row in qualified
+        ),
+        "dropped_viseme_cases": sum(
+            1 for row in qualified if _nested(row, "dropped_visemes", "dropped_count") > 0
+        ),
+        "dropped_viseme_count": sum(
+            _nested(row, "dropped_visemes", "dropped_count") for row in qualified
+        ),
+        "dropped_region_closed_count": sum(
+            _nested(row, "dropped_visemes", "dropped_region_closed_count") for row in qualified
+        ),
+        "dropped_missing_region_count": sum(
+            _nested(row, "dropped_visemes", "dropped_missing_region_count") for row in qualified
+        ),
+        "dropped_strong_visible_count": sum(
+            _nested(row, "dropped_visemes", "dropped_strong_visible_count") for row in qualified
+        ),
+        "dropped_viseme_rate": _mean(
+            _nested(row, "dropped_visemes", "dropped_rate") for row in qualified
+        ),
+        "drop_region_count": len(region_drop_rows),
+        "drop_regions_with_drops": len(drop_regions_with_drops),
+        "drop_regions_without_observed_region": len(drop_regions_without_observed_region),
+        "drop_regions_with_observed_region": len(drop_regions_with_observed_region),
+        "drop_regions_without_any_commits": sum(
+            1 for r in drop_regions_with_observed_region if _safe_int(r, "committed_event_count", 0) <= 0
+        ),
+        "drop_aligner_tail_pinned_committed_count": sum(
+            _safe_int(r, "tail_pinned_aligner_committed_count", 0) for r in region_drop_rows
+        ),
+        "drop_first_commit_lag_ms": _mean(
+            _safe_float(r, "first_commit_lag_ms", 0.0) for r in drop_regions_with_commits
+        ),
+        "drop_last_commit_to_region_end_ms": _mean(
+            _safe_float(r, "last_commit_to_region_end_ms", 0.0) for r in drop_regions_with_commits
+        ),
+        "drop_required_deficit_mean_ms": _mean(
+            _safe_float(r, "dropped_required_deficit_mean_ms", 0.0) for r in drop_regions_with_commits
+        ),
+        "drop_required_deficit_max_ms": _mean(
+            _safe_float(r, "dropped_required_deficit_max_ms", 0.0) for r in drop_regions_with_commits
+        ),
+        "underrun_region_count": len(underrun_regions),
+        "underrun_idle_tail_ms": _mean(
+            _safe_float(r, "underrun_idle_tail_ms", 0.0) for r in underrun_regions
+        ),
+        "underrun_idle_tail_max_ms": max(
+            (_safe_float(r, "underrun_idle_tail_ms", 0.0) for r in underrun_regions),
+            default=0.0,
+        ),
         "phone_occupancy_boundary_end_ms": 0.0,
         "visible_speech_boundary_end_ms": 0.0,
         "speech_region_gold_count": _mean(s.get("gold_count", 0) for s in speech_region_summaries),
@@ -681,23 +778,23 @@ def compute_summary(rows, graded, ungraded):
         "gap_candidate_ambiguous_split": sum(int(s.get("ambiguous_split", 0)) for s in gap_candidate_summaries),
         "gap_candidate_ambiguous_mean_gap_ms": _mean(s.get("ambiguous_mean_gap_ms", 0.0) for s in gap_candidate_summaries if s.get("ambiguous_count", 0)),
         "gap_decision_counts": dict(sorted(gap_decision_counts.items())),
-        "word_f1": _mean((_nested(row, "word_onset_alignment", "matched_count") / max(_nested(row, "word_onset_alignment", "reference_count"), 1.0)) for row in graded),
-        "word_assignment_rate": _mean((_nested(row, "word_onset_alignment", "matched_count") / max(_nested(row, "word_onset_alignment", "reference_count"), 1.0)) for row in graded),
-        "detected_word_onset_ms": _mean(_nested(row, "word_onset_alignment", "mean_abs_start_error_ms") for row in graded),
-        "word_duration_ms": _mean(_metric(row, "mean_abs_duration_error_ms") for row in graded),
-        "detected_word_onset_median_ms": _median(_nested(row, "word_onset_alignment", "median_abs_start_error_ms") for row in graded),
+        "word_f1": _mean((_nested(row, "word_onset_alignment", "matched_count") / max(_nested(row, "word_onset_alignment", "reference_count"), 1.0)) for row in qualified),
+        "word_assignment_rate": _mean((_nested(row, "word_onset_alignment", "matched_count") / max(_nested(row, "word_onset_alignment", "reference_count"), 1.0)) for row in qualified),
+        "detected_word_onset_ms": _mean(_nested(row, "word_onset_alignment", "mean_abs_start_error_ms") for row in qualified),
+        "word_duration_ms": _mean(_metric(row, "mean_abs_duration_error_ms") for row in qualified),
+        "detected_word_onset_median_ms": _median(_nested(row, "word_onset_alignment", "median_abs_start_error_ms") for row in qualified),
         "phoneme_coverage_rate": _mean(phoneme_coverage),
-        "phoneme_center_ms": _mean(_metric(row, "mean_abs_center_error_ms") for row in graded),
-        "phoneme_start_ms": _mean(_metric(row, "mean_abs_start_error_ms") for row in graded),
-        "phoneme_end_ms": _mean(_metric(row, "mean_abs_end_error_ms") for row in graded),
-        "intra_word_coverage_rate": _mean((_nested(row, "intra_word_alignment", "matched_count") / max(_nested(row, "intra_word_alignment", "reference_count"), 1.0)) for row in graded),
-        "intra_word_center_ms": _mean(_nested(row, "intra_word_alignment", "mean_abs_center_error_ms") for row in graded),
+        "phoneme_center_ms": _mean(_metric(row, "mean_abs_center_error_ms") for row in qualified),
+        "phoneme_start_ms": _mean(_metric(row, "mean_abs_start_error_ms") for row in qualified),
+        "phoneme_end_ms": _mean(_metric(row, "mean_abs_end_error_ms") for row in qualified),
+        "intra_word_coverage_rate": _mean((_nested(row, "intra_word_alignment", "matched_count") / max(_nested(row, "intra_word_alignment", "reference_count"), 1.0)) for row in qualified),
+        "intra_word_center_ms": _mean(_nested(row, "intra_word_alignment", "mean_abs_center_error_ms") for row in qualified),
         "advance_reason_counts": dict(sorted(advance_reason_counts.items())),
         "phone_class_errors": phone_class_errors,
     }
     if direct_aligner_available:
         summary["direct_aligner_match_rate"] = direct_matches / max(direct_refs, 1)
-        summary["direct_aligner_center_ms"] = _mean(_direct(row, "mean_abs_center_error_ms") for row in graded if row.get("direct_aligner"))
+        summary["direct_aligner_center_ms"] = _mean(_direct(row, "mean_abs_center_error_ms") for row in qualified if row.get("direct_aligner"))
     if audio_progress_available:
         summary.update({
             "audio_progress_rows": sum(len(row.get("audio_progress_rows", [])) for row in rows),

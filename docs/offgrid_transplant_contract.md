@@ -8,9 +8,29 @@ LineCoach should only:
 
 1. begin a lipsync line with transcript and audio format,
 2. push streamed PCM audio,
-3. advance playback time,
-4. sample the committed pose map,
-5. pass pose weights to FaceDriver.
+3. close the PCM input only when no more chunks will arrive,
+4. continue advancing audible playback time every tick while audio is still playing,
+5. finalize only after audible playback has actually ended,
+6. sample the committed pose map,
+7. pass pose weights to FaceDriver.
+
+Canonical runtime call sequence:
+
+1. `BeginLine(...)`
+2. `PushAudioPCM16(...)` for each streamed chunk
+3. `Update(CurrentPlaybackSec)` every tick during playback
+4. `CloseInputStream()` when the producer is finished
+5. keep calling `Update(CurrentPlaybackSec)` during buffered/drain playback
+6. `Finalize(CurrentPlaybackSec)` at true audible playback completion
+
+Important distinction:
+
+- `CloseInputStream()` means no more PCM will arrive.
+- It does not mean playback is over.
+- `Finalize(...)` is the only end-of-playback signal.
+- Likewise, a detected speech-region end is discovered in ingested-audio time.
+  It must not cause the region's remaining viseme suffix to be dropped until
+  audible playback has actually reached that region end.
 
 LineCoach should not contain:
 
@@ -20,6 +40,12 @@ LineCoach should not contain:
 - speech-region merging,
 - fallback viseme placement,
 - TTS hint interpretation.
+
+LineCoach should also not:
+
+- stop calling `Update(...)` after `CloseInputStream()`,
+- derive lipsync timing from queued-byte counters instead of the audible playback clock,
+- finalize the shared runtime merely because synthesis/decoding has completed.
 
 ## Core ownership model
 

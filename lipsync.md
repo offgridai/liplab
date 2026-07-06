@@ -111,52 +111,41 @@ Properties:
 
 The adapter:
 
-1. Examines the next uncommitted planned event.
-2. Looks for nearby speech evidence.
-3. Places the event.
-4. Commits the event.
-5. Advances.
+1. Opens on observed speech onset.
+2. Advances monotonically through the dense planned phone path.
+3. Converts phone progress into committed visible viseme times.
+4. Applies bounded punctuation-hold probes before selected word boundaries.
+5. Waits for the next observed speech onset only when a real region close is detected.
 
 The runtime never rewrites committed events.
 
 ---
 
-## Phrase Ownership
+## Current Timing Rules
 
-Meaningful pauses create phrase boundaries.
+The current runtime design is:
 
-Ownership rules:
+- speech occupancy owns observed speech-region open / close
+- transcript + CMU phones own identity and order
+- runtime maps elapsed active speech time onto the dense phone path
+- committed playback remains monotonic and append-only
 
-- Speech before a pause belongs to the earlier phrase.
-- Speech after a pause belongs to the later phrase.
+Important details:
 
-Guards:
+- The planner emits one dense phone chain for the line. It does not pre-divide visemes into text-owned speech regions.
+- Punctuation is a runtime prior, not a text-imposed silence promise.
+- Soft punctuation `, ; :` triggers a `120ms` close probe.
+- Hard punctuation `. ? !` triggers a `260ms` close probe.
+- If speech actually closes during the probe, playback waits for the next observed speech onset.
+- If speech does not close, playback resumes and continues monotonically.
+- Ordinary word boundaries do not create runtime pause ownership, but the duration prior currently includes a small `20ms` inter-word spacer.
 
-### Phrase Start Guard
+This keeps the scheduler simple:
 
-Prevents a phrase from being pulled backward across a pause.
-
-### Phrase Tail Guard
-
-Prevents a phrase from leaking into the following phrase.
-
-These guards preserve conversational structure and sentence transitions.
-
----
-
-## Comma Handling
-
-Commas are treated as soft boundaries.
-
-Short pauses may allow limited articulation carry across commas.
-
-This improves:
-
-- Lists
-- Enumerations
-- Natural conversational flow
-
-Commas become stronger boundaries only when supported by speech timing evidence.
+- no TTS hint timing
+- no text-progress ownership
+- no committed-event rewrites
+- no dropping remaining visemes just because a detected region ended
 
 ---
 
@@ -168,8 +157,8 @@ Benefits:
 
 - Better adaptation to live audio timing
 - Reduced rigidity
-- Improved handling of variable TTS pacing
-- Better pause handling
+- Better handling of punctuation-driven close probes
+- Better handling of variable speech-region timing
 
 The scheduler intentionally avoids solving the entire sentence early.
 
