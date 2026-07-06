@@ -85,12 +85,11 @@ static float PeakForPose(FName PoseID, float SourceStrength)
 static bool SameContinuousSpeechGroup(const FOffgridAIAlignedVisemeEvent* A, const FOffgridAIAlignedVisemeEvent* B)
 {
     if (!A || !B) return false;
-    if (A->SentenceIndex != INDEX_NONE && B->SentenceIndex != INDEX_NONE && A->SentenceIndex != B->SentenceIndex) return false;
+    if (A->SpeechRegionIndex != INDEX_NONE && B->SpeechRegionIndex != INDEX_NONE && A->SpeechRegionIndex != B->SpeechRegionIndex) return false;
 
-    // Runtime continuity should follow the active speech group rather than
-    // comma/phrase punctuation. Phrase metadata remains useful for logs, but
-    // playback must stay alive across soft textual boundaries inside the same
-    // detected speech run.
+    // Runtime continuity follows the active detected speech region. Soft gaps
+    // inside the same region may still keep a mouth state alive, but nothing
+    // may bridge across a true speech-region boundary.
     const float CenterGap = B->FinalRenderCenterSeconds - A->FinalRenderCenterSeconds;
     if (CenterGap > 0.420f)
     {

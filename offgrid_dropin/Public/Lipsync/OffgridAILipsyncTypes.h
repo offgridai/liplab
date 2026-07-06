@@ -45,6 +45,28 @@ struct FOffgridAIAlignedVisemeEvent
     bool bDetectedWordStartMappedToObservedSpeech = false;
 };
 
+struct FOffgridAIDroppedVisemeEvent
+{
+    int32 EventIndex = INDEX_NONE;
+    FName PoseID = NAME_None;
+    FString SourceWord;
+    int32 WordIndex = INDEX_NONE;
+    int32 SpeechRegionIndex = INDEX_NONE;
+    int32 SentenceIndex = INDEX_NONE;
+    bool bIsStrongVisibleEvent = false;
+
+    int32 SourcePhoneIndex = INDEX_NONE;
+    FString SourcePhoneBase;
+    FName SourcePhoneClass = NAME_None;
+
+    float DropPlaybackSeconds = 0.0f;
+    float RegionStartSeconds = 0.0f;
+    float RegionEndSeconds = 0.0f;
+    float RequiredActiveElapsedSeconds = 0.0f;
+    float ObservedActiveElapsedSeconds = 0.0f;
+    FName DropReason = FName(TEXT("unknown"));
+};
+
 struct FOffgridAIAlignedVisemeTrack
 {
     FName NPCID = NAME_None;
@@ -52,6 +74,7 @@ struct FOffgridAIAlignedVisemeTrack
     float SpeechStartSeconds = 0.0f;
     float SpeechEndSeconds = 0.0f;
     TArray<FOffgridAIAlignedVisemeEvent> Events;
+    TArray<FOffgridAIDroppedVisemeEvent> DroppedEvents;
 };
 
 struct FOffgridAIPerformedVisemeFrame

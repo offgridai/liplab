@@ -721,6 +721,8 @@ def main() -> int:
 
     print(
         f"CASES total={summary['total_cases']} graded={summary['graded_cases']} "
+        f"qualified={summary.get('qualified_cases', 0)} "
+        f"disqualified_region_mismatch={summary.get('disqualified_speech_region_mismatch_cases', 0)} "
         f"ungraded={summary['ungraded_cases']} degenerate={summary['degenerate_cases']}"
     )
     print(
@@ -764,6 +766,41 @@ def main() -> int:
         f"start_ms={summary.get('speech_region_overlap_start_ms', 0.0):.3f} "
         f"end_ms={summary.get('speech_region_overlap_end_ms', 0.0):.3f} "
         f"overlap_ratio={summary.get('speech_region_overlap_ratio', 0.0):.3f}"
+    )
+    print(
+        f"REGION_FLOW leak_cases={summary.get('speech_region_containment_leak_cases', 0)} "
+        f"invalid_cases={summary.get('speech_region_containment_invalid_cases', 0)} "
+        f"leak_events={summary.get('speech_region_containment_leak_events', 0)} "
+        f"early_entry_events={summary.get('speech_region_containment_early_entry_events', 0)} "
+        f"late_tail_events={summary.get('speech_region_containment_late_tail_events', 0)} "
+        f"invalid_events={summary.get('speech_region_containment_invalid_events', 0)} "
+        f"early_leak_ms={summary.get('speech_region_containment_early_leak_ms', 0.0):.3f} "
+        f"late_leak_ms={summary.get('speech_region_containment_late_leak_ms', 0.0):.3f}"
+    )
+    print(
+        f"DROPPED_VISEMES cases={summary.get('dropped_viseme_cases', 0)} "
+        f"dropped={summary.get('dropped_viseme_count', 0)} "
+        f"region_closed={summary.get('dropped_region_closed_count', 0)} "
+        f"missing_region={summary.get('dropped_missing_region_count', 0)} "
+        f"strong_visible={summary.get('dropped_strong_visible_count', 0)} "
+        f"rate={summary.get('dropped_viseme_rate', 0.0):.4f}"
+    )
+    print(
+        f"DROP_CAUSES regions={summary.get('drop_region_count', 0)} "
+        f"regions_with_drops={summary.get('drop_regions_with_drops', 0)} "
+        f"without_observed_region={summary.get('drop_regions_without_observed_region', 0)} "
+        f"with_observed_region={summary.get('drop_regions_with_observed_region', 0)} "
+        f"regions_without_commits={summary.get('drop_regions_without_any_commits', 0)} "
+        f"tail_pinned_aligner_commits={summary.get('drop_aligner_tail_pinned_committed_count', 0)} "
+        f"first_commit_lag_ms={summary.get('drop_first_commit_lag_ms', 0.0):.1f} "
+        f"last_commit_to_region_end_ms={summary.get('drop_last_commit_to_region_end_ms', 0.0):.1f} "
+        f"required_deficit_mean_ms={summary.get('drop_required_deficit_mean_ms', 0.0):.1f} "
+        f"required_deficit_max_ms={summary.get('drop_required_deficit_max_ms', 0.0):.1f}"
+    )
+    print(
+        f"UNDERRUN regions={summary.get('underrun_region_count', 0)} "
+        f"idle_tail_ms={summary.get('underrun_idle_tail_ms', 0.0):.1f} "
+        f"idle_tail_max_ms={summary.get('underrun_idle_tail_max_ms', 0.0):.1f}"
     )
     print(
         f"GAPS count={summary.get('gap_candidate_count', 0)} "

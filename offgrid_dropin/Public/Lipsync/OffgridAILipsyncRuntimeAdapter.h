@@ -80,17 +80,44 @@ struct FOffgridAILipsyncRuntimeBeginInput
     float PrerollSec = 0.350f;
 };
 
+struct FOffgridAIPunctuationHoldState
+{
+    bool bPlayheadStarted = false;
+    bool bHoldActive = false;
+    bool bWaitingForSpeechResume = false;
+    int32 BoundaryWordIndex = INDEX_NONE;
+    int32 ResumeRegionIndex = INDEX_NONE;
+    int32 HoldRegionIndex = INDEX_NONE;
+    float PlaybackOriginSec = 0.0f;
+    float LastPlaybackSec = 0.0f;
+    float ActivePlayheadSec = 0.0f;
+    float TotalPausedSec = 0.0f;
+    float HoldStartPlaybackSec = 0.0f;
+    float HoldDeadlinePlaybackSec = 0.0f;
+};
+
 class OFFGRIDAI_API FOffgridAILipsyncRuntimeSession
 {
 public:
     void Reset();
+    // Starts a new lipsync line. This owns transcript planning only; no audio
+    // timing exists until streamed PCM arrives.
     void BeginLine(const FOffgridAILipsyncRuntimeBeginInput& Input);
+    // Appends newly arrived PCM. This advances observed-audio state only.
     void PushAudioPCM16(const TArray<uint8>& PCMChunk, int32 BytesToUse, int32 SampleRate, int32 NumChannels, int64 ChunkStartSample = -1);
+    // Signals that no more PCM will arrive. Playback may still be ongoing after
+    // this; callers must continue calling Update() until audible playback ends.
     void CloseInputStream();
+    // Advances the runtime against the caller-owned audible playback clock.
+    // This must be called every playback tick while audio is audibly playing,
+    // including after CloseInputStream() during buffered/drain playback.
     void Update(float CurrentPlaybackSec);
+    // Final audible-playback drain. Call only when the line's audible playback
+    // is actually complete.
     void Finalize(float FinalPlaybackSec);
 
     const FOffgridAITextVisemePlan& GetTextPlan() const { return TextPlan; }
+    FOffgridAITextVisemePlan& GetMutableTextPlan() { return TextPlan; }
     const FOffgridAIStreamingSpeechDetector& GetSpeechDetector() const { return Detector; }
     const TArray<FOffgridAIStreamingSpeechRegion>& GetSpeechRegions() const { return ResolvedSpeechRegions; }
     const TArray<FOffgridAIStreamingSpeechRegion>& GetSpeechIslands() const { return ResolvedSpeechRegions; }
@@ -134,6 +161,7 @@ private:
     int32 LastPCMChunkChannels = 0;
     int64 LastPCMChunkStartSample = -1;
     int64 LastPCMChunkEndSample = -1;
+    FOffgridAIPunctuationHoldState PunctuationHoldState;
 };
 
 class OFFGRIDAI_API FOffgridAILipsyncRuntimeAdapter
@@ -142,5 +170,6 @@ public:
     static void UpdateCommittedTrack(
         const FOffgridAILipsyncRuntimeUpdateInput& Input,
         FOffgridAIAlignedVisemeTrack& InOutTrack,
+        FOffgridAIPunctuationHoldState& InOutHoldState,
         bool& bInOutTrackBuilt);
 };
