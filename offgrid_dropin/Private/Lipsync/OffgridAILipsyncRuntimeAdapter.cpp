@@ -1634,7 +1634,10 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             0.0f);
         const float RenderStart = FMath::Max(Center - Span * 0.50f, 0.0f);
         const float DesiredRenderStart = FMath::Max(InOutHoldState.ResumePlaybackSec, 0.0f);
-        if (RenderStart > DesiredRenderStart + 0.001f)
+        // Re-anchor the first resumed event directly to the observed resume
+        // point. We must not let a post-pause event leak into the preceding
+        // silence just because its text prior would have started earlier.
+        if (FMath::Abs(RenderStart - DesiredRenderStart) > 0.001f)
         {
             InOutHoldState.PlaybackOffsetAdjustSec += (DesiredRenderStart - RenderStart);
         }
