@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <cmath>
 #include <iostream>
+#include <map>
 #include <optional>
 #include <numeric>
 #include <sstream>
@@ -81,6 +82,64 @@ struct StreamingDetectorReport
     double mean_abs_word_boundary_error_ms = 0.0;
     double median_abs_word_boundary_error_ms = 0.0;
     double p90_abs_word_boundary_error_ms = 0.0;
+};
+
+struct LandmarkTarget
+{
+    std::string type;
+    int expected_phone_index = -1;
+    int global_phone_index = -1;
+    int word_index = -1;
+    int speech_region_index = -1;
+    int sentence_index = -1;
+    std::string word;
+    std::string phone;
+    std::string phone_base;
+    double gold_start = 0.0;
+    double gold_end = 0.0;
+    double gold_center = 0.0;
+    double prior_start = 0.0;
+    double prior_end = 0.0;
+    double prior_center = 0.0;
+};
+
+struct LandmarkObservation
+{
+    std::string type;
+    int frame_index = -1;
+    double start = 0.0;
+    double end = 0.0;
+    double center = 0.0;
+    double score = 0.0;
+    std::string top_class;
+    int matched_target_index = -1;
+    double matched_error_ms = 0.0;
+};
+
+struct LandmarkTypeReport
+{
+    int target_count = 0;
+    int observation_count = 0;
+    int matched_target_count = 0;
+    int matched_observation_count = 0;
+    double recall = 0.0;
+    double precision = 0.0;
+    double mean_abs_center_error_ms = 0.0;
+    double median_abs_center_error_ms = 0.0;
+    double p90_abs_center_error_ms = 0.0;
+    double mean_target_window_peak_score = 0.0;
+    double mean_matched_observation_score = 0.0;
+    double target_window_hit_rate = 0.0;
+};
+
+struct LandmarkAuditReport
+{
+    bool available = false;
+    int target_count = 0;
+    int observation_count = 0;
+    int matched_target_count = 0;
+    int matched_observation_count = 0;
+    std::map<std::string, LandmarkTypeReport> by_type;
 };
 
 struct BoundaryAlignmentReport
@@ -473,6 +532,31 @@ static std::string strip_stress_digits(std::string phone)
     return phone;
 }
 
+static std::optional<std::string> transcript_landmark_type_for_phone_base(const std::string& phone_base)
+{
+    if (phone_base == "M" || phone_base == "B" || phone_base == "P")
+    {
+        return std::string("mbp");
+    }
+    if (phone_base == "F" || phone_base == "V")
+    {
+        return std::string("fv");
+    }
+    if (phone_base == "W")
+    {
+        return std::string("w");
+    }
+    if (phone_base == "CH" || phone_base == "JH" || phone_base == "SH" || phone_base == "ZH")
+    {
+        return std::string("chjjsh");
+    }
+    if (phone_base == "UW" || phone_base == "UH" || phone_base == "OW" || phone_base == "OY" || phone_base == "AO")
+    {
+        return std::string("round");
+    }
+    return std::nullopt;
+}
+
 static std::vector<GoldPhoneTiming> read_gold_phones_csv(const fs::path& path)
 {
     std::vector<GoldPhoneTiming> out;
@@ -616,6 +700,702 @@ static std::vector<GoldSpeechRegion> read_gold_speech_csv(const fs::path& path)
         out.push_back(region);
     }
     return out;
+}
+
+static double landmark_detection_threshold(const std::string& type)
+{
+    if (type == "mbp") return 0.55;
+    if (type == "fv") return 0.50;
+    if (type == "w") return 0.45;
+    if (type == "chjjsh") return 0.50;
+    if (type == "round") return 0.55;
+    if (type == "comma_lull") return 0.62;
+    return 1.0;
+}
+
+static double landmark_reference_duration_seconds(const std::string& type)
+{
+    // MFA-derived family durations from the checked-in corpus:
+    // mbp median~70ms p75~100ms
+    // fv median~90ms p75~110ms
+    // w median~80ms p75~120ms
+    // chjjsh median~110ms p75~140ms
+    // round median~110ms p75~160ms
+    // comma_lull is a boundary event rather than a phone family; keep a wider window.
+    if (type == "mbp") return 0.070;
+    if (type == "fv") return 0.090;
+    if (type == "w") return 0.080;
+    if (type == "chjjsh") return 0.110;
+    if (type == "round") return 0.110;
+    if (type == "comma_lull") return 0.200;
+    return 0.100;
+}
+
+static double landmark_match_tolerance_seconds(const std::string& type)
+{
+    (void)type;
+    return 0.100;
+}
+
+static double landmark_conditioned_half_window_seconds(const std::string& type)
+{
+    if (type == "mbp") return 0.080;
+    if (type == "fv") return 0.080;
+    if (type == "w") return 0.080;
+    if (type == "chjjsh") return 0.110;
+    if (type == "round") return 0.110;
+    if (type == "comma_lull") return 0.120;
+    return 0.100;
+}
+
+static double landmark_score_for_type(const std::string& type, const FOffgridAIArticulatoryProbabilityField& field)
+{
+    if (type == "mbp")
+    {
+        return std::max({
+            static_cast<double>(field.PhoneScores.Bilabial),
+            static_cast<double>(field.Closure * 0.70f),
+            static_cast<double>(field.Release * 0.35f)
+        });
+    }
+    if (type == "fv")
+    {
+        return std::max(
+            static_cast<double>(field.PhoneScores.Labiodental),
+            static_cast<double>(field.Fricative * 0.85f));
+    }
+    if (type == "w")
+    {
+        return std::max({
+            static_cast<double>(field.PhoneScores.Glide),
+            static_cast<double>(field.PhoneScores.Liquid * 0.50f),
+            static_cast<double>(field.PhoneScores.VowelRound * 0.85f),
+            static_cast<double>(field.Sonorant * 0.60f)
+        });
+    }
+    if (type == "chjjsh")
+    {
+        return std::max(
+            static_cast<double>(field.PhoneScores.Sibilant),
+            static_cast<double>(field.PhoneScores.StopBurst * 0.55f));
+    }
+    if (type == "round")
+    {
+        return std::max(
+            static_cast<double>(field.PhoneScores.VowelRound),
+            static_cast<double>(field.Vowel * 0.50f));
+    }
+    return 0.0;
+}
+
+static double clamp01(double x)
+{
+    return std::max(0.0, std::min(1.0, x));
+}
+
+static double comma_lull_score_for_frame(const FOffgridAIStreamingAudioFeatureFrame& frame)
+{
+    const std::string pause_family = to_std(frame.PauseFamily);
+    const bool pause_family_support =
+        pause_family != "none" &&
+        pause_family != "continuous_speech" &&
+        static_cast<double>(frame.PauseFamilyConfidence) >= 0.35;
+    const bool lull_gate =
+        frame.bLocalRMSValley ||
+        frame.bStrongQuiet ||
+        static_cast<double>(frame.SilenceAccumSec) >= 0.030 ||
+        pause_family_support;
+    if (!lull_gate)
+    {
+        return 0.0;
+    }
+
+    const double low_rms = clamp01((0.12 - static_cast<double>(frame.RMSNorm)) / 0.12);
+    const double low_evidence = clamp01((0.24 - static_cast<double>(frame.SpeechEvidence)) / 0.24);
+    const double silence_accum = clamp01(static_cast<double>(frame.SilenceAccumSec) / 0.080);
+    const double pause_conf = (pause_family != "none" && pause_family != "continuous_speech")
+        ? static_cast<double>(frame.PauseFamilyConfidence)
+        : 0.0;
+    const double valley = frame.bLocalRMSValley ? 1.0 : 0.0;
+    const double strong_quiet = frame.bStrongQuiet ? 1.0 : 0.0;
+    return clamp01(
+        low_rms * 0.28 +
+        low_evidence * 0.28 +
+        silence_accum * 0.16 +
+        pause_conf * 0.14 +
+        valley * 0.06 +
+        strong_quiet * 0.08);
+}
+
+static double landmark_score_for_frame(
+    const std::string& type,
+    const FOffgridAIStreamingAudioFeatureFrame& frame)
+{
+    if (type == "comma_lull")
+    {
+        return comma_lull_score_for_frame(frame);
+    }
+    return landmark_score_for_type(type, FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(frame));
+}
+
+static std::vector<LandmarkTarget> build_landmark_targets(
+    const FOffgridAITextVisemePlan& plan,
+    const std::vector<GoldPhoneTiming>& gold_phones,
+    const std::vector<GoldWordTiming>& gold_words)
+{
+    std::vector<LandmarkTarget> targets;
+    if (plan.ExpectedPhones.Num() <= 0 || gold_phones.empty())
+    {
+        return targets;
+    }
+
+    std::vector<const GoldPhoneTiming*> by_global_index(gold_phones.size(), nullptr);
+    for (const GoldPhoneTiming& phone : gold_phones)
+    {
+        if (phone.global_phone_index >= 0 && static_cast<size_t>(phone.global_phone_index) < by_global_index.size())
+        {
+            by_global_index[static_cast<size_t>(phone.global_phone_index)] = &phone;
+        }
+    }
+
+    std::vector<double> expected_start_by_index(plan.ExpectedPhones.Num(), 0.0);
+    std::vector<double> expected_end_by_index(plan.ExpectedPhones.Num(), 0.0);
+    double total_weight = 0.0;
+    for (int32 i = 0; i < plan.ExpectedPhones.Num(); ++i)
+    {
+        total_weight += std::clamp(static_cast<double>(plan.ExpectedPhones[i].WeightSeconds), 0.025, 0.180);
+    }
+    const double estimated_duration = std::max(static_cast<double>(plan.EstimatedDurationSeconds), 0.001);
+    double cursor = 0.0;
+    for (int32 i = 0; i < plan.ExpectedPhones.Num(); ++i)
+    {
+        const double weight = std::clamp(static_cast<double>(plan.ExpectedPhones[i].WeightSeconds), 0.025, 0.180);
+        const double dur = (total_weight > 0.0) ? ((weight / total_weight) * estimated_duration) : 0.0;
+        expected_start_by_index[static_cast<size_t>(i)] = cursor;
+        const double end = (i == plan.ExpectedPhones.Num() - 1) ? estimated_duration : std::min(estimated_duration, cursor + dur);
+        expected_end_by_index[static_cast<size_t>(i)] = end;
+        cursor = end;
+    }
+
+    for (int32 i = 0; i < plan.ExpectedPhones.Num(); ++i)
+    {
+        const FOffgridAIExpectedPhone& expected = plan.ExpectedPhones[i];
+        const std::string phone_base = to_std(expected.BasePhone);
+        const std::optional<std::string> type = transcript_landmark_type_for_phone_base(phone_base);
+        if (!type.has_value())
+        {
+            continue;
+        }
+
+        const GoldPhoneTiming* gold = nullptr;
+        if (expected.PhoneIndex >= 0 && static_cast<size_t>(expected.PhoneIndex) < by_global_index.size())
+        {
+            gold = by_global_index[static_cast<size_t>(expected.PhoneIndex)];
+        }
+        if (gold == nullptr)
+        {
+            continue;
+        }
+
+        LandmarkTarget target;
+        target.type = *type;
+        target.expected_phone_index = i;
+        target.global_phone_index = expected.PhoneIndex;
+        target.word_index = expected.WordIndex;
+        target.speech_region_index = expected.SpeechRegionIndex;
+        target.sentence_index = expected.SentenceIndex;
+        target.word = to_std(expected.SourceWord);
+        target.phone = to_std(expected.Phone);
+        target.phone_base = phone_base;
+        target.gold_start = gold->start;
+        target.gold_end = gold->end;
+        target.gold_center = 0.5 * (gold->start + gold->end);
+        target.prior_start = expected_start_by_index[static_cast<size_t>(i)];
+        target.prior_end = expected_end_by_index[static_cast<size_t>(i)];
+        target.prior_center = 0.5 * (target.prior_start + target.prior_end);
+        targets.push_back(std::move(target));
+    }
+
+    std::vector<const GoldWordTiming*> words_by_index(gold_words.size(), nullptr);
+    for (const GoldWordTiming& word : gold_words)
+    {
+        if (word.word_index >= 0 && static_cast<size_t>(word.word_index) < words_by_index.size())
+        {
+            words_by_index[static_cast<size_t>(word.word_index)] = &word;
+        }
+    }
+
+    const int32 boundary_count = std::min(plan.WordBoundaryPunctuationAfter.Num(), plan.WordBoundaryPauseClassAfter.Num());
+    for (int32 word_index = 0; word_index < boundary_count; ++word_index)
+    {
+        if (plan.WordBoundaryPunctuationAfter[word_index] != ',')
+        {
+            continue;
+        }
+        if (word_index + 1 >= static_cast<int32>(words_by_index.size()))
+        {
+            continue;
+        }
+
+        const GoldWordTiming* left = (word_index >= 0 && word_index < static_cast<int32>(words_by_index.size()))
+            ? words_by_index[static_cast<size_t>(word_index)]
+            : nullptr;
+        const GoldWordTiming* right = words_by_index[static_cast<size_t>(word_index + 1)];
+        if (left == nullptr || right == nullptr)
+        {
+            continue;
+        }
+
+        LandmarkTarget target;
+        target.type = "comma_lull";
+        target.word_index = word_index;
+        target.speech_region_index = left->speech_region_index;
+        target.sentence_index = left->sentence_index;
+        target.word = left->word;
+        target.gold_start = left->end;
+        target.gold_end = right->start;
+        target.gold_center = 0.5 * (left->end + right->start);
+        const int32 left_phone_index = word_index < plan.WordPhoneEndIndices.Num()
+            ? (plan.WordPhoneEndIndices[word_index] - 1)
+            : INDEX_NONE;
+        const int32 right_phone_index = (word_index + 1) < plan.WordPhoneBeginIndices.Num()
+            ? plan.WordPhoneBeginIndices[word_index + 1]
+            : INDEX_NONE;
+        if (left_phone_index >= 0 && right_phone_index >= 0
+            && left_phone_index < plan.ExpectedPhones.Num()
+            && right_phone_index < plan.ExpectedPhones.Num())
+        {
+            target.prior_start = expected_end_by_index[static_cast<size_t>(left_phone_index)];
+            target.prior_end = expected_start_by_index[static_cast<size_t>(right_phone_index)];
+            target.prior_center = 0.5 * (target.prior_start + target.prior_end);
+        }
+        targets.push_back(std::move(target));
+    }
+
+    return targets;
+}
+
+static std::string transcript_landmarks_csv(const std::vector<LandmarkTarget>& targets)
+{
+    std::ostringstream out;
+    out << "target_index,type,expected_phone_index,global_phone_index,word_index,speech_region_index,sentence_index,word,phone,phone_base,gold_start,gold_end,gold_center,prior_start,prior_end,prior_center\n";
+    out << std::fixed << std::setprecision(6);
+    for (size_t i = 0; i < targets.size(); ++i)
+    {
+        const auto& target = targets[i];
+        out << i << ','
+            << target.type << ','
+            << target.expected_phone_index << ','
+            << target.global_phone_index << ','
+            << target.word_index << ','
+            << target.speech_region_index << ','
+            << target.sentence_index << ','
+            << target.word << ','
+            << target.phone << ','
+            << target.phone_base << ','
+            << target.gold_start << ','
+            << target.gold_end << ','
+            << target.gold_center << ','
+            << target.prior_start << ','
+            << target.prior_end << ','
+            << target.prior_center << '\n';
+    }
+    return out.str();
+}
+
+static std::string audio_landmark_frames_csv(const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames)
+{
+    std::ostringstream out;
+    out << "frame_index,start,end,center,mbp,fv,w,chjjsh,round,comma_lull,top_landmark,top_score\n";
+    out << std::fixed << std::setprecision(6);
+
+    for (int32 i = 0; i < frames.Num(); ++i)
+    {
+        const auto& frame = frames[i];
+        const FOffgridAIArticulatoryProbabilityField field = FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(frame);
+        const double mbp = landmark_score_for_type("mbp", field);
+        const double fv = landmark_score_for_type("fv", field);
+        const double w = landmark_score_for_type("w", field);
+        const double chjjsh = landmark_score_for_type("chjjsh", field);
+        const double round = landmark_score_for_type("round", field);
+        const double comma_lull = comma_lull_score_for_frame(frame);
+
+        std::string top_type = "none";
+        double top_score = mbp;
+        top_type = "mbp";
+        if (fv > top_score) { top_score = fv; top_type = "fv"; }
+        if (w > top_score) { top_score = w; top_type = "w"; }
+        if (chjjsh > top_score) { top_score = chjjsh; top_type = "chjjsh"; }
+        if (round > top_score) { top_score = round; top_type = "round"; }
+        if (comma_lull > top_score) { top_score = comma_lull; top_type = "comma_lull"; }
+
+        out << i << ','
+            << frame.AudioBufferStartSec << ','
+            << frame.AudioBufferEndSec << ','
+            << frame.AudioBufferCenterSec << ','
+            << mbp << ','
+            << fv << ','
+            << w << ','
+            << chjjsh << ','
+            << round << ','
+            << comma_lull << ','
+            << top_type << ','
+            << top_score << '\n';
+    }
+
+    return out.str();
+}
+
+static std::vector<LandmarkObservation> detect_audio_landmark_observations(
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames)
+{
+    std::vector<LandmarkObservation> observations;
+    if (frames.Num() <= 0)
+    {
+        return observations;
+    }
+
+    const std::vector<std::string> types = {"mbp", "fv", "w", "chjjsh", "round", "comma_lull"};
+    for (const std::string& type : types)
+    {
+        int last_kept_index = -1000;
+        for (int32 i = 0; i < frames.Num(); ++i)
+        {
+            const auto& frame = frames[i];
+            const double score = landmark_score_for_frame(type, frame);
+            if (score < landmark_detection_threshold(type))
+            {
+                continue;
+            }
+
+            double dominant_score = score;
+            std::string dominant_type = type;
+            for (const std::string& candidate_type : types)
+            {
+                if (candidate_type == type)
+                {
+                    continue;
+                }
+                const double candidate_score = landmark_score_for_frame(candidate_type, frame);
+                if (candidate_score > dominant_score)
+                {
+                    dominant_score = candidate_score;
+                    dominant_type = candidate_type;
+                }
+            }
+            if (dominant_type != type)
+            {
+                continue;
+            }
+
+            const double prev = (i > 0)
+                ? landmark_score_for_frame(type, frames[i - 1])
+                : -1.0;
+            const double next = (i + 1 < frames.Num())
+                ? landmark_score_for_frame(type, frames[i + 1])
+                : -1.0;
+            if (score < prev || score < next)
+            {
+                continue;
+            }
+
+            const int refractory_frames = (type == "comma_lull") ? 10 : 4;
+            if ((i - last_kept_index) <= refractory_frames)
+            {
+                if (!observations.empty() && observations.back().type == type && observations.back().score < score)
+                {
+                    observations.back().frame_index = i;
+                    observations.back().start = frame.AudioBufferStartSec;
+                    observations.back().end = frame.AudioBufferEndSec;
+                    observations.back().center = frame.AudioBufferCenterSec;
+                    observations.back().score = score;
+                    observations.back().top_class = type;
+                    last_kept_index = i;
+                }
+                continue;
+            }
+
+            LandmarkObservation obs;
+            obs.type = type;
+            obs.frame_index = i;
+            obs.start = frame.AudioBufferStartSec;
+            obs.end = frame.AudioBufferEndSec;
+            obs.center = frame.AudioBufferCenterSec;
+            obs.score = score;
+            obs.top_class = type;
+            observations.push_back(std::move(obs));
+            last_kept_index = i;
+        }
+    }
+
+    std::sort(observations.begin(), observations.end(), [](const LandmarkObservation& a, const LandmarkObservation& b) {
+        if (a.center != b.center) return a.center < b.center;
+        return a.type < b.type;
+    });
+    return observations;
+}
+
+static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_observations(
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames,
+    const std::vector<LandmarkTarget>& targets)
+{
+    std::vector<LandmarkObservation> observations;
+    if (frames.Num() <= 0 || targets.empty())
+    {
+        return observations;
+    }
+
+    for (const LandmarkTarget& target : targets)
+    {
+        const double half_window = landmark_conditioned_half_window_seconds(target.type);
+        const double search_start = target.prior_center - half_window;
+        const double search_end = target.prior_center + half_window;
+        int best_index = -1;
+        double best_score = landmark_detection_threshold(target.type);
+
+        for (int32 i = 0; i < frames.Num(); ++i)
+        {
+            const auto& frame = frames[i];
+            const double center = static_cast<double>(frame.AudioBufferCenterSec);
+            if (center < search_start || center > search_end)
+            {
+                continue;
+            }
+
+            const double score = landmark_score_for_frame(target.type, frame);
+            if (score > best_score)
+            {
+                best_score = score;
+                best_index = i;
+            }
+        }
+
+        if (best_index < 0)
+        {
+            continue;
+        }
+
+        const auto& best_frame = frames[best_index];
+        LandmarkObservation obs;
+        obs.type = target.type;
+        obs.frame_index = best_index;
+        obs.start = best_frame.AudioBufferStartSec;
+        obs.end = best_frame.AudioBufferEndSec;
+        obs.center = best_frame.AudioBufferCenterSec;
+        obs.score = best_score;
+        obs.top_class = target.type;
+        observations.push_back(std::move(obs));
+    }
+
+    std::sort(observations.begin(), observations.end(), [](const LandmarkObservation& a, const LandmarkObservation& b) {
+        if (a.center != b.center) return a.center < b.center;
+        return a.type < b.type;
+    });
+    return observations;
+}
+
+static std::string audio_landmark_observations_csv(const std::vector<LandmarkObservation>& observations)
+{
+    std::ostringstream out;
+    out << "observation_index,type,frame_index,start,end,center,score,top_class,matched_target_index,matched_error_ms\n";
+    out << std::fixed << std::setprecision(6);
+    for (size_t i = 0; i < observations.size(); ++i)
+    {
+        const auto& obs = observations[i];
+        out << i << ','
+            << obs.type << ','
+            << obs.frame_index << ','
+            << obs.start << ','
+            << obs.end << ','
+            << obs.center << ','
+            << obs.score << ','
+            << obs.top_class << ','
+            << obs.matched_target_index << ','
+            << obs.matched_error_ms << '\n';
+    }
+    return out.str();
+}
+
+static LandmarkAuditReport grade_landmark_audit(
+    std::vector<LandmarkObservation>& observations,
+    const std::vector<LandmarkTarget>& targets,
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames)
+{
+    LandmarkAuditReport report;
+    report.available = !targets.empty() && frames.Num() > 0;
+    report.target_count = static_cast<int>(targets.size());
+    report.observation_count = static_cast<int>(observations.size());
+    if (!report.available)
+    {
+        return report;
+    }
+
+    const std::vector<std::string> types = {"mbp", "fv", "w", "chjjsh", "round", "comma_lull"};
+    std::map<std::string, std::vector<double>> target_window_scores;
+    std::map<std::string, int> target_window_hits;
+
+    for (const auto& type : types)
+    {
+        report.by_type[type] = LandmarkTypeReport{};
+    }
+
+    for (const LandmarkTarget& target : targets)
+    {
+        auto& stats = report.by_type[target.type];
+        ++stats.target_count;
+
+        double best_score = 0.0;
+        const double tolerance = landmark_match_tolerance_seconds(target.type);
+        for (int32 i = 0; i < frames.Num(); ++i)
+        {
+            const auto& frame = frames[i];
+            if (std::abs(static_cast<double>(frame.AudioBufferCenterSec) - target.gold_center) > tolerance)
+            {
+                continue;
+            }
+            const double score = (target.type == "comma_lull")
+                ? comma_lull_score_for_frame(frame)
+                : landmark_score_for_type(
+                    target.type,
+                    FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(frame));
+            best_score = std::max(best_score, score);
+        }
+        target_window_scores[target.type].push_back(best_score);
+        if (best_score >= landmark_detection_threshold(target.type))
+        {
+            ++target_window_hits[target.type];
+        }
+    }
+
+    std::map<std::string, std::vector<int>> observations_by_type;
+    for (size_t i = 0; i < observations.size(); ++i)
+    {
+        ++report.by_type[observations[i].type].observation_count;
+        observations_by_type[observations[i].type].push_back(static_cast<int>(i));
+    }
+
+    for (const std::string& type : types)
+    {
+        auto& stats = report.by_type[type];
+        std::vector<double> match_errors_ms;
+        std::vector<double> matched_scores;
+        auto obs_it = observations_by_type.find(type);
+        std::vector<int> obs_indices = (obs_it != observations_by_type.end()) ? obs_it->second : std::vector<int>{};
+        size_t obs_cursor = 0;
+
+        for (size_t target_index = 0; target_index < targets.size(); ++target_index)
+        {
+            const LandmarkTarget& target = targets[target_index];
+            if (target.type != type)
+            {
+                continue;
+            }
+
+            const double tolerance = landmark_match_tolerance_seconds(type);
+            while (obs_cursor < obs_indices.size() &&
+                   observations[obs_indices[obs_cursor]].center < (target.gold_center - tolerance))
+            {
+                ++obs_cursor;
+            }
+
+            int best_observation = -1;
+            double best_error = std::numeric_limits<double>::max();
+            for (size_t candidate_cursor = obs_cursor; candidate_cursor < obs_indices.size(); ++candidate_cursor)
+            {
+                const int obs_index = obs_indices[candidate_cursor];
+                const double delta = observations[obs_index].center - target.gold_center;
+                if (delta > tolerance)
+                {
+                    break;
+                }
+                const double error = std::abs(delta);
+                if (error < best_error)
+                {
+                    best_error = error;
+                    best_observation = obs_index;
+                }
+            }
+
+            if (best_observation >= 0)
+            {
+                ++stats.matched_target_count;
+                ++stats.matched_observation_count;
+                observations[best_observation].matched_target_index = static_cast<int>(target_index);
+                observations[best_observation].matched_error_ms = best_error * 1000.0;
+                match_errors_ms.push_back(best_error * 1000.0);
+                matched_scores.push_back(observations[best_observation].score);
+
+                while (obs_cursor < obs_indices.size() && obs_indices[obs_cursor] != best_observation)
+                {
+                    ++obs_cursor;
+                }
+                if (obs_cursor < obs_indices.size())
+                {
+                    ++obs_cursor;
+                }
+            }
+        }
+
+        stats.recall = stats.target_count > 0
+            ? static_cast<double>(stats.matched_target_count) / static_cast<double>(stats.target_count)
+            : 0.0;
+        stats.precision = stats.observation_count > 0
+            ? static_cast<double>(stats.matched_observation_count) / static_cast<double>(stats.observation_count)
+            : 0.0;
+        stats.mean_abs_center_error_ms = mean_ms(match_errors_ms);
+        stats.median_abs_center_error_ms = percentile_ms(match_errors_ms, 0.50);
+        stats.p90_abs_center_error_ms = percentile_ms(match_errors_ms, 0.90);
+        stats.mean_target_window_peak_score = mean_ms(target_window_scores[type]);
+        stats.mean_matched_observation_score = mean_ms(matched_scores);
+        stats.target_window_hit_rate = stats.target_count > 0
+            ? static_cast<double>(target_window_hits[type]) / static_cast<double>(stats.target_count)
+            : 0.0;
+
+        report.matched_target_count += stats.matched_target_count;
+        report.matched_observation_count += stats.matched_observation_count;
+    }
+
+    return report;
+}
+
+static std::string landmark_audit_json(const LandmarkAuditReport& report)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(6);
+    out << "{\n"
+        << "  \"available\": " << (report.available ? "true" : "false") << ",\n"
+        << "  \"target_count\": " << report.target_count << ",\n"
+        << "  \"observation_count\": " << report.observation_count << ",\n"
+        << "  \"matched_target_count\": " << report.matched_target_count << ",\n"
+        << "  \"matched_observation_count\": " << report.matched_observation_count << ",\n"
+        << "  \"types\": {\n";
+
+    bool first = true;
+    for (const auto& [type, stats] : report.by_type)
+    {
+        if (!first)
+        {
+            out << ",\n";
+        }
+        first = false;
+        out << "    \"" << type << "\": {\n"
+            << "      \"target_count\": " << stats.target_count << ",\n"
+            << "      \"observation_count\": " << stats.observation_count << ",\n"
+            << "      \"matched_target_count\": " << stats.matched_target_count << ",\n"
+            << "      \"matched_observation_count\": " << stats.matched_observation_count << ",\n"
+            << "      \"recall\": " << stats.recall << ",\n"
+            << "      \"precision\": " << stats.precision << ",\n"
+            << "      \"mean_abs_center_error_ms\": " << stats.mean_abs_center_error_ms << ",\n"
+            << "      \"median_abs_center_error_ms\": " << stats.median_abs_center_error_ms << ",\n"
+            << "      \"p90_abs_center_error_ms\": " << stats.p90_abs_center_error_ms << ",\n"
+            << "      \"mean_target_window_peak_score\": " << stats.mean_target_window_peak_score << ",\n"
+            << "      \"mean_matched_observation_score\": " << stats.mean_matched_observation_score << ",\n"
+            << "      \"target_window_hit_rate\": " << stats.target_window_hit_rate << "\n"
+            << "    }";
+    }
+    out << "\n  }\n"
+        << "}\n";
+    return out.str();
 }
 
 static OraclePhoneDurationReport apply_gold_phone_durations_to_plan(
@@ -2568,8 +3348,22 @@ int main(int argc, char** argv)
                 const auto gold_words = read_gold_words_csv(gold_words_path);
                 const auto gold_speech = read_gold_speech_csv(gold_speech_path);
                 const auto handmade = build_gold_visible_labels(plan, gold_phones);
+                const auto transcript_landmarks = build_landmark_targets(plan, gold_phones, gold_words);
+                std::vector<LandmarkObservation> landmark_observations =
+                    detect_audio_landmark_observations(session.GetSpeechDetector().GetFeatureFrames());
+                std::vector<LandmarkObservation> conditioned_landmark_observations =
+                    detect_transcript_conditioned_landmark_observations(
+                        session.GetSpeechDetector().GetFeatureFrames(),
+                        transcript_landmarks);
+                const LandmarkAuditReport landmark_audit =
+                    grade_landmark_audit(landmark_observations, transcript_landmarks, session.GetSpeechDetector().GetFeatureFrames());
+                const LandmarkAuditReport conditioned_landmark_audit =
+                    grade_landmark_audit(conditioned_landmark_observations, transcript_landmarks, session.GetSpeechDetector().GetFeatureFrames());
                 gold_viseme_count = handmade.size();
                 write_text(case_dir / "gold_visible_visemes.csv", gold_visible_visemes_csv(handmade));
+                write_text(case_dir / "transcript_landmarks.csv", transcript_landmarks_csv(transcript_landmarks));
+                write_text(case_dir / "landmark_audit.json", landmark_audit_json(landmark_audit));
+                write_text(case_dir / "conditioned_landmark_audit.json", landmark_audit_json(conditioned_landmark_audit));
                 report = grade(committed, speech, handmade, gold_words, gold_speech);
                 StreamingDetectorReport detector_report;
                 if (output.write_detailed_diagnostics)
@@ -2582,6 +3376,15 @@ int main(int argc, char** argv)
                             gold_words,
                             gold_speech,
                             static_cast<double>(wav.samples.size()) / static_cast<double>(std::max(wav.sample_rate * wav.channels, 1))));
+                    write_text(
+                        case_dir / "audio_landmark_frames.csv",
+                        audio_landmark_frames_csv(session.GetSpeechDetector().GetFeatureFrames()));
+                    write_text(
+                        case_dir / "audio_landmark_observations.csv",
+                        audio_landmark_observations_csv(landmark_observations));
+                    write_text(
+                        case_dir / "audio_landmark_conditioned_observations.csv",
+                        audio_landmark_observations_csv(conditioned_landmark_observations));
                 }
                 write_text(case_dir / "streaming_detector_summary.json", streaming_detector_summary_json(detector_report));
                 write_text(case_dir / "word_onset_diagnostics.csv", word_onset_diagnostics_csv(committed, handmade, gold_words));

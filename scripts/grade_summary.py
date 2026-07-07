@@ -77,6 +77,8 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
         region_drop_rows = read_csv_rows(case_dir / "region_drop_diagnostics.csv")
         predicted_speech_rows = read_csv_rows(case_dir / "speech_regions.csv")
         gap_candidate_rows = read_csv_rows(case_dir / "gap_candidates.csv")
+        landmark_audit = read_json(case_dir / "landmark_audit.json")
+        conditioned_landmark_audit = read_json(case_dir / "conditioned_landmark_audit.json")
         gold_speech_rows = read_csv_rows(gold_root / case_dir.name / "speech.csv") if gold_root else []
         gold_viseme_rows = _gold_viseme_rows_for_case(gold_root, case_dir.name)
         row = {
@@ -89,6 +91,8 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "region_drop_rows": region_drop_rows,
             "predicted_speech_rows": predicted_speech_rows,
             "gap_candidate_rows": gap_candidate_rows,
+            "landmark_audit": landmark_audit,
+            "conditioned_landmark_audit": conditioned_landmark_audit,
             "gold_speech_rows": gold_speech_rows,
             "gold_viseme_rows": gold_viseme_rows,
         }
@@ -607,6 +611,8 @@ def compute_summary(rows, graded, ungraded):
     runtime_phone_available = any(row.get("runtime_phone_rows") for row in rows)
     direct_aligner_available = any(bool(row.get("direct_aligner")) for row in rows)
     audio_progress_available = any(row.get("audio_progress_rows") for row in rows)
+    landmark_audit_available = any(row.get("landmark_audit", {}).get("available") for row in rows)
+    conditioned_landmark_audit_available = any(row.get("conditioned_landmark_audit", {}).get("available") for row in rows)
     for row in qualified:
         phone_rows = row.get("runtime_phone_rows", [])
         if phone_rows:
@@ -655,6 +661,71 @@ def compute_summary(rows, graded, ungraded):
         for klass, b in sorted(phone_class_rollup.items())
     }
 
+    landmark_types = ["mbp", "fv", "w", "chjjsh", "round", "comma_lull"]
+    landmark_rollup: dict[str, dict[str, Any]] = {}
+    conditioned_landmark_rollup: dict[str, dict[str, Any]] = {}
+    for landmark_type in landmark_types:
+        landmark_rollup[landmark_type] = {
+            "target_count": 0,
+            "observation_count": 0,
+            "matched_target_count": 0,
+            "matched_observation_count": 0,
+            "center_error_weighted_sum": 0.0,
+            "window_peak_weighted_sum": 0.0,
+            "matched_score_weighted_sum": 0.0,
+            "window_hit_weighted_sum": 0.0,
+        }
+        conditioned_landmark_rollup[landmark_type] = {
+            "target_count": 0,
+            "observation_count": 0,
+            "matched_target_count": 0,
+            "matched_observation_count": 0,
+            "center_error_weighted_sum": 0.0,
+            "window_peak_weighted_sum": 0.0,
+            "matched_score_weighted_sum": 0.0,
+            "window_hit_weighted_sum": 0.0,
+        }
+
+    for row in qualified:
+        audit = row.get("landmark_audit", {})
+        if not audit.get("available", False):
+            continue
+        type_map = audit.get("types", {})
+        for landmark_type in landmark_types:
+            stats = type_map.get(landmark_type, {})
+            bucket = landmark_rollup[landmark_type]
+            target_count = int(stats.get("target_count", 0))
+            observation_count = int(stats.get("observation_count", 0))
+            matched_target_count = int(stats.get("matched_target_count", 0))
+            matched_observation_count = int(stats.get("matched_observation_count", 0))
+            bucket["target_count"] += target_count
+            bucket["observation_count"] += observation_count
+            bucket["matched_target_count"] += matched_target_count
+            bucket["matched_observation_count"] += matched_observation_count
+            bucket["center_error_weighted_sum"] += float(stats.get("mean_abs_center_error_ms", 0.0)) * matched_target_count
+            bucket["window_peak_weighted_sum"] += float(stats.get("mean_target_window_peak_score", 0.0)) * target_count
+            bucket["matched_score_weighted_sum"] += float(stats.get("mean_matched_observation_score", 0.0)) * matched_observation_count
+            bucket["window_hit_weighted_sum"] += float(stats.get("target_window_hit_rate", 0.0)) * target_count
+
+        conditioned_audit = row.get("conditioned_landmark_audit", {})
+        if conditioned_audit.get("available", False):
+            conditioned_type_map = conditioned_audit.get("types", {})
+            for landmark_type in landmark_types:
+                stats = conditioned_type_map.get(landmark_type, {})
+                bucket = conditioned_landmark_rollup[landmark_type]
+                target_count = int(stats.get("target_count", 0))
+                observation_count = int(stats.get("observation_count", 0))
+                matched_target_count = int(stats.get("matched_target_count", 0))
+                matched_observation_count = int(stats.get("matched_observation_count", 0))
+                bucket["target_count"] += target_count
+                bucket["observation_count"] += observation_count
+                bucket["matched_target_count"] += matched_target_count
+                bucket["matched_observation_count"] += matched_observation_count
+                bucket["center_error_weighted_sum"] += float(stats.get("mean_abs_center_error_ms", 0.0)) * matched_target_count
+                bucket["window_peak_weighted_sum"] += float(stats.get("mean_target_window_peak_score", 0.0)) * target_count
+                bucket["matched_score_weighted_sum"] += float(stats.get("mean_matched_observation_score", 0.0)) * matched_observation_count
+                bucket["window_hit_weighted_sum"] += float(stats.get("target_window_hit_rate", 0.0)) * target_count
+
     region_drop_rows = [drop_row for row in qualified for drop_row in row.get("region_drop_rows", [])]
     drop_regions_with_drops = [r for r in region_drop_rows if _safe_int(r, "dropped_event_count", 0) > 0]
     drop_regions_without_observed_region = [
@@ -699,6 +770,8 @@ def compute_summary(rows, graded, ungraded):
         "runtime_phone_alignment_available": runtime_phone_available,
         "direct_aligner_available": direct_aligner_available,
         "audio_progress_available": audio_progress_available,
+        "landmark_audit_available": landmark_audit_available,
+        "conditioned_landmark_audit_available": conditioned_landmark_audit_available,
         "speech_f1": _mean(
             _pause_metric(row, "speech_region", "matched_count")
             / max(_pause_metric(row, "speech_region", "reference_count"), 1.0)
@@ -826,6 +899,86 @@ def compute_summary(rows, graded, ungraded):
     if direct_aligner_available:
         summary["direct_aligner_match_rate"] = direct_matches / max(direct_refs, 1)
         summary["direct_aligner_center_ms"] = _mean(_direct(row, "mean_abs_center_error_ms") for row in qualified if row.get("direct_aligner"))
+    if landmark_audit_available:
+        total_landmark_targets = 0
+        total_landmark_observations = 0
+        total_landmark_matches = 0
+        for landmark_type, bucket in landmark_rollup.items():
+            target_count = bucket["target_count"]
+            observation_count = bucket["observation_count"]
+            matched_target_count = bucket["matched_target_count"]
+            matched_observation_count = bucket["matched_observation_count"]
+            summary[f"landmark_{landmark_type}_target_count"] = target_count
+            summary[f"landmark_{landmark_type}_observation_count"] = observation_count
+            summary[f"landmark_{landmark_type}_matched_target_count"] = matched_target_count
+            summary[f"landmark_{landmark_type}_matched_observation_count"] = matched_observation_count
+            summary[f"landmark_{landmark_type}_recall"] = (
+                matched_target_count / target_count if target_count else 0.0
+            )
+            summary[f"landmark_{landmark_type}_precision"] = (
+                matched_observation_count / observation_count if observation_count else 0.0
+            )
+            summary[f"landmark_{landmark_type}_mean_abs_center_error_ms"] = (
+                bucket["center_error_weighted_sum"] / matched_target_count if matched_target_count else 0.0
+            )
+            summary[f"landmark_{landmark_type}_mean_target_window_peak_score"] = (
+                bucket["window_peak_weighted_sum"] / target_count if target_count else 0.0
+            )
+            summary[f"landmark_{landmark_type}_mean_matched_observation_score"] = (
+                bucket["matched_score_weighted_sum"] / matched_observation_count if matched_observation_count else 0.0
+            )
+            summary[f"landmark_{landmark_type}_target_window_hit_rate"] = (
+                bucket["window_hit_weighted_sum"] / target_count if target_count else 0.0
+            )
+            total_landmark_targets += target_count
+            total_landmark_observations += observation_count
+            total_landmark_matches += matched_target_count
+        summary["landmark_target_count"] = total_landmark_targets
+        summary["landmark_observation_count"] = total_landmark_observations
+        summary["landmark_matched_target_count"] = total_landmark_matches
+        summary["landmark_recall"] = (
+            total_landmark_matches / total_landmark_targets if total_landmark_targets else 0.0
+        )
+    if conditioned_landmark_audit_available:
+        total_landmark_targets = 0
+        total_landmark_observations = 0
+        total_landmark_matches = 0
+        for landmark_type, bucket in conditioned_landmark_rollup.items():
+            target_count = bucket["target_count"]
+            observation_count = bucket["observation_count"]
+            matched_target_count = bucket["matched_target_count"]
+            matched_observation_count = bucket["matched_observation_count"]
+            summary[f"conditioned_landmark_{landmark_type}_target_count"] = target_count
+            summary[f"conditioned_landmark_{landmark_type}_observation_count"] = observation_count
+            summary[f"conditioned_landmark_{landmark_type}_matched_target_count"] = matched_target_count
+            summary[f"conditioned_landmark_{landmark_type}_matched_observation_count"] = matched_observation_count
+            summary[f"conditioned_landmark_{landmark_type}_recall"] = (
+                matched_target_count / target_count if target_count else 0.0
+            )
+            summary[f"conditioned_landmark_{landmark_type}_precision"] = (
+                matched_observation_count / observation_count if observation_count else 0.0
+            )
+            summary[f"conditioned_landmark_{landmark_type}_mean_abs_center_error_ms"] = (
+                bucket["center_error_weighted_sum"] / matched_target_count if matched_target_count else 0.0
+            )
+            summary[f"conditioned_landmark_{landmark_type}_mean_target_window_peak_score"] = (
+                bucket["window_peak_weighted_sum"] / target_count if target_count else 0.0
+            )
+            summary[f"conditioned_landmark_{landmark_type}_mean_matched_observation_score"] = (
+                bucket["matched_score_weighted_sum"] / matched_observation_count if matched_observation_count else 0.0
+            )
+            summary[f"conditioned_landmark_{landmark_type}_target_window_hit_rate"] = (
+                bucket["window_hit_weighted_sum"] / target_count if target_count else 0.0
+            )
+            total_landmark_targets += target_count
+            total_landmark_observations += observation_count
+            total_landmark_matches += matched_target_count
+        summary["conditioned_landmark_target_count"] = total_landmark_targets
+        summary["conditioned_landmark_observation_count"] = total_landmark_observations
+        summary["conditioned_landmark_matched_target_count"] = total_landmark_matches
+        summary["conditioned_landmark_recall"] = (
+            total_landmark_matches / total_landmark_targets if total_landmark_targets else 0.0
+        )
     if audio_progress_available:
         summary.update({
             "audio_progress_rows": sum(len(row.get("audio_progress_rows", [])) for row in rows),
