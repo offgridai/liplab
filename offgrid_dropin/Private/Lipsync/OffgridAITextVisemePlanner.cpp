@@ -18,7 +18,7 @@ static FString NormalizeWord(const FString& In)
 
 static bool IsHardSentenceBoundary(TCHAR C)
 {
-    return C == TEXT('.') || C == TEXT('!') || C == TEXT('?');
+    return C == TEXT('.') || C == TEXT('!') || C == TEXT('?') || C == TEXT('-');
 }
 
 static bool IsSpeechRegionBoundary(TCHAR C)
@@ -106,9 +106,11 @@ static EOffgridAIBoundaryPauseClass ClassifyBoundaryPause(
         (CommaCountInSentence >= 2 || bHasListConjunctionAhead)
         && !bClauseStarterAhead;
 
-    return bLooksLikeListComma
-        ? EOffgridAIBoundaryPauseClass::SoftListPause
-        : EOffgridAIBoundaryPauseClass::HardBreakPause;
+    if (!bLooksLikeListComma)
+    {
+        return EOffgridAIBoundaryPauseClass::HardBreakPause;
+    }
+    return EOffgridAIBoundaryPauseClass::SoftListPause;
 }
 
 static TCHAR PreferBoundary(TCHAR Existing, TCHAR Candidate)
@@ -592,8 +594,9 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
         Plan.WordSentenceIndices.Add(Sentence);
         Plan.WordSyllableCounts.Add(Syllables);
         Plan.WordBoundaryPunctuationAfter.Add(Boundaries.IsValidIndex(W) ? Boundaries[W] : TCHAR(0));
-        BoundaryPauseClasses.Add(ClassifyBoundaryPause(Words, Boundaries, W));
-        Plan.WordBoundaryPauseClassAfter.Add(BoundaryPauseClasses.Last());
+        const EOffgridAIBoundaryPauseClass BoundaryPauseClass = ClassifyBoundaryPause(Words, Boundaries, W);
+        BoundaryPauseClasses.Add(BoundaryPauseClass);
+        Plan.WordBoundaryPauseClassAfter.Add(BoundaryPauseClass);
         const TCHAR B = Boundaries.IsValidIndex(W) ? Boundaries[W] : TCHAR(0);
         if (IsHardSentenceBoundary(B)) { ++Sentence; }
     }
