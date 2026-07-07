@@ -558,55 +558,6 @@ def load_gap_traces(case_dir: pathlib.Path) -> list[dict]:
     return traces
 
 
-def load_phrase_burst_traces(case_dir: pathlib.Path) -> list[dict]:
-    rows = _read_csv_rows(case_dir / "committed.csv")
-    if not rows:
-        return []
-
-    by_phrase: dict[int, list[dict]] = {}
-    for row in rows:
-        phrase_index = _as_int(row, "phrase_index", 0)
-        if phrase_index <= 0:
-            continue
-        by_phrase.setdefault(phrase_index, []).append(row)
-
-    traces = []
-    for phrase_index, phrase_rows in sorted(by_phrase.items()):
-        if len(phrase_rows) < 2:
-            continue
-        phrase_rows = sorted(phrase_rows, key=lambda r: _as_int(r, "index"))
-        first_rows = phrase_rows[: min(4, len(phrase_rows))]
-        first_commit = _as_float(first_rows[0], "commit_playback")
-        same_commit_first4 = sum(
-            1 for row in first_rows
-            if abs(_as_float(row, "commit_playback") - first_commit) <= 1e-6
-        )
-        nonpositive_first4 = sum(1 for row in first_rows if _as_float(row, "commit_lead") <= 0.0)
-        sub100_first4 = sum(1 for row in first_rows if _as_float(row, "commit_lead") < 0.100)
-        mean_lead_first4 = _mean([_as_float(row, "commit_lead") for row in first_rows])
-        center_span_first4_ms = (
-            _as_float(first_rows[-1], "center") - _as_float(first_rows[0], "center")
-        ) * 1000.0
-        traces.append({
-            "phrase_index": phrase_index,
-            "event_count": len(phrase_rows),
-            "same_commit_first4": same_commit_first4,
-            "nonpositive_first4": nonpositive_first4,
-            "sub100_first4": sub100_first4,
-            "mean_lead_first4_ms": mean_lead_first4 * 1000.0,
-            "center_span_first4_ms": center_span_first4_ms,
-            "first_commit_playback_ms": first_commit * 1000.0,
-            "first_center_ms": _as_float(first_rows[0], "center") * 1000.0,
-            "first4_words": "/".join((row.get("word", "") or "?") for row in first_rows),
-            "first4_poses": "/".join((row.get("pose", "") or "?") for row in first_rows),
-            "flagged": 1 if (
-                same_commit_first4 >= 3
-                or nonpositive_first4 >= 1
-                or sub100_first4 >= 2
-            ) else 0,
-        })
-    return traces
-
 from grade_summary import compute_summary, load_case_grades, write_summary
 
 

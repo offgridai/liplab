@@ -148,6 +148,7 @@ public:
     FOffgridAITextVisemePlan& GetMutableTextPlan() { return TextPlan; }
     const FOffgridAIStreamingSpeechDetector& GetSpeechDetector() const { return Detector; }
     const TArray<FOffgridAIStreamingSpeechRegion>& GetSpeechRegions() const { return ResolvedSpeechRegions; }
+    // Deprecated compatibility alias. New code should use GetSpeechRegions().
     const TArray<FOffgridAIStreamingSpeechRegion>& GetSpeechIslands() const { return ResolvedSpeechRegions; }
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& GetAudioFeatureFrames() const { return Detector.GetFeatureFrames(); }
     const FOffgridAIAlignedVisemeTrack& GetCommittedTrack() const { return CommittedTrack; }

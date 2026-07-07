@@ -7,6 +7,8 @@ struct FOffgridAIStreamingSpeechRegion
     union
     {
         int32 SpeechRegionIndex = INDEX_NONE;
+        // Deprecated compatibility alias for older code that still refers to
+        // speech regions as islands.
         int32 IslandIndex;
     };
     float AudioBufferStartSec = 0.0f;
@@ -32,11 +34,15 @@ struct FOffgridAIStreamingSpeechGapCandidate
     union
     {
         int32 PrevSpeechRegionIndex = INDEX_NONE;
+        // Deprecated compatibility alias for older code that still refers to
+        // speech regions as islands.
         int32 PrevIslandIndex;
     };
     union
     {
         int32 NextSpeechRegionIndex = INDEX_NONE;
+        // Deprecated compatibility alias for older code that still refers to
+        // speech regions as islands.
         int32 NextIslandIndex;
     };
     float GapStartSec = 0.0f;
@@ -45,6 +51,8 @@ struct FOffgridAIStreamingSpeechGapCandidate
     union
     {
         float PrevSpeechRegionDurationSec = 0.0f;
+        // Deprecated compatibility alias for older code that still refers to
+        // speech regions as islands.
         float PrevIslandDurationSec;
     };
     float QuietEvidence = 0.0f;
@@ -97,11 +105,15 @@ struct FOffgridAIStreamingAudioFeatureFrame
     union
     {
         float ActiveSpeechRegionStartSec = -1.0f;
+        // Deprecated compatibility alias for older code that still refers to
+        // speech regions as islands.
         float ActiveIslandStartSec;
     };
     union
     {
         float ActiveSpeechRegionEndSec = -1.0f;
+        // Deprecated compatibility alias for older code that still refers to
+        // speech regions as islands.
         float ActiveIslandEndSec;
     };
     bool bInSpeechBeforeFrame = false;
@@ -115,16 +127,22 @@ struct FOffgridAIStreamingAudioFeatureFrame
     union
     {
         bool bFrameStartedSpeechRegion = false;
+        // Deprecated compatibility alias for older code that still refers to
+        // speech regions as islands.
         bool bFrameStartedIsland;
     };
     union
     {
         bool bFrameClosedSpeechRegion = false;
+        // Deprecated compatibility alias for older code that still refers to
+        // speech regions as islands.
         bool bFrameClosedIsland;
     };
     union
     {
         bool bFrameBridgedSpeechRegion = false;
+        // Deprecated compatibility alias for older code that still refers to
+        // speech regions as islands.
         bool bFrameBridgedIsland;
     };
     FName OccupancyDecision = NAME_None;
@@ -156,6 +174,7 @@ public:
     void Finalize(float FinalObservedAudioBufferEndSec = -1.0f);
 
     const TArray<FOffgridAIStreamingSpeechRegion>& GetSpeechRegions() const { return SpeechRegions; }
+    // Deprecated compatibility alias. New code should use GetSpeechRegions().
     const TArray<FOffgridAIStreamingSpeechRegion>& GetIslands() const { return SpeechRegions; }
     const TArray<FOffgridAIStreamingSpeechGapCandidate>& GetGapCandidates() const { return GapCandidates; }
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& GetFeatureFrames() const { return FeatureFrames; }
@@ -167,6 +186,7 @@ public:
 private:
     void ProcessAnalysisFrame(float FrameStartSeconds, float FrameEndSeconds, float RMS, float ZCR, float LowBandNorm, float MidBandNorm, float HighBandNorm, float SpectralCentroidNorm, float Periodicity);
     void SuppressRecentMicroSpeechRegionIfNeeded();
+    // Deprecated compatibility alias. New code should use SuppressRecentMicroSpeechRegionIfNeeded().
     void SuppressRecentMicroIslandIfNeeded();
     void RefreshLocalFeatureFlags();
 
