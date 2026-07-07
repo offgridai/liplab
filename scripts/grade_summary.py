@@ -78,6 +78,7 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
         predicted_speech_rows = read_csv_rows(case_dir / "speech_regions.csv")
         gap_candidate_rows = read_csv_rows(case_dir / "gap_candidates.csv")
         conditioned_landmark_audit = read_json(case_dir / "conditioned_landmark_audit.json")
+        landmark_pacing_advisory = read_json(case_dir / "landmark_pacing_summary.json")
         transcript_landmark_rows = read_csv_rows(case_dir / "transcript_landmarks.csv")
         conditioned_landmark_rows = read_csv_rows(case_dir / "audio_landmark_conditioned_observations.csv")
         gold_speech_rows = read_csv_rows(gold_root / case_dir.name / "speech.csv") if gold_root else []
@@ -93,6 +94,7 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "predicted_speech_rows": predicted_speech_rows,
             "gap_candidate_rows": gap_candidate_rows,
             "conditioned_landmark_audit": conditioned_landmark_audit,
+            "landmark_pacing_advisory": landmark_pacing_advisory,
             "transcript_landmark_rows": transcript_landmark_rows,
             "conditioned_landmark_rows": conditioned_landmark_rows,
             "gold_speech_rows": gold_speech_rows,
@@ -960,6 +962,7 @@ def compute_summary(rows, graded, ungraded):
     direct_aligner_available = any(bool(row.get("direct_aligner")) for row in rows)
     audio_progress_available = any(row.get("audio_progress_rows") for row in rows)
     conditioned_landmark_audit_available = any(row.get("conditioned_landmark_audit", {}).get("available") for row in rows)
+    landmark_pacing_advisory_available = any(row.get("landmark_pacing_advisory", {}).get("available") for row in rows)
     for row in qualified:
         phone_rows = row.get("runtime_phone_rows", [])
         if phone_rows:
@@ -979,6 +982,7 @@ def compute_summary(rows, graded, ungraded):
     gap_candidate_summaries = [row.get("gap_candidate_summary", {}) for row in qualified]
     conditioned_anchor_pace_summaries = [row.get("conditioned_anchor_pace_summary", {}) for row in qualified]
     sparse_controller_summaries = [row.get("sparse_landmark_controller_summary", {}) for row in qualified]
+    landmark_pacing_advisories = [row.get("landmark_pacing_advisory", {}) for row in qualified]
     advance_reason_counts: Counter[str] = Counter()
     gap_decision_counts: Counter[str] = Counter()
     for progress_summary in progress_summaries:
@@ -1105,6 +1109,7 @@ def compute_summary(rows, graded, ungraded):
         "direct_aligner_available": direct_aligner_available,
         "audio_progress_available": audio_progress_available,
         "conditioned_landmark_audit_available": conditioned_landmark_audit_available,
+        "landmark_pacing_advisory_available": landmark_pacing_advisory_available,
         "speech_f1": _mean(
             _pause_metric(row, "speech_region", "matched_count")
             / max(_pause_metric(row, "speech_region", "reference_count"), 1.0)
@@ -1367,6 +1372,64 @@ def compute_summary(rows, graded, ungraded):
         summary["sparse_landmark_controller_mean_measured_rate_bias"] = _mean(
             s.get("mean_measured_rate_bias", 0.0) for s in sparse_controller_summaries if int(s.get("predicted_targets", 0)) > 0
         )
+    if landmark_pacing_advisory_available:
+        summary["landmark_pacing_update_count"] = sum(
+            int(s.get("update_count", 0)) for s in landmark_pacing_advisories if s.get("available", False)
+        )
+        summary["landmark_pacing_seeded_region_count"] = sum(
+            int(s.get("seeded_region_count", 0)) for s in landmark_pacing_advisories if s.get("available", False)
+        )
+        summary["landmark_pacing_mean_anchor_baseline_error_ms"] = _mean(
+            s.get("mean_anchor_baseline_error_ms", 0.0) for s in landmark_pacing_advisories if s.get("available", False)
+        )
+        summary["landmark_pacing_mean_abs_rate_change"] = _mean(
+            s.get("mean_abs_rate_change", 0.0) for s in landmark_pacing_advisories if s.get("available", False)
+        )
+        summary["landmark_pacing_mean_filtered_rate"] = _mean(
+            s.get("mean_filtered_rate", 1.0) for s in landmark_pacing_advisories if s.get("available", False)
+        )
+
+        for bucket_name in ("phone_center", "word_start", "space_gap", "comma_gap"):
+            bucket_rows = [
+                (s.get("buckets", {}) or {}).get(bucket_name, {})
+                for s in landmark_pacing_advisories
+                if s.get("available", False) and bucket_name in (s.get("buckets", {}) or {})
+            ]
+            if not bucket_rows:
+                continue
+            total_targets = sum(int(b.get("target_count", 0)) for b in bucket_rows)
+            corrected_targets = sum(int(b.get("corrected_count", 0)) for b in bucket_rows)
+            improved_targets = sum(int(b.get("improved_count", 0)) for b in bucket_rows)
+            worsened_targets = sum(int(b.get("worsened_count", 0)) for b in bucket_rows)
+            weighted_targets = max(total_targets, 1)
+            summary[f"landmark_pacing_{bucket_name}_target_count"] = total_targets
+            summary[f"landmark_pacing_{bucket_name}_corrected_count"] = corrected_targets
+            summary[f"landmark_pacing_{bucket_name}_mean_baseline_error_ms"] = sum(
+                float(b.get("mean_baseline_error_ms", 0.0)) * int(b.get("target_count", 0))
+                for b in bucket_rows
+            ) / weighted_targets
+            summary[f"landmark_pacing_{bucket_name}_mean_predicted_error_ms"] = sum(
+                float(b.get("mean_predicted_error_ms", 0.0)) * int(b.get("target_count", 0))
+                for b in bucket_rows
+            ) / weighted_targets
+            summary[f"landmark_pacing_{bucket_name}_median_baseline_error_ms"] = _mean(
+                b.get("median_baseline_error_ms", 0.0) for b in bucket_rows if int(b.get("target_count", 0)) > 0
+            )
+            summary[f"landmark_pacing_{bucket_name}_median_predicted_error_ms"] = _mean(
+                b.get("median_predicted_error_ms", 0.0) for b in bucket_rows if int(b.get("target_count", 0)) > 0
+            )
+            summary[f"landmark_pacing_{bucket_name}_p90_baseline_error_ms"] = _mean(
+                b.get("p90_baseline_error_ms", 0.0) for b in bucket_rows if int(b.get("target_count", 0)) > 0
+            )
+            summary[f"landmark_pacing_{bucket_name}_p90_predicted_error_ms"] = _mean(
+                b.get("p90_predicted_error_ms", 0.0) for b in bucket_rows if int(b.get("target_count", 0)) > 0
+            )
+            summary[f"landmark_pacing_{bucket_name}_improved_rate"] = (
+                improved_targets / total_targets if total_targets else 0.0
+            )
+            summary[f"landmark_pacing_{bucket_name}_worsened_rate"] = (
+                worsened_targets / total_targets if total_targets else 0.0
+            )
     if audio_progress_available:
         summary.update({
             "audio_progress_rows": sum(len(row.get("audio_progress_rows", [])) for row in rows),
