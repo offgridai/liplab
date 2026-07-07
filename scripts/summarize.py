@@ -1145,21 +1145,6 @@ def main() -> int:
             f"word_boundary_f1={boundary_f1:.4f} "
             f"word_boundary_mean_abs_ms={boundary_mean_abs_ms:.1f}"
         )
-    if summary.get("landmark_audit_available", False):
-        chunks = []
-        for landmark_type in ("mbp", "fv", "w", "chjjsh", "round", "comma_lull"):
-            target_count = int(summary.get(f"landmark_{landmark_type}_target_count", 0))
-            if target_count <= 0:
-                continue
-            chunks.append(
-                f"{landmark_type}:targets={target_count},obs={int(summary.get(f'landmark_{landmark_type}_observation_count', 0))},"
-                f"recall={float(summary.get(f'landmark_{landmark_type}_recall', 0.0)):.3f},"
-                f"precision={float(summary.get(f'landmark_{landmark_type}_precision', 0.0)):.3f},"
-                f"hit={float(summary.get(f'landmark_{landmark_type}_target_window_hit_rate', 0.0)):.3f},"
-                f"center_ms={float(summary.get(f'landmark_{landmark_type}_mean_abs_center_error_ms', 0.0)):.1f},"
-                f"peak={float(summary.get(f'landmark_{landmark_type}_mean_target_window_peak_score', 0.0)):.3f}"
-            )
-        print("LANDMARK_AUDIT " + " | ".join(chunks))
     if summary.get("conditioned_landmark_audit_available", False):
         chunks = []
         for landmark_type in ("mbp", "fv", "w", "chjjsh", "round", "comma_lull"):
