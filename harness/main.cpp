@@ -1378,6 +1378,20 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
         return observations;
     }
 
+    auto local_peak_for_type = [&](const std::string& type, double expected_center, double half_window) -> double {
+        double best = 0.0;
+        for (int32 sample_index = 0; sample_index < frames.Num(); ++sample_index)
+        {
+            const double sample_center = static_cast<double>(frames[sample_index].AudioBufferCenterSec);
+            if (std::abs(sample_center - expected_center) > half_window)
+            {
+                continue;
+            }
+            best = std::max(best, conditioned_landmark_template_score(type, frames, sample_index));
+        }
+        return best;
+    };
+
     std::vector<std::vector<Candidate>> candidates_by_target(targets.size());
     for (size_t target_index = 0; target_index < targets.size(); ++target_index)
     {
@@ -1412,7 +1426,52 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
             const double distance_penalty = (half_window > 0.0)
                 ? (std::abs(center - target.prior_center) / half_window) * landmark_conditioned_distance_penalty_scale(target.type)
                 : 0.0;
-            const double score = conditioned_landmark_template_score(target.type, frames, i) - distance_penalty;
+            const double base_score = conditioned_landmark_template_score(target.type, frames, i);
+            double neighbor_bonus = 0.0;
+            if (target_index > 0)
+            {
+                const LandmarkTarget& prev_target = targets[target_index - 1];
+                const double prior_gap = std::max(0.020, target.prior_center - prev_target.prior_center);
+                const double expected_prev_center = center - prior_gap;
+                const double prev_half_window = std::min(0.050, std::max(0.020, landmark_conditioned_half_window_seconds(prev_target.type) * 0.5));
+                const double prev_peak = local_peak_for_type(prev_target.type, expected_prev_center, prev_half_window);
+                const double prev_threshold = std::max(0.10, landmark_conditioned_detection_threshold(prev_target.type) - 0.08);
+                neighbor_bonus += 0.10 * clamp01((prev_peak - prev_threshold) / 0.20);
+            }
+            if (target_index + 1 < targets.size())
+            {
+                const LandmarkTarget& next_target = targets[target_index + 1];
+                const double prior_gap = std::max(0.020, next_target.prior_center - target.prior_center);
+                const double expected_next_center = center + prior_gap;
+                const double next_half_window = std::min(0.050, std::max(0.020, landmark_conditioned_half_window_seconds(next_target.type) * 0.5));
+                const double next_peak = local_peak_for_type(next_target.type, expected_next_center, next_half_window);
+                const double next_threshold = std::max(0.10, landmark_conditioned_detection_threshold(next_target.type) - 0.08);
+                neighbor_bonus += 0.10 * clamp01((next_peak - next_threshold) / 0.20);
+            }
+            double x_lull_y_bonus = 0.0;
+            if (target.type == "comma_lull" && target_index > 0 && target_index + 1 < targets.size())
+            {
+                const LandmarkTarget& prev_target = targets[target_index - 1];
+                const LandmarkTarget& next_target = targets[target_index + 1];
+                const double prev_gap = std::max(0.020, target.prior_center - prev_target.prior_center);
+                const double next_gap = std::max(0.020, next_target.prior_center - target.prior_center);
+                const double expected_prev_center = center - prev_gap;
+                const double expected_next_center = center + next_gap;
+                const double prev_peak = local_peak_for_type(
+                    prev_target.type,
+                    expected_prev_center,
+                    std::min(0.060, std::max(0.020, landmark_conditioned_half_window_seconds(prev_target.type) * 0.6)));
+                const double next_peak = local_peak_for_type(
+                    next_target.type,
+                    expected_next_center,
+                    std::min(0.060, std::max(0.020, landmark_conditioned_half_window_seconds(next_target.type) * 0.6)));
+                const double prev_threshold = std::max(0.10, landmark_conditioned_detection_threshold(prev_target.type) - 0.08);
+                const double next_threshold = std::max(0.10, landmark_conditioned_detection_threshold(next_target.type) - 0.08);
+                const double prev_support = clamp01((prev_peak - prev_threshold) / 0.18);
+                const double next_support = clamp01((next_peak - next_threshold) / 0.18);
+                x_lull_y_bonus = 0.16 * std::min(prev_support, next_support);
+            }
+            const double score = base_score - distance_penalty + neighbor_bonus + x_lull_y_bonus;
             if (score < threshold)
             {
                 continue;
