@@ -1526,95 +1526,6 @@ static std::string audio_landmark_frames_csv(const TArray<FOffgridAIStreamingAud
     return out.str();
 }
 
-static std::vector<LandmarkObservation> detect_audio_landmark_observations(
-    const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames)
-{
-    std::vector<LandmarkObservation> observations;
-    if (frames.Num() <= 0)
-    {
-        return observations;
-    }
-
-    const std::vector<std::string> types = {"mbp", "fv", "w", "chjjsh", "round", "comma_lull"};
-    for (const std::string& type : types)
-    {
-        int last_kept_index = -1000;
-        for (int32 i = 0; i < frames.Num(); ++i)
-        {
-            const auto& frame = frames[i];
-            const double score = landmark_score_for_frame(type, frame);
-            if (score < landmark_detection_threshold(type))
-            {
-                continue;
-            }
-
-            double dominant_score = score;
-            std::string dominant_type = type;
-            for (const std::string& candidate_type : types)
-            {
-                if (candidate_type == type)
-                {
-                    continue;
-                }
-                const double candidate_score = landmark_score_for_frame(candidate_type, frame);
-                if (candidate_score > dominant_score)
-                {
-                    dominant_score = candidate_score;
-                    dominant_type = candidate_type;
-                }
-            }
-            if (dominant_type != type)
-            {
-                continue;
-            }
-
-            const double prev = (i > 0)
-                ? landmark_score_for_frame(type, frames[i - 1])
-                : -1.0;
-            const double next = (i + 1 < frames.Num())
-                ? landmark_score_for_frame(type, frames[i + 1])
-                : -1.0;
-            if (score < prev || score < next)
-            {
-                continue;
-            }
-
-            const int refractory_frames = (type == "comma_lull") ? 10 : 4;
-            if ((i - last_kept_index) <= refractory_frames)
-            {
-                if (!observations.empty() && observations.back().type == type && observations.back().score < score)
-                {
-                    observations.back().frame_index = i;
-                    observations.back().start = frame.AudioBufferStartSec;
-                    observations.back().end = frame.AudioBufferEndSec;
-                    observations.back().center = frame.AudioBufferCenterSec;
-                    observations.back().score = score;
-                    observations.back().top_class = type;
-                    last_kept_index = i;
-                }
-                continue;
-            }
-
-            LandmarkObservation obs;
-            obs.type = type;
-            obs.frame_index = i;
-            obs.start = frame.AudioBufferStartSec;
-            obs.end = frame.AudioBufferEndSec;
-            obs.center = frame.AudioBufferCenterSec;
-            obs.score = score;
-            obs.top_class = type;
-            observations.push_back(std::move(obs));
-            last_kept_index = i;
-        }
-    }
-
-    std::sort(observations.begin(), observations.end(), [](const LandmarkObservation& a, const LandmarkObservation& b) {
-        if (a.center != b.center) return a.center < b.center;
-        return a.type < b.type;
-    });
-    return observations;
-}
-
 static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_observations(
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames,
     const std::vector<LandmarkTarget>& targets)
@@ -4095,20 +4006,15 @@ int main(int argc, char** argv)
                 const auto gold_speech = read_gold_speech_csv(gold_speech_path);
                 const auto handmade = build_gold_visible_labels(plan, gold_phones);
                 const auto transcript_landmarks = build_landmark_targets(plan, gold_phones, gold_words, gold_speech);
-                std::vector<LandmarkObservation> landmark_observations =
-                    detect_audio_landmark_observations(session.GetSpeechDetector().GetFeatureFrames());
                 std::vector<LandmarkObservation> conditioned_landmark_observations =
                     detect_transcript_conditioned_landmark_observations(
                         session.GetSpeechDetector().GetFeatureFrames(),
                         transcript_landmarks);
-                const LandmarkAuditReport landmark_audit =
-                    grade_landmark_audit(landmark_observations, transcript_landmarks, session.GetSpeechDetector().GetFeatureFrames());
                 const LandmarkAuditReport conditioned_landmark_audit =
                     grade_landmark_audit(conditioned_landmark_observations, transcript_landmarks, session.GetSpeechDetector().GetFeatureFrames());
                 gold_viseme_count = handmade.size();
                 write_text(case_dir / "gold_visible_visemes.csv", gold_visible_visemes_csv(handmade));
                 write_text(case_dir / "transcript_landmarks.csv", transcript_landmarks_csv(transcript_landmarks));
-                write_text(case_dir / "landmark_audit.json", landmark_audit_json(landmark_audit));
                 write_text(case_dir / "conditioned_landmark_audit.json", landmark_audit_json(conditioned_landmark_audit));
                 report = grade(committed, speech, handmade, gold_words, gold_speech);
                 StreamingDetectorReport detector_report;
@@ -4125,9 +4031,6 @@ int main(int argc, char** argv)
                     write_text(
                         case_dir / "audio_landmark_frames.csv",
                         audio_landmark_frames_csv(session.GetSpeechDetector().GetFeatureFrames()));
-                    write_text(
-                        case_dir / "audio_landmark_observations.csv",
-                        audio_landmark_observations_csv(landmark_observations));
                     write_text(
                         case_dir / "audio_landmark_conditioned_observations.csv",
                         audio_landmark_observations_csv(conditioned_landmark_observations));

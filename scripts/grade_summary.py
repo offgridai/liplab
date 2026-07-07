@@ -77,7 +77,6 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
         region_drop_rows = read_csv_rows(case_dir / "region_drop_diagnostics.csv")
         predicted_speech_rows = read_csv_rows(case_dir / "speech_regions.csv")
         gap_candidate_rows = read_csv_rows(case_dir / "gap_candidates.csv")
-        landmark_audit = read_json(case_dir / "landmark_audit.json")
         conditioned_landmark_audit = read_json(case_dir / "conditioned_landmark_audit.json")
         transcript_landmark_rows = read_csv_rows(case_dir / "transcript_landmarks.csv")
         conditioned_landmark_rows = read_csv_rows(case_dir / "audio_landmark_conditioned_observations.csv")
@@ -93,7 +92,6 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "region_drop_rows": region_drop_rows,
             "predicted_speech_rows": predicted_speech_rows,
             "gap_candidate_rows": gap_candidate_rows,
-            "landmark_audit": landmark_audit,
             "conditioned_landmark_audit": conditioned_landmark_audit,
             "transcript_landmark_rows": transcript_landmark_rows,
             "conditioned_landmark_rows": conditioned_landmark_rows,
@@ -698,6 +696,73 @@ def summarize_sparse_landmark_controller(row: dict[str, Any]) -> dict[str, Any]:
         targets_by_index[target_index] = enriched
     target_rows.sort(key=lambda r: int(r["_target_index"]))
 
+    function_words = {
+        "a", "an", "and", "are", "as", "at", "be", "but", "by", "for", "from",
+        "he", "her", "him", "his", "i", "in", "is", "it", "its", "me", "my",
+        "of", "on", "or", "our", "she", "that", "the", "their", "them", "there",
+        "they", "to", "us", "was", "we", "were", "with", "you", "your",
+    }
+
+    def target_plan_weight(target: dict[str, Any]) -> float:
+        landmark_type = str(target.get("type", ""))
+        phone_base = str(target.get("phone_base", "")).upper()
+        word = str(target.get("word", "")).strip().lower()
+        if landmark_type == "fv":
+            return 1.00
+        if landmark_type == "chjjsh":
+            return 0.98
+        if landmark_type == "mbp":
+            if phone_base in {"B", "P"}:
+                return 0.96
+            if phone_base == "M":
+                return 0.84
+            return 0.88
+        if landmark_type == "w":
+            return 0.86 if word not in function_words else 0.72
+        if landmark_type == "comma_lull":
+            return 0.82
+        if landmark_type == "round":
+            return 0.50
+        return 0.60
+
+    def target_is_high_value(target: dict[str, Any]) -> bool:
+        return target_plan_weight(target) >= 0.84
+
+    def segment_structure_weight(left_target_index: int, right_target_index: int, prior_delta: float) -> float:
+        unique_words: set[int] = set()
+        weak_words = 0
+        high_value_targets = 0
+        seen_weak_word_indices: set[int] = set()
+        for target_index in range(left_target_index + 1, right_target_index):
+            target = targets_by_index.get(target_index)
+            if target is None:
+                continue
+            word_index = _safe_int(target, "word_index", -1)
+            if word_index >= 0:
+                unique_words.add(word_index)
+                word = str(target.get("word", "")).strip().lower()
+                if word in function_words and word_index not in seen_weak_word_indices:
+                    seen_weak_word_indices.add(word_index)
+                    weak_words += 1
+            if target_is_high_value(target):
+                high_value_targets += 1
+
+        unique_word_count = len(unique_words)
+        weight = 1.0
+        if prior_delta > 0.70:
+            weight *= 0.70
+        elif prior_delta > 0.45:
+            weight *= 0.84
+        if unique_word_count >= 5:
+            weight *= 0.72
+        elif unique_word_count >= 3:
+            weight *= 0.86
+        if high_value_targets == 0 and unique_word_count >= 2:
+            weight *= 0.82
+        if unique_word_count > 0 and weak_words * 2 >= unique_word_count:
+            weight *= 0.86
+        return max(0.55, min(1.0, weight))
+
     strong_thresholds = {
         "mbp": 0.80,
         "fv": 0.70,
@@ -731,6 +796,8 @@ def summarize_sparse_landmark_controller(row: dict[str, Any]) -> dict[str, Any]:
             "score": score,
             "normalized_score": normalized_score,
             "reliability": anchor_reliability.get(landmark_type, 0.65),
+            "plan_weight": target_plan_weight(target),
+            "high_value": target_is_high_value(target),
             "center": _safe_float(obs, "center", 0.0),
             "prior_center": _safe_float(target, "prior_center", 0.0),
         })
@@ -821,12 +888,18 @@ def summarize_sparse_landmark_controller(row: dict[str, Any]) -> dict[str, Any]:
         observed_delta = float(right["center"]) - float(left["center"])
         if prior_delta < 0.050 or observed_delta <= 0.0:
             continue
+        if not (bool(left.get("high_value")) or bool(right.get("high_value"))):
+            continue
+        structure_weight = segment_structure_weight(left_target_index, right_target_index, prior_delta)
+        if structure_weight < 0.68:
+            continue
 
         measured_rate = max(0.88, min(1.12, observed_delta / prior_delta))
         fitted_rate, fitted_intercept = fit_recent_mapping(anchor_index + 1)
         pair_quality = (
             0.5 * (float(left["normalized_score"]) + float(right["normalized_score"])) *
-            (0.5 * (float(left["reliability"]) + float(right["reliability"])))
+            (0.5 * (float(left["reliability"]) + float(right["reliability"]))) *
+            (0.5 * (float(left.get("plan_weight", 0.6)) + float(right.get("plan_weight", 0.6))))
         )
         sequence_alpha = 0.20 + 0.35 * pair_quality
         blended_rate = measured_rate * (1.0 - sequence_alpha) + fitted_rate * sequence_alpha
@@ -848,7 +921,8 @@ def summarize_sparse_landmark_controller(row: dict[str, Any]) -> dict[str, Any]:
                 continue
             prior_center = target_center(target, "prior_center")
             gold_center = target_center(target, "gold_center")
-            predicted_center = blended_intercept + prior_center * blended_rate
+            corrected_center = blended_intercept + prior_center * blended_rate
+            predicted_center = prior_center + structure_weight * (corrected_center - prior_center)
             predicted_errors.append(abs(predicted_center - gold_center) * 1000.0)
             baseline_errors.append(abs(prior_center - gold_center) * 1000.0)
 
@@ -885,7 +959,6 @@ def compute_summary(rows, graded, ungraded):
     runtime_phone_available = any(row.get("runtime_phone_rows") for row in rows)
     direct_aligner_available = any(bool(row.get("direct_aligner")) for row in rows)
     audio_progress_available = any(row.get("audio_progress_rows") for row in rows)
-    landmark_audit_available = any(row.get("landmark_audit", {}).get("available") for row in rows)
     conditioned_landmark_audit_available = any(row.get("conditioned_landmark_audit", {}).get("available") for row in rows)
     for row in qualified:
         phone_rows = row.get("runtime_phone_rows", [])
@@ -939,27 +1012,8 @@ def compute_summary(rows, graded, ungraded):
 
     landmark_types = ["mbp", "fv", "w", "chjjsh", "round", "comma_lull"]
     landmark_score_thresholds = ["0.60", "0.70", "0.80", "0.90"]
-    landmark_rollup: dict[str, dict[str, Any]] = {}
     conditioned_landmark_rollup: dict[str, dict[str, Any]] = {}
     for landmark_type in landmark_types:
-        landmark_rollup[landmark_type] = {
-            "target_count": 0,
-            "observation_count": 0,
-            "matched_target_count": 0,
-            "matched_observation_count": 0,
-            "center_error_weighted_sum": 0.0,
-            "window_peak_weighted_sum": 0.0,
-            "matched_score_weighted_sum": 0.0,
-            "window_hit_weighted_sum": 0.0,
-            "thresholds": {
-                threshold: {
-                    "observation_count": 0,
-                    "matched_observation_count": 0,
-                    "matched_target_count": 0,
-                }
-                for threshold in landmark_score_thresholds
-            },
-        }
         conditioned_landmark_rollup[landmark_type] = {
             "target_count": 0,
             "observation_count": 0,
@@ -980,33 +1034,6 @@ def compute_summary(rows, graded, ungraded):
         }
 
     for row in qualified:
-        audit = row.get("landmark_audit", {})
-        if not audit.get("available", False):
-            continue
-        type_map = audit.get("types", {})
-        for landmark_type in landmark_types:
-            stats = type_map.get(landmark_type, {})
-            bucket = landmark_rollup[landmark_type]
-            target_count = int(stats.get("target_count", 0))
-            observation_count = int(stats.get("observation_count", 0))
-            matched_target_count = int(stats.get("matched_target_count", 0))
-            matched_observation_count = int(stats.get("matched_observation_count", 0))
-            bucket["target_count"] += target_count
-            bucket["observation_count"] += observation_count
-            bucket["matched_target_count"] += matched_target_count
-            bucket["matched_observation_count"] += matched_observation_count
-            bucket["center_error_weighted_sum"] += float(stats.get("mean_abs_center_error_ms", 0.0)) * matched_target_count
-            bucket["window_peak_weighted_sum"] += float(stats.get("mean_target_window_peak_score", 0.0)) * target_count
-            bucket["matched_score_weighted_sum"] += float(stats.get("mean_matched_observation_score", 0.0)) * matched_observation_count
-            bucket["window_hit_weighted_sum"] += float(stats.get("target_window_hit_rate", 0.0)) * target_count
-            threshold_map = stats.get("thresholds", {})
-            for threshold in landmark_score_thresholds:
-                threshold_stats = threshold_map.get(threshold, {})
-                threshold_bucket = bucket["thresholds"][threshold]
-                threshold_bucket["observation_count"] += int(threshold_stats.get("observation_count", 0))
-                threshold_bucket["matched_observation_count"] += int(threshold_stats.get("matched_observation_count", 0))
-                threshold_bucket["matched_target_count"] += int(threshold_stats.get("matched_target_count", 0))
-
         conditioned_audit = row.get("conditioned_landmark_audit", {})
         if conditioned_audit.get("available", False):
             conditioned_type_map = conditioned_audit.get("types", {})
@@ -1077,7 +1104,6 @@ def compute_summary(rows, graded, ungraded):
         "runtime_phone_alignment_available": runtime_phone_available,
         "direct_aligner_available": direct_aligner_available,
         "audio_progress_available": audio_progress_available,
-        "landmark_audit_available": landmark_audit_available,
         "conditioned_landmark_audit_available": conditioned_landmark_audit_available,
         "speech_f1": _mean(
             _pause_metric(row, "speech_region", "matched_count")
@@ -1208,58 +1234,6 @@ def compute_summary(rows, graded, ungraded):
     if direct_aligner_available:
         summary["direct_aligner_match_rate"] = direct_matches / max(direct_refs, 1)
         summary["direct_aligner_center_ms"] = _mean(_direct(row, "mean_abs_center_error_ms") for row in qualified if row.get("direct_aligner"))
-    if landmark_audit_available:
-        total_landmark_targets = 0
-        total_landmark_observations = 0
-        total_landmark_matches = 0
-        for landmark_type, bucket in landmark_rollup.items():
-            target_count = bucket["target_count"]
-            observation_count = bucket["observation_count"]
-            matched_target_count = bucket["matched_target_count"]
-            matched_observation_count = bucket["matched_observation_count"]
-            summary[f"landmark_{landmark_type}_target_count"] = target_count
-            summary[f"landmark_{landmark_type}_observation_count"] = observation_count
-            summary[f"landmark_{landmark_type}_matched_target_count"] = matched_target_count
-            summary[f"landmark_{landmark_type}_matched_observation_count"] = matched_observation_count
-            summary[f"landmark_{landmark_type}_recall"] = (
-                matched_target_count / target_count if target_count else 0.0
-            )
-            summary[f"landmark_{landmark_type}_precision"] = (
-                matched_observation_count / observation_count if observation_count else 0.0
-            )
-            summary[f"landmark_{landmark_type}_mean_abs_center_error_ms"] = (
-                bucket["center_error_weighted_sum"] / matched_target_count if matched_target_count else 0.0
-            )
-            summary[f"landmark_{landmark_type}_mean_target_window_peak_score"] = (
-                bucket["window_peak_weighted_sum"] / target_count if target_count else 0.0
-            )
-            summary[f"landmark_{landmark_type}_mean_matched_observation_score"] = (
-                bucket["matched_score_weighted_sum"] / matched_observation_count if matched_observation_count else 0.0
-            )
-            summary[f"landmark_{landmark_type}_target_window_hit_rate"] = (
-                bucket["window_hit_weighted_sum"] / target_count if target_count else 0.0
-            )
-            for threshold in landmark_score_thresholds:
-                threshold_bucket = bucket["thresholds"][threshold]
-                threshold_obs = threshold_bucket["observation_count"]
-                threshold_matched_obs = threshold_bucket["matched_observation_count"]
-                threshold_matched_targets = threshold_bucket["matched_target_count"]
-                summary[f"landmark_{landmark_type}_precision_at_{threshold}"] = (
-                    threshold_matched_obs / threshold_obs if threshold_obs else 0.0
-                )
-                summary[f"landmark_{landmark_type}_recall_at_{threshold}"] = (
-                    threshold_matched_targets / target_count if target_count else 0.0
-                )
-                summary[f"landmark_{landmark_type}_observation_count_at_{threshold}"] = threshold_obs
-            total_landmark_targets += target_count
-            total_landmark_observations += observation_count
-            total_landmark_matches += matched_target_count
-        summary["landmark_target_count"] = total_landmark_targets
-        summary["landmark_observation_count"] = total_landmark_observations
-        summary["landmark_matched_target_count"] = total_landmark_matches
-        summary["landmark_recall"] = (
-            total_landmark_matches / total_landmark_targets if total_landmark_targets else 0.0
-        )
     if conditioned_landmark_audit_available:
         total_landmark_targets = 0
         total_landmark_observations = 0
