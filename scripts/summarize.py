@@ -1175,6 +1175,56 @@ def main() -> int:
                 f"peak={float(summary.get(f'conditioned_landmark_{landmark_type}_mean_target_window_peak_score', 0.0)):.3f}"
             )
         print("CONDITIONED_LANDMARK_AUDIT " + " | ".join(chunks))
+        threshold_chunks = []
+        for landmark_type in ("mbp", "fv", "w", "chjjsh", "round", "comma_lull"):
+            target_count = int(summary.get(f"conditioned_landmark_{landmark_type}_target_count", 0))
+            if target_count <= 0:
+                continue
+            best_threshold = str(summary.get(f"conditioned_landmark_{landmark_type}_best_high_precision_threshold", ""))
+            if best_threshold:
+                threshold_chunks.append(
+                    f"{landmark_type}:best>=0.90@{best_threshold},"
+                    f"precision={float(summary.get(f'conditioned_landmark_{landmark_type}_best_high_precision_precision', 0.0)):.3f},"
+                    f"recall={float(summary.get(f'conditioned_landmark_{landmark_type}_best_high_precision_recall', 0.0)):.3f},"
+                    f"obs={int(summary.get(f'conditioned_landmark_{landmark_type}_observation_count_at_{best_threshold}', 0))}"
+                )
+            else:
+                threshold_chunks.append(
+                    f"{landmark_type}:best>=0.90@none,"
+                    f"p80={float(summary.get(f'conditioned_landmark_{landmark_type}_precision_at_0.80', 0.0)):.3f},"
+                    f"r80={float(summary.get(f'conditioned_landmark_{landmark_type}_recall_at_0.80', 0.0)):.3f},"
+                    f"obs80={int(summary.get(f'conditioned_landmark_{landmark_type}_observation_count_at_0.80', 0))}"
+                )
+        print("CONDITIONED_LANDMARK_THRESHOLDS " + " | ".join(threshold_chunks))
+    if summary.get("conditioned_anchor_pace_available", False):
+        print(
+            "CONDITIONED_ANCHOR_PACE "
+            f"pairs={int(summary.get('conditioned_anchor_pace_pairs', 0))} "
+            f"mean_abs_rate_error={float(summary.get('conditioned_anchor_pace_mean_abs_rate_error', 0.0)):.3f} "
+            f"median_abs_rate_error={float(summary.get('conditioned_anchor_pace_median_abs_rate_error', 0.0)):.3f} "
+            f"p90_abs_rate_error={float(summary.get('conditioned_anchor_pace_p90_abs_rate_error', 0.0)):.3f} "
+            f"mean_rate_bias={float(summary.get('conditioned_anchor_pace_mean_rate_bias', 0.0)):.3f} "
+            f"observed_rate={float(summary.get('conditioned_anchor_pace_mean_observed_rate', 0.0)):.3f} "
+            f"oracle_rate={float(summary.get('conditioned_anchor_pace_mean_oracle_rate', 0.0)):.3f} "
+            f"corr={float(summary.get('conditioned_anchor_pace_corr', 0.0)):.3f}"
+        )
+    if summary.get("sparse_landmark_controller_available", False):
+        print(
+            "SPARSE_LANDMARK_CONTROLLER "
+            f"segments={int(summary.get('sparse_landmark_controller_segments', 0))} "
+            f"updates={int(summary.get('sparse_landmark_controller_updates', 0))} "
+            f"predicted_targets={int(summary.get('sparse_landmark_controller_predicted_targets', 0))} "
+            f"mean_predicted_ms={float(summary.get('sparse_landmark_controller_mean_predicted_error_ms', 0.0)):.1f} "
+            f"mean_baseline_ms={float(summary.get('sparse_landmark_controller_mean_baseline_error_ms', 0.0)):.1f} "
+            f"median_predicted_ms={float(summary.get('sparse_landmark_controller_median_predicted_error_ms', 0.0)):.1f} "
+            f"median_baseline_ms={float(summary.get('sparse_landmark_controller_median_baseline_error_ms', 0.0)):.1f} "
+            f"p90_predicted_ms={float(summary.get('sparse_landmark_controller_p90_predicted_error_ms', 0.0)):.1f} "
+            f"p90_baseline_ms={float(summary.get('sparse_landmark_controller_p90_baseline_error_ms', 0.0)):.1f} "
+            f"improved_rate={float(summary.get('sparse_landmark_controller_improved_rate', 0.0)):.3f} "
+            f"worsened_rate={float(summary.get('sparse_landmark_controller_worsened_rate', 0.0)):.3f} "
+            f"rate_abs_error={float(summary.get('sparse_landmark_controller_mean_measured_rate_abs_error', 0.0)):.3f} "
+            f"rate_bias={float(summary.get('sparse_landmark_controller_mean_measured_rate_bias', 0.0)):.3f}"
+        )
     return 0
 
 
