@@ -55,6 +55,14 @@ struct FOffgridAIAlignedVisemeEvent
 
     float DetectedWordStartSeconds = 0.0f;
     bool bDetectedWordStartMappedToObservedSpeech = false;
+
+    bool bLandmarkPacingEnabled = false;
+    bool bLandmarkPacingSeeded = false;
+    float LandmarkPacingRateAtCommit = 1.0f;
+    float LandmarkPacingConfidenceAtCommit = 0.0f;
+    float LandmarkPacingAnchorObservedSeconds = 0.0f;
+    float LandmarkPacingAnchorPriorActiveSeconds = 0.0f;
+    FName LandmarkPacingAnchorType = NAME_None;
 };
 
 struct FOffgridAIDroppedVisemeEvent

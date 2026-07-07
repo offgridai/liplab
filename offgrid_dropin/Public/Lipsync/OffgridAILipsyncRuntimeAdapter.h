@@ -18,6 +18,9 @@ struct FOffgridAILipsyncRuntimeUpdateInput
     float ObservedAudioBufferEndSec = 0.0f;
     bool bInputStreamClosed = false;
     bool bPlaybackFinalized = false;
+    bool bEnableLandmarkPacing = false;
+    bool bLandmarkPacingPermissive = false;
+    uint8 LandmarkPacingTypeMask = 0x1F;
 
     FName NPCID = NAME_None;
     FName LineID = NAME_None;
@@ -102,6 +105,9 @@ struct FOffgridAILipsyncRuntimeBeginInput
     FName NPCID = NAME_None;
     FName LineID = NAME_None;
     float PrerollSec = 0.350f;
+    bool bEnableLandmarkPacing = false;
+    bool bLandmarkPacingPermissive = false;
+    uint8 LandmarkPacingTypeMask = 0x1F;
 };
 
 struct FOffgridAIPunctuationHoldState
@@ -122,6 +128,19 @@ struct FOffgridAIPunctuationHoldState
     float HoldDeadlinePlaybackSec = 0.0f;
     float PlaybackOffsetAdjustSec = 0.0f;
     float ResumePlaybackSec = 0.0f;
+};
+
+struct FOffgridAILandmarkPacingState
+{
+    bool bSeeded = false;
+    int32 SpeechRegionIndex = INDEX_NONE;
+    int32 AnchorPhoneIndex = INDEX_NONE;
+    float AnchorPriorActiveSec = 0.0f;
+    float AnchorObservedSec = 0.0f;
+    float PlayRate = 1.0f;
+    float Confidence = 0.0f;
+    float LastAppliedObservedSec = -1.0f;
+    FName AnchorType = NAME_None;
 };
 
 class OFFGRIDAI_API FOffgridAILipsyncRuntimeSession
@@ -160,6 +179,7 @@ public:
     bool HasPlaybackStarted() const { return bPlaybackStarted; }
     float GetPlaybackSeconds() const { return PlaybackSec; }
     float GetPrerollSeconds() const { return PrerollSec; }
+    bool IsLandmarkPacingEnabled() const { return bEnableLandmarkPacing; }
 
 private:
     void UpdatePlaybackGate(float ObservedEndSec);
@@ -175,6 +195,9 @@ private:
     bool bPlaybackStarted = false;
     bool bCommittedTrackBuilt = false;
     bool bInputStreamClosed = false;
+    bool bEnableLandmarkPacing = false;
+    bool bLandmarkPacingPermissive = false;
+    uint8 LandmarkPacingTypeMask = 0x1F;
 
     FOffgridAITextVisemePlan TextPlan;
     FOffgridAIStreamingSpeechDetector Detector;
@@ -193,6 +216,7 @@ private:
     int64 LastPCMChunkStartSample = -1;
     int64 LastPCMChunkEndSample = -1;
     FOffgridAIPunctuationHoldState PunctuationHoldState;
+    FOffgridAILandmarkPacingState LandmarkPacingState;
 };
 
 class OFFGRIDAI_API FOffgridAILipsyncRuntimeAdapter
@@ -202,5 +226,6 @@ public:
         const FOffgridAILipsyncRuntimeUpdateInput& Input,
         FOffgridAIAlignedVisemeTrack& InOutTrack,
         FOffgridAIPunctuationHoldState& InOutHoldState,
+        FOffgridAILandmarkPacingState& InOutLandmarkPacingState,
         bool& bInOutTrackBuilt);
 };

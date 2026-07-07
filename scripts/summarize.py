@@ -1210,6 +1210,29 @@ def main() -> int:
             f"rate_abs_error={float(summary.get('sparse_landmark_controller_mean_measured_rate_abs_error', 0.0)):.3f} "
             f"rate_bias={float(summary.get('sparse_landmark_controller_mean_measured_rate_bias', 0.0)):.3f}"
         )
+    if summary.get("landmark_pacing_advisory_available", False):
+        chunks = []
+        for bucket_name in ("phone_center", "word_start", "space_gap", "comma_gap"):
+            target_count = int(summary.get(f"landmark_pacing_{bucket_name}_target_count", 0))
+            if target_count <= 0:
+                continue
+            chunks.append(
+                f"{bucket_name}:targets={target_count},"
+                f"corrected={int(summary.get(f'landmark_pacing_{bucket_name}_corrected_count', 0))},"
+                f"baseline_ms={float(summary.get(f'landmark_pacing_{bucket_name}_mean_baseline_error_ms', 0.0)):.1f},"
+                f"predicted_ms={float(summary.get(f'landmark_pacing_{bucket_name}_mean_predicted_error_ms', 0.0)):.1f},"
+                f"improved={float(summary.get(f'landmark_pacing_{bucket_name}_improved_rate', 0.0)):.3f},"
+                f"worsened={float(summary.get(f'landmark_pacing_{bucket_name}_worsened_rate', 0.0)):.3f}"
+            )
+        print(
+            "LANDMARK_PACING_ADVISORY "
+            f"updates={int(summary.get('landmark_pacing_update_count', 0))} "
+            f"seeded_regions={int(summary.get('landmark_pacing_seeded_region_count', 0))} "
+            f"anchor_ms={float(summary.get('landmark_pacing_mean_anchor_baseline_error_ms', 0.0)):.1f} "
+            f"rate_delta={float(summary.get('landmark_pacing_mean_abs_rate_change', 0.0)):.3f} "
+            f"mean_rate={float(summary.get('landmark_pacing_mean_filtered_rate', 1.0)):.3f} "
+            + " | ".join(chunks)
+        )
     return 0
 
 
