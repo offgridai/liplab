@@ -130,6 +130,9 @@ struct LandmarkTypeReport
     double mean_target_window_peak_score = 0.0;
     double mean_matched_observation_score = 0.0;
     double target_window_hit_rate = 0.0;
+    std::map<std::string, int> threshold_observation_count;
+    std::map<std::string, int> threshold_matched_observation_count;
+    std::map<std::string, int> threshold_matched_target_count;
 };
 
 struct LandmarkAuditReport
@@ -1021,6 +1024,257 @@ static double conditioned_landmark_template_score(
     return center_score;
 }
 
+static double conditioned_landmark_target_score(
+    const LandmarkTarget& target,
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames,
+    int32 index)
+{
+    if (!frames.IsValidIndex(index))
+    {
+        return 0.0;
+    }
+
+    const double family_score = conditioned_landmark_template_score(target.type, frames, index);
+    if (family_score <= 0.0)
+    {
+        return 0.0;
+    }
+
+    const auto& frame = frames[index];
+    const FOffgridAIArticulatoryProbabilityField field =
+        FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(frame);
+    const std::string phone_base = target.phone_base;
+    auto local_mean = [&](int32 lo, int32 hi, const auto& getter) -> double {
+        double sum = 0.0;
+        int32 count = 0;
+        for (int32 sample_index = lo; sample_index <= hi; ++sample_index)
+        {
+            if (!frames.IsValidIndex(sample_index))
+            {
+                continue;
+            }
+            sum += getter(frames[sample_index]);
+            ++count;
+        }
+        return count > 0 ? (sum / static_cast<double>(count)) : 0.0;
+    };
+    auto local_max = [&](int32 lo, int32 hi, const auto& getter) -> double {
+        double best = 0.0;
+        for (int32 sample_index = lo; sample_index <= hi; ++sample_index)
+        {
+            if (!frames.IsValidIndex(sample_index))
+            {
+                continue;
+            }
+            best = std::max(best, getter(frames[sample_index]));
+        }
+        return best;
+    };
+
+    const double voiced = static_cast<double>(field.Voiced);
+    const double closure = static_cast<double>(field.Closure);
+    const double release = static_cast<double>(field.Release);
+    const double fricative = static_cast<double>(field.Fricative);
+    const double sonorant = static_cast<double>(field.Sonorant);
+    const double bilabial = static_cast<double>(field.PhoneScores.Bilabial);
+    const double labiodental = static_cast<double>(field.PhoneScores.Labiodental);
+    const double sibilant = static_cast<double>(field.PhoneScores.Sibilant);
+    const double burst = static_cast<double>(field.PhoneScores.StopBurst);
+    const double glide = static_cast<double>(field.PhoneScores.Glide);
+    const double liquid = static_cast<double>(field.PhoneScores.Liquid);
+    const double nasal = static_cast<double>(field.PhoneScores.Nasal);
+    const double vowel_round = static_cast<double>(field.PhoneScores.VowelRound);
+    const double high_band = static_cast<double>(frame.HighBandNorm);
+    const double low_band = static_cast<double>(frame.LowBandNorm);
+    const double periodicity = static_cast<double>(frame.Periodicity);
+    const double flux = static_cast<double>(frame.Flux);
+    const double rms = static_cast<double>(frame.RMSNorm);
+    const double speech = static_cast<double>(frame.SpeechEvidence);
+
+    const double prev_rms = local_mean(index - 3, index - 1, [](const auto& f) { return static_cast<double>(f.RMSNorm); });
+    const double next_rms = local_mean(index + 1, index + 3, [](const auto& f) { return static_cast<double>(f.RMSNorm); });
+    const double prev_speech = local_mean(index - 3, index - 1, [](const auto& f) { return static_cast<double>(f.SpeechEvidence); });
+    const double next_speech = local_mean(index + 1, index + 3, [](const auto& f) { return static_cast<double>(f.SpeechEvidence); });
+    const double local_flux_peak = local_max(index - 1, index + 1, [](const auto& f) { return static_cast<double>(f.Flux); });
+    const double local_periodicity = local_mean(index - 1, index + 1, [](const auto& f) { return static_cast<double>(f.Periodicity); });
+    const double local_high_band = local_mean(index - 1, index + 1, [](const auto& f) { return static_cast<double>(f.HighBandNorm); });
+    const double local_rise = clamp01((next_rms - prev_rms) * 2.2);
+    const double local_fall = clamp01((prev_rms - next_rms) * 2.2);
+    const double local_peak_shape = clamp01((rms - 0.5 * (prev_rms + next_rms)) / 0.18);
+    const double local_valley_shape = clamp01((0.5 * (prev_rms + next_rms) - rms) / 0.18);
+    const double voiced_stability = clamp01(local_periodicity * 0.70 + speech * 0.30 - local_flux_peak * 0.28);
+    const double noisy_stability = clamp01((1.0 - local_periodicity) * 0.45 + local_high_band * 0.30 + local_flux_peak * 0.25);
+    const double burst_support = clamp01(local_flux_peak * 0.58 + local_rise * 0.24 + high_band * 0.18);
+
+    double subtype_score = family_score;
+    if (phone_base == "M")
+    {
+        const double anti_burst = clamp01(1.0 - burst);
+        const double anti_release = clamp01(1.0 - release);
+        subtype_score = clamp01(
+            family_score * 0.22 +
+            nasal * 0.28 +
+            voiced * 0.14 +
+            sonorant * 0.12 +
+            closure * 0.10 +
+            anti_burst * 0.05 +
+            anti_release * 0.05 +
+            voiced_stability * 0.04);
+    }
+    else if (phone_base == "B")
+    {
+        subtype_score = clamp01(
+            family_score * 0.30 +
+            bilabial * 0.18 +
+            closure * 0.16 +
+            release * 0.12 +
+            burst * 0.08 +
+            voiced * 0.10 +
+            burst_support * 0.06);
+    }
+    else if (phone_base == "P")
+    {
+        const double unvoiced = clamp01(1.0 - voiced);
+        subtype_score = clamp01(
+            family_score * 0.28 +
+            bilabial * 0.18 +
+            closure * 0.14 +
+            release * 0.14 +
+            burst * 0.10 +
+            unvoiced * 0.10 +
+            burst_support * 0.06);
+    }
+    else if (phone_base == "F")
+    {
+        const double unvoiced = clamp01(1.0 - voiced);
+        subtype_score = clamp01(
+            family_score * 0.28 +
+            labiodental * 0.18 +
+            fricative * 0.16 +
+            high_band * 0.08 +
+            unvoiced * 0.14 +
+            clamp01(1.0 - low_band) * 0.10 +
+            noisy_stability * 0.06);
+    }
+    else if (phone_base == "V")
+    {
+        subtype_score = clamp01(
+            family_score * 0.28 +
+            labiodental * 0.18 +
+            fricative * 0.16 +
+            high_band * 0.06 +
+            voiced * 0.16 +
+            periodicity * 0.10 +
+            noisy_stability * 0.06);
+    }
+    else if (phone_base == "W")
+    {
+        subtype_score = clamp01(
+            family_score * 0.52 +
+            glide * 0.14 +
+            vowel_round * 0.08 +
+            sonorant * 0.06 +
+            voiced * 0.05 +
+            clamp01(1.0 - flux) * 0.05 +
+            voiced_stability * 0.06 +
+            local_peak_shape * 0.04);
+    }
+    else if (phone_base == "CH")
+    {
+        const double unvoiced = clamp01(1.0 - voiced);
+        subtype_score = clamp01(
+            family_score * 0.26 +
+            sibilant * 0.18 +
+            burst * 0.14 +
+            release * 0.10 +
+            high_band * 0.08 +
+            unvoiced * 0.18 +
+            burst_support * 0.06);
+    }
+    else if (phone_base == "JH")
+    {
+        subtype_score = clamp01(
+            family_score * 0.26 +
+            sibilant * 0.18 +
+            burst * 0.12 +
+            release * 0.08 +
+            voiced * 0.18 +
+            periodicity * 0.12 +
+            burst_support * 0.06);
+    }
+    else if (phone_base == "SH")
+    {
+        const double unvoiced = clamp01(1.0 - voiced);
+        subtype_score = clamp01(
+            family_score * 0.26 +
+            sibilant * 0.22 +
+            fricative * 0.12 +
+            high_band * 0.12 +
+            unvoiced * 0.14 +
+            clamp01(1.0 - burst) * 0.08 +
+            noisy_stability * 0.06);
+    }
+    else if (phone_base == "ZH")
+    {
+        subtype_score = clamp01(
+            family_score * 0.26 +
+            sibilant * 0.20 +
+            fricative * 0.12 +
+            high_band * 0.10 +
+            voiced * 0.16 +
+            periodicity * 0.10 +
+            noisy_stability * 0.06);
+    }
+    else if (phone_base == "UW" || phone_base == "UH")
+    {
+        subtype_score = clamp01(
+            family_score * 0.58 +
+            vowel_round * 0.12 +
+            voiced * 0.08 +
+            clamp01(1.0 - flux) * 0.08 +
+            voiced_stability * 0.08 +
+            local_peak_shape * 0.06);
+    }
+    else if (phone_base == "OW" || phone_base == "OY" || phone_base == "AO")
+    {
+        subtype_score = clamp01(
+            family_score * 0.54 +
+            vowel_round * 0.10 +
+            voiced * 0.08 +
+            static_cast<double>(field.Transition) * 0.08 +
+            clamp01(1.0 - flux) * 0.06 +
+            voiced_stability * 0.08 +
+            local_peak_shape * 0.06);
+    }
+    else if (target.type == "comma_lull")
+    {
+        const double reopen = std::max(next_speech, static_cast<double>(frames.IsValidIndex(index + 4) ? frames[index + 4].SpeechEvidence : 0.0f));
+        const double pre_speech = std::max(prev_speech, static_cast<double>(frames.IsValidIndex(index - 4) ? frames[index - 4].SpeechEvidence : 0.0f));
+        subtype_score = clamp01(
+            family_score * 0.40 +
+            reopen * 0.16 +
+            pre_speech * 0.16 +
+            clamp01((0.10 - rms) / 0.10) * 0.12 +
+            local_valley_shape * 0.10 +
+            local_fall * 0.03 +
+            local_rise * 0.03);
+    }
+
+    double family_competitor = 0.0;
+    for (const std::string& candidate_type : {"mbp", "fv", "w", "chjjsh", "round", "comma_lull"})
+    {
+        if (candidate_type == target.type)
+        {
+            continue;
+        }
+        family_competitor = std::max(
+            family_competitor,
+            conditioned_landmark_template_score(candidate_type, frames, index));
+    }
+    const double family_margin = clamp01((family_score - family_competitor + 0.12) / 0.32);
+    return clamp01(subtype_score * 0.82 + family_margin * 0.18);
+}
+
 static std::vector<LandmarkTarget> build_landmark_targets(
     const FOffgridAITextVisemePlan& plan,
     const std::vector<GoldPhoneTiming>& gold_phones,
@@ -1378,7 +1632,7 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
         return observations;
     }
 
-    auto local_peak_for_type = [&](const std::string& type, double expected_center, double half_window) -> double {
+    auto local_peak_for_target = [&](const LandmarkTarget& target, double expected_center, double half_window) -> double {
         double best = 0.0;
         for (int32 sample_index = 0; sample_index < frames.Num(); ++sample_index)
         {
@@ -1387,7 +1641,7 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
             {
                 continue;
             }
-            best = std::max(best, conditioned_landmark_template_score(type, frames, sample_index));
+            best = std::max(best, conditioned_landmark_target_score(target, frames, sample_index));
         }
         return best;
     };
@@ -1426,7 +1680,7 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
             const double distance_penalty = (half_window > 0.0)
                 ? (std::abs(center - target.prior_center) / half_window) * landmark_conditioned_distance_penalty_scale(target.type)
                 : 0.0;
-            const double base_score = conditioned_landmark_template_score(target.type, frames, i);
+            const double base_score = conditioned_landmark_target_score(target, frames, i);
             double neighbor_bonus = 0.0;
             if (target_index > 0)
             {
@@ -1434,7 +1688,7 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
                 const double prior_gap = std::max(0.020, target.prior_center - prev_target.prior_center);
                 const double expected_prev_center = center - prior_gap;
                 const double prev_half_window = std::min(0.050, std::max(0.020, landmark_conditioned_half_window_seconds(prev_target.type) * 0.5));
-                const double prev_peak = local_peak_for_type(prev_target.type, expected_prev_center, prev_half_window);
+                const double prev_peak = local_peak_for_target(prev_target, expected_prev_center, prev_half_window);
                 const double prev_threshold = std::max(0.10, landmark_conditioned_detection_threshold(prev_target.type) - 0.08);
                 neighbor_bonus += 0.10 * clamp01((prev_peak - prev_threshold) / 0.20);
             }
@@ -1444,7 +1698,7 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
                 const double prior_gap = std::max(0.020, next_target.prior_center - target.prior_center);
                 const double expected_next_center = center + prior_gap;
                 const double next_half_window = std::min(0.050, std::max(0.020, landmark_conditioned_half_window_seconds(next_target.type) * 0.5));
-                const double next_peak = local_peak_for_type(next_target.type, expected_next_center, next_half_window);
+                const double next_peak = local_peak_for_target(next_target, expected_next_center, next_half_window);
                 const double next_threshold = std::max(0.10, landmark_conditioned_detection_threshold(next_target.type) - 0.08);
                 neighbor_bonus += 0.10 * clamp01((next_peak - next_threshold) / 0.20);
             }
@@ -1457,12 +1711,12 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
                 const double next_gap = std::max(0.020, next_target.prior_center - target.prior_center);
                 const double expected_prev_center = center - prev_gap;
                 const double expected_next_center = center + next_gap;
-                const double prev_peak = local_peak_for_type(
-                    prev_target.type,
+                const double prev_peak = local_peak_for_target(
+                    prev_target,
                     expected_prev_center,
                     std::min(0.060, std::max(0.020, landmark_conditioned_half_window_seconds(prev_target.type) * 0.6)));
-                const double next_peak = local_peak_for_type(
-                    next_target.type,
+                const double next_peak = local_peak_for_target(
+                    next_target,
                     expected_next_center,
                     std::min(0.060, std::max(0.020, landmark_conditioned_half_window_seconds(next_target.type) * 0.6)));
                 const double prev_threshold = std::max(0.10, landmark_conditioned_detection_threshold(prev_target.type) - 0.08);
@@ -1478,14 +1732,14 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
             }
 
             const double prev_score = frames.IsValidIndex(i - 1)
-                ? (conditioned_landmark_template_score(target.type, frames, i - 1) -
+                ? (conditioned_landmark_target_score(target, frames, i - 1) -
                    ((half_window > 0.0)
                         ? (std::abs(static_cast<double>(frames[i - 1].AudioBufferCenterSec) - target.prior_center) / half_window) *
                             landmark_conditioned_distance_penalty_scale(target.type)
                         : 0.0))
                 : score;
             const double next_score = frames.IsValidIndex(i + 1)
-                ? (conditioned_landmark_template_score(target.type, frames, i + 1) -
+                ? (conditioned_landmark_target_score(target, frames, i + 1) -
                    ((half_window > 0.0)
                         ? (std::abs(static_cast<double>(frames[i + 1].AudioBufferCenterSec) - target.prior_center) / half_window) *
                             landmark_conditioned_distance_penalty_scale(target.type)
@@ -1667,12 +1921,24 @@ static LandmarkAuditReport grade_landmark_audit(
     }
 
     const std::vector<std::string> types = {"mbp", "fv", "w", "chjjsh", "round", "comma_lull"};
+    const std::vector<std::pair<std::string, double>> score_thresholds = {
+        {"0.60", 0.60},
+        {"0.70", 0.70},
+        {"0.80", 0.80},
+        {"0.90", 0.90},
+    };
     std::map<std::string, std::vector<double>> target_window_scores;
     std::map<std::string, int> target_window_hits;
 
     for (const auto& type : types)
     {
         report.by_type[type] = LandmarkTypeReport{};
+        for (const auto& [label, _] : score_thresholds)
+        {
+            report.by_type[type].threshold_observation_count[label] = 0;
+            report.by_type[type].threshold_matched_observation_count[label] = 0;
+            report.by_type[type].threshold_matched_target_count[label] = 0;
+        }
     }
 
     for (const LandmarkTarget& target : targets)
@@ -1707,6 +1973,13 @@ static LandmarkAuditReport grade_landmark_audit(
     for (size_t i = 0; i < observations.size(); ++i)
     {
         ++report.by_type[observations[i].type].observation_count;
+        for (const auto& [label, threshold] : score_thresholds)
+        {
+            if (observations[i].score >= threshold)
+            {
+                ++report.by_type[observations[i].type].threshold_observation_count[label];
+            }
+        }
         observations_by_type[observations[i].type].push_back(static_cast<int>(i));
     }
 
@@ -1760,6 +2033,14 @@ static LandmarkAuditReport grade_landmark_audit(
                 observations[best_observation].matched_error_ms = best_error * 1000.0;
                 match_errors_ms.push_back(best_error * 1000.0);
                 matched_scores.push_back(observations[best_observation].score);
+                for (const auto& [label, threshold] : score_thresholds)
+                {
+                    if (observations[best_observation].score >= threshold)
+                    {
+                        ++stats.threshold_matched_target_count[label];
+                        ++stats.threshold_matched_observation_count[label];
+                    }
+                }
 
                 while (obs_cursor < obs_indices.size() && obs_indices[obs_cursor] != best_observation)
                 {
@@ -1826,7 +2107,36 @@ static std::string landmark_audit_json(const LandmarkAuditReport& report)
             << "      \"p90_abs_center_error_ms\": " << stats.p90_abs_center_error_ms << ",\n"
             << "      \"mean_target_window_peak_score\": " << stats.mean_target_window_peak_score << ",\n"
             << "      \"mean_matched_observation_score\": " << stats.mean_matched_observation_score << ",\n"
-            << "      \"target_window_hit_rate\": " << stats.target_window_hit_rate << "\n"
+            << "      \"target_window_hit_rate\": " << stats.target_window_hit_rate << ",\n"
+            << "      \"thresholds\": {\n";
+        bool first_threshold = true;
+        for (const auto& [label, observation_count] : stats.threshold_observation_count)
+        {
+            if (!first_threshold)
+            {
+                out << ",\n";
+            }
+            first_threshold = false;
+            const auto matched_observation_it = stats.threshold_matched_observation_count.find(label);
+            const auto matched_target_it = stats.threshold_matched_target_count.find(label);
+            const int matched_observation_count = matched_observation_it != stats.threshold_matched_observation_count.end()
+                ? matched_observation_it->second
+                : 0;
+            const int matched_target_count = matched_target_it != stats.threshold_matched_target_count.end()
+                ? matched_target_it->second
+                : 0;
+            out << "        \"" << label << "\": {\n"
+                << "          \"observation_count\": " << observation_count << ",\n"
+                << "          \"matched_observation_count\": " << matched_observation_count << ",\n"
+                << "          \"matched_target_count\": " << matched_target_count << ",\n"
+                << "          \"precision\": "
+                << (observation_count > 0 ? static_cast<double>(matched_observation_count) / static_cast<double>(observation_count) : 0.0) << ",\n"
+                << "          \"recall\": "
+                << (stats.target_count > 0 ? static_cast<double>(matched_target_count) / static_cast<double>(stats.target_count) : 0.0) << "\n"
+                << "        }";
+        }
+        out << "\n"
+            << "      }\n"
             << "    }";
     }
     out << "\n  }\n"

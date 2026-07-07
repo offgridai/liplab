@@ -79,6 +79,8 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
         gap_candidate_rows = read_csv_rows(case_dir / "gap_candidates.csv")
         landmark_audit = read_json(case_dir / "landmark_audit.json")
         conditioned_landmark_audit = read_json(case_dir / "conditioned_landmark_audit.json")
+        transcript_landmark_rows = read_csv_rows(case_dir / "transcript_landmarks.csv")
+        conditioned_landmark_rows = read_csv_rows(case_dir / "audio_landmark_conditioned_observations.csv")
         gold_speech_rows = read_csv_rows(gold_root / case_dir.name / "speech.csv") if gold_root else []
         gold_viseme_rows = _gold_viseme_rows_for_case(gold_root, case_dir.name)
         row = {
@@ -93,6 +95,8 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "gap_candidate_rows": gap_candidate_rows,
             "landmark_audit": landmark_audit,
             "conditioned_landmark_audit": conditioned_landmark_audit,
+            "transcript_landmark_rows": transcript_landmark_rows,
+            "conditioned_landmark_rows": conditioned_landmark_rows,
             "gold_speech_rows": gold_speech_rows,
             "gold_viseme_rows": gold_viseme_rows,
         }
@@ -100,6 +104,8 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
         row["speech_region_diagnostics"] = summarize_speech_regions(row)
         row["gap_candidate_summary"] = summarize_gap_candidates(row)
         row["phone_class_summary"] = summarize_phone_classes(row)
+        row["conditioned_anchor_pace_summary"] = summarize_conditioned_anchor_pace(row)
+        row["sparse_landmark_controller_summary"] = summarize_sparse_landmark_controller(row)
         rows.append(row)
         if grade.get("gold_available", True):
             graded.append(row)
@@ -603,6 +609,274 @@ def summarize_phone_classes(row: dict[str, Any]) -> dict[str, Any]:
         }
     return out
 
+
+def summarize_conditioned_anchor_pace(row: dict[str, Any]) -> dict[str, Any]:
+    transcript_rows = row.get("transcript_landmark_rows", [])
+    observation_rows = row.get("conditioned_landmark_rows", [])
+    if not transcript_rows or not observation_rows:
+        return {"pairs": 0}
+
+    trusted_types = {"mbp", "fv", "w", "chjjsh", "comma_lull"}
+    min_score = 0.80
+    targets_by_index: dict[int, dict[str, str]] = {}
+    for target in transcript_rows:
+        target_index = _safe_int(target, "target_index", -1)
+        if target_index >= 0:
+            targets_by_index[target_index] = target
+
+    matched_observations: list[dict[str, float | int | str]] = []
+    for obs in observation_rows:
+        matched_target_index = _safe_int(obs, "matched_target_index", -1)
+        target = targets_by_index.get(matched_target_index)
+        if not target:
+            continue
+        landmark_type = str(obs.get("type", ""))
+        score = _safe_float(obs, "score", 0.0)
+        if landmark_type not in trusted_types or score < min_score:
+            continue
+        matched_observations.append({
+            "target_index": matched_target_index,
+            "type": landmark_type,
+            "score": score,
+            "center": _safe_float(obs, "center", 0.0),
+            "prior_center": _safe_float(target, "prior_center", 0.0),
+            "gold_center": _safe_float(target, "gold_center", 0.0),
+        })
+
+    matched_observations.sort(key=lambda r: (float(r["center"]), int(r["target_index"])))
+    rate_errors = []
+    rate_bias = []
+    observed_rates = []
+    oracle_rates = []
+    interval_ms = []
+    for left, right in zip(matched_observations, matched_observations[1:]):
+        left_target_index = int(left["target_index"])
+        right_target_index = int(right["target_index"])
+        if right_target_index <= left_target_index:
+            continue
+        prior_delta = float(right["prior_center"]) - float(left["prior_center"])
+        gold_delta = float(right["gold_center"]) - float(left["gold_center"])
+        observed_delta = float(right["center"]) - float(left["center"])
+        if prior_delta < 0.050 or gold_delta <= 0.0 or observed_delta <= 0.0:
+            continue
+        oracle_rate = gold_delta / prior_delta
+        observed_rate = observed_delta / prior_delta
+        oracle_rates.append(oracle_rate)
+        observed_rates.append(observed_rate)
+        rate_errors.append(abs(observed_rate - oracle_rate))
+        rate_bias.append(observed_rate - oracle_rate)
+        interval_ms.append(observed_delta * 1000.0)
+
+    return {
+        "pairs": len(rate_errors),
+        "mean_abs_rate_error": _mean(rate_errors),
+        "median_abs_rate_error": _median(rate_errors),
+        "p90_abs_rate_error": _p90(rate_errors),
+        "mean_rate_bias": _mean(rate_bias),
+        "mean_observed_rate": _mean(observed_rates),
+        "mean_oracle_rate": _mean(oracle_rates),
+        "mean_interval_ms": _mean(interval_ms),
+        "corr": _corr(observed_rates, oracle_rates),
+    }
+
+
+def summarize_sparse_landmark_controller(row: dict[str, Any]) -> dict[str, Any]:
+    transcript_rows = row.get("transcript_landmark_rows", [])
+    observation_rows = row.get("conditioned_landmark_rows", [])
+    if not transcript_rows or not observation_rows:
+        return {"segments": 0, "predicted_targets": 0}
+
+    target_rows: list[dict[str, Any]] = []
+    targets_by_index: dict[int, dict[str, Any]] = {}
+    for target in transcript_rows:
+        target_index = _safe_int(target, "target_index", -1)
+        if target_index < 0:
+            continue
+        enriched = dict(target)
+        enriched["_target_index"] = target_index
+        target_rows.append(enriched)
+        targets_by_index[target_index] = enriched
+    target_rows.sort(key=lambda r: int(r["_target_index"]))
+
+    strong_thresholds = {
+        "mbp": 0.80,
+        "fv": 0.70,
+        "w": 0.88,
+        "chjjsh": 0.80,
+        "comma_lull": 0.80,
+    }
+    anchor_reliability = {
+        "mbp": 0.70,
+        "fv": 0.72,
+        "w": 0.72,
+        "chjjsh": 0.75,
+        "comma_lull": 0.65,
+    }
+
+    anchors: list[dict[str, Any]] = []
+    for obs in observation_rows:
+        landmark_type = str(obs.get("type", ""))
+        threshold = strong_thresholds.get(landmark_type)
+        if threshold is None:
+            continue
+        score = _safe_float(obs, "score", 0.0)
+        matched_target_index = _safe_int(obs, "matched_target_index", -1)
+        target = targets_by_index.get(matched_target_index)
+        if target is None or score < threshold:
+            continue
+        normalized_score = max(0.0, min(1.0, (score - threshold) / max(1.0 - threshold, 1e-6)))
+        anchors.append({
+            "target_index": matched_target_index,
+            "type": landmark_type,
+            "score": score,
+            "normalized_score": normalized_score,
+            "reliability": anchor_reliability.get(landmark_type, 0.65),
+            "center": _safe_float(obs, "center", 0.0),
+            "prior_center": _safe_float(target, "prior_center", 0.0),
+        })
+
+    best_anchor_by_target: dict[int, dict[str, Any]] = {}
+    for anchor in anchors:
+        target_index = int(anchor["target_index"])
+        current = best_anchor_by_target.get(target_index)
+        if current is None:
+            best_anchor_by_target[target_index] = anchor
+            continue
+        current_rank = (
+            float(current["normalized_score"]),
+            float(current["score"]),
+            -abs(float(current["center"]) - float(current["prior_center"])),
+        )
+        candidate_rank = (
+            float(anchor["normalized_score"]),
+            float(anchor["score"]),
+            -abs(float(anchor["center"]) - float(anchor["prior_center"])),
+        )
+        if candidate_rank > current_rank:
+            best_anchor_by_target[target_index] = anchor
+
+    anchors = sorted(
+        best_anchor_by_target.values(),
+        key=lambda r: (float(r["center"]), int(r["target_index"])),
+    )
+
+    if len(anchors) < 2:
+        return {"segments": 0, "predicted_targets": 0}
+
+    predicted_errors = []
+    baseline_errors = []
+    segment_rate_errors = []
+    segment_bias = []
+    updates = 0
+    segments = 0
+
+    def target_center(target: dict[str, Any], key: str) -> float:
+        return _safe_float(target, key, 0.0)
+
+    def fit_recent_mapping(last_anchor_index: int) -> tuple[float, float]:
+        start_anchor_index = max(0, last_anchor_index - 2)
+        window = anchors[start_anchor_index:last_anchor_index + 1]
+        if len(window) < 2:
+            anchor = anchors[last_anchor_index]
+            return 1.0, float(anchor["center"]) - float(anchor["prior_center"])
+
+        weighted_x = 0.0
+        weighted_y = 0.0
+        total_weight = 0.0
+        for anchor in window:
+            weight = max(0.05, float(anchor["normalized_score"]) * float(anchor["reliability"]))
+            x = float(anchor["prior_center"])
+            y = float(anchor["center"])
+            weighted_x += weight * x
+            weighted_y += weight * y
+            total_weight += weight
+        if total_weight <= 0.0:
+            anchor = anchors[last_anchor_index]
+            return 1.0, float(anchor["center"]) - float(anchor["prior_center"])
+
+        mean_x = weighted_x / total_weight
+        mean_y = weighted_y / total_weight
+        numerator = 0.0
+        denominator = 0.0
+        for anchor in window:
+            weight = max(0.05, float(anchor["normalized_score"]) * float(anchor["reliability"]))
+            x = float(anchor["prior_center"]) - mean_x
+            y = float(anchor["center"]) - mean_y
+            numerator += weight * x * y
+            denominator += weight * x * x
+        slope = (numerator / denominator) if denominator > 1e-9 else 1.0
+        slope = max(0.88, min(1.12, slope))
+        intercept = mean_y - slope * mean_x
+        return slope, intercept
+
+    for anchor_index in range(len(anchors) - 1):
+        left = anchors[anchor_index]
+        right = anchors[anchor_index + 1]
+        left_target_index = int(left["target_index"])
+        right_target_index = int(right["target_index"])
+        if right_target_index <= left_target_index:
+            continue
+
+        prior_delta = float(right["prior_center"]) - float(left["prior_center"])
+        observed_delta = float(right["center"]) - float(left["center"])
+        if prior_delta < 0.050 or observed_delta <= 0.0:
+            continue
+
+        measured_rate = max(0.88, min(1.12, observed_delta / prior_delta))
+        fitted_rate, fitted_intercept = fit_recent_mapping(anchor_index + 1)
+        pair_quality = (
+            0.5 * (float(left["normalized_score"]) + float(right["normalized_score"])) *
+            (0.5 * (float(left["reliability"]) + float(right["reliability"])))
+        )
+        sequence_alpha = 0.20 + 0.35 * pair_quality
+        blended_rate = measured_rate * (1.0 - sequence_alpha) + fitted_rate * sequence_alpha
+        blended_rate = max(0.88, min(1.12, blended_rate))
+        left_anchor_prior = float(left["prior_center"])
+        left_anchor_center = float(left["center"])
+        blended_intercept = (
+            (left_anchor_center - blended_rate * left_anchor_prior) * (1.0 - sequence_alpha) +
+            fitted_intercept * sequence_alpha
+        )
+        segment_rate_errors.append(abs(blended_rate - 1.0))
+        segment_bias.append(blended_rate - 1.0)
+        updates += 1
+        segments += 1
+
+        for target_index in range(left_target_index + 1, right_target_index):
+            target = targets_by_index.get(target_index)
+            if target is None:
+                continue
+            prior_center = target_center(target, "prior_center")
+            gold_center = target_center(target, "gold_center")
+            predicted_center = blended_intercept + prior_center * blended_rate
+            predicted_errors.append(abs(predicted_center - gold_center) * 1000.0)
+            baseline_errors.append(abs(prior_center - gold_center) * 1000.0)
+
+    if not predicted_errors:
+        return {
+            "segments": segments,
+            "updates": updates,
+            "predicted_targets": 0,
+        }
+
+    improved = sum(1 for p, b in zip(predicted_errors, baseline_errors) if p + 1e-6 < b)
+    worsened = sum(1 for p, b in zip(predicted_errors, baseline_errors) if p > b + 1e-6)
+    return {
+        "segments": segments,
+        "updates": updates,
+        "predicted_targets": len(predicted_errors),
+        "mean_predicted_error_ms": _mean(predicted_errors),
+        "mean_baseline_error_ms": _mean(baseline_errors),
+        "median_predicted_error_ms": _median(predicted_errors),
+        "median_baseline_error_ms": _median(baseline_errors),
+        "p90_predicted_error_ms": _p90(predicted_errors),
+        "p90_baseline_error_ms": _p90(baseline_errors),
+        "improved_rate": improved / max(len(predicted_errors), 1),
+        "worsened_rate": worsened / max(len(predicted_errors), 1),
+        "mean_measured_rate_abs_error": _mean(segment_rate_errors),
+        "mean_measured_rate_bias": _mean(segment_bias),
+    }
+
 def compute_summary(rows, graded, ungraded):
     graded_cases = len(graded)
     qualified = [row for row in graded if not _pause_flag(row, "speech_region", "count_mismatch")]
@@ -630,6 +904,8 @@ def compute_summary(rows, graded, ungraded):
     progress_summaries = [row.get("audio_progress_summary", {}) for row in qualified]
     speech_region_summaries = [row.get("speech_region_diagnostics", {}) for row in qualified]
     gap_candidate_summaries = [row.get("gap_candidate_summary", {}) for row in qualified]
+    conditioned_anchor_pace_summaries = [row.get("conditioned_anchor_pace_summary", {}) for row in qualified]
+    sparse_controller_summaries = [row.get("sparse_landmark_controller_summary", {}) for row in qualified]
     advance_reason_counts: Counter[str] = Counter()
     gap_decision_counts: Counter[str] = Counter()
     for progress_summary in progress_summaries:
@@ -662,6 +938,7 @@ def compute_summary(rows, graded, ungraded):
     }
 
     landmark_types = ["mbp", "fv", "w", "chjjsh", "round", "comma_lull"]
+    landmark_score_thresholds = ["0.60", "0.70", "0.80", "0.90"]
     landmark_rollup: dict[str, dict[str, Any]] = {}
     conditioned_landmark_rollup: dict[str, dict[str, Any]] = {}
     for landmark_type in landmark_types:
@@ -674,6 +951,14 @@ def compute_summary(rows, graded, ungraded):
             "window_peak_weighted_sum": 0.0,
             "matched_score_weighted_sum": 0.0,
             "window_hit_weighted_sum": 0.0,
+            "thresholds": {
+                threshold: {
+                    "observation_count": 0,
+                    "matched_observation_count": 0,
+                    "matched_target_count": 0,
+                }
+                for threshold in landmark_score_thresholds
+            },
         }
         conditioned_landmark_rollup[landmark_type] = {
             "target_count": 0,
@@ -684,6 +969,14 @@ def compute_summary(rows, graded, ungraded):
             "window_peak_weighted_sum": 0.0,
             "matched_score_weighted_sum": 0.0,
             "window_hit_weighted_sum": 0.0,
+            "thresholds": {
+                threshold: {
+                    "observation_count": 0,
+                    "matched_observation_count": 0,
+                    "matched_target_count": 0,
+                }
+                for threshold in landmark_score_thresholds
+            },
         }
 
     for row in qualified:
@@ -706,6 +999,13 @@ def compute_summary(rows, graded, ungraded):
             bucket["window_peak_weighted_sum"] += float(stats.get("mean_target_window_peak_score", 0.0)) * target_count
             bucket["matched_score_weighted_sum"] += float(stats.get("mean_matched_observation_score", 0.0)) * matched_observation_count
             bucket["window_hit_weighted_sum"] += float(stats.get("target_window_hit_rate", 0.0)) * target_count
+            threshold_map = stats.get("thresholds", {})
+            for threshold in landmark_score_thresholds:
+                threshold_stats = threshold_map.get(threshold, {})
+                threshold_bucket = bucket["thresholds"][threshold]
+                threshold_bucket["observation_count"] += int(threshold_stats.get("observation_count", 0))
+                threshold_bucket["matched_observation_count"] += int(threshold_stats.get("matched_observation_count", 0))
+                threshold_bucket["matched_target_count"] += int(threshold_stats.get("matched_target_count", 0))
 
         conditioned_audit = row.get("conditioned_landmark_audit", {})
         if conditioned_audit.get("available", False):
@@ -725,6 +1025,13 @@ def compute_summary(rows, graded, ungraded):
                 bucket["window_peak_weighted_sum"] += float(stats.get("mean_target_window_peak_score", 0.0)) * target_count
                 bucket["matched_score_weighted_sum"] += float(stats.get("mean_matched_observation_score", 0.0)) * matched_observation_count
                 bucket["window_hit_weighted_sum"] += float(stats.get("target_window_hit_rate", 0.0)) * target_count
+                threshold_map = stats.get("thresholds", {})
+                for threshold in landmark_score_thresholds:
+                    threshold_stats = threshold_map.get(threshold, {})
+                    threshold_bucket = bucket["thresholds"][threshold]
+                    threshold_bucket["observation_count"] += int(threshold_stats.get("observation_count", 0))
+                    threshold_bucket["matched_observation_count"] += int(threshold_stats.get("matched_observation_count", 0))
+                    threshold_bucket["matched_target_count"] += int(threshold_stats.get("matched_target_count", 0))
 
     region_drop_rows = [drop_row for row in qualified for drop_row in row.get("region_drop_rows", [])]
     drop_regions_with_drops = [r for r in region_drop_rows if _safe_int(r, "dropped_event_count", 0) > 0]
@@ -895,6 +1202,8 @@ def compute_summary(rows, graded, ungraded):
         "intra_word_center_ms": _mean(_nested(row, "intra_word_alignment", "mean_abs_center_error_ms") for row in qualified),
         "advance_reason_counts": dict(sorted(advance_reason_counts.items())),
         "phone_class_errors": phone_class_errors,
+        "conditioned_anchor_pace_available": any(int(s.get("pairs", 0)) > 0 for s in conditioned_anchor_pace_summaries),
+        "sparse_landmark_controller_available": any(int(s.get("predicted_targets", 0)) > 0 for s in sparse_controller_summaries),
     }
     if direct_aligner_available:
         summary["direct_aligner_match_rate"] = direct_matches / max(direct_refs, 1)
@@ -930,6 +1239,18 @@ def compute_summary(rows, graded, ungraded):
             summary[f"landmark_{landmark_type}_target_window_hit_rate"] = (
                 bucket["window_hit_weighted_sum"] / target_count if target_count else 0.0
             )
+            for threshold in landmark_score_thresholds:
+                threshold_bucket = bucket["thresholds"][threshold]
+                threshold_obs = threshold_bucket["observation_count"]
+                threshold_matched_obs = threshold_bucket["matched_observation_count"]
+                threshold_matched_targets = threshold_bucket["matched_target_count"]
+                summary[f"landmark_{landmark_type}_precision_at_{threshold}"] = (
+                    threshold_matched_obs / threshold_obs if threshold_obs else 0.0
+                )
+                summary[f"landmark_{landmark_type}_recall_at_{threshold}"] = (
+                    threshold_matched_targets / target_count if target_count else 0.0
+                )
+                summary[f"landmark_{landmark_type}_observation_count_at_{threshold}"] = threshold_obs
             total_landmark_targets += target_count
             total_landmark_observations += observation_count
             total_landmark_matches += matched_target_count
@@ -970,6 +1291,26 @@ def compute_summary(rows, graded, ungraded):
             summary[f"conditioned_landmark_{landmark_type}_target_window_hit_rate"] = (
                 bucket["window_hit_weighted_sum"] / target_count if target_count else 0.0
             )
+            best_high_precision_threshold = ""
+            best_high_precision_recall = -1.0
+            best_high_precision_precision = 0.0
+            for threshold in landmark_score_thresholds:
+                threshold_bucket = bucket["thresholds"][threshold]
+                threshold_obs = threshold_bucket["observation_count"]
+                threshold_matched_obs = threshold_bucket["matched_observation_count"]
+                threshold_matched_targets = threshold_bucket["matched_target_count"]
+                threshold_precision = threshold_matched_obs / threshold_obs if threshold_obs else 0.0
+                threshold_recall = threshold_matched_targets / target_count if target_count else 0.0
+                summary[f"conditioned_landmark_{landmark_type}_precision_at_{threshold}"] = threshold_precision
+                summary[f"conditioned_landmark_{landmark_type}_recall_at_{threshold}"] = threshold_recall
+                summary[f"conditioned_landmark_{landmark_type}_observation_count_at_{threshold}"] = threshold_obs
+                if threshold_obs > 0 and threshold_precision >= 0.90 and threshold_recall > best_high_precision_recall:
+                    best_high_precision_threshold = threshold
+                    best_high_precision_recall = threshold_recall
+                    best_high_precision_precision = threshold_precision
+            summary[f"conditioned_landmark_{landmark_type}_best_high_precision_threshold"] = best_high_precision_threshold
+            summary[f"conditioned_landmark_{landmark_type}_best_high_precision_precision"] = best_high_precision_precision
+            summary[f"conditioned_landmark_{landmark_type}_best_high_precision_recall"] = max(best_high_precision_recall, 0.0)
             total_landmark_targets += target_count
             total_landmark_observations += observation_count
             total_landmark_matches += matched_target_count
@@ -978,6 +1319,79 @@ def compute_summary(rows, graded, ungraded):
         summary["conditioned_landmark_matched_target_count"] = total_landmark_matches
         summary["conditioned_landmark_recall"] = (
             total_landmark_matches / total_landmark_targets if total_landmark_targets else 0.0
+        )
+    if summary["conditioned_anchor_pace_available"]:
+        summary["conditioned_anchor_pace_pairs"] = sum(int(s.get("pairs", 0)) for s in conditioned_anchor_pace_summaries)
+        weighted_pairs = max(summary["conditioned_anchor_pace_pairs"], 1)
+        summary["conditioned_anchor_pace_mean_abs_rate_error"] = sum(
+            float(s.get("mean_abs_rate_error", 0.0)) * int(s.get("pairs", 0))
+            for s in conditioned_anchor_pace_summaries
+        ) / weighted_pairs
+        summary["conditioned_anchor_pace_median_abs_rate_error"] = _mean(
+            s.get("median_abs_rate_error", 0.0) for s in conditioned_anchor_pace_summaries if int(s.get("pairs", 0)) > 0
+        )
+        summary["conditioned_anchor_pace_p90_abs_rate_error"] = _mean(
+            s.get("p90_abs_rate_error", 0.0) for s in conditioned_anchor_pace_summaries if int(s.get("pairs", 0)) > 0
+        )
+        summary["conditioned_anchor_pace_mean_rate_bias"] = sum(
+            float(s.get("mean_rate_bias", 0.0)) * int(s.get("pairs", 0))
+            for s in conditioned_anchor_pace_summaries
+        ) / weighted_pairs
+        summary["conditioned_anchor_pace_mean_observed_rate"] = _mean(
+            s.get("mean_observed_rate", 0.0) for s in conditioned_anchor_pace_summaries if int(s.get("pairs", 0)) > 0
+        )
+        summary["conditioned_anchor_pace_mean_oracle_rate"] = _mean(
+            s.get("mean_oracle_rate", 0.0) for s in conditioned_anchor_pace_summaries if int(s.get("pairs", 0)) > 0
+        )
+        summary["conditioned_anchor_pace_mean_interval_ms"] = _mean(
+            s.get("mean_interval_ms", 0.0) for s in conditioned_anchor_pace_summaries if int(s.get("pairs", 0)) > 0
+        )
+        summary["conditioned_anchor_pace_corr"] = _mean(
+            s.get("corr", 0.0) for s in conditioned_anchor_pace_summaries if int(s.get("pairs", 0)) > 0
+        )
+    if summary["sparse_landmark_controller_available"]:
+        summary["sparse_landmark_controller_segments"] = sum(
+            int(s.get("segments", 0)) for s in sparse_controller_summaries
+        )
+        summary["sparse_landmark_controller_updates"] = sum(
+            int(s.get("updates", 0)) for s in sparse_controller_summaries
+        )
+        predicted_targets = sum(int(s.get("predicted_targets", 0)) for s in sparse_controller_summaries)
+        summary["sparse_landmark_controller_predicted_targets"] = predicted_targets
+        weighted = max(predicted_targets, 1)
+        summary["sparse_landmark_controller_mean_predicted_error_ms"] = sum(
+            float(s.get("mean_predicted_error_ms", 0.0)) * int(s.get("predicted_targets", 0))
+            for s in sparse_controller_summaries
+        ) / weighted
+        summary["sparse_landmark_controller_mean_baseline_error_ms"] = sum(
+            float(s.get("mean_baseline_error_ms", 0.0)) * int(s.get("predicted_targets", 0))
+            for s in sparse_controller_summaries
+        ) / weighted
+        summary["sparse_landmark_controller_median_predicted_error_ms"] = _mean(
+            s.get("median_predicted_error_ms", 0.0) for s in sparse_controller_summaries if int(s.get("predicted_targets", 0)) > 0
+        )
+        summary["sparse_landmark_controller_median_baseline_error_ms"] = _mean(
+            s.get("median_baseline_error_ms", 0.0) for s in sparse_controller_summaries if int(s.get("predicted_targets", 0)) > 0
+        )
+        summary["sparse_landmark_controller_p90_predicted_error_ms"] = _mean(
+            s.get("p90_predicted_error_ms", 0.0) for s in sparse_controller_summaries if int(s.get("predicted_targets", 0)) > 0
+        )
+        summary["sparse_landmark_controller_p90_baseline_error_ms"] = _mean(
+            s.get("p90_baseline_error_ms", 0.0) for s in sparse_controller_summaries if int(s.get("predicted_targets", 0)) > 0
+        )
+        summary["sparse_landmark_controller_improved_rate"] = sum(
+            float(s.get("improved_rate", 0.0)) * int(s.get("predicted_targets", 0))
+            for s in sparse_controller_summaries
+        ) / weighted
+        summary["sparse_landmark_controller_worsened_rate"] = sum(
+            float(s.get("worsened_rate", 0.0)) * int(s.get("predicted_targets", 0))
+            for s in sparse_controller_summaries
+        ) / weighted
+        summary["sparse_landmark_controller_mean_measured_rate_abs_error"] = _mean(
+            s.get("mean_measured_rate_abs_error", 0.0) for s in sparse_controller_summaries if int(s.get("predicted_targets", 0)) > 0
+        )
+        summary["sparse_landmark_controller_mean_measured_rate_bias"] = _mean(
+            s.get("mean_measured_rate_bias", 0.0) for s in sparse_controller_summaries if int(s.get("predicted_targets", 0)) > 0
         )
     if audio_progress_available:
         summary.update({
