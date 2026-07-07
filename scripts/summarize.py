@@ -1,6 +1,7 @@
 import csv
 import json
 import pathlib
+import re
 import sys
 from collections import Counter
 
@@ -61,6 +62,130 @@ def _run_length_ms(rows: list[dict], predicate) -> float:
 
 def _mean(values: list[float]) -> float:
     return sum(values) / len(values) if values else 0.0
+
+
+def _median(values: list[float]) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    mid = len(ordered) // 2
+    if len(ordered) % 2 == 1:
+        return ordered[mid]
+    return 0.5 * (ordered[mid - 1] + ordered[mid])
+
+
+def _parse_words_and_boundaries(text: str) -> tuple[list[str], list[str]]:
+    tokens = re.findall(r"[A-Za-z0-9']+|[.,;:!?-]", text)
+    words: list[str] = []
+    boundaries: list[str] = []
+    for token in tokens:
+        if re.fullmatch(r"[A-Za-z0-9']+", token):
+            words.append(token.lower())
+            boundaries.append("\0")
+        elif token in ".,;:!?-" and boundaries:
+            boundaries[-1] = token
+    return words, boundaries
+
+
+def _classify_comma_pause(words: list[str], boundaries: list[str], word_index: int) -> str:
+    boundary = boundaries[word_index] if word_index < len(boundaries) else "\0"
+    if boundary in ".!?;:-":
+        return "HardBreakPause"
+    if boundary != ",":
+        return "None"
+
+    clause_starters = {
+        "what", "when", "where", "why", "how", "who", "whom", "whose", "which",
+        "can", "could", "would", "will", "did", "do", "does", "is", "are", "was", "were",
+        "have", "has", "had", "i", "you", "we", "they", "he", "she", "it",
+        "though", "because", "but", "so", "then", "well",
+    }
+    list_conjunctions = {"and", "or"}
+
+    sentence_start = 0
+    for i in range(word_index - 1, -1, -1):
+        if boundaries[i] in ".!?-":
+            sentence_start = i + 1
+            break
+
+    sentence_end = len(words) - 1
+    for i in range(word_index + 1, len(boundaries)):
+        if boundaries[i] in ".!?-":
+            sentence_end = i
+            break
+
+    comma_count_in_sentence = 0
+    has_list_conjunction_ahead = False
+    for i in range(sentence_start, min(sentence_end, len(boundaries) - 1) + 1):
+        if boundaries[i] == ",":
+            comma_count_in_sentence += 1
+        if i > word_index and i < len(words) and words[i] in list_conjunctions:
+            has_list_conjunction_ahead = True
+
+    next_word = words[word_index + 1] if word_index + 1 < len(words) else ""
+    clause_starter_ahead = bool(next_word) and next_word in clause_starters
+    looks_like_list = (comma_count_in_sentence >= 2 or has_list_conjunction_ahead) and not clause_starter_ahead
+    return "SoftListPause" if looks_like_list else "HardBreakPause"
+
+
+def load_comma_pause_summary(root: pathlib.Path, case_names: list[str]) -> dict:
+    transcripts_root = pathlib.Path(__file__).resolve().parents[1] / "inputs" / "transcripts"
+    soft_planned = 0
+    hard_planned = 0
+    soft_added_ms: list[float] = []
+    hard_added_ms: list[float] = []
+
+    for case in case_names:
+        transcript_path = transcripts_root / f"{case}.txt"
+        commit_path = root / case / "commit_decisions.csv"
+        if not transcript_path.exists() or not commit_path.exists():
+            continue
+
+        text = transcript_path.read_text(encoding="utf-8").strip()
+        words, boundaries = _parse_words_and_boundaries(text)
+        rows = _read_csv_rows(commit_path)
+        if not rows:
+            continue
+
+        first_row_by_word: dict[int, dict] = {}
+        for row in rows:
+            word_index = _as_int(row, "word_index", -1)
+            if word_index >= 0 and word_index not in first_row_by_word:
+                first_row_by_word[word_index] = row
+
+        for word_index, boundary in enumerate(boundaries):
+            if boundary != ",":
+                continue
+            next_word_index = word_index + 1
+            if next_word_index not in first_row_by_word:
+                continue
+
+            pause_class = _classify_comma_pause(words, boundaries, word_index)
+            if pause_class == "SoftListPause":
+                soft_planned += 1
+            elif pause_class == "HardBreakPause":
+                hard_planned += 1
+            else:
+                continue
+
+            next_total_pause = _as_float(first_row_by_word[next_word_index], "total_paused_at_commit")
+            prev_total_pause = _as_float(first_row_by_word.get(word_index, {}), "total_paused_at_commit")
+            added_pause_ms = max(0.0, next_total_pause - prev_total_pause) * 1000.0
+            if pause_class == "SoftListPause":
+                soft_added_ms.append(added_pause_ms)
+            else:
+                hard_added_ms.append(added_pause_ms)
+
+    return {
+        "soft_planned": soft_planned,
+        "hard_planned": hard_planned,
+        "soft_fired": sum(1 for value in soft_added_ms if value > 0.001),
+        "hard_fired": sum(1 for value in hard_added_ms if value > 0.001),
+        "soft_mean_ms": _mean(soft_added_ms),
+        "soft_median_ms": _median(soft_added_ms),
+        "hard_mean_ms": _mean(hard_added_ms),
+        "hard_median_ms": _median(hard_added_ms),
+    }
 
 
 def load_occupancy_summary(case_dir: pathlib.Path) -> dict:
@@ -491,6 +616,7 @@ def main() -> int:
     rows, graded, ungraded = load_case_grades(root, gold_root)
     summary = compute_summary(rows, graded, ungraded)
     write_summary(root, summary)
+    comma_pause_summary = load_comma_pause_summary(root, [row.get("case", "") for row in graded])
 
     for row in graded:
         case = row.get("case", "")
@@ -926,6 +1052,16 @@ def main() -> int:
         f"WORDS assignment_rate={summary.get('word_assignment_rate', summary['word_f1']):.4f} detected_start_ms={summary['detected_word_onset_ms']:.3f} "
         f"intra_word_coverage={summary['intra_word_coverage_rate']:.4f} "
         f"intra_word_center_ms={summary['intra_word_center_ms']:.3f}"
+    )
+    print(
+        f"COMMA_PAUSES soft_planned={int(comma_pause_summary.get('soft_planned', 0))} "
+        f"soft_fired={int(comma_pause_summary.get('soft_fired', 0))} "
+        f"soft_mean_ms={float(comma_pause_summary.get('soft_mean_ms', 0.0)):.1f} "
+        f"soft_median_ms={float(comma_pause_summary.get('soft_median_ms', 0.0)):.1f} "
+        f"hard_planned={int(comma_pause_summary.get('hard_planned', 0))} "
+        f"hard_fired={int(comma_pause_summary.get('hard_fired', 0))} "
+        f"hard_mean_ms={float(comma_pause_summary.get('hard_mean_ms', 0.0)):.1f} "
+        f"hard_median_ms={float(comma_pause_summary.get('hard_median_ms', 0.0)):.1f}"
     )
     print(
         f"WORD_STATS "
