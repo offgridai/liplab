@@ -2,254 +2,122 @@
 
 ## Overview
 
-OffgridAI Lipsync is a real-time streaming viseme scheduler for MetaHuman characters.
+OffgridAI Lipsync is a streaming viseme scheduler.
 
-The system follows a strict ownership model:
+Ownership is strict:
 
-- Transcript owns viseme identity.
-- PCM audio owns speech timing.
-- The runtime scheduler owns placement.
-- The FaceDriver owns rendering.
+- transcript owns viseme identity and order
+- PCM audio occupancy owns when speech is active
+- runtime scheduling owns when planned visemes are committed
+- the performer and face driver only render committed events
 
-The lipsync core does not consume TTS hint streams, text-progress estimates, token indices, or predicted word schedules.
-
-The design is intentionally streaming-first and avoids global sentence alignment.
-
----
+The active runtime does not use TTS hint streams, text-progress estimates, token indices, predicted word schedules, or acoustic identity overrides.
 
 ## Runtime Pipeline
 
 ```text
 Transcript
-    ↓
-TextVisemePlanner
-    ↓
-Planned Viseme Track
-    ↓
-Runtime Session
-    ├─ StreamingSpeechDetector
-    ├─ OnlinePhoneAligner
-    └─ RuntimeAdapter
-    ↓
-Committed Viseme Track
-    ↓
-VisemePerformer
-    ↓
-FaceDriver
+  -> TextVisemePlanner
+  -> Planned phone + viseme chain
+  -> RuntimeSession
+       -> StreamingSpeechDetector
+       -> RuntimeAdapter
+  -> Committed viseme track
+  -> VisemePerformer
+  -> FaceDriver
 ```
 
----
-
-## Component Responsibilities
+## Active Components
 
 ### TextVisemePlanner
 
-Converts transcript text into an ordered viseme plan.
+The planner converts transcript text into:
 
-Responsibilities:
+- a dense expected phone chain
+- ordered visible viseme events
+- per-word boundary punctuation metadata
+- per-word speech-region ownership metadata
 
-- Text normalization
-- Phoneme generation
-- Phoneme → MetaHuman viseme mapping
-- Relative weighting
-- Stable ordering
-
-The planner determines:
-
-- Which visemes exist
-- Their order
-- Their relative importance
-
-The planner does not determine final timing.
-
----
+The planner provides a duration prior only. It does not own final timestamps.
 
 ### StreamingSpeechDetector
 
-Analyzes incoming streamed PCM audio.
+The detector consumes streamed PCM and produces:
 
-Purpose:
+- observed speech-region opens
+- observed speech-region closes
+- audio feature frames used for occupancy and punctuation-hold decisions
 
-- Detect speech activity
-- Detect pauses
-- Detect resumes
-- Detect speech completion
-
-The detector is not a phoneme recognizer.
-
-It exists only to determine where articulation may occur.
-
-PCM audio occupancy is the timing authority.
-
----
-
-### OnlinePhoneAligner
-
-Provides lightweight phone-class evidence from observed PCM speech.
-
-Purpose:
-
-- Improve local placement confidence
-- Improve alignment inside active speech regions
-
-The aligner does not choose viseme identity.
-
-Transcript ownership remains authoritative.
-
----
+The detector is the timing authority for coarse speech activity.
 
 ### RuntimeAdapter
 
-The RuntimeAdapter incrementally converts planned events into committed events.
+The adapter maps planned phones onto observed active speech time and commits visible visemes monotonically.
 
-Properties:
+Current behavior:
 
-- Monotonic
-- Streaming-safe
-- Local decision making
-- Bounded future commitment
+1. Wait for the first observed speech-region open.
+2. Start a monotonic active-speech playhead from that observed start.
+3. Advance through the planned phone chain using duration priors.
+4. Before selected punctuation boundaries, open a bounded hold.
+5. During the hold, watch the live audio frames for a real lull and resumed speech.
+6. If a resumed speech cue is observed, re-anchor the paused clock to that observed resume point.
+7. If no useful cue arrives before the deadline, release the hold and continue monotonically.
 
-The adapter:
+The adapter never rewrites committed events.
 
-1. Opens on observed speech onset.
-2. Advances monotonically through the dense planned phone path.
-3. Converts phone progress into committed visible viseme times.
-4. Applies bounded punctuation-hold probes before selected word boundaries.
-5. Waits for the next observed speech onset only when a real region close is detected.
+### VisemePerformer
 
-The runtime never rewrites committed events.
+The performer samples committed events and converts them into pose weights.
 
----
+It does not schedule events.
 
-## Current Timing Rules
+## Current Pause / Resume Model
 
-The current runtime design is:
+Pause and resume are handled only in the runtime adapter.
 
-- speech occupancy owns observed speech-region open / close
-- transcript + CMU phones own identity and order
-- runtime maps elapsed active speech time onto the dense phone path
-- committed playback remains monotonic and append-only
+There is one active mechanism:
 
-Important details:
+- punctuation may open a bounded audio-aware hold
+- the hold watches occupancy / low-energy evidence
+- if speech resumes after a real lull, the playhead is re-anchored to that resume instant
+- otherwise the hold expires and playback continues
 
-- The planner emits one dense phone chain for the line. It does not pre-divide visemes into text-owned speech regions.
-- Punctuation is a runtime prior, not a text-imposed silence promise.
-- Soft punctuation `, ; :` triggers a `120ms` close probe.
-- Hard punctuation `. ? !` triggers a `260ms` close probe.
-- If speech actually closes during the probe, playback waits for the next observed speech onset.
-- If speech does not close, playback resumes and continues monotonically.
-- Ordinary word boundaries do not create runtime pause ownership, but the duration prior currently includes a small `20ms` inter-word spacer.
+Current hold classes:
 
-This keeps the scheduler simple:
+- `SoftListPause`: used for list-like commas, up to `450ms`
+- `HardBreakPause`: used for hard punctuation and clause-break commas, up to `1200ms`
 
-- no TTS hint timing
-- no text-progress ownership
-- no committed-event rewrites
-- no dropping remaining visemes just because a detected region ended
+There is no separate older state machine that waits for a text-owned future region. Playback is driven by the observed stream plus the bounded hold.
 
----
+## Timing Prior
 
-## Commit Horizon
+The planner supplies relative durations, not absolute timestamps.
 
-The runtime commits only a limited distance into the future.
+Current prior details:
 
-Benefits:
-
-- Better adaptation to live audio timing
-- Reduced rigidity
-- Better handling of punctuation-driven close probes
-- Better handling of variable speech-region timing
-
-The scheduler intentionally avoids solving the entire sentence early.
-
----
-
-## Committed Track
-
-The committed track is the authoritative runtime output.
-
-Properties:
-
-- Ordered
-- Monotonic
-- Immutable after commit
-- Safe for playback
-
-All rendering consumes committed events only.
-
----
-
-## VisemePerformer
-
-Samples committed viseme events and converts them into pose weights.
-
-Responsibilities:
-
-- Weight evaluation
-- Transition shaping
-- Runtime sampling
-
-The performer does not schedule events.
-
----
-
-## FaceDriver
-
-The FaceDriver renders the final MetaHuman mouth poses.
-
-Responsibilities:
-
-- Blend pose weights
-- Drive facial controls
-- Apply transitions
-
-The FaceDriver does not reinterpret timing.
-
-The FaceDriver does not perform scheduling.
-
----
+- phone weights come from the text plan
+- runtime scales those weights into active-speech seconds
+- adjacent words get a small `20ms` spacer in prior space
+- committed centers are lead-adjusted per pose so strongly visible mouth shapes can land slightly ahead of their nominal center
 
 ## Core Invariants
 
-### Transcript Owns Identity
+- transcript owns viseme identity
+- audio owns coarse speech timing
+- committed playback is monotonic
+- committed events are append-only
+- planned visible visemes are not permanently suppressed as a timing shortcut
+- no overlapping fallback scheduler owns the same decision
 
-Audio never changes which viseme belongs to a word.
+## Harness Relationship
 
-### Audio Owns Timing
+`offgrid_dropin` is the authoritative runtime implementation shared with OffgridAI.
 
-Speech activity determines when articulation may occur.
+The standalone harness exists to:
 
-### Local Decisions
+- stream corpus audio through the same code
+- export inspectable logs
+- compare committed output against gold labels
 
-Scheduling decisions are made near the active playback horizon.
-
-### Monotonic Playback
-
-Events always advance forward through the plan.
-
-### No Permanent Suppression
-
-Planned visemes are expected to reach the committed track.
-
-### Phrase Ownership
-
-Speech before a pause belongs to the earlier phrase.
-
-Speech after a pause belongs to the later phrase.
-
-### Streaming First
-
-The runtime operates on partial future information and does not require complete audio.
-
----
-
-## Current Design Notes
-
-- PCM audio occupancy is the primary timing signal.
-- Phone alignment acts as secondary placement evidence.
-- Transcript-derived viseme identity remains authoritative.
-- Runtime scheduling is incremental rather than global.
-- FaceDriver remains a rendering-only system.
-- Committed events are never reordered.
-
-This architecture prioritizes stability, explainability, and streaming robustness over perfect offline alignment.
+It should not diverge into a second lipsync implementation.

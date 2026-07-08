@@ -13,6 +13,18 @@ Standalone lipsync lab for iterating on the OffgridAI lipsync core outside Unrea
 - Keep the iterated lipsync logic compatible with Offgrid LineCoach while avoiding LineCoach edits.
 - Use transcript + PCM audio only; do not consume TTS hint streams, text-progress estimates, token indices, or predicted word schedules.
 
+## Current Runtime Shape
+
+The active shared runtime is intentionally simple:
+
+- transcript plans a dense phone/viseme chain
+- streaming speech occupancy opens and closes speech regions
+- punctuation may open a bounded audio-aware hold
+- resumed speech after a real lull re-anchors the paused clock
+- otherwise playback continues monotonically on the duration prior
+
+See [lipsync.md](C:\git\liplab\lipsync.md) for the current runtime contract.
+
 ## Layout
 
 ```text

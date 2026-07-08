@@ -166,7 +166,7 @@ static float HoldSecondsForBoundary(TCHAR C, EOffgridAIBoundaryPauseClass PauseC
     case EOffgridAIBoundaryPauseClass::SoftListPause:
         return 0.450f;
     case EOffgridAIBoundaryPauseClass::HardBreakPause:
-        return 0.260f;
+        return 1.200f;
     case EOffgridAIBoundaryPauseClass::None:
     default:
         return HoldSecondsForBoundary(C);
@@ -193,7 +193,7 @@ static const FOffgridAIStreamingAudioFeatureFrame* FindFeatureFrameAtPlayback(
     return AudioFeatureFrames->Num() > 0 ? &(*AudioFeatureFrames)[0] : nullptr;
 }
 
-static bool IsSoftListPauseLullFrame(const FOffgridAIStreamingAudioFeatureFrame* Frame)
+static bool IsPunctuationPauseLullFrame(const FOffgridAIStreamingAudioFeatureFrame* Frame)
 {
     if (!Frame)
     {
@@ -206,7 +206,7 @@ static bool IsSoftListPauseLullFrame(const FOffgridAIStreamingAudioFeatureFrame*
         || (Frame->RMSNorm <= 0.18f && Frame->SpeechEvidence <= 0.32f);
 }
 
-static bool IsSoftListPauseSpeechFrame(const FOffgridAIStreamingAudioFeatureFrame* Frame)
+static bool IsPunctuationPauseSpeechFrame(const FOffgridAIStreamingAudioFeatureFrame* Frame)
 {
     if (!Frame)
     {
@@ -268,68 +268,43 @@ static void AdvancePlaybackHoldState(
         return;
     }
 
+    auto ReanchorPausedClockToObservedResume = [&](float ResumeClockSec)
+    {
+        const float DesiredPausedSec =
+            FMath::Max(ResumeClockSec - InOutState.PlaybackOriginSec - InOutState.ActivePlayheadSec, 0.0f);
+        InOutState.TotalPausedSec = DesiredPausedSec;
+    };
+
     if (InOutState.bHoldActive)
     {
-        InOutState.TotalPausedSec += DeltaSec;
-
         const FOffgridAIStreamingAudioFeatureFrame* PlaybackFrame =
             FindFeatureFrameAtPlayback(Input.AudioFeatureFrames, PlaybackSec);
-        const bool bSoftListPause = InOutState.ActivePauseClass == EOffgridAIBoundaryPauseClass::SoftListPause;
+        const bool bPauseTimeShouldAccumulate = InOutState.bObservedPauseLull;
 
-        if (InOutState.bWaitingForSpeechResume)
+        if (bPauseTimeShouldAccumulate)
         {
-            if (EffectiveRegions.IsValidIndex(InOutState.ResumeRegionIndex)
-                && PlaybackSec >= EffectiveRegions[InOutState.ResumeRegionIndex].StartSec)
-            {
-                InOutState.bHoldActive = false;
-                InOutState.bWaitingForSpeechResume = false;
-                InOutState.bSoftPauseObservedLull = false;
-                InOutState.HoldRegionIndex = InOutState.ResumeRegionIndex;
-                InOutState.ResumeRegionIndex = INDEX_NONE;
-                InOutState.ActivePauseClass = EOffgridAIBoundaryPauseClass::None;
-            }
+            InOutState.TotalPausedSec += DeltaSec;
         }
-        else
-        {
-            if (bSoftListPause)
-            {
-                InOutState.bSoftPauseObservedLull =
-                    InOutState.bSoftPauseObservedLull || IsSoftListPauseLullFrame(PlaybackFrame);
 
-                const float MinSoftHoldSec = 0.060f;
-                const float HoldElapsedSec = PlaybackSec - InOutState.HoldStartPlaybackSec;
-                if (InOutState.bSoftPauseObservedLull
-                    && HoldElapsedSec >= MinSoftHoldSec
-                    && IsSoftListPauseSpeechFrame(PlaybackFrame))
-                {
-                    InOutState.bHoldActive = false;
-                    InOutState.ResumeRegionIndex = INDEX_NONE;
-                    InOutState.bSoftPauseObservedLull = false;
-                    InOutState.ActivePauseClass = EOffgridAIBoundaryPauseClass::None;
-                }
-                else if (PlaybackSec >= InOutState.HoldDeadlinePlaybackSec)
-                {
-                    InOutState.bHoldActive = false;
-                    InOutState.ResumeRegionIndex = INDEX_NONE;
-                    InOutState.bSoftPauseObservedLull = false;
-                    InOutState.ActivePauseClass = EOffgridAIBoundaryPauseClass::None;
-                }
-            }
-            else
-            {
-                if (EffectiveRegions.IsValidIndex(InOutState.HoldRegionIndex)
-                    && PlaybackSec >= EffectiveRegions[InOutState.HoldRegionIndex].EndSec)
-                {
-                    InOutState.bWaitingForSpeechResume = true;
-                    InOutState.ResumeRegionIndex = InOutState.HoldRegionIndex + 1;
-                }
-                else if (PlaybackSec >= InOutState.HoldDeadlinePlaybackSec)
-                {
-                    InOutState.bHoldActive = false;
-                    InOutState.ResumeRegionIndex = INDEX_NONE;
-                    InOutState.ActivePauseClass = EOffgridAIBoundaryPauseClass::None;
-                }
-            }
+        InOutState.bObservedPauseLull =
+            InOutState.bObservedPauseLull || IsPunctuationPauseLullFrame(PlaybackFrame);
+
+        const float MinPauseHoldSec = 0.060f;
+        const float HoldElapsedSec = PlaybackSec - InOutState.HoldStartPlaybackSec;
+        if (InOutState.bObservedPauseLull
+            && HoldElapsedSec >= MinPauseHoldSec
+            && IsPunctuationPauseSpeechFrame(PlaybackFrame))
+        {
+            ReanchorPausedClockToObservedResume(PlaybackSec);
+            InOutState.bHoldActive = false;
+            InOutState.bObservedPauseLull = false;
+            InOutState.ActivePauseClass = EOffgridAIBoundaryPauseClass::None;
+        }
+        else if (PlaybackSec >= InOutState.HoldDeadlinePlaybackSec)
+        {
+            InOutState.bHoldActive = false;
+            InOutState.bObservedPauseLull = false;
+            InOutState.ActivePauseClass = EOffgridAIBoundaryPauseClass::None;
         }
     }
 
@@ -359,27 +334,6 @@ static void BuildWordStartSecondsFromPlaybackClock(
     }
 }
 
-static int32 PlannedSpeechRegionCount(const FOffgridAITextVisemePlan& Plan)
-{
-    int32 RegionCount = 0;
-    for (const int32 RegionIndex : Plan.WordSpeechRegionIndices)
-    {
-        RegionCount = FMath::Max(RegionCount, RegionIndex + 1);
-    }
-    for (const FOffgridAIExpectedPhone& Phone : Plan.ExpectedPhones)
-    {
-        RegionCount = FMath::Max(RegionCount, Phone.SpeechRegionIndex + 1);
-    }
-    return RegionCount;
-}
-
-struct FPlannedSpeechRegionActiveSpan
-{
-    float StartActiveSec = 0.0f;
-    float EndActiveSec = 0.0f;
-    bool bValid = false;
-};
-
 static float SpeechRegionObservedEnd(const FOffgridAIStreamingSpeechRegion& SpeechRegion, float ObservedEndSec, bool bFinal)
 {
     if (SpeechRegion.bEnded || bFinal)
@@ -391,7 +345,6 @@ static float SpeechRegionObservedEnd(const FOffgridAIStreamingSpeechRegion& Spee
 
 static void BuildEffectiveSpeechRegions(
     const TArray<FOffgridAIStreamingSpeechRegion>* SpeechRegions,
-    const TArray<FOffgridAIStreamingAudioFeatureFrame>* AudioFeatureFrames,
     float ObservedEndSec,
     bool bFinal,
     TArray<FEffectiveSpeechRegion>& OutRegions)
@@ -423,13 +376,6 @@ static float ComputeObservedActiveSpeechSeconds(const TArray<FEffectiveSpeechReg
     return Active;
 }
 
-static float ComputeObservedRegionActiveSeconds(const TArray<FEffectiveSpeechRegion>& Regions, int32 RegionIndex)
-{
-    return Regions.IsValidIndex(RegionIndex)
-        ? FMath::Max(Regions[RegionIndex].EndSec - Regions[RegionIndex].StartSec, 0.0f)
-        : 0.0f;
-}
-
 static float ComputeFirstSpeechStart(const TArray<FEffectiveSpeechRegion>& Regions)
 {
     return Regions.Num() > 0 ? Regions[0].StartSec : -1.0f;
@@ -456,125 +402,6 @@ static bool MapActiveSpeechTimeToObservedClock(const TArray<FEffectiveSpeechRegi
         Remaining -= Dur;
     }
     return false;
-}
-
-static bool MapRegionLocalActiveToObservedClock(
-    const TArray<FEffectiveSpeechRegion>& Regions,
-    int32 RegionIndex,
-    float TargetLocalActiveSec,
-    float& OutClockSec)
-{
-    if (!Regions.IsValidIndex(RegionIndex))
-    {
-        return false;
-    }
-
-    const FEffectiveSpeechRegion& Region = Regions[RegionIndex];
-    const float RegionDur = FMath::Max(Region.EndSec - Region.StartSec, 0.0f);
-    OutClockSec = Region.StartSec + FMath::Clamp(TargetLocalActiveSec, 0.0f, RegionDur);
-    return true;
-}
-
-static void BuildPlannedSpeechRegionActiveSpans(
-    const FOffgridAITextVisemePlan& Plan,
-    const TArray<float>& PhoneStartActiveSeconds,
-    const TArray<float>& PhoneEndActiveSeconds,
-    TArray<FPlannedSpeechRegionActiveSpan>& OutSpans)
-{
-    const int32 RegionCount = PlannedSpeechRegionCount(Plan);
-    OutSpans.Init(FPlannedSpeechRegionActiveSpan(), RegionCount);
-    for (int32 PhoneIndex = 0; PhoneIndex < Plan.ExpectedPhones.Num(); ++PhoneIndex)
-    {
-        const FOffgridAIExpectedPhone& Phone = Plan.ExpectedPhones[PhoneIndex];
-        if (!OutSpans.IsValidIndex(Phone.SpeechRegionIndex)
-            || !PhoneStartActiveSeconds.IsValidIndex(PhoneIndex)
-            || !PhoneEndActiveSeconds.IsValidIndex(PhoneIndex))
-        {
-            continue;
-        }
-
-        FPlannedSpeechRegionActiveSpan& Span = OutSpans[Phone.SpeechRegionIndex];
-        const float PhoneStart = PhoneStartActiveSeconds[PhoneIndex];
-        const float PhoneEnd = PhoneEndActiveSeconds[PhoneIndex];
-        if (!Span.bValid)
-        {
-            Span.StartActiveSec = PhoneStart;
-            Span.EndActiveSec = PhoneEnd;
-            Span.bValid = true;
-            continue;
-        }
-
-        Span.StartActiveSec = FMath::Min(Span.StartActiveSec, PhoneStart);
-        Span.EndActiveSec = FMath::Max(Span.EndActiveSec, PhoneEnd);
-    }
-
-    float Cursor = 0.0f;
-    for (FPlannedSpeechRegionActiveSpan& Span : OutSpans)
-    {
-        if (!Span.bValid)
-        {
-            Span.StartActiveSec = Cursor;
-            Span.EndActiveSec = Cursor;
-            continue;
-        }
-        Cursor = FMath::Max(Cursor, Span.EndActiveSec);
-    }
-}
-
-static void BuildWordStartSecondsFromRegionPlayback(
-    const FOffgridAITextVisemePlan& Plan,
-    const TArray<float>& WordStartActiveSeconds,
-    const TArray<FPlannedSpeechRegionActiveSpan>& PlannedRegionSpans,
-    const TArray<FEffectiveSpeechRegion>& EffectiveRegions,
-    TArray<float>& OutWordStartSeconds)
-{
-    OutWordStartSeconds.Init(-1.0f, Plan.WordSpeechRegionIndices.Num());
-    for (int32 WordIndex = 0; WordIndex < Plan.WordSpeechRegionIndices.Num(); ++WordIndex)
-    {
-        const int32 RegionIndex = Plan.WordSpeechRegionIndices[WordIndex];
-        if (!PlannedRegionSpans.IsValidIndex(RegionIndex) || !PlannedRegionSpans[RegionIndex].bValid)
-        {
-            continue;
-        }
-
-        const float RegionWordStartActiveSec = WordStartActiveSeconds.IsValidIndex(WordIndex)
-            ? WordStartActiveSeconds[WordIndex]
-            : PlannedRegionSpans[RegionIndex].StartActiveSec;
-        const float LocalActiveSec = FMath::Max(
-            RegionWordStartActiveSec - PlannedRegionSpans[RegionIndex].StartActiveSec,
-            0.0f);
-        if (EffectiveRegions.IsValidIndex(RegionIndex))
-        {
-            OutWordStartSeconds[WordIndex] = FMath::Clamp(
-                EffectiveRegions[RegionIndex].StartSec + LocalActiveSec,
-                EffectiveRegions[RegionIndex].StartSec,
-                EffectiveRegions[RegionIndex].EndSec);
-        }
-    }
-}
-
-static void ClampWordStartSecondsToRegions(
-    const FOffgridAITextVisemePlan& Plan,
-    const TArray<FEffectiveSpeechRegion>& EffectiveRegions,
-    TArray<float>& InOutWordStartSeconds)
-{
-    for (int32 WordIndex = 0; WordIndex < InOutWordStartSeconds.Num(); ++WordIndex)
-    {
-        if (InOutWordStartSeconds[WordIndex] < 0.0f || !Plan.WordSpeechRegionIndices.IsValidIndex(WordIndex))
-        {
-            continue;
-        }
-        const int32 RegionIndex = Plan.WordSpeechRegionIndices[WordIndex];
-        if (!EffectiveRegions.IsValidIndex(RegionIndex))
-        {
-            continue;
-        }
-
-        InOutWordStartSeconds[WordIndex] = FMath::Clamp(
-            InOutWordStartSeconds[WordIndex],
-            EffectiveRegions[RegionIndex].StartSec,
-            EffectiveRegions[RegionIndex].EndSec);
-    }
 }
 
 static FName SourcePhoneClassName(const FString& BasePhone)
@@ -945,7 +772,7 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
     const float ObservedEnd = FMath::Max(Input.ObservedAudioBufferEndSec, 0.0f);
 
     TArray<FEffectiveSpeechRegion> EffectiveRegions;
-    BuildEffectiveSpeechRegions(Input.SpeechRegions, Input.AudioFeatureFrames, ObservedEnd, bStreamSealed, EffectiveRegions);
+    BuildEffectiveSpeechRegions(Input.SpeechRegions, ObservedEnd, bStreamSealed, EffectiveRegions);
 
     const float ObservedActiveSec = ComputeObservedActiveSpeechSeconds(EffectiveRegions);
     const float FirstSpeechStart = ComputeFirstSpeechStart(EffectiveRegions);
@@ -969,9 +796,9 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
     // Runtime scheduling:
     // 1. transcript owns viseme identity and order,
     // 2. speech onset owns when playback may start,
-    // 3. punctuation opens a bounded hold window,
-    // 4. a real speech break extends that hold until the next onset,
-    // 5. otherwise playback resumes after the punctuation grace period.
+    // 3. punctuation may open a bounded audio-aware hold,
+    // 4. observed lull + resumed speech re-anchor the playhead,
+    // 5. otherwise the hold expires and playback continues monotonically.
     const float CommitLagSec = bStreamSealed ? 0.0f : 0.030f;
     const float MinLiveLeadSec = bPlaybackFinal ? 0.0f : 0.040f;
     const float MaxLiveLeadSec = bStreamSealed ? 999.0f : FMath::Max(Input.PrerollSec + 0.120f, 0.250f);
@@ -1011,14 +838,11 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             if (HoldSeconds > 0.0f && InOutHoldState.BoundaryWordIndex != BoundaryWordIndex)
             {
                 InOutHoldState.bHoldActive = true;
-                InOutHoldState.bWaitingForSpeechResume = false;
-                InOutHoldState.bSoftPauseObservedLull = false;
+                InOutHoldState.bObservedPauseLull = false;
                 InOutHoldState.BoundaryWordIndex = BoundaryWordIndex;
                 InOutHoldState.ActivePauseClass = BoundaryPauseClass;
                 InOutHoldState.HoldStartPlaybackSec = Input.CurrentPlaybackSec;
                 InOutHoldState.HoldDeadlinePlaybackSec = Input.CurrentPlaybackSec + HoldSeconds;
-                InOutHoldState.HoldRegionIndex = FMath::Max(FindRegionIndexAtPlayback(EffectiveRegions, Input.CurrentPlaybackSec), 0);
-                InOutHoldState.ResumeRegionIndex = InOutHoldState.HoldRegionIndex + 1;
                 break;
             }
         }
