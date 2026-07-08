@@ -114,13 +114,8 @@ struct FOffgridAIPunctuationHoldState
 {
     bool bPlayheadStarted = false;
     bool bHoldActive = false;
-    bool bWaitingForSpeechResume = false;
-    bool bRequireObservedRegionTransition = false;
-    bool bResumeReanchorPending = false;
-    bool bSoftPauseObservedLull = false;
+    bool bObservedPauseLull = false;
     int32 BoundaryWordIndex = INDEX_NONE;
-    int32 ResumeRegionIndex = INDEX_NONE;
-    int32 HoldRegionIndex = INDEX_NONE;
     EOffgridAIBoundaryPauseClass ActivePauseClass = EOffgridAIBoundaryPauseClass::None;
     float PlaybackOriginSec = 0.0f;
     float LastPlaybackSec = 0.0f;
@@ -128,8 +123,6 @@ struct FOffgridAIPunctuationHoldState
     float TotalPausedSec = 0.0f;
     float HoldStartPlaybackSec = 0.0f;
     float HoldDeadlinePlaybackSec = 0.0f;
-    float PlaybackOffsetAdjustSec = 0.0f;
-    float ResumePlaybackSec = 0.0f;
 };
 
 struct FOffgridAILandmarkPacingState
