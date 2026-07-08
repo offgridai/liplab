@@ -1,5 +1,4 @@
 #include "Lipsync/OffgridAILipsyncRuntimeAdapter.h"
-#include "Lipsync/OffgridAIOnlinePhoneAligner.h"
 
 namespace
 {
@@ -8,15 +7,6 @@ static const FName RegionClosedDropReason(TEXT("speech_region_closed_drop"));
 static const FName MissingRegionDropReason(TEXT("speech_region_missing_drop"));
 static constexpr float InterWordSpacerSeconds = 0.020f;
 static constexpr float ActiveDurationScale = 0.90f;
-static constexpr float LandmarkPacingMinRate = 0.88f;
-static constexpr float LandmarkPacingMaxRate = 1.12f;
-static constexpr float LandmarkPacingEmaAlpha = 0.35f;
-static constexpr float LandmarkPacingMinSpacingSec = 0.040f;
-static constexpr uint8 LandmarkMaskMbp = 1 << 0;
-static constexpr uint8 LandmarkMaskFv = 1 << 1;
-static constexpr uint8 LandmarkMaskW = 1 << 2;
-static constexpr uint8 LandmarkMaskChJjSh = 1 << 3;
-static constexpr uint8 LandmarkMaskCommaLull = 1 << 4;
 
 static float SpanForPose(const FName& PoseID)
 {
@@ -34,360 +24,6 @@ static float LeadForPose(const FName& PoseID)
     if (P.Contains(TEXT("20_FV"))) return 0.020f;
     if (P.Contains(TEXT("12_Ww"))) return 0.018f;
     return 0.0f;
-}
-
-static FString LandmarkTypeForPhoneBase(const FString& PhoneBase)
-{
-    if (PhoneBase == TEXT("M") || PhoneBase == TEXT("B") || PhoneBase == TEXT("P")) return TEXT("mbp");
-    if (PhoneBase == TEXT("F") || PhoneBase == TEXT("V")) return TEXT("fv");
-    if (PhoneBase == TEXT("W")) return TEXT("w");
-    if (PhoneBase == TEXT("CH") || PhoneBase == TEXT("JH") || PhoneBase == TEXT("SH") || PhoneBase == TEXT("ZH")) return TEXT("chjjsh");
-    return FString();
-}
-
-static uint8 LandmarkTypeMaskBit(const FString& Type)
-{
-    if (Type == TEXT("mbp")) return LandmarkMaskMbp;
-    if (Type == TEXT("fv")) return LandmarkMaskFv;
-    if (Type == TEXT("w")) return LandmarkMaskW;
-    if (Type == TEXT("chjjsh")) return LandmarkMaskChJjSh;
-    if (Type == TEXT("comma_lull")) return LandmarkMaskCommaLull;
-    return 0;
-}
-
-static float LandmarkPacingThreshold(const FString& Type)
-{
-    if (Type == TEXT("mbp")) return 0.34f;
-    if (Type == TEXT("fv")) return 0.34f;
-    if (Type == TEXT("w")) return 0.30f;
-    if (Type == TEXT("chjjsh")) return 0.38f;
-    if (Type == TEXT("comma_lull")) return 0.44f;
-    return 1.0f;
-}
-
-static float LandmarkPacingHalfWindowSec(const FString& Type)
-{
-    if (Type == TEXT("mbp")) return 0.12f;
-    if (Type == TEXT("fv")) return 0.12f;
-    if (Type == TEXT("w")) return 0.12f;
-    if (Type == TEXT("chjjsh")) return 0.16f;
-    if (Type == TEXT("comma_lull")) return 0.18f;
-    return 0.10f;
-}
-
-static float LandmarkPacingReliability(const FString& Type)
-{
-    if (Type == TEXT("mbp")) return 0.70f;
-    if (Type == TEXT("fv")) return 0.72f;
-    if (Type == TEXT("w")) return 0.72f;
-    if (Type == TEXT("chjjsh")) return 0.75f;
-    if (Type == TEXT("comma_lull")) return 0.65f;
-    return 0.60f;
-}
-
-static float Sat01(float X)
-{
-    return FMath::Clamp(X, 0.0f, 1.0f);
-}
-
-static float LandmarkFamilyScoreForType(const FString& Type, const FOffgridAIArticulatoryProbabilityField& Field)
-{
-    if (Type == TEXT("mbp"))
-    {
-        return FMath::Max(
-            Field.PhoneScores.Bilabial,
-            FMath::Max(Field.Closure * 0.70f, Field.Release * 0.35f));
-    }
-    if (Type == TEXT("fv"))
-    {
-        return FMath::Max(Field.PhoneScores.Labiodental, Field.Fricative * 0.85f);
-    }
-    if (Type == TEXT("w"))
-    {
-        return FMath::Max(
-            FMath::Max(Field.PhoneScores.Glide, Field.PhoneScores.Liquid * 0.50f),
-            FMath::Max(Field.PhoneScores.VowelRound * 0.85f, Field.Sonorant * 0.60f));
-    }
-    if (Type == TEXT("chjjsh"))
-    {
-        return FMath::Max(Field.PhoneScores.Sibilant, Field.PhoneScores.StopBurst * 0.55f);
-    }
-    return 0.0f;
-}
-
-static float CommaLullScoreAtFrame(const FOffgridAIStreamingAudioFeatureFrame& Frame)
-{
-    const FString PauseFamily = Frame.PauseFamily.ToString();
-    const bool bPauseFamilySupport =
-        !PauseFamily.IsEmpty()
-        && PauseFamily != TEXT("none")
-        && PauseFamily != TEXT("continuous_speech")
-        && Frame.PauseFamilyConfidence >= 0.35f;
-    const bool bLullGate =
-        Frame.bLocalRMSValley
-        || Frame.bStrongQuiet
-        || Frame.SilenceAccumSec >= 0.030f
-        || bPauseFamilySupport;
-    if (!bLullGate)
-    {
-        return 0.0f;
-    }
-
-    const float LowRms = Sat01((0.12f - Frame.RMSNorm) / 0.12f);
-    const float LowEvidence = Sat01((0.24f - Frame.SpeechEvidence) / 0.24f);
-    const float SilenceAccum = Sat01(Frame.SilenceAccumSec / 0.080f);
-    const float PauseConf = bPauseFamilySupport ? Frame.PauseFamilyConfidence : 0.0f;
-    const float Valley = Frame.bLocalRMSValley ? 1.0f : 0.0f;
-    const float StrongQuiet = Frame.bStrongQuiet ? 1.0f : 0.0f;
-    return Sat01(
-        LowRms * 0.28f +
-        LowEvidence * 0.28f +
-        SilenceAccum * 0.16f +
-        PauseConf * 0.14f +
-        Valley * 0.06f +
-        StrongQuiet * 0.08f);
-}
-
-static float LandmarkTemplateScoreAtFrame(
-    const FString& Type,
-    const TArray<FOffgridAIStreamingAudioFeatureFrame>& Frames,
-    int32 Index)
-{
-    if (!Frames.IsValidIndex(Index))
-    {
-        return 0.0f;
-    }
-
-    auto FrameFieldScore = [&](int32 SampleIndex) -> float {
-        if (!Frames.IsValidIndex(SampleIndex))
-        {
-            return 0.0f;
-        }
-        return LandmarkFamilyScoreForType(
-            Type,
-            FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(Frames[SampleIndex]));
-    };
-    auto LocalMax = [&](int32 Lo, int32 Hi) -> float {
-        float Best = 0.0f;
-        for (int32 SampleIndex = Lo; SampleIndex <= Hi; ++SampleIndex)
-        {
-            Best = FMath::Max(Best, FrameFieldScore(SampleIndex));
-        }
-        return Best;
-    };
-    auto LocalMean = [&](int32 Lo, int32 Hi) -> float {
-        float Sum = 0.0f;
-        int32 Count = 0;
-        for (int32 SampleIndex = Lo; SampleIndex <= Hi; ++SampleIndex)
-        {
-            if (!Frames.IsValidIndex(SampleIndex))
-            {
-                continue;
-            }
-            Sum += FrameFieldScore(SampleIndex);
-            ++Count;
-        }
-        return Count > 0 ? (Sum / Count) : 0.0f;
-    };
-
-    const FOffgridAIStreamingAudioFeatureFrame& CenterFrame = Frames[Index];
-    const FOffgridAIArticulatoryProbabilityField Field =
-        FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(CenterFrame);
-    const float CenterScore = FrameFieldScore(Index);
-
-    if (Type == TEXT("mbp"))
-    {
-        const float ClosureBefore = LocalMax(Index - 2, Index);
-        const float ReleaseAfter = FMath::Max(
-            Field.Release,
-            FMath::Max(FrameFieldScore(Index + 1), FrameFieldScore(Index + 2)));
-        const float SpeechRise = Sat01((Frames.IsValidIndex(Index + 1) ? Frames[Index + 1].SpeechEvidence : 0.0f)
-            - (Frames.IsValidIndex(Index - 1) ? Frames[Index - 1].SpeechEvidence : 0.0f)) * 1.6f;
-        const float Burst = FMath::Max(
-            Field.PhoneScores.StopBurst,
-            Sat01((Frames.IsValidIndex(Index + 1) ? Frames[Index + 1].Flux : 0.0f) * 1.5f));
-        return Sat01(
-            CenterScore * 0.38f +
-            ClosureBefore * 0.20f +
-            ReleaseAfter * 0.20f +
-            SpeechRise * 0.12f +
-            Burst * 0.10f);
-    }
-
-    if (Type == TEXT("fv"))
-    {
-        const float Sustained = LocalMean(Index - 1, Index + 1);
-        const float Friction = FMath::Max(Field.Fricative, LocalMax(Index - 1, Index + 1));
-        const float HighNoise = FMath::Max(
-            CenterFrame.HighBandNorm,
-            Frames.IsValidIndex(Index + 1) ? Frames[Index + 1].HighBandNorm : 0.0f);
-        return Sat01(
-            CenterScore * 0.42f +
-            Sustained * 0.26f +
-            Friction * 0.20f +
-            HighNoise * 0.12f);
-    }
-
-    if (Type == TEXT("w"))
-    {
-        const float Sustained = LocalMean(Index - 1, Index + 1);
-        const float Sonorant = FMath::Max(Field.Sonorant, Field.PhoneScores.Glide);
-        const float Smooth = Sat01((0.12f - CenterFrame.Flux) / 0.12f);
-        const float Voicing = FMath::Max(
-            CenterFrame.Periodicity,
-            Frames.IsValidIndex(Index + 1) ? Frames[Index + 1].Periodicity : 0.0f);
-        return Sat01(
-            CenterScore * 0.38f +
-            Sustained * 0.22f +
-            Sonorant * 0.18f +
-            Smooth * 0.10f +
-            Voicing * 0.12f);
-    }
-
-    if (Type == TEXT("chjjsh"))
-    {
-        const float Sustained = LocalMean(Index - 1, Index + 1);
-        const float Burst = FMath::Max(
-            Field.PhoneScores.StopBurst,
-            Sat01(CenterFrame.Flux * 1.4f));
-        return Sat01(
-            CenterScore * 0.46f +
-            Sustained * 0.24f +
-            Burst * 0.18f +
-            CenterFrame.HighBandNorm * 0.12f);
-    }
-
-    if (Type == TEXT("comma_lull"))
-    {
-        return CommaLullScoreAtFrame(CenterFrame);
-    }
-
-    return CenterScore;
-}
-
-static float LandmarkTargetScoreAtFrame(
-    const FString& Type,
-    const FString& PhoneBase,
-    const TArray<FOffgridAIStreamingAudioFeatureFrame>& Frames,
-    int32 Index)
-{
-    if (!Frames.IsValidIndex(Index))
-    {
-        return 0.0f;
-    }
-
-    const float FamilyScore = LandmarkTemplateScoreAtFrame(Type, Frames, Index);
-    if (FamilyScore <= 0.0f)
-    {
-        return 0.0f;
-    }
-
-    const FOffgridAIStreamingAudioFeatureFrame& Frame = Frames[Index];
-    const FOffgridAIArticulatoryProbabilityField Field =
-        FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(Frame);
-
-    if (PhoneBase == TEXT("M"))
-    {
-        return Sat01(
-            FamilyScore * 0.24f +
-            Field.PhoneScores.Nasal * 0.28f +
-            Field.Voiced * 0.16f +
-            Field.Sonorant * 0.12f +
-            Field.Closure * 0.10f +
-            Sat01(1.0f - Field.PhoneScores.StopBurst) * 0.10f);
-    }
-    if (PhoneBase == TEXT("B"))
-    {
-        return Sat01(
-            FamilyScore * 0.34f +
-            Field.PhoneScores.Bilabial * 0.18f +
-            Field.Closure * 0.16f +
-            Field.Release * 0.12f +
-            Field.Voiced * 0.12f +
-            Field.PhoneScores.StopBurst * 0.08f);
-    }
-    if (PhoneBase == TEXT("P"))
-    {
-        return Sat01(
-            FamilyScore * 0.34f +
-            Field.PhoneScores.Bilabial * 0.18f +
-            Field.Closure * 0.14f +
-            Field.Release * 0.14f +
-            Sat01(1.0f - Field.Voiced) * 0.12f +
-            Field.PhoneScores.StopBurst * 0.08f);
-    }
-    if (PhoneBase == TEXT("F"))
-    {
-        return Sat01(
-            FamilyScore * 0.34f +
-            Field.PhoneScores.Labiodental * 0.18f +
-            Field.Fricative * 0.18f +
-            Frame.HighBandNorm * 0.10f +
-            Sat01(1.0f - Field.Voiced) * 0.12f +
-            Sat01(1.0f - Frame.LowBandNorm) * 0.08f);
-    }
-    if (PhoneBase == TEXT("V"))
-    {
-        return Sat01(
-            FamilyScore * 0.34f +
-            Field.PhoneScores.Labiodental * 0.18f +
-            Field.Fricative * 0.16f +
-            Field.Voiced * 0.16f +
-            Frame.Periodicity * 0.10f +
-            Frame.HighBandNorm * 0.06f);
-    }
-    if (PhoneBase == TEXT("W"))
-    {
-        return Sat01(
-            FamilyScore * 0.54f +
-            Field.PhoneScores.Glide * 0.14f +
-            Field.PhoneScores.VowelRound * 0.10f +
-            Field.Sonorant * 0.08f +
-            Field.Voiced * 0.08f +
-            Sat01(1.0f - Frame.Flux) * 0.06f);
-    }
-    if (PhoneBase == TEXT("CH"))
-    {
-        return Sat01(
-            FamilyScore * 0.30f +
-            Field.PhoneScores.Sibilant * 0.20f +
-            Field.PhoneScores.StopBurst * 0.14f +
-            Field.Release * 0.10f +
-            Frame.HighBandNorm * 0.10f +
-            Sat01(1.0f - Field.Voiced) * 0.16f);
-    }
-    if (PhoneBase == TEXT("JH"))
-    {
-        return Sat01(
-            FamilyScore * 0.30f +
-            Field.PhoneScores.Sibilant * 0.20f +
-            Field.PhoneScores.StopBurst * 0.12f +
-            Field.Release * 0.08f +
-            Field.Voiced * 0.18f +
-            Frame.Periodicity * 0.12f);
-    }
-    if (PhoneBase == TEXT("SH"))
-    {
-        return Sat01(
-            FamilyScore * 0.30f +
-            Field.PhoneScores.Sibilant * 0.22f +
-            Field.Fricative * 0.12f +
-            Frame.HighBandNorm * 0.14f +
-            Sat01(1.0f - Field.Voiced) * 0.14f +
-            Sat01(1.0f - Field.PhoneScores.StopBurst) * 0.08f);
-    }
-    if (PhoneBase == TEXT("ZH"))
-    {
-        return Sat01(
-            FamilyScore * 0.30f +
-            Field.PhoneScores.Sibilant * 0.20f +
-            Field.Fricative * 0.12f +
-            Frame.HighBandNorm * 0.12f +
-            Field.Voiced * 0.16f +
-            Frame.Periodicity * 0.10f);
-    }
-
-    return FamilyScore;
 }
 
 // Layer 1 produces a duration prior, not absolute timestamps. These cumulative
@@ -667,34 +303,6 @@ static void BuildWordStartSecondsFromPlaybackClock(
     }
 }
 
-static float ProjectActiveSecondsToClock(
-    float ActiveSec,
-    float PlaybackOffsetSec,
-    const FOffgridAILandmarkPacingState& PacingState)
-{
-    if (!PacingState.bSeeded)
-    {
-        return PlaybackOffsetSec + FMath::Max(ActiveSec, 0.0f);
-    }
-
-    return PacingState.AnchorObservedSec
-        + (FMath::Max(ActiveSec, 0.0f) - PacingState.AnchorPriorActiveSec) * PacingState.PlayRate;
-}
-
-static void BuildWordStartSecondsFromPacingProjection(
-    const TArray<float>& WordStartActiveSeconds,
-    float PlaybackOffsetSec,
-    const FOffgridAILandmarkPacingState& PacingState,
-    TArray<float>& OutWordStartSeconds)
-{
-    OutWordStartSeconds.Init(-1.0f, WordStartActiveSeconds.Num());
-    for (int32 WordIndex = 0; WordIndex < WordStartActiveSeconds.Num(); ++WordIndex)
-    {
-        OutWordStartSeconds[WordIndex] =
-            ProjectActiveSecondsToClock(WordStartActiveSeconds[WordIndex], PlaybackOffsetSec, PacingState);
-    }
-}
-
 static int32 PlannedSpeechRegionCount(const FOffgridAITextVisemePlan& Plan)
 {
     int32 RegionCount = 0;
@@ -855,291 +463,6 @@ static void BuildPlannedSpeechRegionActiveSpans(
         }
         Cursor = FMath::Max(Cursor, Span.EndActiveSec);
     }
-}
-
-static void ResetLandmarkPacingState(
-    int32 SpeechRegionIndex,
-    FOffgridAILandmarkPacingState& InOutState)
-{
-    InOutState = FOffgridAILandmarkPacingState();
-    InOutState.SpeechRegionIndex = SpeechRegionIndex;
-}
-
-static void UpdateLandmarkPacingState(
-    const FOffgridAILipsyncRuntimeUpdateInput& Input,
-    const TArray<float>& PhoneCenterActiveSeconds,
-    const TArray<float>& PhoneStartActiveSeconds,
-    const TArray<float>& PhoneEndActiveSeconds,
-    float PlaybackOffsetSec,
-    int32 NextEventIndex,
-    const TArray<FEffectiveSpeechRegion>& EffectiveRegions,
-    const FOffgridAIPunctuationHoldState& HoldState,
-    const FOffgridAITextVisemePlan& Plan,
-    FOffgridAILandmarkPacingState& InOutState)
-{
-    if (!Input.bEnableLandmarkPacing
-        || !Input.AudioFeatureFrames
-        || Input.AudioFeatureFrames->Num() <= 0
-        || !Plan.Events.IsValidIndex(NextEventIndex))
-    {
-        return;
-    }
-
-    if (HoldState.bHoldActive)
-    {
-        return;
-    }
-
-    const FOffgridAITextVisemeEvent& NextEvent = Plan.Events[NextEventIndex];
-    const int32 ActiveRegionIndex = NextEvent.SpeechRegionIndex;
-    if (InOutState.SpeechRegionIndex != ActiveRegionIndex)
-    {
-        ResetLandmarkPacingState(ActiveRegionIndex, InOutState);
-    }
-
-    const TArray<FOffgridAIStreamingAudioFeatureFrame>& Frames = *Input.AudioFeatureFrames;
-    const float ObservedEndSec = FMath::Max(Input.ObservedAudioBufferEndSec, 0.0f);
-    const float SearchStartSec = FMath::Max(Input.CurrentPlaybackSec - 0.030f, 0.0f);
-    const float SearchEndSec = ObservedEndSec + 0.005f;
-    const uint8 EnabledTypeMask = Input.LandmarkPacingTypeMask == 0 ? 0x1F : Input.LandmarkPacingTypeMask;
-
-    float BestConfidence = 0.0f;
-    int32 BestPhoneIndex = INDEX_NONE;
-    int32 BestFrameIndex = INDEX_NONE;
-    FString BestType;
-    float BestObservedSec = 0.0f;
-    float BestPriorActiveSec = 0.0f;
-
-    const int32 StartPhoneIndex = FMath::Max(0, NextEvent.SourcePhoneGlobalIndex);
-    const int32 MaxPhoneIndex = FMath::Min(Plan.ExpectedPhones.Num() - 1, StartPhoneIndex + 14);
-    for (int32 PhoneIndex = StartPhoneIndex; PhoneIndex <= MaxPhoneIndex; ++PhoneIndex)
-    {
-        const FOffgridAIExpectedPhone& Phone = Plan.ExpectedPhones[PhoneIndex];
-        if (Phone.SpeechRegionIndex != ActiveRegionIndex)
-        {
-            if (Phone.SpeechRegionIndex > ActiveRegionIndex)
-            {
-                break;
-            }
-            continue;
-        }
-        if (PhoneIndex <= InOutState.AnchorPhoneIndex || !PhoneCenterActiveSeconds.IsValidIndex(PhoneIndex))
-        {
-            continue;
-        }
-
-        const FString Type = LandmarkTypeForPhoneBase(Phone.BasePhone);
-        if (Type.IsEmpty())
-        {
-            continue;
-        }
-        if ((EnabledTypeMask & LandmarkTypeMaskBit(Type)) == 0)
-        {
-            continue;
-        }
-
-        const float PredictedCenterSec = ProjectActiveSecondsToClock(
-            PhoneCenterActiveSeconds[PhoneIndex],
-            PlaybackOffsetSec,
-            InOutState);
-        const float HalfWindowSec = LandmarkPacingHalfWindowSec(Type);
-        if (PredictedCenterSec + HalfWindowSec < SearchStartSec || PredictedCenterSec - HalfWindowSec > SearchEndSec)
-        {
-            continue;
-        }
-
-        float LocalBestConfidence = 0.0f;
-        int32 LocalBestFrameIndex = INDEX_NONE;
-        float LocalBestObservedSec = 0.0f;
-        for (int32 FrameIndex = 0; FrameIndex < Frames.Num(); ++FrameIndex)
-        {
-            const FOffgridAIStreamingAudioFeatureFrame& Frame = Frames[FrameIndex];
-            if (Frame.AudioBufferCenterSec < SearchStartSec || Frame.AudioBufferCenterSec > SearchEndSec)
-            {
-                continue;
-            }
-            const float DistanceSec = FMath::Abs(Frame.AudioBufferCenterSec - PredictedCenterSec);
-            if (DistanceSec > HalfWindowSec)
-            {
-                continue;
-            }
-
-            const float Score = LandmarkTargetScoreAtFrame(Type, Phone.BasePhone, Frames, FrameIndex);
-            const float Threshold = Input.bLandmarkPacingPermissive ? 0.0f : LandmarkPacingThreshold(Type);
-            if (!Input.bLandmarkPacingPermissive && Score < Threshold)
-            {
-                continue;
-            }
-
-            const float DistancePenalty = Sat01(1.0f - DistanceSec / FMath::Max(HalfWindowSec, KINDA_SMALL_NUMBER));
-            const float Confidence = Sat01(
-                ((Score - Threshold) / FMath::Max(1.0f - Threshold, 0.001f)) * 0.82f
-                + DistancePenalty * 0.18f) * (Input.bLandmarkPacingPermissive ? 1.0f : LandmarkPacingReliability(Type));
-            if (Confidence > LocalBestConfidence)
-            {
-                LocalBestConfidence = Confidence;
-                LocalBestFrameIndex = FrameIndex;
-                LocalBestObservedSec = Frame.AudioBufferCenterSec;
-            }
-        }
-
-        if (LocalBestConfidence > BestConfidence)
-        {
-            BestConfidence = LocalBestConfidence;
-            BestPhoneIndex = PhoneIndex;
-            BestFrameIndex = LocalBestFrameIndex;
-            BestType = Type;
-            BestObservedSec = LocalBestObservedSec;
-            BestPriorActiveSec = PhoneCenterActiveSeconds[PhoneIndex];
-        }
-    }
-
-    const int32 StartWordIndex = FMath::Max(0, NextEvent.WordIndex);
-    const int32 MaxWordIndex = FMath::Min(Plan.WordBoundaryPunctuationAfter.Num() - 1, StartWordIndex + 6);
-    if ((EnabledTypeMask & LandmarkMaskCommaLull) != 0)
-    {
-        for (int32 WordIndex = StartWordIndex; WordIndex <= MaxWordIndex; ++WordIndex)
-        {
-            if (!Plan.WordBoundaryPunctuationAfter.IsValidIndex(WordIndex)
-                || Plan.WordBoundaryPunctuationAfter[WordIndex] != ',')
-            {
-                continue;
-            }
-            if (!Plan.WordPhoneEndIndices.IsValidIndex(WordIndex)
-                || !Plan.WordPhoneBeginIndices.IsValidIndex(WordIndex + 1))
-            {
-                continue;
-            }
-
-            const int32 LeftPhoneEndIndex = Plan.WordPhoneEndIndices[WordIndex] - 1;
-            const int32 RightPhoneIndex = Plan.WordPhoneBeginIndices[WordIndex + 1];
-            if (LeftPhoneEndIndex < 0
-                || RightPhoneIndex < 0
-                || !Plan.ExpectedPhones.IsValidIndex(LeftPhoneEndIndex)
-                || !Plan.ExpectedPhones.IsValidIndex(RightPhoneIndex))
-            {
-                continue;
-            }
-            if (Plan.ExpectedPhones[LeftPhoneEndIndex].SpeechRegionIndex != ActiveRegionIndex
-                || Plan.ExpectedPhones[RightPhoneIndex].SpeechRegionIndex != ActiveRegionIndex)
-            {
-                continue;
-            }
-            if (RightPhoneIndex <= InOutState.AnchorPhoneIndex
-                || !PhoneEndActiveSeconds.IsValidIndex(LeftPhoneEndIndex)
-                || !PhoneStartActiveSeconds.IsValidIndex(RightPhoneIndex))
-            {
-                continue;
-            }
-
-            const FString Type = TEXT("comma_lull");
-            const float PriorStartSec = PhoneEndActiveSeconds[LeftPhoneEndIndex];
-            const float PriorEndSec = PhoneStartActiveSeconds[RightPhoneIndex];
-            const float PriorCenterSec = 0.5f * (PriorStartSec + PriorEndSec);
-            const float PredictedCenterSec = ProjectActiveSecondsToClock(
-                PriorCenterSec,
-                PlaybackOffsetSec,
-                InOutState);
-            const float HalfWindowSec = LandmarkPacingHalfWindowSec(Type);
-            if (PredictedCenterSec + HalfWindowSec < SearchStartSec || PredictedCenterSec - HalfWindowSec > SearchEndSec)
-            {
-                continue;
-            }
-
-            float LocalBestConfidence = 0.0f;
-            int32 LocalBestFrameIndex = INDEX_NONE;
-            float LocalBestObservedSec = 0.0f;
-            for (int32 FrameIndex = 0; FrameIndex < Frames.Num(); ++FrameIndex)
-            {
-                const FOffgridAIStreamingAudioFeatureFrame& Frame = Frames[FrameIndex];
-                if (Frame.AudioBufferCenterSec < SearchStartSec || Frame.AudioBufferCenterSec > SearchEndSec)
-                {
-                    continue;
-                }
-                const float DistanceSec = FMath::Abs(Frame.AudioBufferCenterSec - PredictedCenterSec);
-                if (DistanceSec > HalfWindowSec)
-                {
-                    continue;
-                }
-
-                const float Score = LandmarkTargetScoreAtFrame(Type, FString(), Frames, FrameIndex);
-                const float Threshold = Input.bLandmarkPacingPermissive ? 0.0f : LandmarkPacingThreshold(Type);
-                if (!Input.bLandmarkPacingPermissive && Score < Threshold)
-                {
-                    continue;
-                }
-
-                const float DistancePenalty = Sat01(1.0f - DistanceSec / FMath::Max(HalfWindowSec, KINDA_SMALL_NUMBER));
-                const float Confidence = Sat01(
-                    ((Score - Threshold) / FMath::Max(1.0f - Threshold, 0.001f)) * 0.82f
-                    + DistancePenalty * 0.18f) * (Input.bLandmarkPacingPermissive ? 1.0f : LandmarkPacingReliability(Type));
-                if (Confidence > LocalBestConfidence)
-                {
-                    LocalBestConfidence = Confidence;
-                    LocalBestFrameIndex = FrameIndex;
-                    LocalBestObservedSec = Frame.AudioBufferCenterSec;
-                }
-            }
-
-            if (LocalBestConfidence > BestConfidence)
-            {
-                BestConfidence = LocalBestConfidence;
-                BestPhoneIndex = RightPhoneIndex;
-                BestFrameIndex = LocalBestFrameIndex;
-                BestType = Type;
-                BestObservedSec = LocalBestObservedSec;
-                BestPriorActiveSec = PriorCenterSec;
-            }
-        }
-    }
-
-    const float MinAcceptConfidence = Input.bLandmarkPacingPermissive ? 0.0f : 0.55f;
-    if (BestPhoneIndex == INDEX_NONE || BestFrameIndex == INDEX_NONE || BestConfidence < MinAcceptConfidence)
-    {
-        return;
-    }
-
-    if (InOutState.LastAppliedObservedSec >= 0.0f
-        && BestObservedSec - InOutState.LastAppliedObservedSec < LandmarkPacingMinSpacingSec)
-    {
-        return;
-    }
-
-    if (!InOutState.bSeeded)
-    {
-        InOutState.bSeeded = true;
-        InOutState.AnchorPhoneIndex = BestPhoneIndex;
-        InOutState.AnchorPriorActiveSec = BestPriorActiveSec;
-        InOutState.AnchorObservedSec = BestObservedSec;
-        InOutState.PlayRate = 1.0f;
-        InOutState.Confidence = BestConfidence;
-        InOutState.LastAppliedObservedSec = BestObservedSec;
-        InOutState.AnchorType = FName(*BestType);
-        return;
-    }
-
-    const float PriorDeltaSec = BestPriorActiveSec - InOutState.AnchorPriorActiveSec;
-    const float ObservedDeltaSec = BestObservedSec - InOutState.AnchorObservedSec;
-    if (PriorDeltaSec < 0.050f || ObservedDeltaSec <= 0.0f)
-    {
-        return;
-    }
-
-    const float MeasuredRate = FMath::Clamp(
-        ObservedDeltaSec / PriorDeltaSec,
-        LandmarkPacingMinRate,
-        LandmarkPacingMaxRate);
-    const float Alpha = LandmarkPacingEmaAlpha * FMath::Clamp(BestConfidence, 0.35f, 1.0f);
-    InOutState.PlayRate = FMath::Clamp(
-        FMath::Lerp(InOutState.PlayRate, MeasuredRate, Alpha),
-        LandmarkPacingMinRate,
-        LandmarkPacingMaxRate);
-    InOutState.AnchorPhoneIndex = BestPhoneIndex;
-    InOutState.AnchorPriorActiveSec = BestPriorActiveSec;
-    InOutState.AnchorObservedSec = BestObservedSec;
-    InOutState.Confidence = BestConfidence;
-    InOutState.LastAppliedObservedSec = BestObservedSec;
-    InOutState.AnchorType = FName(*BestType);
 }
 
 static void BuildWordStartSecondsFromRegionPlayback(
@@ -1319,9 +642,6 @@ void FOffgridAILipsyncRuntimeSession::Reset()
     bPlaybackStarted = false;
     bCommittedTrackBuilt = false;
     bInputStreamClosed = false;
-    bEnableLandmarkPacing = false;
-    bLandmarkPacingPermissive = false;
-    LandmarkPacingTypeMask = 0x1F;
 
     TextPlan = FOffgridAITextVisemePlan();
     Detector.Reset();
@@ -1340,7 +660,6 @@ void FOffgridAILipsyncRuntimeSession::Reset()
     LastPCMChunkStartSample = -1;
     LastPCMChunkEndSample = -1;
     PunctuationHoldState = FOffgridAIPunctuationHoldState();
-    LandmarkPacingState = FOffgridAILandmarkPacingState();
 }
 
 void FOffgridAILipsyncRuntimeSession::BeginLine(const FOffgridAILipsyncRuntimeBeginInput& Input)
@@ -1350,9 +669,6 @@ void FOffgridAILipsyncRuntimeSession::BeginLine(const FOffgridAILipsyncRuntimeBe
     LineID = Input.LineID;
     DialogueText = Input.DialogueText;
     PrerollSec = FMath::Max(Input.PrerollSec, 0.0f);
-    bEnableLandmarkPacing = Input.bEnableLandmarkPacing;
-    bLandmarkPacingPermissive = Input.bLandmarkPacingPermissive;
-    LandmarkPacingTypeMask = Input.LandmarkPacingTypeMask == 0 ? 0x1F : Input.LandmarkPacingTypeMask;
     TextPlan = FOffgridAITextVisemePlanner::BuildPlan(FText::FromString(DialogueText));
     RefreshResolvedSpeechRegions();
     CommittedTrack.NPCID = NPCID;
@@ -1401,13 +717,10 @@ void FOffgridAILipsyncRuntimeSession::Update(float CurrentPlaybackSec)
     Input.PrerollSec = PrerollSec;
     Input.ObservedAudioBufferEndSec = Detector.GetObservedAudioBufferEndSec();
     Input.bInputStreamClosed = bInputStreamClosed;
-    Input.bEnableLandmarkPacing = bEnableLandmarkPacing;
-    Input.bLandmarkPacingPermissive = bLandmarkPacingPermissive;
-    Input.LandmarkPacingTypeMask = LandmarkPacingTypeMask;
     Input.NPCID = NPCID;
     Input.LineID = LineID;
 
-    FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(Input, CommittedTrack, PunctuationHoldState, LandmarkPacingState, bCommittedTrackBuilt);
+    FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(Input, CommittedTrack, PunctuationHoldState, bCommittedTrackBuilt);
     RecordRuntimeDiagnostics(PlaybackSec, false);
 }
 
@@ -1427,13 +740,10 @@ void FOffgridAILipsyncRuntimeSession::Finalize(float FinalPlaybackSec)
     Input.ObservedAudioBufferEndSec = Detector.GetObservedAudioBufferEndSec();
     Input.bInputStreamClosed = true;
     Input.bPlaybackFinalized = true;
-    Input.bEnableLandmarkPacing = bEnableLandmarkPacing;
-    Input.bLandmarkPacingPermissive = bLandmarkPacingPermissive;
-    Input.LandmarkPacingTypeMask = LandmarkPacingTypeMask;
     Input.NPCID = NPCID;
     Input.LineID = LineID;
 
-    FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(Input, CommittedTrack, PunctuationHoldState, LandmarkPacingState, bCommittedTrackBuilt);
+    FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(Input, CommittedTrack, PunctuationHoldState, bCommittedTrackBuilt);
     RecordRuntimeDiagnostics(PlaybackSec, true);
 }
 
@@ -1543,7 +853,7 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(float CurrentPlay
     ++AudioOccupancyDiagnosticUpdateOrdinal;
 }
 
-void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsyncRuntimeUpdateInput& Input, FOffgridAIAlignedVisemeTrack& InOutTrack, FOffgridAIPunctuationHoldState& InOutHoldState, FOffgridAILandmarkPacingState& InOutLandmarkPacingState, bool& bInOutTrackBuilt)
+void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsyncRuntimeUpdateInput& Input, FOffgridAIAlignedVisemeTrack& InOutTrack, FOffgridAIPunctuationHoldState& InOutHoldState, bool& bInOutTrackBuilt)
 {
     if (!Input.TextPlan) return;
 
@@ -1595,6 +905,10 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
 
     TArray<float> WordStartSeconds;
     AdvancePlaybackHoldState(Input, EffectiveRegions, InOutHoldState);
+    BuildWordStartSecondsFromPlaybackClock(
+        WordStartActiveSeconds,
+        InOutHoldState,
+        WordStartSeconds);
 
     // Runtime scheduling:
     // 1. transcript owns viseme identity and order,
@@ -1634,10 +948,7 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             0.0f);
         const float RenderStart = FMath::Max(Center - Span * 0.50f, 0.0f);
         const float DesiredRenderStart = FMath::Max(InOutHoldState.ResumePlaybackSec, 0.0f);
-        // Re-anchor the first resumed event directly to the observed resume
-        // point. We must not let a post-pause event leak into the preceding
-        // silence just because its text prior would have started earlier.
-        if (FMath::Abs(RenderStart - DesiredRenderStart) > 0.001f)
+        if (RenderStart > DesiredRenderStart + 0.001f)
         {
             InOutHoldState.PlaybackOffsetAdjustSec += (DesiredRenderStart - RenderStart);
         }
@@ -1647,48 +958,6 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
     const float PlaybackOffsetSec =
         InOutHoldState.PlaybackOriginSec + InOutHoldState.TotalPausedSec + InOutHoldState.PlaybackOffsetAdjustSec;
     const float CommitSafeActiveSec = FMath::Max(InOutHoldState.ActivePlayheadSec - CommitLagSec, 0.0f);
-
-    if (!Plan.Events.IsValidIndex(NextEventIndex)
-        || Plan.Events[NextEventIndex].SpeechRegionIndex != InOutLandmarkPacingState.SpeechRegionIndex)
-    {
-        const int32 ResetRegionIndex = Plan.Events.IsValidIndex(NextEventIndex)
-            ? Plan.Events[NextEventIndex].SpeechRegionIndex
-            : INDEX_NONE;
-        ResetLandmarkPacingState(ResetRegionIndex, InOutLandmarkPacingState);
-    }
-
-    if (InOutHoldState.bResumeReanchorPending || InOutHoldState.bHoldActive)
-    {
-        ResetLandmarkPacingState(InOutLandmarkPacingState.SpeechRegionIndex, InOutLandmarkPacingState);
-    }
-
-    UpdateLandmarkPacingState(
-        Input,
-        PhoneCenterActiveSeconds,
-        PhoneStartActiveSeconds,
-        PhoneEndActiveSeconds,
-        PlaybackOffsetSec,
-        NextEventIndex,
-        EffectiveRegions,
-        InOutHoldState,
-        Plan,
-        InOutLandmarkPacingState);
-
-    if (Input.bEnableLandmarkPacing)
-    {
-        BuildWordStartSecondsFromPacingProjection(
-            WordStartActiveSeconds,
-            PlaybackOffsetSec,
-            InOutLandmarkPacingState,
-            WordStartSeconds);
-    }
-    else
-    {
-        BuildWordStartSecondsFromPlaybackClock(
-            WordStartActiveSeconds,
-            InOutHoldState,
-            WordStartSeconds);
-    }
 
     while (Plan.Events.IsValidIndex(NextEventIndex))
     {
@@ -1751,9 +1020,9 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             ? FMath::Max(PhoneEndActiveSeconds[SourcePhoneGlobalIndex], 0.0f)
             : (RequiredActiveSec + 0.040f);
 
-        float BaseStart = ProjectActiveSecondsToClock(RequiredPhoneStartActiveSec, PlaybackOffsetSec, InOutLandmarkPacingState);
-        float Center = ProjectActiveSecondsToClock(RequiredActiveSec, PlaybackOffsetSec, InOutLandmarkPacingState);
-        float BaseEnd = ProjectActiveSecondsToClock(RequiredPhoneEndActiveSec, PlaybackOffsetSec, InOutLandmarkPacingState);
+        float BaseStart = PlaybackOffsetSec + RequiredPhoneStartActiveSec;
+        float Center = PlaybackOffsetSec + RequiredActiveSec;
+        float BaseEnd = PlaybackOffsetSec + RequiredPhoneEndActiveSec;
         const float PriorCenter = Center;
 
         const float BaseSpan = FMath::Max(BaseEnd - BaseStart, 0.020f);
@@ -1815,13 +1084,6 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         E.MinLiveLeadDelaySeconds = MinLiveLeadDelay;
         E.InterEventFloorDelaySeconds = InterEventFloorDelay;
         E.TotalCenterDelaySeconds = FMath::Max(Center - PriorCenter, 0.0f);
-        E.bLandmarkPacingEnabled = Input.bEnableLandmarkPacing;
-        E.bLandmarkPacingSeeded = InOutLandmarkPacingState.bSeeded;
-        E.LandmarkPacingRateAtCommit = InOutLandmarkPacingState.PlayRate;
-        E.LandmarkPacingConfidenceAtCommit = InOutLandmarkPacingState.Confidence;
-        E.LandmarkPacingAnchorObservedSeconds = InOutLandmarkPacingState.AnchorObservedSec;
-        E.LandmarkPacingAnchorPriorActiveSeconds = InOutLandmarkPacingState.AnchorPriorActiveSec;
-        E.LandmarkPacingAnchorType = InOutLandmarkPacingState.AnchorType;
         E.SpeechRegionIndex = FMath::Max(FindRegionIndexAtPlayback(EffectiveRegions, Input.CurrentPlaybackSec), 0);
         E.CommitReason = OccupancyReason;
         if (LastCenter >= 0.0f && E.FinalRenderCenterSeconds < LastCenter + 0.001f)
