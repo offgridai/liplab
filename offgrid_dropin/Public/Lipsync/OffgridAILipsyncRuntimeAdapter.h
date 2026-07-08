@@ -226,6 +226,5 @@ public:
         const FOffgridAILipsyncRuntimeUpdateInput& Input,
         FOffgridAIAlignedVisemeTrack& InOutTrack,
         FOffgridAIPunctuationHoldState& InOutHoldState,
-        FOffgridAILandmarkPacingState& InOutLandmarkPacingState,
         bool& bInOutTrackBuilt);
 };
