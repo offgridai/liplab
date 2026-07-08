@@ -109,9 +109,11 @@ struct FOffgridAIPunctuationHoldState
     bool bPlayheadStarted = false;
     bool bHoldActive = false;
     bool bWaitingForSpeechResume = false;
+    bool bSoftPauseObservedLull = false;
     int32 BoundaryWordIndex = INDEX_NONE;
     int32 ResumeRegionIndex = INDEX_NONE;
     int32 HoldRegionIndex = INDEX_NONE;
+    EOffgridAIBoundaryPauseClass ActivePauseClass = EOffgridAIBoundaryPauseClass::None;
     float PlaybackOriginSec = 0.0f;
     float LastPlaybackSec = 0.0f;
     float ActivePlayheadSec = 0.0f;
