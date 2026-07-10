@@ -168,12 +168,14 @@ struct LandmarkTarget
     std::string phone;
     std::string phone_base;
     std::string boundary_mark;
+    std::string pause_class;
     double gold_start = 0.0;
     double gold_end = 0.0;
     double gold_center = 0.0;
     double prior_start = 0.0;
     double prior_end = 0.0;
     double prior_center = 0.0;
+    double prior_duration = 0.0;
     bool has_gold_reference = false;
 };
 
@@ -186,7 +188,10 @@ struct LandmarkObservation
     double end = 0.0;
     double center = 0.0;
     double score = 0.0;
+    double confidence = 0.0;
+    double decision_sec = 0.0;
     std::string top_class;
+    std::string source;
     int matched_target_index = -1;
     double matched_error_ms = 0.0;
 };
@@ -210,6 +215,30 @@ struct LandmarkTypeReport
     std::map<std::string, int> threshold_matched_target_count;
 };
 
+struct BoundaryEventAuditReport
+{
+    int target_count = 0;
+    int observation_count = 0;
+    int matched_target_count = 0;
+    int matched_observation_count = 0;
+    double precision = 0.0;
+    double recall = 0.0;
+    double mean_abs_error_ms = 0.0;
+    double median_abs_error_ms = 0.0;
+    double p90_abs_error_ms = 0.0;
+    double mean_decision_latency_ms = 0.0;
+    double median_decision_latency_ms = 0.0;
+    double p90_decision_latency_ms = 0.0;
+};
+
+struct MonotonicBoundaryMatch
+{
+    int observation_index = -1;
+    int target_index = -1;
+    double error_ms = 0.0;
+    double latency_ms = 0.0;
+};
+
 struct LandmarkAuditReport
 {
     bool available = false;
@@ -218,6 +247,7 @@ struct LandmarkAuditReport
     int matched_target_count = 0;
     int matched_observation_count = 0;
     std::map<std::string, LandmarkTypeReport> by_type;
+    std::map<std::string, BoundaryEventAuditReport> boundary_events;
 };
 
 struct LandmarkPacingUpdate
@@ -1525,6 +1555,23 @@ static double conditioned_landmark_target_score(
     return clamp01(subtype_score * 0.82 + family_margin * 0.18);
 }
 
+static double conditioned_landmark_competitor_score(
+    const LandmarkTarget& target,
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames,
+    int32 index)
+{
+    double best = 0.0;
+    for (const std::string& candidate_type : {"mbp", "fv", "w", "chjjsh", "round", "pause_lull"})
+    {
+        if (candidate_type == target.type)
+        {
+            continue;
+        }
+        best = std::max(best, conditioned_landmark_template_score(candidate_type, frames, index));
+    }
+    return best;
+}
+
 static void build_runtime_phone_prior_times(
     const FOffgridAITextVisemePlan& plan,
     std::vector<double>& out_start_by_index,
@@ -1581,7 +1628,14 @@ static void build_runtime_phone_prior_times(
 
         if ((phone_index + 1) < plan.ExpectedPhones.Num())
         {
-            cursor += kInterWordSpacerSeconds;
+            double boundary_pause_seconds = kInterWordSpacerSeconds;
+            if (word_index >= 0 && plan.WordBoundaryPauseSecondsAfter.IsValidIndex(word_index))
+            {
+                boundary_pause_seconds = std::max(
+                    boundary_pause_seconds,
+                    static_cast<double>(plan.WordBoundaryPauseSecondsAfter[word_index]));
+            }
+            cursor += boundary_pause_seconds;
         }
     }
 }
@@ -1738,9 +1792,11 @@ static std::vector<LandmarkTarget> build_landmark_targets(
         target.word = left ? left->word : "";
         target.next_word = right ? right->word : "";
         target.boundary_mark = std::string(1, static_cast<char>(boundary_mark));
+        target.pause_class = pause_class_name(pause_class);
         target.prior_start = prior_start;
         target.prior_end = prior_end;
         target.prior_center = 0.5 * (prior_start + prior_end);
+        target.prior_duration = std::max(0.0, prior_end - prior_start);
         const GoldBoundaryTiming* gold_boundary =
             (word_index >= 0 && static_cast<size_t>(word_index) < boundaries_by_word_index.size())
                 ? boundaries_by_word_index[static_cast<size_t>(word_index)]
@@ -2385,8 +2441,413 @@ static std::string audio_landmark_frames_csv(const TArray<FOffgridAIStreamingAud
 
 static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_observations(
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames,
+    const TArray<FOffgridAIStreamingSpeechGapCandidate>& gaps,
+    const TArray<FOffgridAIStreamingSoftLullCandidate>& soft_lulls,
     const std::vector<LandmarkTarget>& targets)
 {
+    auto detect_pause_boundary_observations = [&]() -> std::vector<LandmarkObservation> {
+        struct PauseInterval
+        {
+            int32 close_frame_index = -1;
+            int32 reopen_frame_index = -1;
+            double start = 0.0;
+            double end = 0.0;
+            double center = 0.0;
+            double score = 0.0;
+            double confidence = 0.0;
+            double close_decision_sec = 0.0;
+            double resume_decision_sec = 0.0;
+            bool advisory_soft_lull = false;
+            bool bridged_gap = false;
+            bool unbridged_gap = false;
+            double duration_sec = 0.0;
+        };
+
+        std::vector<PauseInterval> intervals;
+        auto frame_center = [&](int32 index) -> double {
+            return frames.IsValidIndex(index)
+                ? static_cast<double>(frames[index].AudioBufferCenterSec)
+                : 0.0;
+        };
+        auto find_close_frame_index = [&](double start_sec, double end_sec) -> int32 {
+            int32 best = INDEX_NONE;
+            for (int32 i = 0; i < frames.Num(); ++i)
+            {
+                const auto& frame = frames[i];
+                const double frame_center = static_cast<double>(frame.AudioBufferCenterSec);
+                if (frame_center + 0.020 < start_sec || frame_center - 0.020 > end_sec)
+                {
+                    continue;
+                }
+                if (frame.bFrameClosedSpeechRegion)
+                {
+                    return i;
+                }
+                if (best == INDEX_NONE
+                    && (frame.bStrongQuiet || (!frame.bInSpeechAfterFrame && frame.SpeechEvidence <= 0.24f)))
+                {
+                    best = i;
+                }
+            }
+            return best;
+        };
+        auto find_resume_frame_index = [&](double end_sec) -> int32 {
+            int32 best = INDEX_NONE;
+            for (int32 i = 0; i < frames.Num(); ++i)
+            {
+                const auto& frame = frames[i];
+                const double frame_center = static_cast<double>(frame.AudioBufferCenterSec);
+                if (frame_center + 0.030 < end_sec || frame_center - 0.080 > end_sec)
+                {
+                    continue;
+                }
+                if (frame.bFrameStartedSpeechRegion)
+                {
+                    return i;
+                }
+                if (best == INDEX_NONE
+                    && (frame.bStrongOnsetAnchor || (!frame.bInSpeechBeforeFrame && frame.bInSpeechAfterFrame)))
+                {
+                    best = i;
+                }
+            }
+            return best;
+        };
+
+        for (const FOffgridAIStreamingSpeechGapCandidate& gap : gaps)
+        {
+            if (gap.GapDurationSec <= 0.0f)
+            {
+                continue;
+            }
+
+            const double mean_evidence = gap.GapFrameCount > 0
+                ? static_cast<double>(gap.GapEvidenceSum) / static_cast<double>(gap.GapFrameCount)
+                : static_cast<double>(gap.QuietEvidence);
+            const double mean_rms = gap.GapFrameCount > 0
+                ? static_cast<double>(gap.GapRMSNormSum) / static_cast<double>(gap.GapFrameCount)
+                : static_cast<double>(gap.QuietRMSNorm);
+            const double quiet_support = clamp01((0.26 - static_cast<double>(gap.QuietEvidence)) / 0.26);
+            const double mean_quiet_support = clamp01((0.24 - mean_evidence) / 0.24);
+            const double quiet_floor = clamp01((0.12 - static_cast<double>(gap.QuietRMSNorm)) / 0.12);
+            const double mean_floor = clamp01((0.14 - mean_rms) / 0.14);
+            const double duration_support = clamp01((static_cast<double>(gap.GapDurationSec) - 0.030) / 0.130);
+            const double reopen_support = clamp01((static_cast<double>(gap.ReopenEvidence) - 0.20) / 0.30);
+            const double reopen_flux_support = clamp01((static_cast<double>(gap.ReopenFlux) - 0.04) / 0.20);
+            const double low_evidence_ratio = gap.GapFrameCount > 0
+                ? static_cast<double>(gap.LowEvidenceFrameCount) / static_cast<double>(gap.GapFrameCount)
+                : 0.0;
+            const double strong_quiet_ratio = gap.GapFrameCount > 0
+                ? static_cast<double>(gap.StrongQuietFrameCount) / static_cast<double>(gap.GapFrameCount)
+                : 0.0;
+            const double class_bonus =
+                gap.DecisionClass == FName(TEXT("bridge_window_expired_split")) ? 0.10 :
+                gap.DecisionClass == FName(TEXT("short_isolated_restart_split")) ? 0.08 :
+                gap.DecisionClass == FName(TEXT("collapsed_rhetorical_split")) ? 0.08 :
+                gap.DecisionClass == FName(TEXT("isolated_pulse_split")) ? 0.06 :
+                gap.bBridged ? 0.03 : 0.0;
+
+            const double close_confidence = clamp01(
+                quiet_support * 0.24 +
+                mean_quiet_support * 0.18 +
+                quiet_floor * 0.18 +
+                mean_floor * 0.10 +
+                duration_support * 0.12 +
+                low_evidence_ratio * 0.10 +
+                strong_quiet_ratio * 0.05 +
+                (gap.bStrongQuietClose ? 0.08 : 0.0) +
+                class_bonus);
+            const double resume_confidence = clamp01(
+                reopen_support * 0.34 +
+                reopen_flux_support * 0.20 +
+                duration_support * 0.10 +
+                quiet_support * 0.10 +
+                (gap.bStrongOnsetReopen ? 0.16 : 0.0) +
+                class_bonus);
+            const double interval_confidence = clamp01(close_confidence * 0.52 + resume_confidence * 0.48);
+            const bool keep_as_close_heavy_hard_gap =
+                static_cast<double>(gap.GapDurationSec) >= 0.18
+                && close_confidence >= 0.60;
+            if (interval_confidence < 0.42 && !keep_as_close_heavy_hard_gap)
+            {
+                continue;
+            }
+
+            PauseInterval interval;
+            interval.start = static_cast<double>(gap.GapStartSec);
+            interval.end = static_cast<double>(gap.GapEndSec);
+            interval.center = 0.5 * (interval.start + interval.end);
+            interval.duration_sec = interval.end - interval.start;
+            interval.score = interval_confidence;
+            interval.confidence = interval_confidence;
+            interval.bridged_gap = gap.bBridged;
+            interval.unbridged_gap = !gap.bBridged;
+            interval.close_frame_index = find_close_frame_index(interval.start, interval.end);
+            interval.reopen_frame_index = find_resume_frame_index(interval.end);
+            const double close_mark_sec = !gap.bBridged
+                ? (interval.start + std::min(0.060, std::max(0.020, static_cast<double>(gap.GapDurationSec) * 0.20)))
+                : interval.start;
+            interval.close_decision_sec = interval.close_frame_index != INDEX_NONE
+                ? static_cast<double>(frames[interval.close_frame_index].AudioBufferEndSec)
+                : close_mark_sec;
+            interval.start = close_mark_sec;
+            interval.resume_decision_sec = interval.reopen_frame_index != INDEX_NONE
+                ? static_cast<double>(frames[interval.reopen_frame_index].AudioBufferEndSec)
+                : interval.end + 0.010;
+            intervals.push_back(interval);
+        }
+
+        for (const FOffgridAIStreamingSoftLullCandidate& lull : soft_lulls)
+        {
+            if (lull.LullDurationSec < 0.030f || lull.FrameCount <= 0)
+            {
+                continue;
+            }
+            if (lull.ReopenEvidence <= 0.0f
+                && lull.ReopenFlux <= 0.0f
+                && !lull.bStrongOnsetReopen)
+            {
+                continue;
+            }
+
+            // True detector gaps already carry richer endpoint diagnostics.
+            const bool overlaps_gap = std::any_of(gaps.begin(), gaps.end(), [&](const auto& gap) {
+                return lull.LullStartSec < gap.GapEndSec + 0.025f
+                    && lull.LullEndSec > gap.GapStartSec - 0.025f;
+            });
+            if (overlaps_gap)
+            {
+                continue;
+            }
+
+            const double mean_relative_rms = static_cast<double>(lull.RelativeRMSSum) / lull.FrameCount;
+            const double mean_evidence = static_cast<double>(lull.EvidenceSum) / lull.FrameCount;
+            const double depth = clamp01((0.24 - mean_relative_rms) / 0.20);
+            const double floor = clamp01((0.18 - static_cast<double>(lull.RelativeRMSMin)) / 0.16);
+            const double quiet = clamp01((0.16 - mean_evidence) / 0.14);
+            const double duration = clamp01((static_cast<double>(lull.LullDurationSec) - 0.025) / 0.095);
+            const double reopen = clamp01((static_cast<double>(lull.ReopenEvidence) - 0.12) / 0.30);
+            const bool keep_soft_lull =
+                lull.LullDurationSec >= 0.050f
+                && (lull.bStrongOnsetReopen || lull.ReopenEvidence >= 0.18f);
+            const double confidence = clamp01(
+                depth * 0.20 + floor * 0.18 + quiet * 0.10 + duration * 0.28 +
+                reopen * 0.16 + (lull.bStrongOnsetReopen ? 0.12 : 0.0));
+            if (confidence < 0.48 || !keep_soft_lull)
+            {
+                continue;
+            }
+
+            PauseInterval interval;
+            interval.start = lull.LullStartSec;
+            interval.end = lull.LullEndSec;
+            interval.center = 0.5 * (interval.start + interval.end);
+            interval.duration_sec = interval.end - interval.start;
+            interval.score = confidence;
+            interval.confidence = confidence;
+            interval.close_frame_index = find_close_frame_index(interval.start, interval.end);
+            interval.reopen_frame_index = find_resume_frame_index(interval.end);
+            interval.close_decision_sec = interval.start + std::min(0.050, static_cast<double>(lull.LullDurationSec));
+            interval.resume_decision_sec = interval.end + 0.010;
+            interval.advisory_soft_lull = true;
+            intervals.push_back(interval);
+        }
+
+        std::vector<int> pause_target_indices;
+        pause_target_indices.reserve(targets.size());
+        for (size_t target_index = 0; target_index < targets.size(); ++target_index)
+        {
+            if (targets[target_index].type == "pause_lull")
+            {
+                pause_target_indices.push_back(static_cast<int>(target_index));
+            }
+        }
+
+        std::sort(intervals.begin(), intervals.end(), [](const PauseInterval& a, const PauseInterval& b) {
+            if (a.center != b.center) return a.center < b.center;
+            return a.start < b.start;
+        });
+
+        std::vector<LandmarkObservation> events;
+        const int target_count = static_cast<int>(pause_target_indices.size());
+        const int interval_count = static_cast<int>(intervals.size());
+        if (target_count <= 0 || interval_count <= 0)
+        {
+            return events;
+        }
+
+        const double target_skip_penalty = 0.42;
+        const double interval_skip_penalty = 0.16;
+        const double distance_scale_sec = 1.40;
+        std::vector<std::vector<double>> dp(
+            static_cast<size_t>(target_count + 1),
+            std::vector<double>(static_cast<size_t>(interval_count + 1), -1.0e18));
+        enum class Step : uint8_t { None, SkipTarget, SkipInterval, Match };
+        std::vector<std::vector<Step>> back(
+            static_cast<size_t>(target_count + 1),
+            std::vector<Step>(static_cast<size_t>(interval_count + 1), Step::None));
+        dp[0][0] = 0.0;
+        for (int target_pos = 0; target_pos <= target_count; ++target_pos)
+        {
+            for (int interval_pos = 0; interval_pos <= interval_count; ++interval_pos)
+            {
+                const double base = dp[static_cast<size_t>(target_pos)][static_cast<size_t>(interval_pos)];
+                if (base <= -1.0e17)
+                {
+                    continue;
+                }
+
+                if (target_pos < target_count)
+                {
+                    const double total = base - target_skip_penalty;
+                    if (total > dp[static_cast<size_t>(target_pos + 1)][static_cast<size_t>(interval_pos)])
+                    {
+                        dp[static_cast<size_t>(target_pos + 1)][static_cast<size_t>(interval_pos)] = total;
+                        back[static_cast<size_t>(target_pos + 1)][static_cast<size_t>(interval_pos)] = Step::SkipTarget;
+                    }
+                }
+                if (interval_pos < interval_count)
+                {
+                    const double total = base - interval_skip_penalty;
+                    if (total > dp[static_cast<size_t>(target_pos)][static_cast<size_t>(interval_pos + 1)])
+                    {
+                        dp[static_cast<size_t>(target_pos)][static_cast<size_t>(interval_pos + 1)] = total;
+                        back[static_cast<size_t>(target_pos)][static_cast<size_t>(interval_pos + 1)] = Step::SkipInterval;
+                    }
+                }
+                if (target_pos < target_count && interval_pos < interval_count)
+                {
+                    const LandmarkTarget& target = targets[static_cast<size_t>(pause_target_indices[static_cast<size_t>(target_pos)])];
+                    const PauseInterval& interval = intervals[static_cast<size_t>(interval_pos)];
+                    if (interval.advisory_soft_lull && target.pause_class != "soft_list_pause")
+                    {
+                        continue;
+                    }
+                    if (!interval.advisory_soft_lull
+                        && target.pause_class == "soft_list_pause"
+                        && interval.unbridged_gap
+                        && interval.duration_sec < 0.18)
+                    {
+                        continue;
+                    }
+                    const double target_order = target_count > 1
+                        ? static_cast<double>(target_pos) / static_cast<double>(target_count - 1)
+                        : 0.0;
+                    const double interval_order = interval_count > 1
+                        ? static_cast<double>(interval_pos) / static_cast<double>(interval_count - 1)
+                        : 0.0;
+                    const double order_distance = std::abs(target_order - interval_order);
+                    const double distance_norm = std::min(2.0, std::abs(interval.center - target.prior_center) / distance_scale_sec);
+                    const double duration_norm = std::min(1.5, std::abs((interval.end - interval.start) - (target.prior_end - target.prior_start)) / 0.20);
+                    const double class_bonus =
+                        (target.pause_class == "soft_list_pause" && interval.advisory_soft_lull ? 0.14 : 0.0) +
+                        (target.pause_class == "soft_list_pause" && interval.unbridged_gap && interval.duration_sec >= 0.18 ? 0.04 : 0.0) +
+                        (target.pause_class == "hard_break_pause" && interval.unbridged_gap ? 0.12 : 0.0) -
+                        (target.pause_class == "hard_break_pause" && interval.bridged_gap ? 0.08 : 0.0);
+                    const double match_score =
+                        interval.confidence * 1.18 +
+                        interval.score * 0.20 -
+                        order_distance * 0.16 -
+                        distance_norm * 0.05 -
+                        duration_norm * 0.06 +
+                        class_bonus;
+                    const double total = base + match_score;
+                    if (total > dp[static_cast<size_t>(target_pos + 1)][static_cast<size_t>(interval_pos + 1)])
+                    {
+                        dp[static_cast<size_t>(target_pos + 1)][static_cast<size_t>(interval_pos + 1)] = total;
+                        back[static_cast<size_t>(target_pos + 1)][static_cast<size_t>(interval_pos + 1)] = Step::Match;
+                    }
+                }
+            }
+        }
+
+        std::vector<int> matched_interval_for_target(static_cast<size_t>(target_count), -1);
+        int target_pos = target_count;
+        int interval_pos = interval_count;
+        while (target_pos > 0 || interval_pos > 0)
+        {
+            const Step step = back[static_cast<size_t>(target_pos)][static_cast<size_t>(interval_pos)];
+            if (step == Step::Match)
+            {
+                matched_interval_for_target[static_cast<size_t>(target_pos - 1)] = interval_pos - 1;
+                --target_pos;
+                --interval_pos;
+            }
+            else if (step == Step::SkipTarget)
+            {
+                --target_pos;
+            }
+            else if (step == Step::SkipInterval)
+            {
+                --interval_pos;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        for (int target_pos_iter = 0; target_pos_iter < target_count; ++target_pos_iter)
+        {
+            const int best_interval_index = matched_interval_for_target[static_cast<size_t>(target_pos_iter)];
+            if (best_interval_index < 0)
+            {
+                continue;
+            }
+
+            const int target_index = pause_target_indices[static_cast<size_t>(target_pos_iter)];
+            const PauseInterval& interval = intervals[static_cast<size_t>(best_interval_index)];
+
+            LandmarkObservation close_obs;
+            close_obs.target_index = target_index;
+            close_obs.type = "pause_close";
+            close_obs.frame_index = interval.close_frame_index;
+            close_obs.start = interval.start;
+            close_obs.end = interval.start;
+            close_obs.center = interval.start;
+            close_obs.score = interval.score;
+            close_obs.confidence = interval.confidence;
+            close_obs.decision_sec = interval.close_decision_sec;
+            close_obs.top_class = "pause_close";
+            close_obs.source = "boundary_close";
+            events.push_back(std::move(close_obs));
+
+            LandmarkObservation pause_obs;
+            pause_obs.target_index = target_index;
+            pause_obs.type = "pause_lull";
+            pause_obs.frame_index = interval.reopen_frame_index >= 0 ? interval.reopen_frame_index : interval.close_frame_index;
+            pause_obs.start = interval.start;
+            pause_obs.end = interval.end;
+            pause_obs.center = interval.center;
+            pause_obs.score = interval.score;
+            pause_obs.confidence = interval.confidence;
+            pause_obs.decision_sec = interval.resume_decision_sec;
+            pause_obs.top_class = "pause_lull";
+            pause_obs.source = "boundary_interval";
+            events.push_back(std::move(pause_obs));
+
+            LandmarkObservation resume_obs;
+            resume_obs.target_index = target_index;
+            resume_obs.type = "resume";
+            resume_obs.frame_index = interval.reopen_frame_index;
+            resume_obs.start = interval.end;
+            resume_obs.end = interval.end;
+            resume_obs.center = interval.end;
+            resume_obs.score = interval.score;
+            resume_obs.confidence = interval.confidence;
+            resume_obs.decision_sec = interval.resume_decision_sec;
+            resume_obs.top_class = "resume";
+            resume_obs.source = "boundary_resume";
+            events.push_back(std::move(resume_obs));
+        }
+
+        std::sort(events.begin(), events.end(), [](const LandmarkObservation& a, const LandmarkObservation& b) {
+            if (a.center != b.center) return a.center < b.center;
+            return a.type < b.type;
+        });
+        return events;
+    };
+
     struct Candidate
     {
         int32 frame_index = -1;
@@ -2418,6 +2879,11 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
     for (size_t target_index = 0; target_index < targets.size(); ++target_index)
     {
         const LandmarkTarget& target = targets[target_index];
+        if (is_pause_lull_type(target.type))
+        {
+            candidates_by_target[target_index].push_back(Candidate{});
+            continue;
+        }
         const double half_window = landmark_conditioned_half_window_seconds(target.type);
         double search_start = target.prior_center - half_window;
         double search_end = target.prior_center + half_window;
@@ -2433,8 +2899,7 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
         }
 
         std::vector<Candidate> local_candidates;
-        double threshold = landmark_conditioned_detection_threshold(target.type) - 0.08;
-        threshold = std::max(0.10, threshold);
+        const double threshold = std::max(0.18, landmark_conditioned_detection_threshold(target.type) + 0.02);
 
         for (int32 i = 0; i < frames.Num(); ++i)
         {
@@ -2493,8 +2958,14 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
                 const double next_support = clamp01((next_peak - next_threshold) / 0.18);
                 x_lull_y_bonus = 0.16 * std::min(prev_support, next_support);
             }
+            const double competitor_score = conditioned_landmark_competitor_score(target, frames, i);
+            const double family_margin = base_score - competitor_score;
+            const double local_stability = (
+                conditioned_landmark_target_score(target, frames, i - 1) * 0.25 +
+                base_score * 0.50 +
+                conditioned_landmark_target_score(target, frames, i + 1) * 0.25);
             const double score = base_score - distance_penalty + neighbor_bonus + x_lull_y_bonus;
-            if (score < threshold)
+            if (score < threshold || family_margin < 0.08 || local_stability < (threshold - 0.03))
             {
                 continue;
             }
@@ -2642,9 +3113,17 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
         obs.end = frame.AudioBufferEndSec;
         obs.center = frame.AudioBufferCenterSec;
         obs.score = chosen.score;
+        obs.confidence = clamp01(
+            chosen.score * 0.60 +
+            std::max(0.0, chosen.score - landmark_conditioned_detection_threshold(targets[target_index].type)) * 0.60);
+        obs.decision_sec = frame.AudioBufferEndSec;
         obs.top_class = targets[target_index].type;
+        obs.source = "conditioned_phone";
         observations.push_back(std::move(obs));
     }
+
+    std::vector<LandmarkObservation> pause_observations = detect_pause_boundary_observations();
+    observations.insert(observations.end(), pause_observations.begin(), pause_observations.end());
 
     std::sort(observations.begin(), observations.end(), [](const LandmarkObservation& a, const LandmarkObservation& b) {
         if (a.center != b.center) return a.center < b.center;
@@ -2656,7 +3135,7 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
 static std::string audio_landmark_observations_csv(const std::vector<LandmarkObservation>& observations)
 {
     std::ostringstream out;
-    out << "observation_index,target_index,type,frame_index,start,end,center,score,top_class,matched_target_index,matched_error_ms\n";
+    out << "observation_index,target_index,type,frame_index,start,end,center,score,confidence,decision_sec,top_class,source,matched_target_index,matched_error_ms\n";
     out << std::fixed << std::setprecision(6);
     for (size_t i = 0; i < observations.size(); ++i)
     {
@@ -2669,7 +3148,10 @@ static std::string audio_landmark_observations_csv(const std::vector<LandmarkObs
             << obs.end << ','
             << obs.center << ','
             << obs.score << ','
+            << obs.confidence << ','
+            << obs.decision_sec << ','
             << obs.top_class << ','
+            << obs.source << ','
             << obs.matched_target_index << ','
             << obs.matched_error_ms << '\n';
     }
@@ -2710,6 +3192,8 @@ static LandmarkAuditReport grade_landmark_audit(
             report.by_type[type].threshold_matched_target_count[label] = 0;
         }
     }
+    report.boundary_events["pause_close"] = BoundaryEventAuditReport{};
+    report.boundary_events["resume"] = BoundaryEventAuditReport{};
 
     for (const LandmarkTarget& target : targets)
     {
@@ -2766,43 +3250,126 @@ static LandmarkAuditReport grade_landmark_audit(
         }
     }
 
+    auto match_boundary_events = [](
+        const std::vector<const LandmarkObservation*>& event_observations,
+        const std::vector<double>& target_times,
+        double tolerance_ms,
+        bool bUseStartTime) -> std::vector<MonotonicBoundaryMatch>
+    {
+        std::vector<MonotonicBoundaryMatch> matches;
+        size_t obs_index = 0;
+        size_t target_index = 0;
+        while (obs_index < event_observations.size() && target_index < target_times.size())
+        {
+            const LandmarkObservation* observation = event_observations[obs_index];
+            const double observation_time = bUseStartTime ? observation->start : observation->end;
+            const double target_time = target_times[target_index];
+            const double error_ms = std::abs(observation_time - target_time) * 1000.0;
+
+            if (error_ms <= tolerance_ms)
+            {
+                MonotonicBoundaryMatch match;
+                match.observation_index = static_cast<int>(obs_index);
+                match.target_index = static_cast<int>(target_index);
+                match.error_ms = error_ms;
+                match.latency_ms = std::max(0.0, (observation->decision_sec - observation_time) * 1000.0);
+                matches.push_back(match);
+                ++obs_index;
+                ++target_index;
+                continue;
+            }
+
+            if (observation_time < target_time)
+            {
+                ++obs_index;
+            }
+            else
+            {
+                ++target_index;
+            }
+        }
+        return matches;
+    };
+
     for (const std::string& type : types)
     {
         auto& stats = report.by_type[type];
         std::vector<double> match_errors_ms;
         std::vector<double> matched_scores;
 
-        for (size_t target_index = 0; target_index < targets.size(); ++target_index)
+        if (type == "pause_lull")
         {
-            const LandmarkTarget& target = targets[target_index];
-            if (target.type != type || !target.has_gold_reference)
+            std::vector<const LandmarkObservation*> pause_observations;
+            std::vector<double> pause_target_centers;
+            for (const LandmarkObservation& observation : observations)
             {
-                continue;
+                if (observation.type == "pause_lull" && observation.source == "boundary_interval")
+                {
+                    pause_observations.push_back(&observation);
+                }
+            }
+            for (const LandmarkTarget& target : targets)
+            {
+                if (target.type == "pause_lull" && target.has_gold_reference)
+                {
+                    pause_target_centers.push_back(target.gold_center);
+                }
             }
 
-            const auto obs_it = observation_index_by_target.find(static_cast<int>(target_index));
-            if (obs_it == observation_index_by_target.end())
-            {
-                continue;
-            }
-            const int obs_index = obs_it->second;
-            LandmarkObservation& observation = observations[static_cast<size_t>(obs_index)];
-            const double error_ms = std::abs(observation.center - target.gold_center) * 1000.0;
             const double tolerance_ms = landmark_match_tolerance_seconds(type) * 1000.0;
-            if (error_ms <= tolerance_ms)
+            const std::vector<MonotonicBoundaryMatch> matches =
+                match_boundary_events(pause_observations, pause_target_centers, tolerance_ms, false);
+            for (const MonotonicBoundaryMatch& match : matches)
             {
                 ++stats.matched_target_count;
                 ++stats.matched_observation_count;
-                observation.matched_target_index = static_cast<int>(target_index);
-                observation.matched_error_ms = error_ms;
-                match_errors_ms.push_back(error_ms);
-                matched_scores.push_back(observation.score);
+                const LandmarkObservation* observation = pause_observations[static_cast<size_t>(match.observation_index)];
+                match_errors_ms.push_back(match.error_ms);
+                matched_scores.push_back(observation->score);
                 for (const auto& [label, threshold] : score_thresholds)
                 {
-                    if (observation.score >= threshold)
+                    if (observation->score >= threshold)
                     {
                         ++stats.threshold_matched_target_count[label];
                         ++stats.threshold_matched_observation_count[label];
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (size_t target_index = 0; target_index < targets.size(); ++target_index)
+            {
+                const LandmarkTarget& target = targets[target_index];
+                if (target.type != type || !target.has_gold_reference)
+                {
+                    continue;
+                }
+
+                const auto obs_it = observation_index_by_target.find(static_cast<int>(target_index));
+                if (obs_it == observation_index_by_target.end())
+                {
+                    continue;
+                }
+                const int obs_index = obs_it->second;
+                LandmarkObservation& observation = observations[static_cast<size_t>(obs_index)];
+                const double error_ms = std::abs(observation.center - target.gold_center) * 1000.0;
+                const double tolerance_ms = landmark_match_tolerance_seconds(type) * 1000.0;
+                if (error_ms <= tolerance_ms)
+                {
+                    ++stats.matched_target_count;
+                    ++stats.matched_observation_count;
+                    observation.matched_target_index = static_cast<int>(target_index);
+                    observation.matched_error_ms = error_ms;
+                    match_errors_ms.push_back(error_ms);
+                    matched_scores.push_back(observation.score);
+                    for (const auto& [label, threshold] : score_thresholds)
+                    {
+                        if (observation.score >= threshold)
+                        {
+                            ++stats.threshold_matched_target_count[label];
+                            ++stats.threshold_matched_observation_count[label];
+                        }
                     }
                 }
             }
@@ -2827,10 +3394,108 @@ static LandmarkAuditReport grade_landmark_audit(
         report.matched_observation_count += stats.matched_observation_count;
     }
 
+    {
+        auto& close_stats = report.boundary_events["pause_close"];
+        auto& resume_stats = report.boundary_events["resume"];
+        std::vector<double> close_errors_ms;
+        std::vector<double> close_latencies_ms;
+        std::vector<double> resume_errors_ms;
+        std::vector<double> resume_latencies_ms;
+
+        std::vector<const LandmarkTarget*> pause_targets;
+        pause_targets.reserve(targets.size());
+        for (const LandmarkTarget& target : targets)
+        {
+            if (target.type == "pause_lull" && target.has_gold_reference)
+            {
+                pause_targets.push_back(&target);
+            }
+        }
+
+        std::vector<const LandmarkObservation*> close_observations;
+        std::vector<const LandmarkObservation*> resume_observations;
+        close_observations.reserve(observations.size());
+        resume_observations.reserve(observations.size());
+        for (const LandmarkObservation& observation : observations)
+        {
+            if (observation.type == "pause_close" && observation.source == "boundary_close")
+            {
+                close_observations.push_back(&observation);
+            }
+            if (observation.type == "resume" && observation.source == "boundary_resume")
+            {
+                resume_observations.push_back(&observation);
+            }
+        }
+
+        close_stats.target_count = static_cast<int>(pause_targets.size());
+        resume_stats.target_count = static_cast<int>(pause_targets.size());
+        close_stats.observation_count = static_cast<int>(close_observations.size());
+        resume_stats.observation_count = static_cast<int>(resume_observations.size());
+
+        std::vector<double> close_target_times;
+        std::vector<double> resume_target_times;
+        close_target_times.reserve(pause_targets.size());
+        resume_target_times.reserve(pause_targets.size());
+        for (const LandmarkTarget* target : pause_targets)
+        {
+            close_target_times.push_back(target->gold_start);
+            resume_target_times.push_back(target->gold_end);
+        }
+        const double tolerance_ms = landmark_match_tolerance_seconds("pause_lull") * 1000.0;
+        const std::vector<MonotonicBoundaryMatch> close_matches =
+            match_boundary_events(close_observations, close_target_times, tolerance_ms, true);
+        const std::vector<MonotonicBoundaryMatch> resume_matches =
+            match_boundary_events(resume_observations, resume_target_times, tolerance_ms, false);
+
+        for (const MonotonicBoundaryMatch& match : close_matches)
+        {
+            ++close_stats.matched_target_count;
+            ++close_stats.matched_observation_count;
+            close_errors_ms.push_back(match.error_ms);
+            close_latencies_ms.push_back(match.latency_ms);
+        }
+        for (const MonotonicBoundaryMatch& match : resume_matches)
+        {
+            ++resume_stats.matched_target_count;
+            ++resume_stats.matched_observation_count;
+            resume_errors_ms.push_back(match.error_ms);
+            resume_latencies_ms.push_back(match.latency_ms);
+        }
+
+        close_stats.precision = close_stats.observation_count > 0
+            ? static_cast<double>(close_stats.matched_observation_count) / static_cast<double>(close_stats.observation_count)
+            : 0.0;
+        close_stats.recall = close_stats.target_count > 0
+            ? static_cast<double>(close_stats.matched_target_count) / static_cast<double>(close_stats.target_count)
+            : 0.0;
+        close_stats.mean_abs_error_ms = mean_ms(close_errors_ms);
+        close_stats.median_abs_error_ms = percentile_ms(close_errors_ms, 0.50);
+        close_stats.p90_abs_error_ms = percentile_ms(close_errors_ms, 0.90);
+        close_stats.mean_decision_latency_ms = mean_ms(close_latencies_ms);
+        close_stats.median_decision_latency_ms = percentile_ms(close_latencies_ms, 0.50);
+        close_stats.p90_decision_latency_ms = percentile_ms(close_latencies_ms, 0.90);
+
+        resume_stats.precision = resume_stats.observation_count > 0
+            ? static_cast<double>(resume_stats.matched_observation_count) / static_cast<double>(resume_stats.observation_count)
+            : 0.0;
+        resume_stats.recall = resume_stats.target_count > 0
+            ? static_cast<double>(resume_stats.matched_target_count) / static_cast<double>(resume_stats.target_count)
+            : 0.0;
+        resume_stats.mean_abs_error_ms = mean_ms(resume_errors_ms);
+        resume_stats.median_abs_error_ms = percentile_ms(resume_errors_ms, 0.50);
+        resume_stats.p90_abs_error_ms = percentile_ms(resume_errors_ms, 0.90);
+        resume_stats.mean_decision_latency_ms = mean_ms(resume_latencies_ms);
+        resume_stats.median_decision_latency_ms = percentile_ms(resume_latencies_ms, 0.50);
+        resume_stats.p90_decision_latency_ms = percentile_ms(resume_latencies_ms, 0.90);
+    }
+
     report.target_count = 0;
+    report.observation_count = 0;
     for (const auto& [_, stats] : report.by_type)
     {
         report.target_count += stats.target_count;
+        report.observation_count += stats.observation_count;
     }
 
     return report;
@@ -2900,6 +3565,33 @@ static std::string landmark_audit_json(const LandmarkAuditReport& report)
             << "      }\n"
             << "    }";
     }
+    out << "\n  },\n"
+        << "  \"boundary_events\": {\n";
+
+    bool first_boundary = true;
+    for (const auto& [name, stats] : report.boundary_events)
+    {
+        if (!first_boundary)
+        {
+            out << ",\n";
+        }
+        first_boundary = false;
+        out << "    \"" << name << "\": {\n"
+            << "      \"target_count\": " << stats.target_count << ",\n"
+            << "      \"observation_count\": " << stats.observation_count << ",\n"
+            << "      \"matched_target_count\": " << stats.matched_target_count << ",\n"
+            << "      \"matched_observation_count\": " << stats.matched_observation_count << ",\n"
+            << "      \"precision\": " << stats.precision << ",\n"
+            << "      \"recall\": " << stats.recall << ",\n"
+            << "      \"mean_abs_error_ms\": " << stats.mean_abs_error_ms << ",\n"
+            << "      \"median_abs_error_ms\": " << stats.median_abs_error_ms << ",\n"
+            << "      \"p90_abs_error_ms\": " << stats.p90_abs_error_ms << ",\n"
+            << "      \"mean_decision_latency_ms\": " << stats.mean_decision_latency_ms << ",\n"
+            << "      \"median_decision_latency_ms\": " << stats.median_decision_latency_ms << ",\n"
+            << "      \"p90_decision_latency_ms\": " << stats.p90_decision_latency_ms << "\n"
+            << "    }";
+    }
+
     out << "\n  }\n"
         << "}\n";
     return out.str();
@@ -3374,6 +4066,31 @@ static std::string gap_candidates_csv(const TArray<FOffgridAIStreamingSpeechGapC
             << (gap.bBridged ? 1 : 0) << ','
             << to_std(gap.CloseReason) << ','
             << to_std(gap.DecisionClass) << '\n';
+    }
+    return out.str();
+}
+
+static std::string soft_lull_candidates_csv(const TArray<FOffgridAIStreamingSoftLullCandidate>& lulls)
+{
+    std::ostringstream out;
+    out << "lull_index,speech_region_index,lull_start,lull_end,lull_duration,frame_count,mean_relative_rms,min_relative_rms,mean_evidence,min_evidence,reopen_evidence,reopen_flux,strong_onset_reopen\n";
+    out << std::fixed << std::setprecision(6);
+    for (const auto& lull : lulls)
+    {
+        const float inv_frames = lull.FrameCount > 0 ? 1.0f / static_cast<float>(lull.FrameCount) : 0.0f;
+        out << lull.LullIndex << ','
+            << lull.SpeechRegionIndex << ','
+            << lull.LullStartSec << ','
+            << lull.LullEndSec << ','
+            << lull.LullDurationSec << ','
+            << lull.FrameCount << ','
+            << lull.RelativeRMSSum * inv_frames << ','
+            << lull.RelativeRMSMin << ','
+            << lull.EvidenceSum * inv_frames << ','
+            << lull.EvidenceMin << ','
+            << lull.ReopenEvidence << ','
+            << lull.ReopenFlux << ','
+            << (lull.bStrongOnsetReopen ? 1 : 0) << '\n';
     }
     return out.str();
 }
@@ -4801,6 +5518,7 @@ int main(int argc, char** argv)
             if (output.write_detailed_diagnostics)
             {
                 write_text(case_dir / "gap_candidates.csv", gap_candidates_csv(gap_candidates));
+                write_text(case_dir / "soft_lull_candidates.csv", soft_lull_candidates_csv(session.GetSpeechDetector().GetSoftLullCandidates()));
                 write_text(case_dir / "occupancy_frames.csv", occupancy_frames_csv(session.GetSpeechDetector().GetFeatureFrames()));
                 write_text(case_dir / "phone_class_frames.csv", phone_class_frames_csv(session.GetSpeechDetector().GetFeatureFrames()));
                 write_text(case_dir / "commit_decisions.csv", commit_decisions_csv(committed));
@@ -4840,6 +5558,8 @@ int main(int argc, char** argv)
                 }
                 std::vector<LandmarkObservation> observations = detect_transcript_conditioned_landmark_observations(
                     session.GetSpeechDetector().GetFeatureFrames(),
+                    session.GetSpeechDetector().GetGapCandidates(),
+                    session.GetSpeechDetector().GetSoftLullCandidates(),
                     transcript_landmarks);
                 LandmarkAuditReport landmark_report = grade_landmark_audit(
                     observations,
