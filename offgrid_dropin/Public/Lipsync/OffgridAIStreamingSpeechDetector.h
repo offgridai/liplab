@@ -54,6 +54,25 @@ struct FOffgridAIStreamingSpeechGapCandidate
     FName DecisionClass = NAME_None;
 };
 
+// Advisory-only low-energy interval observed inside an active speech region.
+// Unlike a gap candidate, this never changes speech-region segmentation.
+struct FOffgridAIStreamingSoftLullCandidate
+{
+    int32 LullIndex = INDEX_NONE;
+    int32 SpeechRegionIndex = INDEX_NONE;
+    float LullStartSec = 0.0f;
+    float LullEndSec = 0.0f;
+    float LullDurationSec = 0.0f;
+    int32 FrameCount = 0;
+    float RelativeRMSSum = 0.0f;
+    float RelativeRMSMin = 1.0f;
+    float EvidenceSum = 0.0f;
+    float EvidenceMin = 1.0f;
+    float ReopenEvidence = 0.0f;
+    float ReopenFlux = 0.0f;
+    bool bStrongOnsetReopen = false;
+};
+
 struct FOffgridAIStreamingAudioFeatureFrame
 {
     float AudioBufferCenterSec = 0.0f;
@@ -108,6 +127,7 @@ public:
 
     const TArray<FOffgridAIStreamingSpeechRegion>& GetSpeechRegions() const { return SpeechRegions; }
     const TArray<FOffgridAIStreamingSpeechGapCandidate>& GetGapCandidates() const { return GapCandidates; }
+    const TArray<FOffgridAIStreamingSoftLullCandidate>& GetSoftLullCandidates() const { return SoftLullCandidates; }
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& GetFeatureFrames() const { return FeatureFrames; }
     bool HasObservedFirstSpeechStart() const { return bHasObservedFirstSpeechStart; }
     float GetFirstSpeechAudioBufferStartSec() const { return FirstSpeechAudioBufferStartSec; }
@@ -117,9 +137,11 @@ private:
     void ProcessAnalysisFrame(float FrameStartSeconds, float FrameEndSeconds, float RMS, float ZCR, float LowBandNorm, float MidBandNorm, float HighBandNorm, float SpectralCentroidNorm, float Periodicity);
     void SuppressRecentMicroSpeechRegionIfNeeded();
     void RefreshLocalFeatureFlags();
+    void CommitPendingSoftLull();
 
     TArray<FOffgridAIStreamingSpeechRegion> SpeechRegions;
     TArray<FOffgridAIStreamingSpeechGapCandidate> GapCandidates;
+    TArray<FOffgridAIStreamingSoftLullCandidate> SoftLullCandidates;
     TArray<FOffgridAIStreamingAudioFeatureFrame> FeatureFrames;
     bool bInSpeech = false;
     bool bSpeechCandidateActive = false;
@@ -156,6 +178,8 @@ private:
     float ObservedAudioBufferEndSec = 0.0f;
     bool bPendingGapCandidateActive = false;
     FOffgridAIStreamingSpeechGapCandidate PendingGapCandidate;
+    bool bPendingSoftLullActive = false;
+    FOffgridAIStreamingSoftLullCandidate PendingSoftLull;
 
     TArray<float> PendingMonoSamples;
     int64 PendingSampleBase = 0;
@@ -164,4 +188,3 @@ private:
     float SpeechPeakRMS = 0.0001f;
     float NoiseFloorRMS = 0.0001f;
 };
-

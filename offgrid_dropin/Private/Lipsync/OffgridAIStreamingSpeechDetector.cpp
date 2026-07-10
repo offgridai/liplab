@@ -12,6 +12,8 @@ constexpr float DetectorSoftRelativeCollapseReleaseThreshold = 0.28f;
 constexpr float DetectorSoftRelativeCollapseEvidenceMax = 0.14f;
 constexpr float DetectorSoftRelativeCollapseFluxMax = 0.030f;
 constexpr float DetectorSoftRelativeCollapseHoldSec = 0.080f;
+constexpr float DetectorAdvisorySoftLullMinSec = 0.030f;
+constexpr float DetectorAdvisorySoftLullMergeGapSec = 0.060f;
 constexpr float DetectorRelativeCollapseThreshold = 0.05f;
 constexpr float DetectorRelativeCollapseReleaseThreshold = 0.10f;
 constexpr float DetectorRelativeCollapseHoldSec = 0.120f;
@@ -407,6 +409,8 @@ static FDetectorGapDecision ClassifyGapDecision(
 void FOffgridAIStreamingSpeechDetector::Reset()
 {
     SpeechRegions.Reset();
+    GapCandidates.Reset();
+    SoftLullCandidates.Reset();
     FeatureFrames.Reset();
     bInSpeech = false;
     bSpeechCandidateActive = false;
@@ -443,11 +447,53 @@ void FOffgridAIStreamingSpeechDetector::Reset()
     ObservedAudioBufferEndSec = 0.0f;
     bPendingGapCandidateActive = false;
     PendingGapCandidate = FOffgridAIStreamingSpeechGapCandidate();
+    bPendingSoftLullActive = false;
+    PendingSoftLull = FOffgridAIStreamingSoftLullCandidate();
     PendingMonoSamples.Reset();
     PendingSampleBase = 0;
     ActiveSampleRate = 0;
     SpeechPeakRMS = 0.0001f;
     NoiseFloorRMS = 0.0001f;
+}
+
+void FOffgridAIStreamingSpeechDetector::CommitPendingSoftLull()
+{
+    if (!bPendingSoftLullActive)
+    {
+        return;
+    }
+
+    if (PendingSoftLull.LullDurationSec >= DetectorAdvisorySoftLullMinSec)
+    {
+        if (SoftLullCandidates.Num() > 0)
+        {
+            FOffgridAIStreamingSoftLullCandidate& Previous = SoftLullCandidates.Last();
+            const float SeparationSec = PendingSoftLull.LullStartSec - Previous.LullEndSec;
+            if (Previous.SpeechRegionIndex == PendingSoftLull.SpeechRegionIndex
+                && SeparationSec >= 0.0f
+                && SeparationSec <= DetectorAdvisorySoftLullMergeGapSec)
+            {
+                Previous.LullEndSec = PendingSoftLull.LullEndSec;
+                Previous.LullDurationSec = Previous.LullEndSec - Previous.LullStartSec;
+                Previous.FrameCount += PendingSoftLull.FrameCount;
+                Previous.RelativeRMSSum += PendingSoftLull.RelativeRMSSum;
+                Previous.RelativeRMSMin = FMath::Min(Previous.RelativeRMSMin, PendingSoftLull.RelativeRMSMin);
+                Previous.EvidenceSum += PendingSoftLull.EvidenceSum;
+                Previous.EvidenceMin = FMath::Min(Previous.EvidenceMin, PendingSoftLull.EvidenceMin);
+                Previous.ReopenEvidence = PendingSoftLull.ReopenEvidence;
+                Previous.ReopenFlux = PendingSoftLull.ReopenFlux;
+                Previous.bStrongOnsetReopen = PendingSoftLull.bStrongOnsetReopen;
+                bPendingSoftLullActive = false;
+                PendingSoftLull = FOffgridAIStreamingSoftLullCandidate();
+                return;
+            }
+        }
+
+        PendingSoftLull.LullIndex = SoftLullCandidates.Num();
+        SoftLullCandidates.Add(PendingSoftLull);
+    }
+    bPendingSoftLullActive = false;
+    PendingSoftLull = FOffgridAIStreamingSoftLullCandidate();
 }
 
 void FOffgridAIStreamingSpeechDetector::SuppressRecentMicroSpeechRegionIfNeeded()
@@ -738,6 +784,7 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
         || Evidence >= 0.18f
         || Frame.Flux >= 0.060f
         || bSoftBridge;
+
     const bool bRelativeCollapseFrame = bInSpeech
         && ActiveSpeechRegionSeconds >= 0.120f
         && ActiveSpeechRegionRelativeRMS <= DetectorRelativeCollapseThreshold;
@@ -1302,6 +1349,37 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
     Frame.bFrameBridgedSpeechRegion = bFrameBridgedSpeechRegion;
     Frame.OccupancyDecision = OccupancyDecision;
 
+    // Endpoint candidates include short low-energy valleys that occupancy may
+    // correctly bridge. Preserve them separately for pause/resume advisories.
+    if (Frame.bEndpointCandidateActive)
+    {
+        if (!bPendingSoftLullActive)
+        {
+            bPendingSoftLullActive = true;
+            PendingSoftLull = FOffgridAIStreamingSoftLullCandidate();
+            PendingSoftLull.SpeechRegionIndex = SpeechRegions.Num() > 0
+                ? SpeechRegions.Last().SpeechRegionIndex
+                : INDEX_NONE;
+            PendingSoftLull.LullStartSec = Frame.EndpointCandidateStartSec >= 0.0f
+                ? Frame.EndpointCandidateStartSec
+                : FrameStartSeconds;
+        }
+        PendingSoftLull.LullEndSec = FrameEndSeconds;
+        PendingSoftLull.LullDurationSec = PendingSoftLull.LullEndSec - PendingSoftLull.LullStartSec;
+        PendingSoftLull.FrameCount += 1;
+        PendingSoftLull.RelativeRMSSum += ActiveSpeechRegionRelativeRMS;
+        PendingSoftLull.RelativeRMSMin = FMath::Min(PendingSoftLull.RelativeRMSMin, ActiveSpeechRegionRelativeRMS);
+        PendingSoftLull.EvidenceSum += Evidence;
+        PendingSoftLull.EvidenceMin = FMath::Min(PendingSoftLull.EvidenceMin, Evidence);
+    }
+    else if (bPendingSoftLullActive)
+    {
+        PendingSoftLull.ReopenEvidence = Evidence;
+        PendingSoftLull.ReopenFlux = Frame.Flux;
+        PendingSoftLull.bStrongOnsetReopen = bStrongOnsetAnchor;
+        CommitPendingSoftLull();
+    }
+
     FeatureFrames.Add(Frame);
 
     ObservedAudioBufferEndSec = FMath::Max(ObservedAudioBufferEndSec, FrameEndSeconds);
@@ -1322,6 +1400,10 @@ void FOffgridAIStreamingSpeechDetector::RefreshLocalFeatureFlags()
 
 void FOffgridAIStreamingSpeechDetector::Finalize(float FinalObservedAudioBufferEndSec)
 {
+    if (bPendingSoftLullActive)
+    {
+        CommitPendingSoftLull();
+    }
     if (SpeechRegions.Num() > 0 && bInSpeech)
     {
         FOffgridAIStreamingSpeechRegion& SpeechRegion = SpeechRegions.Last();

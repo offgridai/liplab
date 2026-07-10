@@ -484,6 +484,47 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
             if matched_count > 0:
                 streaming_center_error_values.extend([float(stats.get("mean_abs_center_error_ms", 0.0))] * matched_count)
 
+    runtime_boundary_summary: dict[str, dict[str, float]] = {}
+    for boundary_name in ("pause_close", "resume"):
+        target_count = sum(
+            int(row["streaming_landmark_grade"].get("boundary_events", {}).get(boundary_name, {}).get("target_count", 0))
+            for row in landmark_available
+        )
+        observation_count = sum(
+            int(row["streaming_landmark_grade"].get("boundary_events", {}).get(boundary_name, {}).get("observation_count", 0))
+            for row in landmark_available
+        )
+        matched_target_count = sum(
+            int(row["streaming_landmark_grade"].get("boundary_events", {}).get(boundary_name, {}).get("matched_target_count", 0))
+            for row in landmark_available
+        )
+        matched_observation_count = sum(
+            int(row["streaming_landmark_grade"].get("boundary_events", {}).get(boundary_name, {}).get("matched_observation_count", 0))
+            for row in landmark_available
+        )
+        error_values = []
+        latency_values = []
+        for row in landmark_available:
+            stats = row["streaming_landmark_grade"].get("boundary_events", {}).get(boundary_name, {})
+            matched_count = int(stats.get("matched_target_count", 0))
+            if matched_count > 0:
+                error_values.extend([float(stats.get("mean_abs_error_ms", 0.0))] * matched_count)
+                latency_values.extend([float(stats.get("mean_decision_latency_ms", 0.0))] * matched_count)
+        runtime_boundary_summary[boundary_name] = {
+            "target_count": target_count,
+            "observation_count": observation_count,
+            "matched_target_count": matched_target_count,
+            "matched_observation_count": matched_observation_count,
+            "precision": matched_observation_count / observation_count if observation_count else 0.0,
+            "recall": matched_target_count / target_count if target_count else 0.0,
+            "mean_abs_error_ms": _mean(error_values),
+            "median_abs_error_ms": _median(error_values),
+            "p90_abs_error_ms": _p90(error_values),
+            "mean_decision_latency_ms": _mean(latency_values),
+            "median_decision_latency_ms": _median(latency_values),
+            "p90_decision_latency_ms": _p90(latency_values),
+        }
+
     playback_summary = {
         "cases": len(rows),
         "graded_cases": len(graded),
@@ -548,6 +589,7 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "planned_landmark_center_median_ms": _median(streaming_center_error_values),
         "planned_landmark_center_p90_ms": _p90(streaming_center_error_values),
         "planned_landmark_by_type": streaming_by_type,
+        "boundary_events": runtime_boundary_summary,
     }
 
     summary = {
@@ -563,6 +605,14 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "runtime_detector_planned_landmark_center_median_ms": runtime_detector_summary["planned_landmark_center_median_ms"],
         "runtime_detector_planned_landmark_center_p90_ms": runtime_detector_summary["planned_landmark_center_p90_ms"],
         "runtime_detector_planned_landmark_by_type": runtime_detector_summary["planned_landmark_by_type"],
+        "runtime_pause_close_precision": runtime_boundary_summary["pause_close"]["precision"],
+        "runtime_pause_close_recall": runtime_boundary_summary["pause_close"]["recall"],
+        "runtime_pause_close_error_ms": runtime_boundary_summary["pause_close"]["mean_abs_error_ms"],
+        "runtime_pause_close_latency_ms": runtime_boundary_summary["pause_close"]["mean_decision_latency_ms"],
+        "runtime_resume_precision": runtime_boundary_summary["resume"]["precision"],
+        "runtime_resume_recall": runtime_boundary_summary["resume"]["recall"],
+        "runtime_resume_error_ms": runtime_boundary_summary["resume"]["mean_abs_error_ms"],
+        "runtime_resume_latency_ms": runtime_boundary_summary["resume"]["mean_decision_latency_ms"],
         "streaming_landmark_available_cases": runtime_detector_summary["available_cases"],
         "streaming_landmark_target_count": runtime_detector_summary["planned_landmark_target_count"],
         "streaming_landmark_observation_count": runtime_detector_summary["observed_landmark_count"],

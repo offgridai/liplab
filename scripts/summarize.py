@@ -62,6 +62,14 @@ def main() -> int:
             f"timing_recall={summary['runtime_detector_planned_landmark_recall']:.3f} "
             f"center_ms={summary['runtime_detector_planned_landmark_center_ms']:.1f}"
         )
+        print(
+            f"Runtime pause/resume: close_p={summary['runtime_pause_close_precision']:.3f} "
+            f"close_r={summary['runtime_pause_close_recall']:.3f} "
+            f"close_ms={summary['runtime_pause_close_error_ms']:.1f} "
+            f"resume_p={summary['runtime_resume_precision']:.3f} "
+            f"resume_r={summary['runtime_resume_recall']:.3f} "
+            f"resume_ms={summary['runtime_resume_error_ms']:.1f}"
+        )
     print(f"Wrote {summary_path}")
     return 0
 
