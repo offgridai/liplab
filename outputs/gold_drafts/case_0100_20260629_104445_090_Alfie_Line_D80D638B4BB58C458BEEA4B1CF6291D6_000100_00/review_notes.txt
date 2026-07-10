@@ -2,12 +2,15 @@ case: case_0100_20260629_104445_090_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_
 transcript: Malawi? Beautiful lakes and wildlife. Want some chips?
 audio: 4.857s @ 24000 Hz
 speech regions: 3
+pause boundaries: 7
+pause-driven region breaks: 2
 word heads: 8
 dense visemes: 39
 draft flags: 2
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

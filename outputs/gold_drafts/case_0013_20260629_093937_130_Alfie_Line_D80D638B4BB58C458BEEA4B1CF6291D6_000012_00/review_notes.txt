@@ -1,13 +1,16 @@
 case: case_0013_20260629_093937_130_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000012_00
 transcript: Armenia is the first country in the world to adopt Christianity as its official religion.
 audio: 6.057s @ 24000 Hz
-speech regions: 2
+speech regions: 1
+pause boundaries: 14
+pause-driven region breaks: 0
 word heads: 15
 dense visemes: 65
-draft flags: 2
+draft flags: 1
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

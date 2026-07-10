@@ -2,12 +2,15 @@ case: case_0109_20260704_185746_021_Alfie_Line_8A2D9A5C4EFA084BB1AA34B971BD7F2D_
 transcript: We've got turkey, ham, and veggie. Which one sounds good?
 audio: 3.657s @ 24000 Hz
 speech regions: 2
+pause boundaries: 9
+pause-driven region breaks: 1
 word heads: 10
 dense visemes: 34
 draft flags: 2
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

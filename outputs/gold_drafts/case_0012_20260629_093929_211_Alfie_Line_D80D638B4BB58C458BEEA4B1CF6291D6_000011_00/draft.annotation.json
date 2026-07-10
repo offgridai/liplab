@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0012_20260629_093929_211_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000011_00",
-  "created_utc": "2026-07-05T02:56:55.773822+00:00",
+  "created_utc": "2026-07-10T14:08:23.255152+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 120,
+    "speech_merge_gap_ms": 150,
     "source_run_dir": "outputs/offline_gold/latest/case_0012_20260629_093929_211_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000011_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-05T02:56:55.773898+00:00"
+    "reviewed_utc": "2026-07-10T14:08:23.255240+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -51,8 +51,8 @@
       "word_end_index": 0,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
-      "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -61,17 +61,189 @@
     {
       "index": 1,
       "start": 1.15,
-      "end": 3.41,
+      "end": 3.44,
       "word_start_index": 1,
       "word_end_index": 10,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
-      "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
       }
+    }
+  ],
+  "pause_boundaries": [
+    {
+      "word_index": 0,
+      "word": "indeed",
+      "next_word_index": 1,
+      "next_word": "and",
+      "mark": ",",
+      "mark_sequence": ",",
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "comma_with_lull",
+      "direct_word_gap_seconds": 0.2599999999999999,
+      "phone_gap_seconds": 0.2599999999999999,
+      "wave_silence_seconds": 0.2599999999999999,
+      "acoustic_gap_seconds": 0.2599999999999999,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 1,
+      "word": "and",
+      "next_word_index": 2,
+      "next_word": "did",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 2,
+      "word": "did",
+      "next_word_index": 3,
+      "next_word": "you",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 3,
+      "word": "you",
+      "next_word_index": 4,
+      "next_word": "know",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 4,
+      "word": "know",
+      "next_word_index": 5,
+      "next_word": "it's",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 5,
+      "word": "it's",
+      "next_word_index": 6,
+      "next_word": "also",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 6,
+      "word": "also",
+      "next_word_index": 7,
+      "next_word": "the",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 7,
+      "word": "the",
+      "next_word_index": 8,
+      "next_word": "birthplace",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 8,
+      "word": "birthplace",
+      "next_word_index": 9,
+      "next_word": "of",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 9,
+      "word": "of",
+      "next_word_index": 10,
+      "next_word": "tango",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
     }
   ],
   "gold_words": [
@@ -88,6 +260,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
       "speech_region_index": 0
     },
     {
@@ -103,6 +279,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -118,6 +296,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -133,6 +313,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -148,6 +330,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -163,6 +347,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -178,6 +364,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -193,6 +381,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -208,6 +398,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -223,6 +415,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -230,7 +424,7 @@
       "word": "tango",
       "mfa_word": "tango",
       "start": 2.96,
-      "end": 3.41,
+      "end": 3.44,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -238,6 +432,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "?"
+      ],
+      "boundary_mark_after": "?",
       "speech_region_index": 1
     }
   ],
@@ -342,7 +540,7 @@
       "word_index": 6,
       "word": "also",
       "start": 1.88,
-      "end": 1.97,
+      "end": 1.96,
       "pose": "AA1",
       "phrase_index": 1,
       "sentence_index": -1,
@@ -433,6 +631,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
       "speech_region_index": 0
     },
     {
@@ -448,6 +650,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -463,6 +667,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -478,6 +684,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -493,6 +701,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -508,6 +718,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -523,6 +735,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -538,6 +752,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -553,6 +769,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -568,6 +786,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -575,7 +795,7 @@
       "word": "tango",
       "mfa_word": "tango",
       "start": 2.96,
-      "end": 3.41,
+      "end": 3.44,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -583,6 +803,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "?"
+      ],
+      "boundary_mark_after": "?",
       "speech_region_index": 1
     }
   ],
@@ -754,7 +978,7 @@
       "phone": "AA1",
       "phone_base": "AA",
       "start": 1.88,
-      "end": 1.97,
+      "end": 1.96,
       "word_index": 6,
       "word": "also"
     },
@@ -762,7 +986,7 @@
       "index_in_word": 1,
       "phone": "L",
       "phone_base": "L",
-      "start": 1.97,
+      "start": 1.96,
       "end": 2.06,
       "word_index": 6,
       "word": "also"
@@ -925,7 +1149,7 @@
       "phone": "OW0",
       "phone_base": "OW",
       "start": 3.24,
-      "end": 3.41,
+      "end": 3.44,
       "word_index": 10,
       "word": "tango"
     }
@@ -1024,11 +1248,11 @@
     {
       "phone": "AA1",
       "start": 1.88,
-      "end": 1.97
+      "end": 1.96
     },
     {
       "phone": "L",
-      "start": 1.97,
+      "start": 1.96,
       "end": 2.06
     },
     {
@@ -1119,7 +1343,24 @@
     {
       "phone": "OW0",
       "start": 3.24,
-      "end": 3.41
+      "end": 3.44
+    }
+  ],
+  "wave_silence_spans": [
+    {
+      "start": 0.0,
+      "end": 0.32,
+      "duration_seconds": 0.32
+    },
+    {
+      "start": 0.78,
+      "end": 1.18,
+      "duration_seconds": 0.3999999999999999
+    },
+    {
+      "start": 3.36,
+      "end": 3.736875,
+      "duration_seconds": 0.37687500000000007
     }
   ],
   "planned_visemes": [],
@@ -1634,8 +1875,8 @@
       "pose": "AA1",
       "phone": "AA1",
       "start": 1.88,
-      "center": 1.9249999999999998,
-      "end": 1.97,
+      "center": 1.92,
+      "end": 1.96,
       "word": "also",
       "mfa_word": "also",
       "word_index": 6,
@@ -1661,8 +1902,8 @@
       "id": "L",
       "pose": "L",
       "phone": "L",
-      "start": 1.97,
-      "center": 2.015,
+      "start": 1.96,
+      "center": 2.01,
       "end": 2.06,
       "word": "also",
       "mfa_word": "also",
@@ -2166,8 +2407,8 @@
       "pose": "OW0",
       "phone": "OW0",
       "start": 3.24,
-      "center": 3.325,
-      "end": 3.41,
+      "center": 3.34,
+      "end": 3.44,
       "word": "tango",
       "mfa_word": "tango",
       "word_index": 10,
@@ -2197,23 +2438,25 @@
       "note": "MFA word count does not match transcript-owned word count."
     },
     {
-      "kind": "speech_regions_split_on_mfa_phone_gaps",
+      "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 2,
-      "gap_threshold_seconds": 0.12,
+      "gap_threshold_seconds": 0.15,
       "largest_split_gap_seconds": 0.26,
-      "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
+      "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }
   ],
   "notes": [],
   "summary": {
     "word_count": 11,
     "speech_region_count": 2,
+    "pause_boundary_count": 10,
+    "pause_region_break_count": 1,
     "word_head_count": 11,
     "viseme_count": 38,
     "flag_count": 2,
     "flags_by_kind": {
       "word_count_mismatch": 1,
-      "speech_regions_split_on_mfa_phone_gaps": 1
+      "speech_regions_split_on_pause_boundaries": 1
     },
     "commit_reasons": {
       "mfa_phone_interval": 38

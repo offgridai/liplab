@@ -2,12 +2,15 @@ case: case_0014_20260629_093947_935_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_
 transcript: Australia has the longest coastline of any country in the world.
 audio: 3.497s @ 24000 Hz
 speech regions: 1
+pause boundaries: 10
+pause-driven region breaks: 0
 word heads: 11
 dense visemes: 46
 draft flags: 1
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

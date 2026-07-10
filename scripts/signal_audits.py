@@ -12,7 +12,6 @@ from collections import Counter, defaultdict
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 LATEST_RUN = ROOT / "outputs" / "runs" / "latest"
 GOLD_ROOT = ROOT / "inputs" / "gold"
-MFA_ROOT = ROOT / "outputs" / "mfa_align" / "latest"
 
 TEST_BUCKET_MOD = 5
 TEST_BUCKET_VALUE = 0
@@ -129,54 +128,6 @@ def is_test_case(case_id: str) -> bool:
     return deterministic_bucket(case_id) == TEST_BUCKET_VALUE
 
 
-def parse_textgrid(path: pathlib.Path) -> dict[str, list[dict]]:
-    tiers: dict[str, list[dict]] = {}
-    if not path.exists():
-        return tiers
-
-    current_tier = None
-    pending_xmin = None
-    pending_xmax = None
-    pattern_name = re.compile(r'name = "([^"]+)"')
-    pattern_xmin = re.compile(r"xmin = ([0-9.]+)")
-    pattern_xmax = re.compile(r"xmax = ([0-9.]+)")
-    pattern_text = re.compile(r'text = "(.*)"')
-
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        name_match = pattern_name.search(line)
-        if name_match:
-            current_tier = name_match.group(1)
-            tiers.setdefault(current_tier, [])
-            pending_xmin = None
-            pending_xmax = None
-            continue
-        if current_tier is None:
-            continue
-        xmin_match = pattern_xmin.search(line)
-        if xmin_match:
-            pending_xmin = float(xmin_match.group(1))
-            continue
-        xmax_match = pattern_xmax.search(line)
-        if xmax_match:
-            pending_xmax = float(xmax_match.group(1))
-            continue
-        text_match = pattern_text.search(line)
-        if text_match and pending_xmin is not None and pending_xmax is not None:
-            tiers[current_tier].append(
-                {
-                    "start": pending_xmin,
-                    "end": pending_xmax,
-                    "text": text_match.group(1),
-                    "base_phone": strip_stress(text_match.group(1)),
-                    "class": phone_class_for_base(text_match.group(1)),
-                }
-            )
-            pending_xmin = None
-            pending_xmax = None
-    return tiers
-
-
 def load_case_bundle(case_dir: pathlib.Path) -> dict | None:
     case_id = case_dir.name
     occupancy_rows = read_csv_rows(case_dir / "occupancy_frames.csv")
@@ -184,8 +135,21 @@ def load_case_bundle(case_dir: pathlib.Path) -> dict | None:
     expected_phone_rows = read_csv_rows(case_dir / "expected_phones.csv")
     gold_words = read_csv_rows(GOLD_ROOT / case_id / "words.csv")
     gold_speech = read_csv_rows(GOLD_ROOT / case_id / "speech.csv")
-    textgrid = parse_textgrid(MFA_ROOT / f"{case_id}.TextGrid")
-    mfa_phones = [row for row in textgrid.get("phones", []) if row["text"]]
+    gold_phone_rows = read_csv_rows(GOLD_ROOT / case_id / "phones.csv")
+    mfa_phones = []
+    for row in gold_phone_rows:
+        phone = row.get("phone", "")
+        if not phone:
+            continue
+        mfa_phones.append(
+            {
+                "start": as_float(row, "start"),
+                "end": as_float(row, "end"),
+                "text": phone,
+                "base_phone": strip_stress(phone),
+                "class": phone_class_for_base(phone),
+            }
+        )
 
     if not occupancy_rows or not phone_rows or not expected_phone_rows or not gold_words or not gold_speech or not mfa_phones:
         return None

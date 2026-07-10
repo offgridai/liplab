@@ -405,6 +405,13 @@ def run_mfa_align(cases: list[str], output_root: pathlib.Path, num_jobs: int) ->
     env = os.environ.copy()
     env["MFA_ROOT_DIR"] = str(mfa_root_dir())
     env["CONDA_NO_PLUGINS"] = "true"
+    path_entries = [
+        str(env_path / "Library" / "bin"),
+        str(env_path / "Scripts"),
+        str(env_path / "bin"),
+        env.get("PATH", ""),
+    ]
+    env["PATH"] = os.pathsep.join([entry for entry in path_entries if entry])
 
     # Prefer the project-local MFA executable directly. This avoids depending on
     # conda.exe being on PATH when the user already activated .conda/mfa.

@@ -18,12 +18,63 @@ static FString NormalizeWord(const FString& In)
 
 static bool IsHardSentenceBoundary(TCHAR C)
 {
-    return C == TEXT('.') || C == TEXT('!') || C == TEXT('?') || C == TEXT('-');
+    return C == TEXT('.')
+        || C == TEXT('!')
+        || C == TEXT('?')
+        || C == TEXT(':')
+        || C == TEXT(';')
+        || C == TEXT('-')
+        || C == TEXT('—')
+        || C == TEXT('–');
 }
 
 static bool IsSpeechRegionBoundary(TCHAR C)
 {
-    return IsHardSentenceBoundary(C) || C == TEXT(',') || C == TEXT(';') || C == TEXT(':');
+    return IsHardSentenceBoundary(C) || C == TEXT(',');
+}
+
+static bool IsAsciiHyphenPunctuationAt(const FString& Text, int32 Index)
+{
+    if (Index < 0 || Index >= Text.Len() || Text[Index] != TEXT('-'))
+    {
+        return false;
+    }
+
+    // A plain ASCII hyphen is lexical inside compounds such as
+    // "kettle-cooked" and should not create a speech-region boundary there.
+    // Treat it as dash punctuation only when it is visually separated as its
+    // own token: "word - word". En/em dashes remain punctuation elsewhere.
+    const bool bHasLeft = Index > 0;
+    const bool bHasRight = Index + 1 < Text.Len();
+    const TCHAR Left = bHasLeft ? Text[Index - 1] : TCHAR(0);
+    const TCHAR Right = bHasRight ? Text[Index + 1] : TCHAR(0);
+    return bHasLeft && bHasRight && FChar::IsWhitespace(Left) && FChar::IsWhitespace(Right);
+}
+
+static bool IsSpeechRegionBoundaryAt(const FString& Text, int32 Index)
+{
+    if (Index < 0 || Index >= Text.Len())
+    {
+        return false;
+    }
+
+    const TCHAR C = Text[Index];
+    if (C == TEXT('-'))
+    {
+        return IsAsciiHyphenPunctuationAt(Text, Index);
+    }
+    return IsSpeechRegionBoundary(C);
+}
+
+static bool IsWordTokenCharAt(const FString& Text, int32 Index)
+{
+    if (Index < 0 || Index >= Text.Len())
+    {
+        return false;
+    }
+
+    const TCHAR C = Text[Index];
+    return FChar::IsAlnum(C) || C == TCHAR('\'');
 }
 
 static bool IsListConjunctionWord(const FString& Word)
@@ -56,7 +107,7 @@ static EOffgridAIBoundaryPauseClass ClassifyBoundaryPause(
         return EOffgridAIBoundaryPauseClass::None;
     }
 
-    if (IsHardSentenceBoundary(Boundary) || Boundary == TEXT(';') || Boundary == TEXT(':'))
+    if (IsHardSentenceBoundary(Boundary))
     {
         return EOffgridAIBoundaryPauseClass::HardBreakPause;
     }
@@ -447,9 +498,10 @@ static void AddCmuWordVisemeEvents(TArray<FOffgridAITextVisemeEvent>& Events, co
 
 static float ExpectedPhoneWeightSeconds(const FString& Base)
 {
-    // Use MFA-derived consonant medians where they helped, but keep vowels
-    // deliberately conservative so the plan does not consume whole regions too
-    // early when a speaker stretches nuclei or inserts intra-region pauses.
+    // Use corpus-derived consonant duration priors where they helped, but keep
+    // vowels deliberately conservative so the text plan does not consume whole
+    // regions too early when a speaker stretches nuclei or inserts intra-region
+    // pauses.
     if (IsVowelPhonemeBase(Base))
     {
         if (Base == TEXT("AW") || Base == TEXT("AY") || Base == TEXT("EY") || Base == TEXT("OW") || Base == TEXT("OY") || Base == TEXT("UH"))
@@ -539,21 +591,23 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
     TArray<TCHAR> Boundaries;
 
     FString Current;
-    for (TCHAR C : Text)
+    for (int32 TextIndex = 0; TextIndex < Text.Len(); ++TextIndex)
     {
-        if (FChar::IsAlnum(C) || C == TCHAR('\''))
+        const TCHAR C = Text[TextIndex];
+        if (IsWordTokenCharAt(Text, TextIndex))
         {
             Current.AppendChar(C);
         }
         else
         {
+            const bool bSpeechRegionBoundary = IsSpeechRegionBoundaryAt(Text, TextIndex);
             if (!Current.IsEmpty())
             {
                 Words.Add(NormalizeWord(Current));
-                Boundaries.Add(IsSpeechRegionBoundary(C) ? C : TCHAR(0));
+                Boundaries.Add(bSpeechRegionBoundary ? C : TCHAR(0));
                 Current.Reset();
             }
-            else if (Boundaries.Num() > 0 && IsSpeechRegionBoundary(C))
+            else if (Boundaries.Num() > 0 && bSpeechRegionBoundary)
             {
                 Boundaries.Last() = PreferBoundary(Boundaries.Last(), C);
             }

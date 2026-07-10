@@ -2,6 +2,7 @@ import argparse
 import datetime as dt
 from collections import Counter
 import math
+import re
 
 from gold_tools import (
     case_stems,
@@ -29,6 +30,8 @@ from gold_tools import (
 
 
 SILENCE_PHONE_LABELS = {"", "sil", "sp", "<eps>", "silence", "pau"}
+BOUNDARY_PUNCTUATION = {".", ",", ";", ":", "?", "!", "-"}
+HARD_BOUNDARY_PUNCTUATION = {".", ";", ":", "?", "!", "-"}
 
 
 def is_silence_phone_label(label: object) -> bool:
@@ -127,6 +130,31 @@ def word_metadata_by_index(planned_rows: list[dict[str, str]]) -> list[dict[str,
     return [metadata[key] for key in sorted(metadata)]
 
 
+def transcript_word_sequence_with_boundaries(transcript: str) -> list[dict[str, object]]:
+    tokens: list[dict[str, object]] = []
+    for token in re.findall(r"[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*|[.,;:!?-]", transcript):
+        if token in BOUNDARY_PUNCTUATION:
+            if tokens:
+                tokens[-1]["boundary_marks"].append(token)
+            continue
+        tokens.append(
+            {
+                "word": token,
+                "boundary_marks": [],
+            }
+        )
+    return tokens
+
+
+def preferred_boundary_mark(marks: list[str]) -> str:
+    if not marks:
+        return ""
+    for mark in marks:
+        if mark in HARD_BOUNDARY_PUNCTUATION:
+            return mark
+    return marks[-1]
+
+
 def non_empty_word_intervals(parsed: dict[str, list[dict[str, object]]]) -> list[dict[str, object]]:
     words: list[dict[str, object]] = []
     for interval in parsed.get("words", []):
@@ -141,6 +169,42 @@ def non_empty_word_intervals(parsed: dict[str, list[dict[str, object]]]) -> list
             }
         )
     return words
+
+
+def attach_transcript_boundaries(
+    words: list[dict[str, object]],
+    transcript: str,
+) -> list[dict[str, object]]:
+    flags: list[dict[str, object]] = []
+    transcript_words = transcript_word_sequence_with_boundaries(transcript)
+    if len(transcript_words) != len(words):
+        flags.append(
+            {
+                "kind": "transcript_boundary_word_count_mismatch",
+                "count_transcript_words": len(transcript_words),
+                "count_mfa_words": len(words),
+                "note": "Transcript word count did not match MFA word count while attaching punctuation boundaries.",
+            }
+        )
+
+    for index, word in enumerate(words):
+        marks: list[str] = []
+        if index < len(transcript_words):
+            transcript_word = transcript_words[index]
+            marks = list(transcript_word.get("boundary_marks", []))
+            if normalize_word(str(transcript_word.get("word", ""))) != normalize_word(str(word.get("word", ""))):
+                flags.append(
+                    {
+                        "kind": "transcript_boundary_word_text_mismatch",
+                        "word_index": parse_int(word.get("word_index"), index),
+                        "transcript_word": transcript_word.get("word", ""),
+                        "mfa_word": word.get("word", ""),
+                        "note": "Transcript and MFA word text differed while attaching punctuation boundaries.",
+                    }
+                )
+        word["boundary_marks_after"] = marks
+        word["boundary_mark_after"] = preferred_boundary_mark(marks)
+    return flags
 
 
 def build_gold_words(
@@ -759,6 +823,82 @@ def detect_wave_silence_spans(
     return spans
 
 
+def build_pause_boundaries(
+    words: list[dict[str, object]],
+    phone_intervals: list[dict[str, object]],
+    wave_silence_spans: list[tuple[float, float]],
+    max_gap_seconds: float,
+) -> list[dict[str, object]]:
+    boundaries: list[dict[str, object]] = []
+    for index in range(len(words) - 1):
+        current_word = words[index]
+        next_word = words[index + 1]
+        current_end = float(current_word.get("end", 0.0))
+        next_start = float(next_word.get("start", current_end))
+        mark = str(current_word.get("boundary_mark_after", ""))
+        marks = list(current_word.get("boundary_marks_after", []))
+
+        direct_word_gap = max(0.0, next_start - current_end)
+        center = (current_end + next_start) * 0.5
+
+        phone_gap = 0.0
+        for left_phone, right_phone in zip(phone_intervals, phone_intervals[1:]):
+            left_end = float(left_phone.get("end", 0.0))
+            right_start = float(right_phone.get("start", left_end))
+            if left_end - 1e-6 <= center <= right_start + 1e-6:
+                phone_gap = max(phone_gap, right_start - left_end)
+
+        wave_silence_overlap = 0.0
+        for silence_start, silence_end in wave_silence_spans:
+            wave_silence_overlap = max(
+                wave_silence_overlap,
+                overlap_seconds(current_end, next_start, silence_start, silence_end),
+            )
+
+        has_hard_mark = any(boundary_mark in HARD_BOUNDARY_PUNCTUATION for boundary_mark in marks)
+        has_comma_mark = "," in marks
+        acoustic_gap = max(direct_word_gap, phone_gap, wave_silence_overlap)
+
+        split_applied = False
+        split_reason = "none"
+        if has_hard_mark and acoustic_gap >= 0.080:
+            split_applied = True
+            split_reason = "hard_punctuation_with_lull"
+        elif has_comma_mark and acoustic_gap >= max_gap_seconds:
+            split_applied = True
+            split_reason = "comma_with_lull"
+        elif acoustic_gap >= max(0.240, max_gap_seconds * 1.5):
+            split_applied = True
+            split_reason = "strong_acoustic_gap"
+
+        pause_class = "none"
+        if split_applied:
+            pause_class = "region_break"
+        elif has_comma_mark and acoustic_gap >= 0.020:
+            pause_class = "soft_pause"
+        elif has_hard_mark and acoustic_gap >= 0.020:
+            pause_class = "hard_pause"
+
+        boundaries.append(
+            {
+                "word_index": parse_int(current_word.get("word_index"), index),
+                "word": current_word.get("word", ""),
+                "next_word_index": parse_int(next_word.get("word_index"), index + 1),
+                "next_word": next_word.get("word", ""),
+                "mark": mark,
+                "mark_sequence": "".join(marks),
+                "pause_class": pause_class,
+                "split_applied": split_applied,
+                "split_reason": split_reason,
+                "direct_word_gap_seconds": direct_word_gap,
+                "phone_gap_seconds": phone_gap,
+                "wave_silence_seconds": wave_silence_overlap,
+                "acoustic_gap_seconds": acoustic_gap,
+            }
+        )
+    return boundaries
+
+
 def overlap_seconds(start_a: float, end_a: float, start_b: float, end_b: float) -> float:
     return max(0.0, min(end_a, end_b) - max(start_a, start_b))
 
@@ -782,22 +922,22 @@ def _best_region_index_for_span(start: float, end: float, regions: list[dict[str
 
 def build_speech_regions(
     words: list[dict[str, object]],
-    phone_intervals: list[dict[str, object]],
+    pause_boundaries: list[dict[str, object]],
     max_gap_seconds: float,
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
-    """Build spoken islands from MFA phone intervals rather than word adjacency.
+    """Build speech regions from MFA word timing plus acoustic pause evidence.
 
-    MFA word intervals are often contiguous, so they are a poor source for pause
-    structure.  Phone intervals still expose pauses as either explicit silence
-    labels or as time gaps between non-silence phones.  This function ignores
-    silence phones, merges adjacent non-silence phones when their gap is below
-    --speech-merge-gap-ms, and creates one speech region per resulting island.
+    Region ownership is word-aligned because pause/resume is the primary truth:
+    starts align to MFA word starts, ends align to MFA word ends, and splits are
+    created only where punctuation and/or acoustic lull evidence makes the pause
+    perceptually meaningful.
     """
     regions: list[dict[str, object]] = []
     flags: list[dict[str, object]] = []
-    phones = sorted(phone_intervals, key=lambda row: (float(row.get("start", 0.0)), float(row.get("end", 0.0))))
+    if not words:
+        return regions, flags
 
-    if not phones:
+    if not pause_boundaries:
         if words:
             regions.append(
                 {
@@ -808,73 +948,68 @@ def build_speech_regions(
                     "word_end_index": parse_int(words[-1].get("word_index"), -1),
                     "sentence_start_index": parse_int(words[0].get("sentence_index"), -1),
                     "sentence_end_index": parse_int(words[-1].get("sentence_index"), -1),
-                    "source": "mfa_word_span_fallback_no_non_silence_phones",
+                    "source": "mfa_word_span_fallback_no_pause_boundaries",
                     "approval": {"status": "approved_gold", "reviewed": True},
                 }
             )
             flags.append(
                 {
                     "kind": "speech_regions_from_word_fallback",
-                    "note": "No non-silence MFA phone intervals were available, so one word-span speech region was exported.",
+                    "note": "No pause boundaries were available, so one word-span speech region was exported.",
                 }
             )
         return regions, flags
 
-    raw_regions: list[tuple[float, float]] = []
-    current_start = float(phones[0]["start"])
-    current_end = float(phones[0]["end"])
-    split_gaps: list[float] = []
+    split_indices = {
+        parse_int(boundary.get("word_index"), -1)
+        for boundary in pause_boundaries
+        if bool(boundary.get("split_applied"))
+    }
+    split_gaps = [
+        float(boundary.get("acoustic_gap_seconds", 0.0))
+        for boundary in pause_boundaries
+        if bool(boundary.get("split_applied"))
+    ]
 
-    for phone in phones[1:]:
-        start = float(phone["start"])
-        end = float(phone["end"])
-        gap = start - current_end
-        if gap > max_gap_seconds:
-            raw_regions.append((current_start, current_end))
-            split_gaps.append(gap)
-            current_start = start
-            current_end = end
-        else:
-            current_end = max(current_end, end)
-    raw_regions.append((current_start, current_end))
+    region_start_word = 0
+    for word_list_index, word in enumerate(words):
+        boundary_after = parse_int(word.get("word_index"), -1)
+        should_split_after = boundary_after in split_indices or word_list_index == len(words) - 1
+        if not should_split_after:
+            continue
 
-    for index, (start, end) in enumerate(raw_regions):
-        region_words = [
-            word for word in words
-            if overlap_seconds(float(word.get("start", 0.0)), float(word.get("end", 0.0)), start, end) > 1e-6
-            or start - 1e-6 <= (float(word.get("start", 0.0)) + float(word.get("end", 0.0))) * 0.5 <= end + 1e-6
-        ]
-        if region_words:
-            word_start_index = parse_int(region_words[0].get("word_index"), -1)
-            word_end_index = parse_int(region_words[-1].get("word_index"), -1)
-            sentence_start_index = parse_int(region_words[0].get("sentence_index"), -1)
-            sentence_end_index = parse_int(region_words[-1].get("sentence_index"), -1)
-        else:
-            word_start_index = word_end_index = -1
-            sentence_start_index = sentence_end_index = -1
+        region_words = words[region_start_word : word_list_index + 1]
+        start = float(region_words[0].get("start", 0.0))
+        end = float(region_words[-1].get("end", start))
+        word_start_index = parse_int(region_words[0].get("word_index"), -1)
+        word_end_index = parse_int(region_words[-1].get("word_index"), -1)
+        sentence_start_index = parse_int(region_words[0].get("sentence_index"), -1)
+        sentence_end_index = parse_int(region_words[-1].get("sentence_index"), -1)
+
         regions.append(
             {
-                "index": index,
+                "index": len(regions),
                 "start": start,
                 "end": end,
                 "word_start_index": word_start_index,
                 "word_end_index": word_end_index,
                 "sentence_start_index": sentence_start_index,
                 "sentence_end_index": sentence_end_index,
-                "source": "mfa_non_silence_phone_gap_regions",
+                "source": "mfa_word_aligned_pause_regions",
                 "merge_gap_seconds": max_gap_seconds,
                 "approval": {"status": "approved_gold", "reviewed": True},
             }
         )
+        region_start_word = word_list_index + 1
 
     if split_gaps:
         flags.append(
             {
-                "kind": "speech_regions_split_on_mfa_phone_gaps",
+                "kind": "speech_regions_split_on_pause_boundaries",
                 "region_count": len(regions),
                 "gap_threshold_seconds": round(max_gap_seconds, 3),
                 "largest_split_gap_seconds": round(max(split_gaps), 3),
-                "note": "Speech regions were split using gaps between non-silence MFA phone intervals.",
+                "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence.",
             }
         )
 
@@ -898,6 +1033,18 @@ def assign_speech_region_indices(
         # Keep phrase_index backward-compatible for older review/grading paths that
         # used phrase_index as the only visible grouping column.
         phone["phrase_index"] = region_index
+
+
+def annotate_pause_boundaries_with_regions(
+    pause_boundaries: list[dict[str, object]],
+    words: list[dict[str, object]],
+) -> None:
+    words_by_index = {parse_int(word.get("word_index"), -1): word for word in words}
+    for boundary in pause_boundaries:
+        word_index = parse_int(boundary.get("word_index"), -1)
+        next_word_index = parse_int(boundary.get("next_word_index"), -1)
+        boundary["speech_region_index_before"] = parse_int(words_by_index.get(word_index, {}).get("speech_region_index"), -1)
+        boundary["speech_region_index_after"] = parse_int(words_by_index.get(next_word_index, {}).get("speech_region_index"), -1)
 
 
 def build_word_heads(visemes: list[dict[str, object]]) -> list[dict[str, object]]:
@@ -932,6 +1079,7 @@ def build_word_heads(visemes: list[dict[str, object]]) -> list[dict[str, object]
 def build_summary(
     words: list[dict[str, object]],
     speech_regions: list[dict[str, object]],
+    pause_boundaries: list[dict[str, object]],
     word_heads: list[dict[str, object]],
     visemes: list[dict[str, object]],
     flags: list[dict[str, object]],
@@ -941,6 +1089,8 @@ def build_summary(
     return {
         "word_count": len(words),
         "speech_region_count": len(speech_regions),
+        "pause_boundary_count": len(pause_boundaries),
+        "pause_region_break_count": sum(1 for boundary in pause_boundaries if bool(boundary.get("split_applied"))),
         "word_head_count": len(word_heads),
         "viseme_count": len(visemes),
         "flag_count": len(flags),
@@ -958,12 +1108,15 @@ def write_review_notes(case_id: str, payload: dict[str, object]) -> None:
         f"transcript: {payload['transcript']}",
         f"audio: {payload['audio']['duration_sec']:.3f}s @ {payload['audio']['sample_rate_hz']} Hz",
         f"speech regions: {summary['speech_region_count']}",
+        f"pause boundaries: {summary['pause_boundary_count']}",
+        f"pause-driven region breaks: {summary['pause_region_break_count']}",
         f"word heads: {summary['word_head_count']}",
         f"dense visemes: {summary['viseme_count']}",
         f"draft flags: {summary['flag_count']}",
         "",
         "review order:",
         "1. Confirm speech region starts and ends against the WAV.",
+        "   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.",
         "2. Confirm the first visible viseme for each word against the WAV.",
         "3. Review dense intra-word visemes, prioritizing flagged regions.",
         "",
@@ -994,14 +1147,18 @@ def build_case_annotation(
     metadata = word_metadata_by_index(planned_rows)
     parsed_words = non_empty_word_intervals(parsed)
     words, word_flags = build_gold_words(parsed_words, metadata, float(audio["duration_sec"]))
+    boundary_flags = attach_transcript_boundaries(words, transcript)
     per_word_phones = phones_by_word(parsed, words)
     words_by_index = {parse_int(word["word_index"]): word for word in words}
     visemes, viseme_flags = build_mfa_phone_events(per_word_phones, words_by_index)
     all_non_silence_phones = non_silence_phone_intervals(parsed)
-    speech_regions, speech_flags = build_speech_regions(words, all_non_silence_phones, max(0.0, speech_merge_gap_ms / 1000.0))
+    wave_silence_spans = detect_wave_silence_spans(wav_path, min_silence_seconds=max(0.08, speech_merge_gap_ms / 1000.0))
+    pause_boundaries = build_pause_boundaries(words, all_non_silence_phones, wave_silence_spans, max(0.0, speech_merge_gap_ms / 1000.0))
+    speech_regions, speech_flags = build_speech_regions(words, pause_boundaries, max(0.0, speech_merge_gap_ms / 1000.0))
     assign_speech_region_indices(words, visemes, speech_regions)
+    annotate_pause_boundaries_with_regions(pause_boundaries, words)
     word_heads = build_word_heads(visemes)
-    flags = word_flags + speech_flags + viseme_flags
+    flags = word_flags + boundary_flags + speech_flags + viseme_flags
 
     payload = {
         "schema_version": 1,
@@ -1042,17 +1199,22 @@ def build_case_annotation(
         "transcript": transcript,
         "audio": audio,
         "speech_regions": speech_regions,
+        "pause_boundaries": pause_boundaries,
         "gold_words": words,
         "word_heads": word_heads,
         "mfa_words": words,
         "mfa_phones": [phone for group in per_word_phones.values() for phone in group],
         "mfa_non_silence_phone_intervals": all_non_silence_phones,
+        "wave_silence_spans": [
+            {"start": start, "end": end, "duration_seconds": end - start}
+            for start, end in wave_silence_spans
+        ],
         "planned_visemes": build_planned_visemes(planned_rows),
         "visemes": visemes,
         "flags": flags,
         "notes": [],
     }
-    payload["summary"] = build_summary(words, speech_regions, word_heads, visemes, flags)
+    payload["summary"] = build_summary(words, speech_regions, pause_boundaries, word_heads, visemes, flags)
     return payload
 
 
@@ -1063,7 +1225,7 @@ def main() -> int:
     parser.add_argument("--buffer-ms", type=int, default=600000)
     parser.add_argument("--chunk-ms", type=int, default=600000)
     parser.add_argument("--mfa-num-jobs", type=int, default=4)
-    parser.add_argument("--speech-merge-gap-ms", type=int, default=120)
+    parser.add_argument("--speech-merge-gap-ms", type=int, default=150)
     parser.add_argument("--case", action="append", dest="cases", default=[])
     parser.add_argument("--skip-runner", action="store_true")
     parser.add_argument("--skip-mfa", action="store_true")

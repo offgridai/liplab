@@ -2,12 +2,15 @@ case: case_0029_20260629_094229_854_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_
 transcript: Brunei has beautiful mosques and oil wealth. Need anything else?
 audio: 4.857s @ 24000 Hz
 speech regions: 2
+pause boundaries: 9
+pause-driven region breaks: 1
 word heads: 10
 dense visemes: 42
 draft flags: 2
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0097_20260629_104413_797_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000097_00",
-  "created_utc": "2026-07-05T02:56:56.433458+00:00",
+  "created_utc": "2026-07-10T14:08:24.562207+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 120,
+    "speech_merge_gap_ms": 150,
     "source_run_dir": "outputs/offline_gold/latest/case_0097_20260629_104413_797_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000097_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-05T02:56:56.433532+00:00"
+    "reviewed_utc": "2026-07-10T14:08:24.562317+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -51,8 +51,8 @@
       "word_end_index": 0,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
-      "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -66,8 +66,8 @@
       "word_end_index": 1,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
-      "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -81,8 +81,8 @@
       "word_end_index": 6,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
-      "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -96,12 +96,167 @@
       "word_end_index": 9,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
-      "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
       }
+    }
+  ],
+  "pause_boundaries": [
+    {
+      "word_index": 0,
+      "word": "liberia",
+      "next_word_index": 1,
+      "next_word": "interesting",
+      "mark": "?",
+      "mark_sequence": "?",
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "hard_punctuation_with_lull",
+      "direct_word_gap_seconds": 0.31999999999999995,
+      "phone_gap_seconds": 0.31999999999999995,
+      "wave_silence_seconds": 0.31999999999999995,
+      "acoustic_gap_seconds": 0.31999999999999995,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 1,
+      "word": "interesting",
+      "next_word_index": 2,
+      "next_word": "known",
+      "mark": ".",
+      "mark_sequence": ".",
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "hard_punctuation_with_lull",
+      "direct_word_gap_seconds": 0.27000000000000024,
+      "phone_gap_seconds": 0.27000000000000024,
+      "wave_silence_seconds": 0.27000000000000024,
+      "acoustic_gap_seconds": 0.27000000000000024,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 2
+    },
+    {
+      "word_index": 2,
+      "word": "known",
+      "next_word_index": 3,
+      "next_word": "for",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 2
+    },
+    {
+      "word_index": 3,
+      "word": "for",
+      "next_word_index": 4,
+      "next_word": "rubber",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 2
+    },
+    {
+      "word_index": 4,
+      "word": "rubber",
+      "next_word_index": 5,
+      "next_word": "and",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 2
+    },
+    {
+      "word_index": 5,
+      "word": "and",
+      "next_word_index": 6,
+      "next_word": "coffee",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 2
+    },
+    {
+      "word_index": 6,
+      "word": "coffee",
+      "next_word_index": 7,
+      "next_word": "want",
+      "mark": ".",
+      "mark_sequence": ".",
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "hard_punctuation_with_lull",
+      "direct_word_gap_seconds": 0.23999999999999977,
+      "phone_gap_seconds": 0.23999999999999977,
+      "wave_silence_seconds": 0.23999999999999977,
+      "acoustic_gap_seconds": 0.23999999999999977,
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 3
+    },
+    {
+      "word_index": 7,
+      "word": "want",
+      "next_word_index": 8,
+      "next_word": "some",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 3,
+      "speech_region_index_after": 3
+    },
+    {
+      "word_index": 8,
+      "word": "some",
+      "next_word_index": 9,
+      "next_word": "chips",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 3,
+      "speech_region_index_after": 3
     }
   ],
   "gold_words": [
@@ -118,6 +273,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "?"
+      ],
+      "boundary_mark_after": "?",
       "speech_region_index": 0
     },
     {
@@ -133,6 +292,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "."
+      ],
+      "boundary_mark_after": ".",
       "speech_region_index": 1
     },
     {
@@ -148,6 +311,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 2
     },
     {
@@ -163,6 +328,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 2
     },
     {
@@ -178,6 +345,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 2
     },
     {
@@ -193,6 +362,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 2
     },
     {
@@ -208,6 +379,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "."
+      ],
+      "boundary_mark_after": ".",
       "speech_region_index": 2
     },
     {
@@ -223,6 +398,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 3
     },
     {
@@ -238,6 +415,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 3
     },
     {
@@ -253,6 +432,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "?"
+      ],
+      "boundary_mark_after": "?",
       "speech_region_index": 3
     }
   ],
@@ -432,6 +615,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "?"
+      ],
+      "boundary_mark_after": "?",
       "speech_region_index": 0
     },
     {
@@ -447,6 +634,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "."
+      ],
+      "boundary_mark_after": ".",
       "speech_region_index": 1
     },
     {
@@ -462,6 +653,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 2
     },
     {
@@ -477,6 +670,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 2
     },
     {
@@ -492,6 +687,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 2
     },
     {
@@ -507,6 +704,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 2
     },
     {
@@ -522,6 +721,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "."
+      ],
+      "boundary_mark_after": ".",
       "speech_region_index": 2
     },
     {
@@ -537,6 +740,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 3
     },
     {
@@ -552,6 +757,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 3
     },
     {
@@ -567,6 +774,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "?"
+      ],
+      "boundary_mark_after": "?",
       "speech_region_index": 3
     }
   ],
@@ -1174,6 +1385,33 @@
       "phone": "S",
       "start": 4.77,
       "end": 4.98
+    }
+  ],
+  "wave_silence_spans": [
+    {
+      "start": 0.0,
+      "end": 0.24,
+      "duration_seconds": 0.24
+    },
+    {
+      "start": 0.88,
+      "end": 1.26,
+      "duration_seconds": 0.38
+    },
+    {
+      "start": 1.8,
+      "end": 2.28,
+      "duration_seconds": 0.47999999999999976
+    },
+    {
+      "start": 3.52,
+      "end": 4.1,
+      "duration_seconds": 0.5799999999999996
+    },
+    {
+      "start": 4.86,
+      "end": 5.096875,
+      "duration_seconds": 0.2368749999999995
     }
   ],
   "planned_visemes": [],
@@ -2391,23 +2629,25 @@
       "note": "MFA word count does not match transcript-owned word count."
     },
     {
-      "kind": "speech_regions_split_on_mfa_phone_gaps",
+      "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 4,
-      "gap_threshold_seconds": 0.12,
+      "gap_threshold_seconds": 0.15,
       "largest_split_gap_seconds": 0.32,
-      "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
+      "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }
   ],
   "notes": [],
   "summary": {
     "word_count": 10,
     "speech_region_count": 4,
+    "pause_boundary_count": 9,
+    "pause_region_break_count": 3,
     "word_head_count": 10,
     "viseme_count": 43,
     "flag_count": 2,
     "flags_by_kind": {
       "word_count_mismatch": 1,
-      "speech_regions_split_on_mfa_phone_gaps": 1
+      "speech_regions_split_on_pause_boundaries": 1
     },
     "commit_reasons": {
       "mfa_phone_interval": 43

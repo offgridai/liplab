@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0003_20260629_093754_099_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000002_00",
-  "created_utc": "2026-07-05T02:56:55.698772+00:00",
+  "created_utc": "2026-07-10T14:08:23.093861+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 120,
+    "speech_merge_gap_ms": 150,
     "source_run_dir": "outputs/offline_gold/latest/case_0003_20260629_093754_099_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000002_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-05T02:56:55.698832+00:00"
+    "reviewed_utc": "2026-07-10T14:08:23.093973+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -45,14 +45,14 @@
   "speech_regions": [
     {
       "index": 0,
-      "start": 0.29,
+      "start": 0.28,
       "end": 2.38,
       "word_start_index": 0,
       "word_end_index": 5,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
-      "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -66,12 +66,167 @@
       "word_end_index": 9,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
-      "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
       }
+    }
+  ],
+  "pause_boundaries": [
+    {
+      "word_index": 0,
+      "word": "we've",
+      "next_word_index": 1,
+      "next_word": "got",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 1,
+      "word": "got",
+      "next_word_index": 2,
+      "next_word": "turkey",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 2,
+      "word": "turkey",
+      "next_word_index": 3,
+      "next_word": "ham",
+      "mark": ",",
+      "mark_sequence": ",",
+      "pause_class": "soft_pause",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.030000000000000027,
+      "phone_gap_seconds": 0.030000000000000027,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.030000000000000027,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 3,
+      "word": "ham",
+      "next_word_index": 4,
+      "next_word": "and",
+      "mark": ",",
+      "mark_sequence": ",",
+      "pause_class": "soft_pause",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.030000000000000027,
+      "phone_gap_seconds": 0.030000000000000027,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.030000000000000027,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 4,
+      "word": "and",
+      "next_word_index": 5,
+      "next_word": "veggie",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 5,
+      "word": "veggie",
+      "next_word_index": 6,
+      "next_word": "which",
+      "mark": ".",
+      "mark_sequence": ".",
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "hard_punctuation_with_lull",
+      "direct_word_gap_seconds": 0.1499999999999999,
+      "phone_gap_seconds": 0.1499999999999999,
+      "wave_silence_seconds": 0.1499999999999999,
+      "acoustic_gap_seconds": 0.1499999999999999,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 6,
+      "word": "which",
+      "next_word_index": 7,
+      "next_word": "one",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 7,
+      "word": "one",
+      "next_word_index": 8,
+      "next_word": "sounds",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 8,
+      "word": "sounds",
+      "next_word_index": 9,
+      "next_word": "good",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
     }
   ],
   "gold_words": [
@@ -79,7 +234,7 @@
       "word_index": 0,
       "word": "we've",
       "mfa_word": "we've",
-      "start": 0.29,
+      "start": 0.28,
       "end": 0.51,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -88,6 +243,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -103,6 +260,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -118,6 +277,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
       "speech_region_index": 0
     },
     {
@@ -133,6 +296,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
       "speech_region_index": 0
     },
     {
@@ -148,6 +315,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -163,6 +332,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "."
+      ],
+      "boundary_mark_after": ".",
       "speech_region_index": 0
     },
     {
@@ -178,6 +351,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -193,6 +368,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -208,6 +385,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -223,6 +402,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "?"
+      ],
+      "boundary_mark_after": "?",
       "speech_region_index": 1
     }
   ],
@@ -230,7 +413,7 @@
     {
       "word_index": 0,
       "word": "we've",
-      "start": 0.29,
+      "start": 0.28,
       "end": 0.37,
       "pose": "W",
       "phrase_index": 0,
@@ -247,7 +430,7 @@
       "word_index": 1,
       "word": "got",
       "start": 0.51,
-      "end": 0.57,
+      "end": 0.56,
       "pose": "G",
       "phrase_index": 0,
       "sentence_index": -1,
@@ -295,7 +478,7 @@
       "word_index": 4,
       "word": "and",
       "start": 1.76,
-      "end": 1.84,
+      "end": 1.85,
       "pose": "AE1",
       "phrase_index": 0,
       "sentence_index": -1,
@@ -393,7 +576,7 @@
       "word_index": 0,
       "word": "we've",
       "mfa_word": "we've",
-      "start": 0.29,
+      "start": 0.28,
       "end": 0.51,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -402,6 +585,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -417,6 +602,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -432,6 +619,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
       "speech_region_index": 0
     },
     {
@@ -447,6 +638,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
       "speech_region_index": 0
     },
     {
@@ -462,6 +657,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -477,6 +674,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "."
+      ],
+      "boundary_mark_after": ".",
       "speech_region_index": 0
     },
     {
@@ -492,6 +693,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -507,6 +710,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -522,6 +727,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -537,6 +744,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "?"
+      ],
+      "boundary_mark_after": "?",
       "speech_region_index": 1
     }
   ],
@@ -545,7 +756,7 @@
       "index_in_word": 0,
       "phone": "W",
       "phone_base": "W",
-      "start": 0.29,
+      "start": 0.28,
       "end": 0.37,
       "word_index": 0,
       "word": "we've"
@@ -573,7 +784,7 @@
       "phone": "G",
       "phone_base": "G",
       "start": 0.51,
-      "end": 0.57,
+      "end": 0.56,
       "word_index": 1,
       "word": "got"
     },
@@ -581,7 +792,7 @@
       "index_in_word": 1,
       "phone": "AA1",
       "phone_base": "AA",
-      "start": 0.57,
+      "start": 0.56,
       "end": 0.7,
       "word_index": 1,
       "word": "got"
@@ -663,7 +874,7 @@
       "phone": "AE1",
       "phone_base": "AE",
       "start": 1.76,
-      "end": 1.84,
+      "end": 1.85,
       "word_index": 4,
       "word": "and"
     },
@@ -671,7 +882,7 @@
       "index_in_word": 1,
       "phone": "N",
       "phone_base": "N",
-      "start": 1.84,
+      "start": 1.85,
       "end": 1.89,
       "word_index": 4,
       "word": "and"
@@ -860,7 +1071,7 @@
   "mfa_non_silence_phone_intervals": [
     {
       "phone": "W",
-      "start": 0.29,
+      "start": 0.28,
       "end": 0.37
     },
     {
@@ -876,11 +1087,11 @@
     {
       "phone": "G",
       "start": 0.51,
-      "end": 0.57
+      "end": 0.56
     },
     {
       "phone": "AA1",
-      "start": 0.57,
+      "start": 0.56,
       "end": 0.7
     },
     {
@@ -926,11 +1137,11 @@
     {
       "phone": "AE1",
       "start": 1.76,
-      "end": 1.84
+      "end": 1.85
     },
     {
       "phone": "N",
-      "start": 1.84,
+      "start": 1.85,
       "end": 1.89
     },
     {
@@ -1034,6 +1245,23 @@
       "end": 3.67
     }
   ],
+  "wave_silence_spans": [
+    {
+      "start": 0.0,
+      "end": 0.32,
+      "duration_seconds": 0.32
+    },
+    {
+      "start": 2.24,
+      "end": 2.56,
+      "duration_seconds": 0.31999999999999984
+    },
+    {
+      "start": 3.56,
+      "end": 3.896875,
+      "duration_seconds": 0.33687500000000004
+    }
+  ],
   "planned_visemes": [],
   "visemes": [
     {
@@ -1041,8 +1269,8 @@
       "id": "W",
       "pose": "W",
       "phone": "W",
-      "start": 0.29,
-      "center": 0.32999999999999996,
+      "start": 0.28,
+      "center": 0.325,
       "end": 0.37,
       "word": "we've",
       "mfa_word": "we've",
@@ -1126,8 +1354,8 @@
       "pose": "G",
       "phone": "G",
       "start": 0.51,
-      "center": 0.54,
-      "end": 0.57,
+      "center": 0.535,
+      "end": 0.56,
       "word": "got",
       "mfa_word": "got",
       "word_index": 1,
@@ -1153,8 +1381,8 @@
       "id": "AA1",
       "pose": "AA1",
       "phone": "AA1",
-      "start": 0.57,
-      "center": 0.635,
+      "start": 0.56,
+      "center": 0.63,
       "end": 0.7,
       "word": "got",
       "mfa_word": "got",
@@ -1406,8 +1634,8 @@
       "pose": "AE1",
       "phone": "AE1",
       "start": 1.76,
-      "center": 1.8,
-      "end": 1.84,
+      "center": 1.8050000000000002,
+      "end": 1.85,
       "word": "and",
       "mfa_word": "and",
       "word_index": 4,
@@ -1433,8 +1661,8 @@
       "id": "N",
       "pose": "N",
       "phone": "N",
-      "start": 1.84,
-      "center": 1.865,
+      "start": 1.85,
+      "center": 1.87,
       "end": 1.89,
       "word": "and",
       "mfa_word": "and",
@@ -2025,23 +2253,25 @@
       "note": "MFA word count does not match transcript-owned word count."
     },
     {
-      "kind": "speech_regions_split_on_mfa_phone_gaps",
+      "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 2,
-      "gap_threshold_seconds": 0.12,
+      "gap_threshold_seconds": 0.15,
       "largest_split_gap_seconds": 0.15,
-      "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
+      "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }
   ],
   "notes": [],
   "summary": {
     "word_count": 10,
     "speech_region_count": 2,
+    "pause_boundary_count": 9,
+    "pause_region_break_count": 1,
     "word_head_count": 10,
     "viseme_count": 35,
     "flag_count": 2,
     "flags_by_kind": {
       "word_count_mismatch": 1,
-      "speech_regions_split_on_mfa_phone_gaps": 1
+      "speech_regions_split_on_pause_boundaries": 1
     },
     "commit_reasons": {
       "mfa_phone_interval": 35

@@ -2,12 +2,15 @@ case: case_0024_20260629_094154_366_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_
 transcript: Maybe you meant buddhism? It's a religion with millions of followers worldwide.
 audio: 5.337s @ 24000 Hz
 speech regions: 2
+pause boundaries: 11
+pause-driven region breaks: 1
 word heads: 12
 dense visemes: 53
 draft flags: 2
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

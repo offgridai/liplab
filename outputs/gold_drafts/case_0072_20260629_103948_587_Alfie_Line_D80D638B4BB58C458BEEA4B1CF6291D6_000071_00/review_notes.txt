@@ -2,12 +2,15 @@ case: case_0072_20260629_103948_587_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_
 transcript: Guinea's pelele is tasty. Want a sandwich?
 audio: 4.217s @ 24000 Hz
 speech regions: 2
+pause boundaries: 6
+pause-driven region breaks: 1
 word heads: 7
 dense visemes: 29
 draft flags: 3
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

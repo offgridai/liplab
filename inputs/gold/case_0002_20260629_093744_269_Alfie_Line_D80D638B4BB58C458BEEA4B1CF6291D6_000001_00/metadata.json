@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "case_id": "case_0002_20260629_093744_269_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000001_00",
-  "exported_utc": "2026-07-05T02:57:00.384182+00:00",
+  "exported_utc": "2026-07-10T14:08:36.145902+00:00",
   "approval": {
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-05T02:56:55.691290+00:00"
+    "reviewed_utc": "2026-07-10T14:08:23.079382+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -30,12 +30,14 @@
   "summary": {
     "word_count": 13,
     "speech_region_count": 2,
+    "pause_boundary_count": 12,
+    "pause_region_break_count": 1,
     "word_head_count": 13,
     "viseme_count": 47,
     "flag_count": 2,
     "flags_by_kind": {
       "word_count_mismatch": 1,
-      "speech_regions_split_on_mfa_phone_gaps": 1
+      "speech_regions_split_on_pause_boundaries": 1
     },
     "commit_reasons": {
       "mfa_phone_interval": 47

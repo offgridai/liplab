@@ -2,12 +2,15 @@ case: case_0110_20260704_185754_056_Alfie_Line_8A2D9A5C4EFA084BB1AA34B971BD7F2D_
 transcript: I enjoy the veggie one myself. Light and fresh.
 audio: 5.097s @ 24000 Hz
 speech regions: 2
+pause boundaries: 8
+pause-driven region breaks: 1
 word heads: 9
 dense visemes: 30
 draft flags: 2
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

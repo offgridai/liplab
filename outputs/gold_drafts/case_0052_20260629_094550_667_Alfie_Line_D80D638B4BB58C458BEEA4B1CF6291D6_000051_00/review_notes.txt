@@ -2,12 +2,15 @@ case: case_0052_20260629_094550_667_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_
 transcript: Dominican Republic has beautiful beaches and rich history! Want to try a sandwich?
 audio: 6.617s @ 24000 Hz
 speech regions: 2
+pause boundaries: 12
+pause-driven region breaks: 1
 word heads: 13
 dense visemes: 61
 draft flags: 2
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

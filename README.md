@@ -7,9 +7,9 @@ Standalone lipsync lab for iterating on the OffgridAI lipsync core outside Unrea
 ## Goals
 
 - Build locally with CMake, without UE.
-- Drive the lipsync core from `inputs/transcripts`, `inputs/wav`, and `inputs/handmade`.
+- Drive the lipsync core from `inputs/transcripts`, `inputs/wav`, and approved `inputs/gold`.
 - Emit inspectable logs for every case.
-- Grade committed visemes against handmade Praat-quality answers.
+- Grade committed visemes against approved MFA-backed gold answers.
 - Keep the iterated lipsync logic compatible with Offgrid LineCoach while avoiding LineCoach edits.
 - Use transcript + PCM audio only; do not consume TTS hint streams, text-progress estimates, token indices, or predicted word schedules.
 
@@ -32,7 +32,7 @@ offgrid_dropin/              Authoritative OffgridAI lipsync source snapshot and
 harness/                     Local command-line runner
 inputs/transcripts/          One .txt per case
 inputs/wav/                  Matching .wav files, PCM16
-inputs/handmade/             Matching handmade .csv labels
+inputs/gold/                 Approved gold labels and metadata
 outputs/runs/latest/         Generated planned/speech/committed/grade logs
 scripts/verify.bat          One-command Windows build/run/grade verification
 AGENTS.md                   Rules for Codex and other coding agents
@@ -70,10 +70,11 @@ This configures CMake, builds `liplab_runner`, runs the sample corpus, summarize
 
 ## MFA-backed gold generation
 
-The gold-label workflow is now split into two paths:
+The gold-label workflow is now:
 
-- offline MFA-backed batch generation creates or refreshes `inputs/handmade`
-- the standalone harness simulates the streamed runtime path and grades against that gold set
+- offline MFA-backed batch generation creates draft evidence under `outputs/`
+- reviewed/approved cases are exported to `inputs/gold`
+- the standalone harness simulates the streamed runtime path and grades only against approved gold
 
 ### Prerequisites
 
@@ -98,26 +99,28 @@ If MFA cannot write to your user Documents folder, ensure `MFA_ROOT_DIR` points 
 Generate batch draft annotations from the current transcript + WAV corpus:
 
 ```bash
-python scripts/draft_handmade.py --mfa-num-jobs 4
+python scripts/draft_gold.py --mfa-num-jobs 4
 ```
 
-This does three things:
-
-1. runs the authoritative `offgrid_dropin` core offline to capture `planned.csv` and fallback committed timings under `outputs/offline_gold/latest/`
-2. runs offline MFA alignment over the full corpus and writes TextGrids to `outputs/mfa_align/latest/`
-3. converts MFA phone timings plus transcript-owned viseme identity into draft packages under `outputs/handmade_drafts/<case>/`
-
-Export draft packages into grader-facing CSV files:
+Validate draft packages and approved gold:
 
 ```bash
-python scripts/export_handmade.py --allow-draft
+python scripts/check_gold.py --include-drafts
 ```
 
-Validate handmade CSVs and draft packages:
+Export approved draft packages into `inputs/gold`:
 
 ```bash
-python scripts/check_handmade.py --include-drafts
+python scripts/export_gold.py
 ```
+
+The current gold package shape is:
+
+- `inputs/gold/<case>/phones.csv`
+- `inputs/gold/<case>/words.csv`
+- `inputs/gold/<case>/speech.csv`
+- `inputs/gold/<case>/boundaries.csv`
+- `inputs/gold/<case>/metadata.json`
 
 ### Re-run the streamed harness against gold
 
@@ -137,15 +140,6 @@ This is the intended evaluation split:
 
 MFA is offline-only. It must not be added to `offgrid_dropin` runtime scheduling logic. Transcript still owns viseme identity; MFA only improves offline timing evidence.
 
-## Handmade CSV format
-
-```csv
-start,end,pose,word,confidence
-0.120,0.210,22_MBP,welcome,1.0
-```
-
-Praat TextGrid support can be added later, but CSV is deliberately the first-class agent-friendly format.
-
 ## Agent rules
 
 1. Do not modify Offgrid LineCoach.
@@ -161,7 +155,7 @@ Praat TextGrid support can be added later, but CSV is deliberately the first-cla
 10. Run `scripts\verify.bat` before handing off code changes.
 11. Keep the authoritative lipsync behavior in `offgrid_dropin` and route standalone verification through that same code.
 
-See `AGENTS.md`, `docs/regression_policy.md`, `docs/offgrid_transplant_contract.md`, and `docs/handmade_authoring_pipeline.md` for the full automation contract and the proposed gold-annotation workflow.
+See `AGENTS.md`, `docs/regression_policy.md`, `docs/offgrid_transplant_contract.md`, `docs/gold_dataset_plan.md`, and `docs/active_runtime_path.md` for the current automation and runtime contract.
 
 ## Outputs
 

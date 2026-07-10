@@ -8,6 +8,7 @@ Run from the dataset root that contains:
   gold/<case_id>/words.csv
   gold/<case_id>/phones.csv or visemes.csv
   gold/<case_id>/speech.csv
+  gold/<case_id>/boundaries.csv
 
 Normal playback remains dependency-free. Premiere-style continuous audio scrubbing uses
 the optional `sounddevice` package when available; without it the tool falls back
@@ -39,11 +40,25 @@ from typing import Dict, List, Optional, Tuple
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
-LAYER_FILES = ("words.csv", "visemes.csv", "speech.csv")
+LAYER_FILES = ("words.csv", "phones.csv", "speech.csv", "boundaries.csv")
+LAYER_ORDER = ("speech", "words", "phones", "boundaries")
+LAYER_FILE_CANDIDATES = {
+    "words": ("words.csv",),
+    "phones": ("phones.csv", "visemes.csv"),
+    "speech": ("speech.csv",),
+    "boundaries": ("boundaries.csv",),
+}
+LAYER_LABELS = {
+    "words": "words",
+    "phones": "phones",
+    "speech": "speech",
+    "boundaries": "boundaries",
+}
 MARKER_COLORS = {
     "words": "#3b82f6",
-    "visemes": "#dc2626",
+    "phones": "#dc2626",
     "speech": "#16a34a",
+    "boundaries": "#7c3aed",
 }
 
 
@@ -53,6 +68,8 @@ def marker_label(row: dict[str, str]) -> str:
         or row.get("source_phone")
         or row.get("pose")
         or row.get("word")
+        or row.get("mark")
+        or row.get("pause_class")
         or row.get("index")
         or ""
     )
@@ -350,7 +367,7 @@ class App:
             raise RuntimeError(f"No cases found under {self.dataset_root}")
         self.case_index = 0
         self.wav: Optional[WavData] = None
-        self.rows: Dict[str, List[Dict[str, str]]] = {"words": [], "visemes": [], "speech": []}
+        self.rows: Dict[str, List[Dict[str, str]]] = {layer: [] for layer in LAYER_ORDER}
         self.csv_fields: Dict[str, List[str]] = {}
         self.dirty = False
         self.cursor_sec = 0.0
@@ -368,7 +385,7 @@ class App:
         self.edit_start_var = tk.StringVar()
         self.edit_end_var = tk.StringVar()
         self.selected = None  # (layer, row_index)
-        self.show_layers = {"words": tk.BooleanVar(value=True), "visemes": tk.BooleanVar(value=True), "speech": tk.BooleanVar(value=True)}
+        self.show_layers = {layer: tk.BooleanVar(value=True) for layer in LAYER_ORDER}
         self._build_ui()
         self.load_case(0)
         self._tick()
@@ -402,8 +419,8 @@ class App:
         ttk.Button(controls, text="Zoom In", command=lambda: self.zoom(0.5)).pack(side="left", padx=(16,2))
         ttk.Button(controls, text="Zoom Out", command=lambda: self.zoom(2.0)).pack(side="left")
         ttk.Button(controls, text="Fit", command=self.fit).pack(side="left", padx=2)
-        for layer in ("words", "visemes", "speech"):
-            ttk.Checkbutton(controls, text=layer, variable=self.show_layers[layer], command=self.redraw).pack(side="left", padx=6)
+        for layer in LAYER_ORDER:
+            ttk.Checkbutton(controls, text=LAYER_LABELS[layer], variable=self.show_layers[layer], command=self.redraw).pack(side="left", padx=6)
         self.time_var = tk.StringVar()
         ttk.Label(controls, textvariable=self.time_var).pack(side="right")
 
@@ -461,19 +478,11 @@ class App:
         self.zoom_start = 0.0
         self.zoom_end = self.wav.duration
         self.cursor_sec = 0.0
-        self.rows = {"words": [], "visemes": [], "speech": []}
+        self.rows = {layer: [] for layer in LAYER_ORDER}
         self.csv_fields = {}
-        for layer, filename in (("words","words.csv"),("visemes","visemes.csv"),("speech","speech.csv")):
-            # New gold exports may include canonical phones.csv.  Load it into the
-            # existing visemes layer so older datasets and UI controls remain compatible.
-            if layer == "visemes" and (c.gold_dir / "phones.csv").exists():
-                filename = "phones.csv"
-            p = c.gold_dir / filename
-            if p.exists():
-                with p.open(newline="", encoding="utf-8-sig") as f:
-                    reader = csv.DictReader(f)
-                    self.csv_fields[layer] = list(reader.fieldnames or [])
-                    self.rows[layer] = [dict(r) for r in reader]
+        for layer in LAYER_ORDER:
+            self._load_layer(c, layer)
+        self._hydrate_boundary_rows()
         text = c.transcript_path.read_text(encoding="utf-8-sig").strip() if c.transcript_path and c.transcript_path.exists() else ""
         self.transcript_var.set(text)
         self.dirty = False
@@ -483,12 +492,16 @@ class App:
 
     def refresh_table(self):
         self.tree.delete(*self.tree.get_children())
-        for layer in ("speech", "words", "visemes"):
+        for layer in LAYER_ORDER:
             for i, r in enumerate(self.rows[layer]):
                 label = marker_label(r)
                 word = r.get("word", "")
-                extra = ", ".join(f"{k}={v}" for k,v in r.items() if k not in ("start","end","pose","word"))
-                self.tree.insert("", "end", iid=f"{layer}:{i}", values=(layer, r.get("start",""), r.get("end",""), label, word, extra))
+                extra = ", ".join(
+                    f"{k}={v}"
+                    for k, v in r.items()
+                    if k not in ("start", "end", "pose", "word", "_display_start", "_display_end", "_readonly")
+                )
+                self.tree.insert("", "end", iid=f"{layer}:{i}", values=(LAYER_LABELS[layer], r.get("start",""), r.get("end",""), label, word, extra))
 
     def t_to_x(self, t: float) -> float:
         w = max(1, self.canvas.winfo_width())
@@ -521,12 +534,12 @@ class App:
             for x, y1, _, y2 in pts:
                 self.canvas.create_line(x, y1, x, y2, fill="#444")
         # second bands
-        band_y = {"speech": h*0.78, "words": h*0.86, "visemes": h*0.94}
-        for layer in ("speech","words","visemes"):
+        band_y = {"speech": h*0.74, "words": h*0.82, "phones": h*0.90, "boundaries": h*0.98}
+        for layer in LAYER_ORDER:
             if not self.show_layers[layer].get(): continue
             color = MARKER_COLORS[layer]
             y = band_y[layer]
-            self.canvas.create_text(6, y-12, text=layer, anchor="w", fill=color)
+            self.canvas.create_text(6, y-12, text=LAYER_LABELS[layer], anchor="w", fill=color)
             for i, r in enumerate(self.rows[layer]):
                 try:
                     a, b = float(r.get("start", "0")), float(r.get("end", "0"))
@@ -575,7 +588,7 @@ class App:
     def find_nearest_boundary(self, x, y):
         best = None
         best_dist = 10
-        for layer in ("speech","words","visemes"):
+        for layer in LAYER_ORDER:
             if not self.show_layers[layer].get(): continue
             for i, r in enumerate(self.rows[layer]):
                 try: a,b = float(r.get("start","0")), float(r.get("end","0"))
@@ -593,6 +606,9 @@ class App:
         if self.drag:
             layer, idx, side = self.drag
             r = self.rows[layer][idx]
+            if r.get("_readonly") == "1":
+                self.drag = None
+                return
             t = max(0.0, min(self.wav.duration, self.x_to_t(event.x)))
             try:
                 other = float(r["end" if side == "start" else "start"])
@@ -657,6 +673,9 @@ class App:
             return
         layer, idx = self.selected
         r = self.rows[layer][idx]
+        if r.get("_readonly") == "1":
+            messagebox.showinfo("Read-only marker", f"{LAYER_LABELS[layer]} rows are derived from the gold export and are not directly editable here.")
+            return
         try:
             start = float(self.edit_start_var.get())
             end = float(self.edit_end_var.get())
@@ -682,6 +701,8 @@ class App:
             return
         layer, idx = self.selected
         r = self.rows[layer][idx]
+        if r.get("_readonly") == "1":
+            return
         try:
             start = float(r.get("start", "0"))
             end = float(r.get("end", "0"))
@@ -854,10 +875,8 @@ class App:
     def save(self):
         c = self.cases[self.case_index]
         stamp = time.strftime("%Y%m%d_%H%M%S")
-        for layer, filename in (("words","words.csv"),("visemes","visemes.csv"),("speech","speech.csv")):
-            if layer == "visemes" and (c.gold_dir / "phones.csv").exists():
-                filename = "phones.csv"
-            path = c.gold_dir / filename
+        for layer in LAYER_ORDER:
+            path = self._find_layer_path(c.gold_dir, layer)
             if not path.exists():
                 continue
             backup = path.with_suffix(path.suffix + f".bak_{stamp}")
@@ -868,9 +887,67 @@ class App:
                 writer = csv.DictWriter(f, fieldnames=fields)
                 writer.writeheader()
                 for r in self.rows[layer]:
-                    writer.writerow({k: r.get(k, "") for k in fields})
+                    if r.get("_readonly") == "1":
+                        clean = {k: v for k, v in r.items() if not k.startswith("_")}
+                    else:
+                        clean = r
+                    writer.writerow({k: clean.get(k, "") for k in fields})
         self.dirty = False
         messagebox.showinfo("Saved", "CSV files saved. Original files were backed up next to each CSV.")
+
+    def _find_layer_path(self, gold_dir: Path, layer: str) -> Path:
+        for filename in LAYER_FILE_CANDIDATES[layer]:
+            path = gold_dir / filename
+            if path.exists():
+                return path
+        return gold_dir / LAYER_FILE_CANDIDATES[layer][0]
+
+    def _load_layer(self, case: Case, layer: str):
+        path = self._find_layer_path(case.gold_dir, layer)
+        if not path.exists():
+            return
+        with path.open(newline="", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            self.csv_fields[layer] = list(reader.fieldnames or [])
+            self.rows[layer] = [dict(r) for r in reader]
+
+    def _hydrate_boundary_rows(self):
+        if not self.rows["boundaries"] or not self.rows["words"]:
+            return
+        words = self.rows["words"]
+        hydrated: List[Dict[str, str]] = []
+        for row in self.rows["boundaries"]:
+            try:
+                word_index = int(row.get("word_index", "-1"))
+                next_word_index = int(row.get("next_word_index", "-1"))
+            except ValueError:
+                hydrated.append(dict(row))
+                continue
+            if not (0 <= word_index < len(words)):
+                hydrated.append(dict(row))
+                continue
+            left = words[word_index]
+            try:
+                left_end = float(left.get("end", "0"))
+            except ValueError:
+                left_end = 0.0
+            right_start = left_end
+            if 0 <= next_word_index < len(words):
+                try:
+                    right_start = float(words[next_word_index].get("start", f"{left_end:.6f}"))
+                except ValueError:
+                    right_start = left_end
+            boundary_start = min(left_end, right_start)
+            boundary_end = max(boundary_start + 0.001, right_start)
+            hydrated_row = dict(row)
+            hydrated_row["start"] = f"{boundary_start:.6f}"
+            hydrated_row["end"] = f"{boundary_end:.6f}"
+            hydrated_row["word"] = row.get("word", "")
+            hydrated_row["_display_start"] = hydrated_row["start"]
+            hydrated_row["_display_end"] = hydrated_row["end"]
+            hydrated_row["_readonly"] = "1"
+            hydrated.append(hydrated_row)
+        self.rows["boundaries"] = hydrated
 
     def _tick(self):
         t = self.player.current_time()

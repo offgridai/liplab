@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0056_20260629_103618_921_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000055_00",
-  "created_utc": "2026-07-05T02:56:56.128424+00:00",
+  "created_utc": "2026-07-10T14:08:23.928849+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 120,
+    "speech_merge_gap_ms": 150,
     "source_run_dir": "outputs/offline_gold/latest/case_0056_20260629_103618_921_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000055_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-05T02:56:56.128483+00:00"
+    "reviewed_utc": "2026-07-10T14:08:23.928946+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -51,8 +51,8 @@
       "word_end_index": 6,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
-      "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -66,12 +66,201 @@
       "word_end_index": 11,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
-      "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
       }
+    }
+  ],
+  "pause_boundaries": [
+    {
+      "word_index": 0,
+      "word": "eswatini",
+      "next_word_index": 1,
+      "next_word": "has",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 1,
+      "word": "has",
+      "next_word_index": 2,
+      "next_word": "royal",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 2,
+      "word": "royal",
+      "next_word_index": 3,
+      "next_word": "palaces",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 3,
+      "word": "palaces",
+      "next_word_index": 4,
+      "next_word": "and",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 4,
+      "word": "and",
+      "next_word_index": 5,
+      "next_word": "lush",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 5,
+      "word": "lush",
+      "next_word_index": 6,
+      "next_word": "landscapes",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 6,
+      "word": "landscapes",
+      "next_word_index": 7,
+      "next_word": "want",
+      "mark": "!",
+      "mark_sequence": "!",
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "hard_punctuation_with_lull",
+      "direct_word_gap_seconds": 0.29000000000000004,
+      "phone_gap_seconds": 0.29000000000000004,
+      "wave_silence_seconds": 0.29000000000000004,
+      "acoustic_gap_seconds": 0.29000000000000004,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 7,
+      "word": "want",
+      "next_word_index": 8,
+      "next_word": "to",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 8,
+      "word": "to",
+      "next_word_index": 9,
+      "next_word": "try",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 9,
+      "word": "try",
+      "next_word_index": 10,
+      "next_word": "some",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 10,
+      "word": "some",
+      "next_word_index": 11,
+      "next_word": "chips",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
     }
   ],
   "gold_words": [
@@ -88,6 +277,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -103,6 +294,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -118,6 +311,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -133,6 +328,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -140,7 +337,7 @@
       "word": "and",
       "mfa_word": "and",
       "start": 3.08,
-      "end": 3.32,
+      "end": 3.23,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -148,13 +345,15 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
       "word_index": 5,
       "word": "lush",
       "mfa_word": "lush",
-      "start": 3.32,
+      "start": 3.23,
       "end": 3.61,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -163,6 +362,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -178,6 +379,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "!"
+      ],
+      "boundary_mark_after": "!",
       "speech_region_index": 0
     },
     {
@@ -193,6 +398,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -208,6 +415,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -223,6 +432,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -238,6 +449,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -253,6 +466,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "?"
+      ],
+      "boundary_mark_after": "?",
       "speech_region_index": 1
     }
   ],
@@ -340,7 +557,7 @@
     {
       "word_index": 5,
       "word": "lush",
-      "start": 3.32,
+      "start": 3.23,
       "end": 3.38,
       "pose": "L",
       "phrase_index": 0,
@@ -464,6 +681,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -479,6 +698,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -494,6 +715,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -509,6 +732,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -516,7 +741,7 @@
       "word": "and",
       "mfa_word": "and",
       "start": 3.08,
-      "end": 3.32,
+      "end": 3.23,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -524,13 +749,15 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
       "word_index": 5,
       "word": "lush",
       "mfa_word": "lush",
-      "start": 3.32,
+      "start": 3.23,
       "end": 3.61,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -539,6 +766,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -554,6 +783,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "!"
+      ],
+      "boundary_mark_after": "!",
       "speech_region_index": 0
     },
     {
@@ -569,6 +802,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -584,6 +819,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -599,6 +836,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -614,6 +853,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 1
     },
     {
@@ -629,6 +870,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "?"
+      ],
+      "boundary_mark_after": "?",
       "speech_region_index": 1
     }
   ],
@@ -683,7 +928,7 @@
       "phone": "IH1",
       "phone_base": "IH",
       "start": 1.48,
-      "end": 1.66,
+      "end": 1.65,
       "word_index": 0,
       "word": "eswatini"
     },
@@ -691,7 +936,7 @@
       "index_in_word": 6,
       "phone": "N",
       "phone_base": "N",
-      "start": 1.66,
+      "start": 1.65,
       "end": 1.7,
       "word_index": 0,
       "word": "eswatini"
@@ -854,7 +1099,7 @@
       "phone": "D",
       "phone_base": "D",
       "start": 3.18,
-      "end": 3.32,
+      "end": 3.23,
       "word_index": 4,
       "word": "and"
     },
@@ -862,7 +1107,7 @@
       "index_in_word": 0,
       "phone": "L",
       "phone_base": "L",
-      "start": 3.32,
+      "start": 3.23,
       "end": 3.38,
       "word_index": 5,
       "word": "lush"
@@ -1131,11 +1376,11 @@
     {
       "phone": "IH1",
       "start": 1.48,
-      "end": 1.66
+      "end": 1.65
     },
     {
       "phone": "N",
-      "start": 1.66,
+      "start": 1.65,
       "end": 1.7
     },
     {
@@ -1226,11 +1471,11 @@
     {
       "phone": "D",
       "start": 3.18,
-      "end": 3.32
+      "end": 3.23
     },
     {
       "phone": "L",
-      "start": 3.32,
+      "start": 3.23,
       "end": 3.38
     },
     {
@@ -1362,6 +1607,23 @@
       "phone": "S",
       "start": 5.69,
       "end": 5.85
+    }
+  ],
+  "wave_silence_spans": [
+    {
+      "start": 0.0,
+      "end": 0.86,
+      "duration_seconds": 0.86
+    },
+    {
+      "start": 4.32,
+      "end": 4.68,
+      "duration_seconds": 0.35999999999999943
+    },
+    {
+      "start": 5.8,
+      "end": 6.136875,
+      "duration_seconds": 0.33687500000000004
     }
   ],
   "planned_visemes": [],
@@ -1512,8 +1774,8 @@
       "pose": "IH1",
       "phone": "IH1",
       "start": 1.48,
-      "center": 1.5699999999999998,
-      "end": 1.66,
+      "center": 1.565,
+      "end": 1.65,
       "word": "eswatini",
       "mfa_word": "eswatini",
       "word_index": 0,
@@ -1539,8 +1801,8 @@
       "id": "N",
       "pose": "N",
       "phone": "N",
-      "start": 1.66,
-      "center": 1.68,
+      "start": 1.65,
+      "center": 1.6749999999999998,
       "end": 1.7,
       "word": "eswatini",
       "mfa_word": "eswatini",
@@ -2044,8 +2306,8 @@
       "pose": "D",
       "phone": "D",
       "start": 3.18,
-      "center": 3.25,
-      "end": 3.32,
+      "center": 3.205,
+      "end": 3.23,
       "word": "and",
       "mfa_word": "and",
       "word_index": 4,
@@ -2071,8 +2333,8 @@
       "id": "L",
       "pose": "L",
       "phone": "L",
-      "start": 3.32,
-      "center": 3.3499999999999996,
+      "start": 3.23,
+      "center": 3.3049999999999997,
       "end": 3.38,
       "word": "lush",
       "mfa_word": "lush",
@@ -2831,23 +3093,25 @@
       "note": "MFA word count does not match transcript-owned word count."
     },
     {
-      "kind": "speech_regions_split_on_mfa_phone_gaps",
+      "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 2,
-      "gap_threshold_seconds": 0.12,
+      "gap_threshold_seconds": 0.15,
       "largest_split_gap_seconds": 0.29,
-      "note": "Speech regions were split using gaps between non-silence MFA phone intervals."
+      "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }
   ],
   "notes": [],
   "summary": {
     "word_count": 12,
     "speech_region_count": 2,
+    "pause_boundary_count": 11,
+    "pause_region_break_count": 1,
     "word_head_count": 12,
     "viseme_count": 52,
     "flag_count": 2,
     "flags_by_kind": {
       "word_count_mismatch": 1,
-      "speech_regions_split_on_mfa_phone_gaps": 1
+      "speech_regions_split_on_pause_boundaries": 1
     },
     "commit_reasons": {
       "mfa_phone_interval": 52

@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0045_20260629_094447_931_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000044_00",
-  "created_utc": "2026-07-05T02:56:56.043349+00:00",
+  "created_utc": "2026-07-10T14:08:23.744134+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 120,
+    "speech_merge_gap_ms": 150,
     "source_run_dir": "outputs/offline_gold/latest/case_0045_20260629_094447_931_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000044_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-05T02:56:56.043412+00:00"
+    "reviewed_utc": "2026-07-10T14:08:23.744274+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -51,12 +51,133 @@
       "word_end_index": 7,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
-      "source": "mfa_non_silence_phone_gap_regions",
-      "merge_gap_seconds": 0.12,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.15,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
       }
+    }
+  ],
+  "pause_boundaries": [
+    {
+      "word_index": 0,
+      "word": "cuba",
+      "next_word_index": 1,
+      "next_word": "has",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 1,
+      "word": "has",
+      "next_word_index": 2,
+      "next_word": "amazing",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 2,
+      "word": "amazing",
+      "next_word_index": 3,
+      "next_word": "music",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 3,
+      "word": "music",
+      "next_word_index": 4,
+      "next_word": "and",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.050000000000000266,
+      "phone_gap_seconds": 0.050000000000000266,
+      "wave_silence_seconds": 0.050000000000000266,
+      "acoustic_gap_seconds": 0.050000000000000266,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 4,
+      "word": "and",
+      "next_word_index": 5,
+      "next_word": "old",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.07999999999999963,
+      "phone_gap_seconds": 0.07999999999999963,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.07999999999999963,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 5,
+      "word": "old",
+      "next_word_index": 6,
+      "next_word": "classic",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 6,
+      "word": "classic",
+      "next_word_index": 7,
+      "next_word": "cars",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
     }
   ],
   "gold_words": [
@@ -73,6 +194,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -88,6 +211,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -103,6 +228,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -118,13 +245,15 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
       "word_index": 4,
       "word": "and",
       "mfa_word": "and",
-      "start": 2.07,
+      "start": 2.06,
       "end": 2.22,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -133,6 +262,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -148,6 +279,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -163,6 +296,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -178,6 +313,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "!"
+      ],
+      "boundary_mark_after": "!",
       "speech_region_index": 0
     }
   ],
@@ -249,7 +388,7 @@
     {
       "word_index": 4,
       "word": "and",
-      "start": 2.07,
+      "start": 2.06,
       "end": 2.14,
       "pose": "AE1",
       "phrase_index": 0,
@@ -325,6 +464,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -340,6 +481,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -355,6 +498,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -370,13 +515,15 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
       "word_index": 4,
       "word": "and",
       "mfa_word": "and",
-      "start": 2.07,
+      "start": 2.06,
       "end": 2.22,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -385,6 +532,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -400,6 +549,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -415,6 +566,8 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
       "speech_region_index": 0
     },
     {
@@ -430,6 +583,10 @@
         "status": "draft_auto",
         "reviewed": false
       },
+      "boundary_marks_after": [
+        "!"
+      ],
+      "boundary_mark_after": "!",
       "speech_region_index": 0
     }
   ],
@@ -618,7 +775,7 @@
       "index_in_word": 0,
       "phone": "AE1",
       "phone_base": "AE",
-      "start": 2.07,
+      "start": 2.06,
       "end": 2.14,
       "word_index": 4,
       "word": "and"
@@ -862,7 +1019,7 @@
     },
     {
       "phone": "AE1",
-      "start": 2.07,
+      "start": 2.06,
       "end": 2.14
     },
     {
@@ -939,6 +1096,28 @@
       "phone": "Z",
       "start": 3.6,
       "end": 3.74
+    }
+  ],
+  "wave_silence_spans": [
+    {
+      "start": 0.0,
+      "end": 0.28,
+      "duration_seconds": 0.28
+    },
+    {
+      "start": 1.86,
+      "end": 2.08,
+      "duration_seconds": 0.21999999999999997
+    },
+    {
+      "start": 3.08,
+      "end": 3.3,
+      "duration_seconds": 0.21999999999999975
+    },
+    {
+      "start": 3.6,
+      "end": 4.056875,
+      "duration_seconds": 0.4568749999999997
     }
   ],
   "planned_visemes": [],
@@ -1508,8 +1687,8 @@
       "id": "AE1",
       "pose": "AE1",
       "phone": "AE1",
-      "start": 2.07,
-      "center": 2.105,
+      "start": 2.06,
+      "center": 2.1,
       "end": 2.14,
       "word": "and",
       "mfa_word": "and",
@@ -1964,6 +2143,8 @@
   "summary": {
     "word_count": 8,
     "speech_region_count": 1,
+    "pause_boundary_count": 7,
+    "pause_region_break_count": 0,
     "word_head_count": 8,
     "viseme_count": 36,
     "flag_count": 1,

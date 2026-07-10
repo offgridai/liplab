@@ -1,13 +1,16 @@
 case: case_0036_20260629_094333_229_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000035_00
 transcript: The maple syrup, the lakes, and the northern lights! Need anything else?
 audio: 4.777s @ 24000 Hz
-speech regions: 4
+speech regions: 3
+pause boundaries: 11
+pause-driven region breaks: 2
 word heads: 12
 dense visemes: 44
 draft flags: 2
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

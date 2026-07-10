@@ -27,8 +27,10 @@ Inputs:
 - `inputs/transcripts/<case>.txt`
 - `inputs/wav/<case>.wav`
 - `inputs/gold/<case>/visemes.csv`
+- `inputs/gold/<case>/phones.csv`
 - `inputs/gold/<case>/words.csv`
 - `inputs/gold/<case>/speech.csv`
+- `inputs/gold/<case>/boundaries.csv`
 - `inputs/gold/manifest.json`
 
 Draft authoring outputs:
@@ -43,11 +45,13 @@ Draft authoring outputs:
 Each draft case contains three review layers:
 
 1. `speech_regions`
-   Derived from offline MFA word timing, merged into speech runs. This is the primary pause/resume truth.
+   Derived from offline MFA word timing plus acoustic lull evidence. Region starts align to MFA word starts, region ends align to MFA word ends, and this is the primary pause/resume truth.
 2. `word_heads`
    The first visible viseme per word. This is the primary word-onset truth.
 3. `dense_visemes`
    The full viseme plan, still transcript-owned for identity and MFA-assisted for timing.
+4. `pause_boundaries`
+   Explicit punctuation and inter-word pause metadata used to explain why a speech region split was or was not created.
 
 The draft carries explicit layer states:
 
@@ -71,7 +75,8 @@ The export gate requires:
 2. Build draft gold packages
    - map transcript-owned planned visemes onto MFA phone timing
    - derive gold words from MFA word intervals plus transcript phrase/sentence ownership
-   - derive speech regions from merged MFA word runs, not streaming speech islands
+   - derive speech regions from MFA word timing plus punctuation/acoustic lull evidence
+   - derive explicit pause-boundary metadata for each inter-word punctuation boundary
 3. Review drafts
    - first speech boundaries
    - then word heads
@@ -89,7 +94,7 @@ Phase 1 is intentionally deterministic:
 - MFA is the offline timing authority
 - `offgrid_dropin` planned viseme identity remains authoritative
 - no acoustic model invents viseme identity
-- speech regions come from offline word runs rather than runtime islands
+- speech regions come from offline word timing plus acoustic lull evidence rather than runtime islands
 - missing phone evidence falls back to offline committed timings and is flagged for review
 
 ## Expected Commands

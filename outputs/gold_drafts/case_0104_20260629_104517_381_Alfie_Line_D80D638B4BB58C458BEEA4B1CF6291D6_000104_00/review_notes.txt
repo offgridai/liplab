@@ -2,12 +2,15 @@ case: case_0104_20260629_104517_381_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_
 transcript: Micronesia? Tiny islands, mostly unknown. Want some chips?
 audio: 4.937s @ 24000 Hz
 speech regions: 3
+pause boundaries: 7
+pause-driven region breaks: 2
 word heads: 8
 dense visemes: 40
 draft flags: 2
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

@@ -2,9 +2,15 @@
 
 namespace
 {
-static const FName OccupancyReason(TEXT("speech_occupancy_playhead"));
-static const FName RegionClosedDropReason(TEXT("speech_region_closed_drop"));
-static const FName MissingRegionDropReason(TEXT("speech_region_missing_drop"));
+static const FName TextPriorMonotonicCommitReason(TEXT("text_prior_monotonic_commit"));
+
+// Advisory landmark extraction/logging now lives in LineCoach's consolidated
+// debug landmark system. The runtime adapter must not use landmarks/prosody
+// to move the text playhead; start/resume acoustic anchors are the only audio
+// timing authority.
+static constexpr float MaxLiveCommitLeadSec = 0.320f;
+static constexpr float MaxLiveCommitBehindSec = 0.180f;
+
 static constexpr float InterWordSpacerSeconds = 0.020f;
 static constexpr float ActiveDurationScale = 0.90f;
 
@@ -89,97 +95,73 @@ static void BuildEventProgressNormsFromPhones(
     }
 }
 
-static void BuildWordStartActiveSeconds(
-    const FOffgridAITextVisemePlan& Plan,
-    const TArray<float>& PhoneStartActiveSeconds,
-    TArray<float>& OutWordStartActiveSeconds)
-{
-    OutWordStartActiveSeconds.Init(0.0f, Plan.WordSyllableCounts.Num());
-    if (Plan.WordSyllableCounts.Num() <= 0)
-    {
-        return;
-    }
-
-    for (int32 WordIndex = 0; WordIndex < Plan.WordSyllableCounts.Num(); ++WordIndex)
-    {
-        if (!OutWordStartActiveSeconds.IsValidIndex(WordIndex))
-        {
-            continue;
-        }
-        if (Plan.WordPhoneBeginIndices.IsValidIndex(WordIndex))
-        {
-            const int32 PhoneBegin = Plan.WordPhoneBeginIndices[WordIndex];
-            if (PhoneStartActiveSeconds.IsValidIndex(PhoneBegin))
-            {
-                OutWordStartActiveSeconds[WordIndex] = PhoneStartActiveSeconds[PhoneBegin];
-                continue;
-            }
-        }
-    }
-
-    if (Plan.ExpectedPhones.Num() > 0)
-    {
-        return;
-    }
-
-    float FallbackCursor = 0.0f;
-    for (int32 WordIndex = 0; WordIndex < Plan.WordSyllableCounts.Num(); ++WordIndex)
-    {
-        OutWordStartActiveSeconds[WordIndex] = FallbackCursor;
-        FallbackCursor += 0.075f * FMath::Max(Plan.WordSyllableCounts[WordIndex], 1);
-    }
-}
-
 struct FEffectiveSpeechRegion
 {
     float StartSec = 0.0f;
     float EndSec = 0.0f;
 };
 
-static bool IsSoftPausePunctuation(TCHAR C)
-{
-    return C == TEXT(',') || C == TEXT(';') || C == TEXT(':');
-}
-
 static bool IsHardPausePunctuation(TCHAR C)
 {
-    return C == TEXT('.') || C == TEXT('!') || C == TEXT('?');
+    return C == TEXT('.')
+        || C == TEXT('!')
+        || C == TEXT('?')
+        || C == TEXT(':')
+        || C == TEXT(';')
+        || C == TEXT('-')
+        || C == TEXT('—')
+        || C == TEXT('–');
 }
 
-static float HoldSecondsForBoundary(TCHAR C)
+static bool IsHardLikeBoundaryClass(TCHAR C, EOffgridAIBoundaryPauseClass PauseClass)
 {
-    if (IsSoftPausePunctuation(C))
+    return PauseClass == EOffgridAIBoundaryPauseClass::HardBreakPause || IsHardPausePunctuation(C);
+}
+
+static bool IsSoftListBoundaryClass(TCHAR C, EOffgridAIBoundaryPauseClass PauseClass)
+{
+    return C == TEXT(',') && PauseClass == EOffgridAIBoundaryPauseClass::SoftListPause;
+}
+
+static float HoldSecondsForBoundaryClass(TCHAR C, EOffgridAIBoundaryPauseClass PauseClass)
+{
+    // Punctuation patience is derived from the text boundary class. A comma
+    // in a list context is low-patience and may be spoken through; a comma that
+    // separates clauses is classed as HardBreakPause and gets period-like
+    // patience.  Hard punctuation marks are always high-patience.
+    if (IsSoftListBoundaryClass(C, PauseClass))
     {
-        return 0.120f;
+        return 0.320f;
     }
-    if (IsHardPausePunctuation(C))
+    if (IsHardLikeBoundaryClass(C, PauseClass))
     {
-        return 0.260f;
+        return 1.150f;
     }
     return 0.0f;
 }
 
-static float HoldSecondsForBoundary(TCHAR C, EOffgridAIBoundaryPauseClass PauseClass)
+static float MinDecayToResumeGapForBoundaryClass(TCHAR C, EOffgridAIBoundaryPauseClass PauseClass)
 {
-    switch (PauseClass)
-    {
-    case EOffgridAIBoundaryPauseClass::SoftListPause:
-        return 0.450f;
-    case EOffgridAIBoundaryPauseClass::HardBreakPause:
-        return 1.200f;
-    case EOffgridAIBoundaryPauseClass::None:
-    default:
-        return HoldSecondsForBoundary(C);
-    }
+    return IsHardLikeBoundaryClass(C, PauseClass) ? 0.120f : 0.020f;
 }
 
-static const FOffgridAIStreamingAudioFeatureFrame* FindFeatureFrameAtPlayback(
+static float MinVisibleGapForBoundaryClass(TCHAR C, EOffgridAIBoundaryPauseClass PauseClass)
+{
+    return IsHardLikeBoundaryClass(C, PauseClass) ? 0.140f : 0.035f;
+}
+
+static float MaxArtificialResumeDelayForBoundaryClass(TCHAR C, EOffgridAIBoundaryPauseClass PauseClass)
+{
+    return IsHardLikeBoundaryClass(C, PauseClass) ? 0.160f : 0.260f;
+}
+
+static int32 FindFeatureFrameIndexAtPlayback(
     const TArray<FOffgridAIStreamingAudioFeatureFrame>* AudioFeatureFrames,
     float PlaybackSec)
 {
-    if (!AudioFeatureFrames)
+    if (!AudioFeatureFrames || AudioFeatureFrames->Num() <= 0)
     {
-        return nullptr;
+        return INDEX_NONE;
     }
 
     for (int32 Index = AudioFeatureFrames->Num() - 1; Index >= 0; --Index)
@@ -187,25 +169,139 @@ static const FOffgridAIStreamingAudioFeatureFrame* FindFeatureFrameAtPlayback(
         const FOffgridAIStreamingAudioFeatureFrame& Frame = (*AudioFeatureFrames)[Index];
         if (PlaybackSec >= Frame.AudioBufferStartSec)
         {
-            return &Frame;
+            return Index;
         }
     }
 
-    return AudioFeatureFrames->Num() > 0 ? &(*AudioFeatureFrames)[0] : nullptr;
+    return 0;
 }
 
-static bool IsPunctuationPauseLullFrame(const FOffgridAIStreamingAudioFeatureFrame* Frame)
+static bool HasStableRawSpeechRunFromFrame(
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>* AudioFeatureFrames,
+    int32 StartFrameIndex,
+    int32 RequiredFrameCount,
+    float MinRawRMS)
 {
-    if (!Frame)
+    if (!AudioFeatureFrames || StartFrameIndex < 0 || RequiredFrameCount <= 0)
     {
         return false;
     }
 
-    return Frame->bStrongQuiet
-        || Frame->bLowEvidence
-        || Frame->PauseFamily == FName(TEXT("comma_lull"))
-        || (Frame->RMSNorm <= 0.18f && Frame->SpeechEvidence <= 0.32f);
+    if (StartFrameIndex + RequiredFrameCount > AudioFeatureFrames->Num())
+    {
+        return false;
+    }
+
+    for (int32 Offset = 0; Offset < RequiredFrameCount; ++Offset)
+    {
+        const FOffgridAIStreamingAudioFeatureFrame& Frame = (*AudioFeatureFrames)[StartFrameIndex + Offset];
+        if (Frame.RMS < MinRawRMS)
+        {
+            return false;
+        }
+
+        const bool bSpeechLike = Frame.bInSpeechAfterFrame
+            || Frame.bOpenCandidate
+            || Frame.bStrongOnsetAnchor
+            || Frame.SpeechEvidence >= FMath::Max(Frame.OpenThreshold, 0.18f);
+        if (!bSpeechLike)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
+
+
+
+static bool IsRawQuietPunctuationDecayFrame(const FOffgridAIStreamingAudioFeatureFrame& Frame)
+{
+    // Boundary decay must be grounded in the actual PCM floor. The adaptive
+    // detector can briefly report low evidence / strong quiet inside a weak
+    // consonant or phrase tail; accepting that as punctuation decay lets the
+    // next word resume immediately inside the same utterance.
+    constexpr float MaxQuietRawRMS = 0.0035f;
+    if (Frame.RMS > MaxQuietRawRMS)
+    {
+        return false;
+    }
+
+    return Frame.bStrongQuiet
+        || Frame.bLowEvidence
+        || Frame.bFrameClosedSpeechRegion
+        || (!Frame.bInSpeechAfterFrame && Frame.SpeechEvidence <= 0.30f);
+}
+
+static bool HasStableRawQuietRunEndingAtFrame(
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>* AudioFeatureFrames,
+    int32 EndFrameIndex,
+    int32 RequiredFrameCount,
+    float HoldStartPlaybackSec)
+{
+    if (!AudioFeatureFrames || EndFrameIndex < 0 || RequiredFrameCount <= 0)
+    {
+        return false;
+    }
+
+    const int32 FirstFrameIndex = EndFrameIndex - RequiredFrameCount + 1;
+    if (FirstFrameIndex < 0)
+    {
+        return false;
+    }
+
+    for (int32 Index = FirstFrameIndex; Index <= EndFrameIndex; ++Index)
+    {
+        const FOffgridAIStreamingAudioFeatureFrame& Frame = (*AudioFeatureFrames)[Index];
+        if (Frame.AudioBufferCenterSec + 0.001f < HoldStartPlaybackSec)
+        {
+            return false;
+        }
+        if (!IsRawQuietPunctuationDecayFrame(Frame))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+static bool IsConfirmedOutOfSpeechForHardPause(const FOffgridAIStreamingAudioFeatureFrame* Frame);
+
+static bool HasStableHardPauseQuietRunEndingAtFrame(
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>* AudioFeatureFrames,
+    int32 EndFrameIndex,
+    int32 RequiredFrameCount,
+    float HoldStartPlaybackSec)
+{
+    if (!AudioFeatureFrames || EndFrameIndex < 0 || RequiredFrameCount <= 0)
+    {
+        return false;
+    }
+
+    const int32 FirstFrameIndex = EndFrameIndex - RequiredFrameCount + 1;
+    if (FirstFrameIndex < 0)
+    {
+        return false;
+    }
+
+    for (int32 Index = FirstFrameIndex; Index <= EndFrameIndex; ++Index)
+    {
+        const FOffgridAIStreamingAudioFeatureFrame& Frame = (*AudioFeatureFrames)[Index];
+        if (Frame.AudioBufferCenterSec + 0.001f < HoldStartPlaybackSec)
+        {
+            return false;
+        }
+        if (!IsConfirmedOutOfSpeechForHardPause(&Frame))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 
 static bool IsPunctuationPauseSpeechFrame(const FOffgridAIStreamingAudioFeatureFrame* Frame)
 {
@@ -245,10 +341,245 @@ static int32 FindRegionIndexAtPlayback(const TArray<FEffectiveSpeechRegion>& Reg
     return BestIndex;
 }
 
+static int32 FindContainingRegionIndexAtPlayback(const TArray<FEffectiveSpeechRegion>& Regions, float PlaybackSec)
+{
+    for (int32 RegionIndex = 0; RegionIndex < Regions.Num(); ++RegionIndex)
+    {
+        const FEffectiveSpeechRegion& Region = Regions[RegionIndex];
+        if (PlaybackSec >= Region.StartSec && PlaybackSec <= Region.EndSec)
+        {
+            return RegionIndex;
+        }
+    }
+    return INDEX_NONE;
+}
+
+static bool IsConfirmedOutOfSpeechForHardPause(const FOffgridAIStreamingAudioFeatureFrame* Frame)
+{
+    if (!Frame)
+    {
+        return false;
+    }
+
+    if (Frame->bFrameClosedSpeechRegion || Frame->bStrongQuiet)
+    {
+        return true;
+    }
+
+    return !Frame->bInSpeechAfterFrame
+        && (Frame->bLowEvidence
+            || Frame->SpeechEvidence <= 0.24f
+            || (Frame->RMSNorm <= 0.13f && Frame->SpeechEvidence <= 0.30f));
+}
+
+static bool IsFreshResumeOnsetFrame(const FOffgridAIStreamingAudioFeatureFrame* Frame)
+{
+    if (!Frame)
+    {
+        return false;
+    }
+
+    if (!IsPunctuationPauseSpeechFrame(Frame))
+    {
+        return false;
+    }
+
+    return Frame->bFrameStartedSpeechRegion
+        || Frame->bStrongOnsetAnchor
+        || (!Frame->bInSpeechBeforeFrame && Frame->bInSpeechAfterFrame)
+        || (Frame->bOpenCandidate && Frame->SpeechEvidence >= 0.38f)
+        || (Frame->Flux >= 0.12f && Frame->SpeechEvidence >= 0.38f);
+}
+
+static bool IsStableResumeAnchorFrame(
+    const FOffgridAIStreamingAudioFeatureFrame* Frame,
+    float QuietRMSNormAtDecay,
+    float QuietEvidenceAtDecay,
+    float QuietRawRMSAtDecay)
+{
+    if (!Frame || !IsPunctuationPauseSpeechFrame(Frame))
+    {
+        return false;
+    }
+
+    // Anchor acceptance must be grounded in raw audio level, not only detector
+    // normalized evidence. RMSNorm can be high during near-silence because it is
+    // adaptive; raw RMS prevents punctuation/initial anchors from accepting
+    // the first few noise frames or a tiny transient blip.
+    // Use a principled bloom threshold: resumed speech must rise clearly above
+    // the raw quiet floor captured at the punctuation decay.  This avoids both
+    // hard-coded fake offsets and accepting tiny post-pause blips as anchors.
+    const float ResumeBloomRawRMS = FMath::Max(0.004f, QuietRawRMSAtDecay * 3.0f + 0.001f);
+    if (Frame->RMS < ResumeBloomRawRMS)
+    {
+        return false;
+    }
+
+    const bool bDetectorOpen = Frame->bInSpeechAfterFrame || Frame->bOpenCandidate || Frame->bStrongOnsetAnchor;
+    const bool bEvidenceStable = Frame->SpeechEvidence >= FMath::Max(Frame->OpenThreshold, 0.20f)
+        || (Frame->bStrongOnsetAnchor && Frame->SpeechEvidence >= 0.16f);
+    const bool bEnergyStable = Frame->RMSNorm >= FMath::Max(QuietRMSNormAtDecay + 0.020f, 0.080f)
+        || Frame->RMS >= FMath::Max(0.006f, ResumeBloomRawRMS)
+        || (Frame->Flux >= 0.10f && Frame->SpeechEvidence >= Frame->OpenThreshold && Frame->RMS >= ResumeBloomRawRMS)
+        || (Frame->bStrongOnsetAnchor && Frame->RMS >= ResumeBloomRawRMS);
+
+    return bDetectorOpen && bEvidenceStable && bEnergyStable;
+}
+
+
+static bool FindBufferedBoundaryResumeAnchorSec(
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>* AudioFeatureFrames,
+    TCHAR BoundaryMark,
+    EOffgridAIBoundaryPauseClass PauseClass,
+    float HoldStartPlaybackSec,
+    float MaxSearchPlaybackSec,
+    float MinDecayToResumeGapSec,
+    float& OutQuietStartSec,
+    float& OutResumeOnsetSec,
+    float& OutResumeAnchorSec,
+    float& OutQuietRMSNorm,
+    float& OutQuietEvidence,
+    float& OutQuietRawRMS)
+{
+    if (!AudioFeatureFrames || AudioFeatureFrames->Num() <= 0)
+    {
+        return false;
+    }
+
+    int32 QuietFrameIndex = INDEX_NONE;
+    for (int32 FrameIndex = 0; FrameIndex < AudioFeatureFrames->Num(); ++FrameIndex)
+    {
+        const FOffgridAIStreamingAudioFeatureFrame& Frame = (*AudioFeatureFrames)[FrameIndex];
+        if (Frame.AudioBufferCenterSec + 0.001f < HoldStartPlaybackSec)
+        {
+            continue;
+        }
+        if (Frame.AudioBufferCenterSec > MaxSearchPlaybackSec + 0.001f)
+        {
+            break;
+        }
+
+        const bool bQuietRun = IsHardLikeBoundaryClass(BoundaryMark, PauseClass)
+            ? HasStableHardPauseQuietRunEndingAtFrame(AudioFeatureFrames, FrameIndex, 3, HoldStartPlaybackSec)
+            : HasStableRawQuietRunEndingAtFrame(AudioFeatureFrames, FrameIndex, 3, HoldStartPlaybackSec);
+        if (bQuietRun)
+        {
+            QuietFrameIndex = FMath::Max(FrameIndex - 2, 0);
+            const FOffgridAIStreamingAudioFeatureFrame& QuietFrame = (*AudioFeatureFrames)[QuietFrameIndex];
+            OutQuietStartSec = QuietFrame.AudioBufferCenterSec;
+            OutQuietRMSNorm = QuietFrame.RMSNorm;
+            OutQuietEvidence = QuietFrame.SpeechEvidence;
+            OutQuietRawRMS = QuietFrame.RMS;
+            break;
+        }
+    }
+
+    if (QuietFrameIndex == INDEX_NONE)
+    {
+        return false;
+    }
+
+    for (int32 FrameIndex = QuietFrameIndex + 1; FrameIndex < AudioFeatureFrames->Num(); ++FrameIndex)
+    {
+        const FOffgridAIStreamingAudioFeatureFrame& Frame = (*AudioFeatureFrames)[FrameIndex];
+        if (Frame.AudioBufferCenterSec > MaxSearchPlaybackSec + 0.001f)
+        {
+            break;
+        }
+        if (Frame.AudioBufferCenterSec + 0.001f < OutQuietStartSec + MinDecayToResumeGapSec)
+        {
+            continue;
+        }
+
+        const bool bStableRawSpeechRun = HasStableRawSpeechRunFromFrame(
+            AudioFeatureFrames,
+            FrameIndex,
+            4,
+            FMath::Max(0.004f, OutQuietRawRMS * 3.0f + 0.001f));
+        if (IsStableResumeAnchorFrame(&Frame, OutQuietRMSNorm, OutQuietEvidence, OutQuietRawRMS)
+            && bStableRawSpeechRun)
+        {
+            OutResumeOnsetSec = Frame.AudioBufferCenterSec;
+            OutResumeAnchorSec = Frame.AudioBufferCenterSec;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool IsInitialStableSpeechAnchorFrame(const FOffgridAIStreamingAudioFeatureFrame& Frame)
+{
+    // Initial start anchors must be based on real PCM energy. Detector-open and
+    // normalized evidence alone can mark the first buffered frame as speech even
+    // when raw audio is near-silent, especially after region backdating.
+    constexpr float MinInitialAnchorRawRMS = 0.006f;
+    if (Frame.RMS < MinInitialAnchorRawRMS)
+    {
+        return false;
+    }
+
+    const bool bDetectorOpen = Frame.bInSpeechAfterFrame || Frame.bOpenCandidate || Frame.bStrongOnsetAnchor;
+    const bool bEvidenceStable = Frame.SpeechEvidence >= FMath::Max(Frame.OpenThreshold, 0.22f)
+        || (Frame.bStrongOnsetAnchor && Frame.SpeechEvidence >= 0.18f);
+    return bDetectorOpen && bEvidenceStable;
+}
+
+static bool FindInitialSpeechEnergyAnchorSec(
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>* Frames,
+    const TArray<FEffectiveSpeechRegion>& EffectiveRegions,
+    float& OutAnchorSec)
+{
+    OutAnchorSec = -1.0f;
+    if (!Frames || Frames->Num() <= 0 || EffectiveRegions.Num() <= 0)
+    {
+        return false;
+    }
+
+    const float FirstRegionStartSec = EffectiveRegions[0].StartSec;
+    int32 CandidateIndex = INDEX_NONE;
+    int32 StableRunFrames = 0;
+    for (int32 FrameIndex = 0; FrameIndex < Frames->Num(); ++FrameIndex)
+    {
+        const FOffgridAIStreamingAudioFeatureFrame& Frame = (*Frames)[FrameIndex];
+        if (Frame.AudioBufferEndSec + 0.001f < FirstRegionStartSec)
+        {
+            continue;
+        }
+
+        if (IsInitialStableSpeechAnchorFrame(Frame))
+        {
+            if (CandidateIndex == INDEX_NONE)
+            {
+                CandidateIndex = FrameIndex;
+            }
+            ++StableRunFrames;
+
+            // Require sustained raw acoustic evidence for initial start.  Region-open
+            // and single-frame onset flags are too permissive at t=0 and were
+            // still producing bogus 0.005s anchors on low-energy lead-in noise.
+            if (StableRunFrames >= 4)
+            {
+                // Anchor to the confirmed incoming energy bloom frame, not the
+                // first candidate frame.  If speech starts immediately at t=0,
+                // anchoring the candidate gives the repeated bogus 0.005s start.
+                OutAnchorSec = Frame.AudioBufferCenterSec;
+                return true;
+            }
+        }
+        else
+        {
+            CandidateIndex = INDEX_NONE;
+            StableRunFrames = 0;
+        }
+    }
+    return false;
+}
+
 static void AdvancePlaybackHoldState(
     const FOffgridAILipsyncRuntimeUpdateInput& Input,
     const TArray<FEffectiveSpeechRegion>& EffectiveRegions,
-    FOffgridAIPunctuationHoldState& InOutState)
+    FOffgridAIBoundaryPlaybackState& InOutState)
 {
     const float PlaybackSec = FMath::Max(Input.CurrentPlaybackSec, 0.0f);
     const float DeltaSec = InOutState.bPlayheadStarted
@@ -269,70 +600,360 @@ static void AdvancePlaybackHoldState(
         return;
     }
 
-    auto ReanchorPausedClockToObservedResume = [&](float ResumeClockSec)
+    auto ReanchorPausedClockToAcousticAnchor = [&](float AcousticAnchorSec)
     {
+        // Boundary timing has three independent facts:
+        // 1) the pre-boundary phrase has already committed and owns its visible tail,
+        // 2) audio supplies the first stable resumed speech,
+        // 3) the post-boundary phrase starts no earlier than a small visible gap
+        //    after the prior tail, with bounded artificial delay.
+        // This avoids both old failure modes: post-boundary overlap, and hunting
+        // for a much later energy peak that makes the resumed word arrive late.
+        const bool bHardBoundary = IsHardLikeBoundaryClass(InOutState.ActiveBoundaryMark, InOutState.ActivePauseClass);
+        const float AcousticBaseSec = (bHardBoundary && InOutState.ObservedResumeOnsetPlaybackSec >= 0.0f)
+            ? InOutState.ObservedResumeOnsetPlaybackSec
+            : AcousticAnchorSec;
+        const float MinVisibleGapSec = MinVisibleGapForBoundaryClass(InOutState.ActiveBoundaryMark, InOutState.ActivePauseClass);
+        const float MaxArtificialDelaySec = MaxArtificialResumeDelayForBoundaryClass(InOutState.ActiveBoundaryMark, InOutState.ActivePauseClass);
+        float DesiredCenterSec = FMath::Max(AcousticBaseSec, 0.0f);
+        DesiredCenterSec = FMath::Min(DesiredCenterSec, AcousticBaseSec + MaxArtificialDelaySec);
+        DesiredCenterSec = FMath::Max(DesiredCenterSec, 0.0f);
+
         const float DesiredPausedSec =
-            FMath::Max(ResumeClockSec - InOutState.PlaybackOriginSec - InOutState.ActivePlayheadSec, 0.0f);
-        InOutState.TotalPausedSec = DesiredPausedSec;
+            DesiredCenterSec + InOutState.HoldResumeTargetLeadSec
+            - InOutState.PlaybackOriginSec
+            - InOutState.HoldResumeTargetActiveSec;
+        InOutState.TotalPausedSec = FMath::Max(DesiredPausedSec, 0.0f);
+
+        // A confirmed punctuation resume starts a new local text-prior segment.
+        // Do not carry active-playhead debt from the pre-boundary segment across
+        // the pause: long comma/list runs can otherwise leave the virtual text
+        // clock ahead of the first post-boundary event, causing the resumed
+        // suffix to be dumped or visually starved.  The committed prefix is
+        // immutable; the suffix now advances from the first post-boundary
+        // event's active time as its fresh origin.
+        InOutState.ActivePlayheadSec = InOutState.HoldResumeTargetActiveSec;
+
+        InOutState.bResumeAnchorActive = true;
+        InOutState.bResumeAnchorFromInitialSpeech = false;
+        InOutState.ResumeAnchorActiveSec = InOutState.HoldResumeTargetActiveSec;
+        InOutState.ResumeAnchorLeadSec = InOutState.HoldResumeTargetLeadSec;
+        InOutState.ResumeAnchorFinalCenterSec = DesiredCenterSec;
+        InOutState.ObservedResumeEnergyAnchorSec = DesiredCenterSec;
+        InOutState.LastResolvedBoundary.DecaySec = InOutState.ConfirmedQuietStartPlaybackSec;
+        InOutState.LastResolvedBoundary.ResumeOnsetSec = InOutState.ObservedResumeOnsetPlaybackSec;
+        InOutState.LastResolvedBoundary.ResumeEnergyAnchorSec = DesiredCenterSec;
     };
+
+    bool bReleasedContinuousNoDecayThisTick = false;
 
     if (InOutState.bHoldActive)
     {
+        const int32 PlaybackFrameIndex = FindFeatureFrameIndexAtPlayback(Input.AudioFeatureFrames, PlaybackSec);
         const FOffgridAIStreamingAudioFeatureFrame* PlaybackFrame =
-            FindFeatureFrameAtPlayback(Input.AudioFeatureFrames, PlaybackSec);
-        const bool bPauseTimeShouldAccumulate = InOutState.bObservedPauseLull;
+            (Input.AudioFeatureFrames && PlaybackFrameIndex != INDEX_NONE)
+                ? &(*Input.AudioFeatureFrames)[PlaybackFrameIndex]
+                : nullptr;
 
-        if (bPauseTimeShouldAccumulate)
-        {
-            InOutState.TotalPausedSec += DeltaSec;
-        }
-
-        InOutState.bObservedPauseLull =
-            InOutState.bObservedPauseLull || IsPunctuationPauseLullFrame(PlaybackFrame);
-
-        const float MinPauseHoldSec = 0.060f;
+        const float MinPauseHoldSec = 0.050f;
         const float HoldElapsedSec = PlaybackSec - InOutState.HoldStartPlaybackSec;
-        if (InOutState.bObservedPauseLull
-            && HoldElapsedSec >= MinPauseHoldSec
-            && IsPunctuationPauseSpeechFrame(PlaybackFrame))
+        const bool bSpeechResumed = IsPunctuationPauseSpeechFrame(PlaybackFrame);
+
+        // Decay is the boundary gate. It must represent a real post-punctuation
+        // acoustic valley, not a single adaptive low-evidence frame. Without
+        // this, comma/period holds can release inside the prior word tail and
+        // appear to ignore transcript boundaries.
+        const bool bObservedRawDecayThisFrame = PlaybackFrame
+            && PlaybackFrameIndex != INDEX_NONE
+            && HasStableRawQuietRunEndingAtFrame(
+                Input.AudioFeatureFrames,
+                PlaybackFrameIndex,
+                3,
+                InOutState.BoundarySearchStartPlaybackSec);
+        const bool bObservedHardPauseDecayThisFrame = PlaybackFrame
+            && PlaybackFrameIndex != INDEX_NONE
+            && IsHardLikeBoundaryClass(InOutState.ActiveBoundaryMark, InOutState.ActivePauseClass)
+            && HasStableHardPauseQuietRunEndingAtFrame(
+                Input.AudioFeatureFrames,
+                PlaybackFrameIndex,
+                3,
+                InOutState.BoundarySearchStartPlaybackSec);
+        const bool bObservedDecayThisFrame = bObservedRawDecayThisFrame || bObservedHardPauseDecayThisFrame;
+        if (bObservedDecayThisFrame)
         {
-            ReanchorPausedClockToObservedResume(PlaybackSec);
-            InOutState.bHoldActive = false;
-            InOutState.bObservedPauseLull = false;
-            InOutState.ActivePauseClass = EOffgridAIBoundaryPauseClass::None;
+            InOutState.bObservedPauseLull = true;
+            InOutState.bSawConfirmedOutOfSpeechAfterBoundary = true;
+
+            const int32 QuietStartFrameIndex = FMath::Max(PlaybackFrameIndex - 2, 0);
+            const FOffgridAIStreamingAudioFeatureFrame& QuietStartFrame = (*Input.AudioFeatureFrames)[QuietStartFrameIndex];
+            if (InOutState.ConfirmedQuietStartPlaybackSec < 0.0f)
+            {
+                InOutState.ConfirmedQuietStartPlaybackSec = QuietStartFrame.AudioBufferCenterSec;
+                InOutState.QuietRMSNormAtDecay = QuietStartFrame.RMSNorm;
+                InOutState.QuietEvidenceAtDecay = QuietStartFrame.SpeechEvidence;
+                InOutState.QuietRawRMSAtDecay = QuietStartFrame.RMS;
+            }
+
+            InOutState.QuietRMSNormAtDecay = FMath::Min(InOutState.QuietRMSNormAtDecay, PlaybackFrame->RMSNorm);
+            InOutState.QuietEvidenceAtDecay = FMath::Min(InOutState.QuietEvidenceAtDecay, PlaybackFrame->SpeechEvidence);
+            InOutState.QuietRawRMSAtDecay = FMath::Min(InOutState.QuietRawRMSAtDecay, PlaybackFrame->RMS);
         }
-        else if (PlaybackSec >= InOutState.HoldDeadlinePlaybackSec)
+
+        const int32 ContainingRegionIndex = FindContainingRegionIndexAtPlayback(EffectiveRegions, PlaybackSec);
+        const bool bEnteredLaterRegion = ContainingRegionIndex != INDEX_NONE
+            && InOutState.HoldStartSpeechRegionIndex != INDEX_NONE
+            && ContainingRegionIndex > InOutState.HoldStartSpeechRegionIndex;
+
+        const float MinDecayToResumeGapSec = MinDecayToResumeGapForBoundaryClass(InOutState.ActiveBoundaryMark, InOutState.ActivePauseClass);
+        const bool bResumePastMinimumHardPause = InOutState.ConfirmedQuietStartPlaybackSec < 0.0f
+            || PlaybackFrame == nullptr
+            || PlaybackFrame->AudioBufferCenterSec + 0.001f >= InOutState.ConfirmedQuietStartPlaybackSec + MinDecayToResumeGapSec;
+        const bool bResumeAllowedByGapPolicy = bResumePastMinimumHardPause;
+        const bool bStableRawSpeechRun = PlaybackFrame
+            && PlaybackFrameIndex != INDEX_NONE
+            && HasStableRawSpeechRunFromFrame(
+                Input.AudioFeatureFrames,
+                PlaybackFrameIndex,
+                4,
+                FMath::Max(0.004f, InOutState.QuietRawRMSAtDecay * 3.0f + 0.001f));
+        const bool bStableResumeFrame = PlaybackFrame
+            && IsStableResumeAnchorFrame(
+                PlaybackFrame,
+                InOutState.QuietRMSNormAtDecay,
+                InOutState.QuietEvidenceAtDecay,
+                InOutState.QuietRawRMSAtDecay)
+            && bStableRawSpeechRun;
+
+        const bool bFreshResumeOnset = InOutState.bObservedPauseLull
+            && bSpeechResumed
+            && (bEnteredLaterRegion || IsFreshResumeOnsetFrame(PlaybackFrame));
+        const bool bHardResumeWithoutDetectorSplit = InOutState.bObservedPauseLull
+            && IsHardLikeBoundaryClass(InOutState.ActiveBoundaryMark, InOutState.ActivePauseClass)
+            && bSpeechResumed
+            && bResumeAllowedByGapPolicy
+            && bStableResumeFrame;
+        if ((bFreshResumeOnset || bHardResumeWithoutDetectorSplit)
+            && InOutState.ObservedResumeOnsetPlaybackSec < 0.0f)
         {
+            InOutState.ObservedResumeOnsetPlaybackSec = PlaybackFrame ? PlaybackFrame->AudioBufferCenterSec : PlaybackSec;
+        }
+
+        const bool bHasConfirmedResumeOnset = InOutState.ObservedResumeOnsetPlaybackSec >= 0.0f;
+        const bool bStableResumeAnchor = bHasConfirmedResumeOnset
+            && PlaybackFrame
+            && PlaybackFrameIndex != INDEX_NONE
+            && PlaybackFrame->AudioBufferCenterSec + 0.001f >= InOutState.ObservedResumeOnsetPlaybackSec
+            && bResumeAllowedByGapPolicy
+            && bStableResumeFrame;
+
+        bool bResolvedBufferedResumeThisTick = false;
+        // Bounded live back-search: if playback has already reached a
+        // boundary's quiet->resume transition but the per-frame detector missed
+        // the exact transition tick, resolve from buffered frames only up to the
+        // current playback window. This applies to commas and hard punctuation
+        // alike; otherwise comma lulls can be missed live and then degrade to
+        // finalized_abandoned/text-prior playback at finalization.
+        if (!bHasConfirmedResumeOnset
+            && !Input.bPlaybackFinalized
+            && Input.AudioFeatureFrames
+            && Input.ObservedAudioBufferEndSec + 0.001f >= InOutState.HoldStartPlaybackSec + MinPauseHoldSec)
+        {
+            float BufferedQuietSec = -1.0f;
+            float BufferedResumeOnsetSec = -1.0f;
+            float BufferedResumeAnchorSec = -1.0f;
+            float BufferedQuietRMSNorm = 1.0f;
+            float BufferedQuietEvidence = 1.0f;
+            float BufferedQuietRawRMS = 1.0f;
+            const float MaxLiveBoundarySearchSec = FMath::Min(
+                Input.ObservedAudioBufferEndSec,
+                PlaybackSec + 0.060f);
+            const bool bFoundBufferedResume = FindBufferedBoundaryResumeAnchorSec(
+                Input.AudioFeatureFrames,
+                InOutState.ActiveBoundaryMark,
+                InOutState.ActivePauseClass,
+                InOutState.BoundarySearchStartPlaybackSec,
+                MaxLiveBoundarySearchSec,
+                MinDecayToResumeGapForBoundaryClass(InOutState.ActiveBoundaryMark, InOutState.ActivePauseClass),
+                BufferedQuietSec,
+                BufferedResumeOnsetSec,
+                BufferedResumeAnchorSec,
+                BufferedQuietRMSNorm,
+                BufferedQuietEvidence,
+                BufferedQuietRawRMS);
+
+            if (bFoundBufferedResume
+                && BufferedResumeAnchorSec <= PlaybackSec + 0.070f)
+            {
+                InOutState.bObservedPauseLull = true;
+                InOutState.bSawConfirmedOutOfSpeechAfterBoundary = true;
+                InOutState.ConfirmedQuietStartPlaybackSec = BufferedQuietSec;
+                InOutState.ObservedResumeOnsetPlaybackSec = BufferedResumeOnsetSec;
+                InOutState.QuietRMSNormAtDecay = BufferedQuietRMSNorm;
+                InOutState.QuietEvidenceAtDecay = BufferedQuietEvidence;
+                InOutState.QuietRawRMSAtDecay = BufferedQuietRawRMS;
+                ReanchorPausedClockToAcousticAnchor(BufferedResumeAnchorSec);
+                InOutState.LastResolvedBoundary.Outcome = FName(TEXT("confirmed_resume_anchor_live_backsearch"));
+                InOutState.LastResolvedBoundary.WordIndex = InOutState.BoundaryWordIndex;
+                InOutState.LastResolvedBoundary.Mark = InOutState.ActiveBoundaryMark;
+                InOutState.bHoldActive = false;
+                InOutState.bObservedPauseLull = false;
+                InOutState.bSawConfirmedOutOfSpeechAfterBoundary = false;
+                InOutState.ConfirmedQuietStartPlaybackSec = -1.0f;
+                InOutState.QuietRMSNormAtDecay = 1.0f;
+                InOutState.QuietEvidenceAtDecay = 1.0f;
+                InOutState.QuietRawRMSAtDecay = 1.0f;
+                InOutState.ActivePauseClass = EOffgridAIBoundaryPauseClass::None;
+                InOutState.ActiveBoundaryMark = TCHAR(0);
+                bResolvedBufferedResumeThisTick = true;
+            }
+        }
+
+        if (!bResolvedBufferedResumeThisTick
+            && InOutState.bObservedPauseLull
+            && HoldElapsedSec >= MinPauseHoldSec
+            && bSpeechResumed
+            && bHasConfirmedResumeOnset
+            && bStableResumeAnchor)
+        {
+            const float AcousticAnchorSec = PlaybackFrame ? PlaybackFrame->AudioBufferCenterSec : PlaybackSec;
+            ReanchorPausedClockToAcousticAnchor(AcousticAnchorSec);
+            InOutState.LastResolvedBoundary.Outcome = FName(TEXT("confirmed_resume_anchor"));
+            InOutState.LastResolvedBoundary.WordIndex = InOutState.BoundaryWordIndex;
+            InOutState.LastResolvedBoundary.Mark = InOutState.ActiveBoundaryMark;
             InOutState.bHoldActive = false;
             InOutState.bObservedPauseLull = false;
+            InOutState.bSawConfirmedOutOfSpeechAfterBoundary = false;
+            InOutState.ConfirmedQuietStartPlaybackSec = -1.0f;
+            InOutState.QuietRMSNormAtDecay = 1.0f;
+            InOutState.QuietEvidenceAtDecay = 1.0f;
+            InOutState.QuietRawRMSAtDecay = 1.0f;
             InOutState.ActivePauseClass = EOffgridAIBoundaryPauseClass::None;
+            InOutState.ActiveBoundaryMark = TCHAR(0);
+        }
+        else if (!bResolvedBufferedResumeThisTick && Input.bPlaybackFinalized && HoldElapsedSec >= MinPauseHoldSec)
+        {
+            // Finalization means the full audio buffer is available. Before
+            // abandoning a hard boundary, search the buffered frames for the
+            // quiet/resume pair that may have arrived after the last live tick.
+            // This preserves the simple invariant: hard punctuation either
+            // anchors to an observed resume or has an explicit true fallback;
+            // it should not silently release post-boundary events on text-prior
+            // timing just because the final update arrived while the hold was
+            // still active.
+            float BufferedQuietSec = -1.0f;
+            float BufferedResumeOnsetSec = -1.0f;
+            float BufferedResumeAnchorSec = -1.0f;
+            float BufferedQuietRMSNorm = 1.0f;
+            float BufferedQuietEvidence = 1.0f;
+            float BufferedQuietRawRMS = 1.0f;
+            const bool bFoundBufferedResume = FindBufferedBoundaryResumeAnchorSec(
+                Input.AudioFeatureFrames,
+                InOutState.ActiveBoundaryMark,
+                InOutState.ActivePauseClass,
+                InOutState.BoundarySearchStartPlaybackSec,
+                TNumericLimits<float>::Max(),
+                MinDecayToResumeGapForBoundaryClass(InOutState.ActiveBoundaryMark, InOutState.ActivePauseClass),
+                BufferedQuietSec,
+                BufferedResumeOnsetSec,
+                BufferedResumeAnchorSec,
+                BufferedQuietRMSNorm,
+                BufferedQuietEvidence,
+                BufferedQuietRawRMS);
+
+            if (bFoundBufferedResume)
+            {
+                InOutState.ConfirmedQuietStartPlaybackSec = BufferedQuietSec;
+                InOutState.ObservedResumeOnsetPlaybackSec = BufferedResumeOnsetSec;
+                InOutState.QuietRMSNormAtDecay = BufferedQuietRMSNorm;
+                InOutState.QuietEvidenceAtDecay = BufferedQuietEvidence;
+                InOutState.QuietRawRMSAtDecay = BufferedQuietRawRMS;
+                ReanchorPausedClockToAcousticAnchor(BufferedResumeAnchorSec);
+                InOutState.LastResolvedBoundary.Outcome = FName(TEXT("confirmed_resume_anchor_final_search"));
+                InOutState.LastResolvedBoundary.WordIndex = InOutState.BoundaryWordIndex;
+                InOutState.LastResolvedBoundary.Mark = InOutState.ActiveBoundaryMark;
+            }
+            else
+            {
+                // If final search did not find a quiet->resume pair and the
+                // live gate never observed a valid decay, this boundary was
+                // spoken through.  Do not mark it finalized_abandoned: that
+                // outcome authorizes the post-punctuation word to fall through
+                // on ordinary text-prior timing while looking like a failed
+                // pause/resume.  Make the continuous outcome explicit for every
+                // punctuation class.
+                const bool bFinalNoDecayContinuous = !InOutState.bObservedPauseLull;
+                if (bFinalNoDecayContinuous)
+                {
+                    InOutState.ActivePlayheadSec += FMath::Max(PlaybackSec - InOutState.HoldStartPlaybackSec, 0.0f);
+                    bReleasedContinuousNoDecayThisTick = true;
+                }
+                InOutState.LastResolvedBoundary.Outcome = bFinalNoDecayContinuous
+                    ? FName(TEXT("no_decay_continuous"))
+                    : FName(TEXT("finalized_abandoned"));
+                InOutState.LastResolvedBoundary.WordIndex = InOutState.BoundaryWordIndex;
+                InOutState.LastResolvedBoundary.Mark = InOutState.ActiveBoundaryMark;
+                InOutState.bResumeAnchorActive = false;
+                InOutState.bResumeAnchorFromInitialSpeech = false;
+                InOutState.ResumeAnchorEventIndex = INDEX_NONE;
+                InOutState.ResumeAnchorFinalCenterSec = 0.0f;
+                InOutState.ObservedResumeOnsetPlaybackSec = -1.0f;
+                InOutState.ObservedResumeEnergyAnchorSec = -1.0f;
+                InOutState.LastResolvedBoundary.DecaySec = -1.0f;
+                InOutState.LastResolvedBoundary.ResumeOnsetSec = -1.0f;
+                InOutState.LastResolvedBoundary.ResumeEnergyAnchorSec = -1.0f;
+            }
+
+            InOutState.bHoldActive = false;
+            InOutState.bObservedPauseLull = false;
+            InOutState.bSawConfirmedOutOfSpeechAfterBoundary = false;
+            InOutState.ConfirmedQuietStartPlaybackSec = -1.0f;
+            InOutState.QuietRMSNormAtDecay = 1.0f;
+            InOutState.QuietEvidenceAtDecay = 1.0f;
+            InOutState.QuietRawRMSAtDecay = 1.0f;
+            InOutState.ActivePauseClass = EOffgridAIBoundaryPauseClass::None;
+            InOutState.ActiveBoundaryMark = TCHAR(0);
+        }
+        else if (!bResolvedBufferedResumeThisTick
+            && !InOutState.bObservedPauseLull
+            && PlaybackSec >= InOutState.HoldDeadlinePlaybackSec
+            && (Input.bPlaybackFinalized || Input.ObservedAudioBufferEndSec + 0.001f >= InOutState.HoldDeadlinePlaybackSec))
+        {
+            // Any punctuation may be spoken through.  If the patience window is
+            // fully covered by audio and contains no real decay, release it as an
+            // explicit continuous boundary instead of falling through silently or
+            // waiting for finalization to produce finalized_abandoned.
+            InOutState.ActivePlayheadSec += FMath::Max(PlaybackSec - InOutState.HoldStartPlaybackSec, 0.0f);
+            InOutState.LastResolvedBoundary.Outcome = FName(TEXT("no_decay_continuous"));
+            InOutState.LastResolvedBoundary.WordIndex = InOutState.BoundaryWordIndex;
+            InOutState.LastResolvedBoundary.Mark = InOutState.ActiveBoundaryMark;
+            InOutState.bResumeAnchorActive = false;
+            InOutState.bResumeAnchorFromInitialSpeech = false;
+            InOutState.ResumeAnchorEventIndex = INDEX_NONE;
+            InOutState.ResumeAnchorFinalCenterSec = 0.0f;
+            InOutState.ObservedResumeOnsetPlaybackSec = -1.0f;
+            InOutState.ObservedResumeEnergyAnchorSec = -1.0f;
+            InOutState.LastResolvedBoundary.DecaySec = -1.0f;
+            InOutState.LastResolvedBoundary.ResumeOnsetSec = -1.0f;
+            InOutState.LastResolvedBoundary.ResumeEnergyAnchorSec = -1.0f;
+            InOutState.bHoldActive = false;
+            InOutState.bObservedPauseLull = false;
+            InOutState.bSawConfirmedOutOfSpeechAfterBoundary = false;
+            InOutState.ConfirmedQuietStartPlaybackSec = -1.0f;
+            InOutState.QuietRMSNormAtDecay = 1.0f;
+            InOutState.QuietEvidenceAtDecay = 1.0f;
+            InOutState.QuietRawRMSAtDecay = 1.0f;
+            InOutState.ActivePauseClass = EOffgridAIBoundaryPauseClass::None;
+            InOutState.ActiveBoundaryMark = TCHAR(0);
+            bReleasedContinuousNoDecayThisTick = true;
         }
     }
 
-    if (!InOutState.bHoldActive)
+    if (!InOutState.bHoldActive && !bReleasedContinuousNoDecayThisTick)
     {
         InOutState.ActivePlayheadSec += DeltaSec;
     }
 
     InOutState.LastPlaybackSec = PlaybackSec;
-}
-
-static void BuildWordStartSecondsFromPlaybackClock(
-    const TArray<float>& WordStartActiveSeconds,
-    const FOffgridAIPunctuationHoldState& HoldState,
-    TArray<float>& OutWordStartSeconds)
-{
-    OutWordStartSeconds.Init(-1.0f, WordStartActiveSeconds.Num());
-    if (!HoldState.bPlayheadStarted)
-    {
-        return;
-    }
-
-    const float PlaybackOffsetSec = HoldState.PlaybackOriginSec + HoldState.TotalPausedSec;
-    for (int32 WordIndex = 0; WordIndex < WordStartActiveSeconds.Num(); ++WordIndex)
-    {
-        OutWordStartSeconds[WordIndex] = PlaybackOffsetSec + FMath::Max(WordStartActiveSeconds[WordIndex], 0.0f);
-    }
 }
 
 static float SpeechRegionObservedEnd(const FOffgridAIStreamingSpeechRegion& SpeechRegion, float ObservedEndSec, bool bFinal)
@@ -387,24 +1008,6 @@ static float ComputeLastSpeechEnd(const TArray<FEffectiveSpeechRegion>& Regions,
     return Regions.Num() > 0 ? Regions.Last().EndSec : ObservedEndSec;
 }
 
-static bool MapActiveSpeechTimeToObservedClock(const TArray<FEffectiveSpeechRegion>& Regions, float TargetActiveSec, float& OutClockSec)
-{
-    float Remaining = FMath::Max(TargetActiveSec, 0.0f);
-    for (const FEffectiveSpeechRegion& R : Regions)
-    {
-        const float Dur = FMath::Max(R.EndSec - R.StartSec, 0.0f);
-        if (Dur <= KINDA_SMALL_NUMBER) continue;
-
-        if (Remaining <= Dur)
-        {
-            OutClockSec = R.StartSec + Remaining;
-            return true;
-        }
-        Remaining -= Dur;
-    }
-    return false;
-}
-
 static FName SourcePhoneClassName(const FString& BasePhone)
 {
     if (BasePhone == TEXT("B") || BasePhone == TEXT("M") || BasePhone == TEXT("P")) return FName(TEXT("bilabial"));
@@ -415,33 +1018,24 @@ static FName SourcePhoneClassName(const FString& BasePhone)
     return NAME_None;
 }
 
-static void FillDroppedEventFromText(
-    int32 EventIndex,
-    const FOffgridAITextVisemeEvent& T,
-    float RegionStartSec,
-    float RegionEndSec,
-    float ObservedActiveSec,
-    float RequiredActiveSec,
-    const FOffgridAILipsyncRuntimeUpdateInput& Input,
-    const FName DropReason,
-    FOffgridAIDroppedVisemeEvent& Out)
+static int32 ComputeNextPlanEventIndex(const FOffgridAICommittedVisemeTrack& Track)
 {
-    Out.EventIndex = EventIndex;
-    Out.PoseID = T.PoseID;
-    Out.SourceWord = T.SourceText;
-    Out.WordIndex = T.WordIndex;
-    Out.SpeechRegionIndex = T.SpeechRegionIndex;
-    Out.SentenceIndex = T.SentenceIndex;
-    Out.bIsStrongVisibleEvent = T.bIsStrongVisibleEvent;
-    Out.SourcePhoneIndex = T.SourcePhoneGlobalIndex;
-    Out.SourcePhoneBase = T.SourcePhoneBase;
-    Out.SourcePhoneClass = SourcePhoneClassName(T.SourcePhoneBase);
-    Out.DropPlaybackSeconds = Input.CurrentPlaybackSec;
-    Out.RegionStartSeconds = RegionStartSec;
-    Out.RegionEndSeconds = RegionEndSec;
-    Out.RequiredActiveElapsedSeconds = RequiredActiveSec;
-    Out.ObservedActiveElapsedSeconds = ObservedActiveSec;
-    Out.DropReason = DropReason;
+    int32 MaxSeenEventIndex = INDEX_NONE;
+    for (const FOffgridAICommittedVisemeEvent& E : Track.Events)
+    {
+        MaxSeenEventIndex = FMath::Max(MaxSeenEventIndex, E.EventIndex);
+    }
+    return MaxSeenEventIndex + 1;
+}
+
+static float ComputeLastCommittedCenterSec(const FOffgridAICommittedVisemeTrack& Track)
+{
+    float LastCenterSec = -1.0f;
+    for (const FOffgridAICommittedVisemeEvent& E : Track.Events)
+    {
+        LastCenterSec = FMath::Max(LastCenterSec, E.FinalRenderCenterSeconds);
+    }
+    return LastCenterSec;
 }
 
 static void FillEventFromText(
@@ -451,14 +1045,8 @@ static void FillEventFromText(
     float OrderNorm,
     float Center,
     float Span,
-    float ObservedActiveSec,
-    float RequiredActiveSec,
-    float TotalPlannedActiveSec,
-    const TArray<FEffectiveSpeechRegion>& EffectiveRegions,
-    const TArray<float>& WordStartActiveSeconds,
-    const TArray<float>& WordStartSeconds,
     const FOffgridAILipsyncRuntimeUpdateInput& Input,
-    FOffgridAIAlignedVisemeEvent& Out)
+    FOffgridAICommittedVisemeEvent& Out)
 {
     Out.EventIndex = EventIndex;
     Out.PoseID = T.PoseID;
@@ -483,34 +1071,8 @@ static void FillEventFromText(
 
     Out.CommitPlaybackSeconds = Input.CurrentPlaybackSec;
     Out.CommitLeadSeconds = Center - Input.CurrentPlaybackSec;
-    Out.CommitReason = OccupancyReason;
-    Out.RequiredActiveElapsedSeconds = RequiredActiveSec;
-    Out.ObservedActiveElapsedSeconds = ObservedActiveSec;
-    Out.ActiveProgressDeficitSeconds = FMath::Max(RequiredActiveSec - ObservedActiveSec, 0.0f);
-    Out.RequiredProgressNorm = TotalPlannedActiveSec > KINDA_SMALL_NUMBER ? RequiredActiveSec / TotalPlannedActiveSec : 1.0f;
-    Out.ObservedProgressNorm = TotalPlannedActiveSec > KINDA_SMALL_NUMBER ? ObservedActiveSec / TotalPlannedActiveSec : 1.0f;
-    Out.ActiveProgressRatio = RequiredActiveSec > KINDA_SMALL_NUMBER ? ObservedActiveSec / RequiredActiveSec : 1.0f;
+    Out.CommitReason = TextPriorMonotonicCommitReason;
 
-    if (WordStartSeconds.IsValidIndex(T.WordIndex) && WordStartSeconds[T.WordIndex] >= 0.0f)
-    {
-        Out.DetectedWordStartSeconds = WordStartSeconds[T.WordIndex];
-        Out.bDetectedWordStartMappedToObservedSpeech = true;
-    }
-    else
-    {
-        float WordStartClockSec = 0.0f;
-        const float WordStartActiveSec = WordStartActiveSeconds.IsValidIndex(T.WordIndex) ? WordStartActiveSeconds[T.WordIndex] : 0.0f;
-        if (MapActiveSpeechTimeToObservedClock(EffectiveRegions, WordStartActiveSec, WordStartClockSec))
-        {
-            Out.DetectedWordStartSeconds = WordStartClockSec;
-            Out.bDetectedWordStartMappedToObservedSpeech = true;
-        }
-        else if (EffectiveRegions.Num() > 0)
-        {
-            Out.DetectedWordStartSeconds = EffectiveRegions[0].StartSec;
-            Out.bDetectedWordStartMappedToObservedSpeech = false;
-        }
-    }
 }
 
 }
@@ -530,10 +1092,10 @@ void FOffgridAILipsyncRuntimeSession::Reset()
     TextPlan = FOffgridAITextVisemePlan();
     Detector.Reset();
     ResolvedSpeechRegions.Reset();
-    CommittedTrack = FOffgridAIAlignedVisemeTrack();
-    AudioOccupancyDiagnosticRows.Reset();
+    CommittedTrack = FOffgridAICommittedVisemeTrack();
+    RuntimeCommitDiagnosticRows.Reset();
     RuntimeSpeechRegionDiagnosticRows.Reset();
-    AudioOccupancyDiagnosticUpdateOrdinal = 0;
+    RuntimeCommitDiagnosticUpdateOrdinal = 0;
     StreamTailDiagnosticRow = FOffgridAIStreamTailDiagnosticRow();
 
     PCMChunkCount = 0;
@@ -543,7 +1105,7 @@ void FOffgridAILipsyncRuntimeSession::Reset()
     LastPCMChunkChannels = 0;
     LastPCMChunkStartSample = -1;
     LastPCMChunkEndSample = -1;
-    PunctuationHoldState = FOffgridAIPunctuationHoldState();
+    PunctuationHoldState = FOffgridAIBoundaryPlaybackState();
 }
 
 void FOffgridAILipsyncRuntimeSession::BeginLine(const FOffgridAILipsyncRuntimeBeginInput& Input)
@@ -662,13 +1224,13 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(float CurrentPlay
     StreamTailDiagnosticRow.bInputStreamClosed = bInputStreamClosed;
     StreamTailDiagnosticRow.DiagnosticKind = FName(TEXT("runtime_stream_tail"));
 
-    AudioOccupancyDiagnosticRows.Reset();
+    RuntimeCommitDiagnosticRows.Reset();
     RuntimeSpeechRegionDiagnosticRows.Reset();
-    for (const FOffgridAIAlignedVisemeEvent& E : CommittedTrack.Events)
+    for (const FOffgridAICommittedVisemeEvent& E : CommittedTrack.Events)
     {
-        FOffgridAIAudioOccupancyDiagnosticRow R;
+        FOffgridAIRuntimeCommitDiagnosticRow R;
         R.LineID = LineID;
-        R.UpdateOrdinal = AudioOccupancyDiagnosticUpdateOrdinal;
+        R.UpdateOrdinal = RuntimeCommitDiagnosticUpdateOrdinal;
         R.bFinalReplay = bFinalReplay;
         R.CurrentPlaybackSec = CurrentPlaybackSec;
         R.PrerollSec = PrerollSec;
@@ -681,24 +1243,27 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(float CurrentPlay
         R.RenderEndSec = E.RenderEndSeconds;
         R.CommitReason = E.CommitReason;
         R.PlaybackMode = E.CommitReason;
-        R.AudioActiveSec = E.ObservedActiveElapsedSeconds;
-        R.TextPlayheadSec = static_cast<float>(E.EventIndex + 1);
-        R.RequiredActiveElapsedSec = E.RequiredActiveElapsedSeconds;
-        R.ObservedActiveElapsedSec = E.ObservedActiveElapsedSeconds;
-        R.ActiveProgressDeficitSec = E.ActiveProgressDeficitSeconds;
-        R.RequiredProgressNorm = E.RequiredProgressNorm;
-        R.ObservedProgressNorm = E.ObservedProgressNorm;
-        R.ActiveProgressRatio = E.ActiveProgressRatio;
         R.bMappedToObservedSpeech = E.bMappedToObservedSpeech;
+        R.bUsedInitialSpeechAnchor = E.bUsedInitialSpeechAnchor;
+        R.bUsedResumeAnchor = E.bUsedResumeAnchor;
+        R.AcousticAnchorKind = E.AcousticAnchorKind;
+        R.AcousticAnchorSec = E.AcousticAnchorSeconds;
+        R.AcousticAnchorErrorSec = E.AcousticAnchorErrorSeconds;
+        R.ObservedPauseDecaySec = E.ObservedPauseDecaySeconds;
+        R.ObservedResumeOnsetSec = E.ObservedResumeOnsetSeconds;
+        R.ObservedResumeEnergyAnchorSec = E.ObservedResumeEnergyAnchorSeconds;
+        R.BoundaryWordIndex = E.BoundaryWordIndex;
+        R.BoundaryMark = E.BoundaryMark;
+        R.BoundaryOutcome = E.BoundaryOutcome;
         R.DiagnosticKind = E.CommitReason;
-        AudioOccupancyDiagnosticRows.Add(R);
+        RuntimeCommitDiagnosticRows.Add(R);
     }
 
     for (const FOffgridAIStreamingSpeechRegion& SpeechRegion : ResolvedSpeechRegions)
     {
         FOffgridAIRuntimeSpeechRegionDiagnosticRow RegionRow;
         RegionRow.LineID = LineID;
-        RegionRow.UpdateOrdinal = AudioOccupancyDiagnosticUpdateOrdinal;
+        RegionRow.UpdateOrdinal = RuntimeCommitDiagnosticUpdateOrdinal;
         RegionRow.bFinalReplay = bFinalReplay;
         RegionRow.CurrentPlaybackSec = CurrentPlaybackSec;
         RegionRow.RegionIndex = SpeechRegion.SpeechRegionIndex;
@@ -717,27 +1282,21 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(float CurrentPlay
         RegionRow.CloseReason = SpeechRegion.EndReason;
         RegionRow.DiagnosticKind = FName(TEXT("runtime_speech_region"));
 
-        for (const FOffgridAIAlignedVisemeEvent& E : CommittedTrack.Events)
+        for (const FOffgridAICommittedVisemeEvent& E : CommittedTrack.Events)
         {
             if (E.SpeechRegionIndex == SpeechRegion.SpeechRegionIndex)
             {
                 ++RegionRow.CommittedEventCount;
             }
         }
-        for (const FOffgridAIDroppedVisemeEvent& E : CommittedTrack.DroppedEvents)
-        {
-            if (E.SpeechRegionIndex == SpeechRegion.SpeechRegionIndex)
-            {
-                ++RegionRow.DroppedEventCount;
-            }
-        }
+
 
         RuntimeSpeechRegionDiagnosticRows.Add(RegionRow);
     }
-    ++AudioOccupancyDiagnosticUpdateOrdinal;
+    ++RuntimeCommitDiagnosticUpdateOrdinal;
 }
 
-void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsyncRuntimeUpdateInput& Input, FOffgridAIAlignedVisemeTrack& InOutTrack, FOffgridAIPunctuationHoldState& InOutHoldState, bool& bInOutTrackBuilt)
+void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsyncRuntimeUpdateInput& Input, FOffgridAICommittedVisemeTrack& InOutTrack, FOffgridAIBoundaryPlaybackState& InOutHoldState, bool& bInOutTrackBuilt)
 {
     if (!Input.TextPlan) return;
 
@@ -765,8 +1324,6 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
 
     TArray<float> EventCenterNorms;
     BuildEventProgressNormsFromPhones(Plan, PhoneCenterActiveSeconds, TotalPhoneActiveSeconds, EventCenterNorms);
-    TArray<float> WordStartActiveSeconds;
-    BuildWordStartActiveSeconds(Plan, PhoneStartActiveSeconds, WordStartActiveSeconds);
 
     const bool bStreamSealed = Input.bInputStreamClosed || Input.bPlaybackFinalized;
     const bool bPlaybackFinal = Input.bPlaybackFinalized;
@@ -787,30 +1344,35 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
     InOutTrack.SpeechStartSeconds = FirstSpeechStart >= 0.0f ? FirstSpeechStart : 0.0f;
     InOutTrack.SpeechEndSeconds = LastSpeechEnd;
 
-    TArray<float> WordStartSeconds;
     AdvancePlaybackHoldState(Input, EffectiveRegions, InOutHoldState);
-    BuildWordStartSecondsFromPlaybackClock(
-        WordStartActiveSeconds,
-        InOutHoldState,
-        WordStartSeconds);
-
-    // Runtime scheduling:
-    // 1. transcript owns viseme identity and order,
-    // 2. speech onset owns when playback may start,
-    // 3. punctuation may open a bounded audio-aware hold,
-    // 4. observed lull + resumed speech re-anchor the playhead,
-    // 5. otherwise the hold expires and playback continues monotonically.
-    const float CommitLagSec = bStreamSealed ? 0.0f : 0.030f;
-    const float MinLiveLeadSec = bPlaybackFinal ? 0.0f : 0.040f;
-    const float MaxLiveLeadSec = bStreamSealed ? 999.0f : FMath::Max(Input.PrerollSec + 0.120f, 0.250f);
-
-    int32 NextEventIndex = InOutTrack.Events.Num();
-    float LastCenter = InOutTrack.Events.Num() > 0 ? InOutTrack.Events.Last().FinalRenderCenterSeconds : -1.0f;
-    const float TotalPlannedActiveSec = FMath::Max(TotalPhoneActiveSeconds, 0.001f);
 
     const float PlaybackOffsetSec =
         InOutHoldState.PlaybackOriginSec + InOutHoldState.TotalPausedSec;
-    const float CommitSafeActiveSec = FMath::Max(InOutHoldState.ActivePlayheadSec - CommitLagSec, 0.0f);
+
+    // Baseline pacing: within a continuous speech segment, use the text/CMU
+    // duration priors exactly.  Audio only gates start/resume at punctuation; it
+    // does not stretch, warp, or re-time intraline playback.
+
+
+    // Runtime scheduling:
+    // 1. transcript owns viseme identity and order,
+    // 2. text/CMU priors own intraline pacing,
+    // 3. acoustic start/resume anchors own only segment starts,
+    // 4. punctuation pauses future commits only: finish the pre-boundary prefix,
+    //    wait for decay/resume, then start the next text segment from the acoustic
+    //    resume anchor.
+    const float CommitLagSec = bPlaybackFinal ? 0.0f : 0.030f;
+    const float MinLiveLeadSec = bPlaybackFinal ? 0.0f : 0.040f;
+    const float RequestedLiveLeadSec = FMath::Max(Input.PrerollSec + 0.120f, 0.250f);
+    const float MaxLiveLeadSec = bPlaybackFinal
+        ? 999.0f
+        : FMath::Min(RequestedLiveLeadSec, MaxLiveCommitLeadSec);
+
+    int32 NextEventIndex = ComputeNextPlanEventIndex(InOutTrack);
+    float LastCenter = ComputeLastCommittedCenterSec(InOutTrack);
+    const float TotalPlannedActiveSec = FMath::Max(TotalPhoneActiveSeconds, 0.001f);
+
+    float CommitSafeActiveSec = FMath::Max(InOutHoldState.ActivePlayheadSec - CommitLagSec, 0.0f);
 
     while (Plan.Events.IsValidIndex(NextEventIndex))
     {
@@ -825,9 +1387,46 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             break;
         }
 
-        const bool bAtWordStart = Plan.WordVisibleEventBeginIndices.IsValidIndex(T.WordIndex)
-            && Plan.WordVisibleEventBeginIndices[T.WordIndex] == NextEventIndex;
-        if (bAtWordStart && T.WordIndex > 0 && !InOutHoldState.bHoldActive)
+        const float OrderNorm = EventCenterNorms.IsValidIndex(NextEventIndex)
+            ? EventCenterNorms[NextEventIndex]
+            : 1.0f;
+        const int32 SourcePhoneGlobalIndex = T.SourcePhoneGlobalIndex;
+        const float RequiredActiveSec = PhoneCenterActiveSeconds.IsValidIndex(SourcePhoneGlobalIndex)
+            ? FMath::Max(PhoneCenterActiveSeconds[SourcePhoneGlobalIndex], 0.0f)
+            : OrderNorm * TotalPlannedActiveSec;
+
+        if (NextEventIndex == 0 && !InOutHoldState.bInitialSpeechAnchorResolved)
+        {
+            float InitialAnchorSec = -1.0f;
+            if (FindInitialSpeechEnergyAnchorSec(Input.AudioFeatureFrames, EffectiveRegions, InitialAnchorSec))
+            {
+                InOutHoldState.bInitialSpeechAnchorResolved = true;
+                InOutHoldState.bResumeAnchorActive = true;
+                InOutHoldState.bResumeAnchorFromInitialSpeech = true;
+                InOutHoldState.ResumeAnchorEventIndex = 0;
+                InOutHoldState.ResumeAnchorActiveSec = RequiredActiveSec;
+                InOutHoldState.ResumeAnchorLeadSec = LeadForPose(T.PoseID);
+                InOutHoldState.ResumeAnchorFinalCenterSec = InitialAnchorSec;
+                InOutHoldState.LastResolvedBoundary.DecaySec = -1.0f;
+                InOutHoldState.LastResolvedBoundary.ResumeOnsetSec = InitialAnchorSec;
+                InOutHoldState.LastResolvedBoundary.ResumeEnergyAnchorSec = InitialAnchorSec;
+            }
+            else if (!bStreamSealed)
+            {
+                break;
+            }
+            else
+            {
+                InOutHoldState.bInitialSpeechAnchorResolved = true;
+            }
+        }
+
+        // A punctuation boundary must stop the *first* event that belongs to the
+        // following word.  Do not rely on WordVisibleEventBeginIndices here: some
+        // words have early glide/shape events before the planner's visible-begin
+        // index, which allowed post-punctuation animation to leak through before
+        // the hold was even created.
+        if (T.WordIndex > 0 && !InOutHoldState.bHoldActive)
         {
             const int32 BoundaryWordIndex = T.WordIndex - 1;
             const TCHAR Boundary = Plan.WordBoundaryPunctuationAfter.IsValidIndex(BoundaryWordIndex)
@@ -837,28 +1436,82 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
                 Plan.WordBoundaryPauseClassAfter.IsValidIndex(BoundaryWordIndex)
                     ? Plan.WordBoundaryPauseClassAfter[BoundaryWordIndex]
                     : EOffgridAIBoundaryPauseClass::None;
-            const float HoldSeconds = HoldSecondsForBoundary(Boundary, BoundaryPauseClass);
+            const EOffgridAIBoundaryPauseClass EffectivePauseClass =
+                BoundaryPauseClass != EOffgridAIBoundaryPauseClass::None
+                    ? BoundaryPauseClass
+                    : (IsHardPausePunctuation(Boundary)
+                        ? EOffgridAIBoundaryPauseClass::HardBreakPause
+                        : (Boundary == TEXT(',')
+                            ? EOffgridAIBoundaryPauseClass::SoftListPause
+                            : EOffgridAIBoundaryPauseClass::None));
+            const float HoldSeconds = HoldSecondsForBoundaryClass(Boundary, EffectivePauseClass);
             if (HoldSeconds > 0.0f && InOutHoldState.BoundaryWordIndex != BoundaryWordIndex)
             {
                 InOutHoldState.bHoldActive = true;
                 InOutHoldState.bObservedPauseLull = false;
+                InOutHoldState.bResumeAnchorActive = false;
+                InOutHoldState.bResumeAnchorFromInitialSpeech = false;
+                InOutHoldState.ResumeAnchorEventIndex = NextEventIndex;
                 InOutHoldState.BoundaryWordIndex = BoundaryWordIndex;
-                InOutHoldState.ActivePauseClass = BoundaryPauseClass;
+                InOutHoldState.ActivePauseClass = EffectivePauseClass;
                 InOutHoldState.HoldStartPlaybackSec = Input.CurrentPlaybackSec;
+                const float LastCommittedCenterSec = InOutTrack.Events.Num() > 0
+                    ? InOutTrack.Events.Last().FinalRenderCenterSeconds
+                    : Input.CurrentPlaybackSec;
+                // Search a small amount before the visual boundary. Real acoustic valleys often
+                // begin during the final consonant/decay of the preceding word. This changes only
+                // where decay evidence is searched; punctuation patience still starts now.
+                InOutHoldState.BoundarySearchStartPlaybackSec = FMath::Max(
+                    FMath::Min(Input.CurrentPlaybackSec, LastCommittedCenterSec) - 0.080f,
+                    0.0f);
                 InOutHoldState.HoldDeadlinePlaybackSec = Input.CurrentPlaybackSec + HoldSeconds;
+                InOutHoldState.HoldStartSpeechRegionIndex = FindRegionIndexAtPlayback(EffectiveRegions, Input.CurrentPlaybackSec);
+                InOutHoldState.bSawConfirmedOutOfSpeechAfterBoundary = false;
+                InOutHoldState.ConfirmedQuietStartPlaybackSec = -1.0f;
+                InOutHoldState.QuietRMSNormAtDecay = 1.0f;
+                InOutHoldState.QuietEvidenceAtDecay = 1.0f;
+                InOutHoldState.QuietRawRMSAtDecay = 1.0f;
+                InOutHoldState.ActiveBoundaryMark = Boundary;
+                InOutHoldState.LastResolvedBoundary.Outcome = NAME_None;
+                InOutHoldState.LastResolvedBoundary.WordIndex = INDEX_NONE;
+                InOutHoldState.LastResolvedBoundary.Mark = TCHAR(0);
+                InOutHoldState.ObservedResumeOnsetPlaybackSec = -1.0f;
+                InOutHoldState.ObservedResumeEnergyAnchorSec = -1.0f;
+                InOutHoldState.LastResolvedBoundary.DecaySec = -1.0f;
+                InOutHoldState.LastResolvedBoundary.ResumeOnsetSec = -1.0f;
+                InOutHoldState.LastResolvedBoundary.ResumeEnergyAnchorSec = -1.0f;
+                InOutHoldState.HoldResumeTargetActiveSec = RequiredActiveSec;
+                InOutHoldState.HoldResumeTargetLeadSec = LeadForPose(T.PoseID);
+
                 break;
             }
         }
 
-        const float OrderNorm = EventCenterNorms.IsValidIndex(NextEventIndex)
-            ? EventCenterNorms[NextEventIndex]
-            : 1.0f;
-        const int32 SourcePhoneGlobalIndex = T.SourcePhoneGlobalIndex;
-        const float RequiredActiveSec = PhoneCenterActiveSeconds.IsValidIndex(SourcePhoneGlobalIndex)
-            ? FMath::Max(PhoneCenterActiveSeconds[SourcePhoneGlobalIndex], 0.0f)
-            : OrderNorm * TotalPlannedActiveSec;
+        // Boundary invariant: the first event after punctuation may not silently
+        // fall through to normal playhead timing. It must either be released by
+        // a confirmed resume anchor or by an explicit no-decay/final outcome.
+        if (T.WordIndex > 0)
+        {
+            const int32 EventBoundaryWordIndex = T.WordIndex - 1;
+            const TCHAR EventBoundary = Plan.WordBoundaryPunctuationAfter.IsValidIndex(EventBoundaryWordIndex)
+                ? Plan.WordBoundaryPunctuationAfter[EventBoundaryWordIndex]
+                : TCHAR(0);
+            const EOffgridAIBoundaryPauseClass EventBoundaryClass = Plan.WordBoundaryPauseClassAfter.IsValidIndex(EventBoundaryWordIndex)
+                ? Plan.WordBoundaryPauseClassAfter[EventBoundaryWordIndex]
+                : EOffgridAIBoundaryPauseClass::None;
+            if (HoldSecondsForBoundaryClass(EventBoundary, EventBoundaryClass) > 0.0f
+                && InOutHoldState.BoundaryWordIndex == EventBoundaryWordIndex
+                && InOutHoldState.LastResolvedBoundary.WordIndex != EventBoundaryWordIndex
+                && !InOutHoldState.bResumeAnchorActive)
+            {
+                break;
+            }
+        }
 
-        if (RequiredActiveSec > CommitSafeActiveSec && !bStreamSealed)
+        // Do not let CloseInputStream turn live playback into a suffix dump.
+        // Buffered audio may still be audibly draining after input is sealed,
+        // so the text-prior frontier remains bounded until Finalize().
+        if (RequiredActiveSec > CommitSafeActiveSec && !bPlaybackFinal)
         {
             break;
         }
@@ -870,14 +1523,97 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             ? FMath::Max(PhoneEndActiveSeconds[SourcePhoneGlobalIndex], 0.0f)
             : (RequiredActiveSec + 0.040f);
 
+        const float PoseLeadSec = LeadForPose(T.PoseID);
         float BaseStart = PlaybackOffsetSec + RequiredPhoneStartActiveSec;
         float Center = PlaybackOffsetSec + RequiredActiveSec;
         float BaseEnd = PlaybackOffsetSec + RequiredPhoneEndActiveSec;
+        bool bUsedResumeAnchor = false;
+        bool bUsedInitialSpeechAnchor = false;
+        bool bUsingResumeAnchorSchedule = false;
+        FName AcousticAnchorKind = NAME_None;
+        float AcousticAnchorSec = -1.0f;
+        int32 EventBoundaryWordIndex = INDEX_NONE;
+        TCHAR EventBoundaryMark = TCHAR(0);
+        FName EventBoundaryOutcome = NAME_None;
+        if (T.WordIndex > 0)
+        {
+            EventBoundaryWordIndex = T.WordIndex - 1;
+            EventBoundaryMark = Plan.WordBoundaryPunctuationAfter.IsValidIndex(EventBoundaryWordIndex)
+                ? Plan.WordBoundaryPunctuationAfter[EventBoundaryWordIndex]
+                : TCHAR(0);
+            const EOffgridAIBoundaryPauseClass EventBoundaryClass = Plan.WordBoundaryPauseClassAfter.IsValidIndex(EventBoundaryWordIndex)
+                ? Plan.WordBoundaryPauseClassAfter[EventBoundaryWordIndex]
+                : EOffgridAIBoundaryPauseClass::None;
+            if (HoldSecondsForBoundaryClass(EventBoundaryMark, EventBoundaryClass) <= 0.0f)
+            {
+                EventBoundaryWordIndex = INDEX_NONE;
+                EventBoundaryMark = TCHAR(0);
+            }
+            else if (InOutHoldState.LastResolvedBoundary.WordIndex == EventBoundaryWordIndex)
+            {
+                EventBoundaryOutcome = InOutHoldState.LastResolvedBoundary.Outcome;
+            }
+        }
+
+        const bool bScheduleUsesResumeAnchor = InOutHoldState.bResumeAnchorActive
+            && NextEventIndex >= InOutHoldState.ResumeAnchorEventIndex;
+        const bool bExactAcousticAnchorEvent = bScheduleUsesResumeAnchor
+            && NextEventIndex == InOutHoldState.ResumeAnchorEventIndex;
+
+        if (bScheduleUsesResumeAnchor)
+        {
+            bUsingResumeAnchorSchedule = true;
+            // The target active time captured when the hold was created can go
+            // stale while streaming regions grow.  The invariant we actually
+            // need is simpler: the first post-boundary event center equals the
+            // acoustic anchor.  When that event is reached, refresh the schedule
+            // origin from the event's current active time and lead; later events
+            // then inherit timing relative to the now-correct anchor.
+            if (bExactAcousticAnchorEvent)
+            {
+                InOutHoldState.ResumeAnchorActiveSec = RequiredActiveSec;
+                InOutHoldState.ResumeAnchorLeadSec = PoseLeadSec;
+            }
+
+            // Schedule the resumed segment from the first post-punctuation phone,
+            // not from a globally delayed clock. This preserves the text-duration
+            // prior inside the resumed word/sentence while putting the visible
+            // restart exactly on the observed audio restart.
+            const float LeadDeltaSec = PoseLeadSec - InOutHoldState.ResumeAnchorLeadSec;
+            BaseStart = InOutHoldState.ResumeAnchorFinalCenterSec
+                + (RequiredPhoneStartActiveSec - InOutHoldState.ResumeAnchorActiveSec)
+                - LeadDeltaSec;
+            Center = InOutHoldState.ResumeAnchorFinalCenterSec
+                + (RequiredActiveSec - InOutHoldState.ResumeAnchorActiveSec)
+                - LeadDeltaSec;
+            BaseEnd = InOutHoldState.ResumeAnchorFinalCenterSec
+                + (RequiredPhoneEndActiveSec - InOutHoldState.ResumeAnchorActiveSec)
+                - LeadDeltaSec;
+
+            // Only the actual anchored event should carry anchor diagnostics.
+            // Later events are scheduled relative to that anchor but are not
+            // themselves anchor errors.
+            if (bExactAcousticAnchorEvent)
+            {
+                bUsedResumeAnchor = true;
+                bUsedInitialSpeechAnchor = InOutHoldState.bResumeAnchorFromInitialSpeech;
+                AcousticAnchorKind = bUsedInitialSpeechAnchor
+                    ? FName(TEXT("initial_energy_anchor"))
+                    : FName(TEXT("punctuation_resume_energy_anchor"));
+                AcousticAnchorSec = (!bUsedInitialSpeechAnchor && InOutHoldState.LastResolvedBoundary.ResumeEnergyAnchorSec >= 0.0f)
+                    ? InOutHoldState.LastResolvedBoundary.ResumeEnergyAnchorSec
+                    : InOutHoldState.ResumeAnchorFinalCenterSec;
+            }
+        }
+
         const float PriorCenter = Center;
 
         const float BaseSpan = FMath::Max(BaseEnd - BaseStart, 0.020f);
         const float Span = FMath::Max(SpanForPose(T.PoseID), BaseSpan);
-        Center = FMath::Max(Center - LeadForPose(T.PoseID), 0.0f);
+        if (!bUsingResumeAnchorSchedule)
+        {
+            Center = FMath::Max(Center - PoseLeadSec, 0.0f);
+        }
         const float LeadAdjustedCenter = Center;
         float MinLiveLeadDelay = 0.0f;
         float InterEventFloorDelay = 0.0f;
@@ -886,7 +1622,7 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         {
             Center = FMath::Max(Center, PlaybackOffsetSec + FMath::Min(Span * 0.42f, 0.060f));
         }
-        if (!bPlaybackFinal)
+        if (!bPlaybackFinal && !bExactAcousticAnchorEvent)
         {
             const float MinAllowedCenter = Input.CurrentPlaybackSec + MinLiveLeadSec;
             if (Center < MinAllowedCenter)
@@ -895,7 +1631,7 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
                 Center = MinAllowedCenter;
             }
         }
-        if (LastCenter >= 0.0f)
+        if (LastCenter >= 0.0f && !bExactAcousticAnchorEvent)
         {
             const float MinSpacingCenter = LastCenter + 0.050f;
             if (Center < MinSpacingCenter)
@@ -904,12 +1640,44 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
                 Center = MinSpacingCenter;
             }
         }
-        if (!bPlaybackFinal && Center - Input.CurrentPlaybackSec > MaxLiveLeadSec)
+        if (!bPlaybackFinal)
         {
-            break;
+            const float CommitLeadSec = Center - Input.CurrentPlaybackSec;
+            if (CommitLeadSec > MaxLiveLeadSec)
+            {
+                break;
+            }
+
+            // Very late live commits are not useful: by the time the event is
+            // materialized, the renderer has already passed its visible window.
+            // Breaking instead of dumping preserves the existing live cadence and
+            // lets the next tick/final drain make an explicit decision.
+            if (CommitLeadSec < -MaxLiveCommitBehindSec)
+            {
+                break;
+            }
         }
 
-        FOffgridAIAlignedVisemeEvent E;
+        FName EffectiveCommitReason = TextPriorMonotonicCommitReason;
+        if (bExactAcousticAnchorEvent)
+        {
+            EffectiveCommitReason = InOutHoldState.bResumeAnchorFromInitialSpeech
+                ? FName(TEXT("initial_anchor_commit"))
+                : FName(TEXT("punctuation_resume_anchor_commit"));
+            if (!InOutHoldState.bResumeAnchorFromInitialSpeech)
+            {
+                EventBoundaryOutcome = FName(TEXT("confirmed_resume_anchor"));
+            }
+        }
+        else if (EventBoundaryWordIndex != INDEX_NONE
+            && InOutHoldState.LastResolvedBoundary.WordIndex == EventBoundaryWordIndex
+            && InOutHoldState.LastResolvedBoundary.Outcome == FName(TEXT("no_decay_continuous")))
+        {
+            EffectiveCommitReason = FName(TEXT("boundary_no_decay_continuous_commit"));
+            EventBoundaryOutcome = InOutHoldState.LastResolvedBoundary.Outcome;
+        }
+
+        FOffgridAICommittedVisemeEvent E;
         FillEventFromText(
             Plan,
             NextEventIndex,
@@ -917,12 +1685,6 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             OrderNorm,
             Center,
             Span,
-            InOutHoldState.ActivePlayheadSec,
-            RequiredActiveSec,
-            TotalPlannedActiveSec,
-            EffectiveRegions,
-            WordStartActiveSeconds,
-            WordStartSeconds,
             Input,
             E);
         E.PriorStartSeconds = BaseStart;
@@ -935,7 +1697,47 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         E.InterEventFloorDelaySeconds = InterEventFloorDelay;
         E.TotalCenterDelaySeconds = FMath::Max(Center - PriorCenter, 0.0f);
         E.SpeechRegionIndex = FMath::Max(FindRegionIndexAtPlayback(EffectiveRegions, Input.CurrentPlaybackSec), 0);
-        E.CommitReason = OccupancyReason;
+        E.CommitReason = EffectiveCommitReason;
+        E.bUsedInitialSpeechAnchor = bUsedInitialSpeechAnchor;
+        E.bUsedResumeAnchor = bUsedResumeAnchor && !bUsedInitialSpeechAnchor;
+        E.AcousticAnchorKind = AcousticAnchorKind;
+        E.AcousticAnchorSeconds = AcousticAnchorSec;
+        E.AcousticAnchorErrorSeconds = AcousticAnchorSec >= 0.0f
+            ? E.FinalRenderCenterSeconds - AcousticAnchorSec
+            : 0.0f;
+        E.ObservedPauseDecaySeconds = InOutHoldState.LastResolvedBoundary.DecaySec;
+        E.ObservedResumeOnsetSeconds = InOutHoldState.LastResolvedBoundary.ResumeOnsetSec;
+        E.ObservedResumeEnergyAnchorSeconds = InOutHoldState.LastResolvedBoundary.ResumeEnergyAnchorSec;
+        E.BoundaryWordIndex = EventBoundaryWordIndex;
+        if (EventBoundaryMark != TCHAR(0))
+        {
+            E.BoundaryMark = FString::Chr(EventBoundaryMark);
+        }
+        E.BoundaryOutcome = EventBoundaryOutcome;
+
+        auto ShiftEventForwardToCenter = [](FOffgridAICommittedVisemeEvent& Event, float ForcedCenter)
+        {
+            if (ForcedCenter <= Event.FinalRenderCenterSeconds)
+            {
+                return;
+            }
+
+            const float Delta = ForcedCenter - Event.FinalRenderCenterSeconds;
+            Event.FinalRenderCenterSeconds += Delta;
+            Event.RenderStartSeconds += Delta;
+            Event.RenderEndSeconds += Delta;
+        };
+
+        // Timing is monotonic text-prior playback, reset only by acoustic start/resume anchors.
+        if (bExactAcousticAnchorEvent && InOutTrack.Events.Num() > 0)
+        {
+            // Preserve the acoustic anchor.  Only shorten the immediately previous
+            // envelope tail if it overlaps the restart; never move old centers or
+            // compact an entire pre-boundary word.
+            FOffgridAICommittedVisemeEvent& PreviousEvent = InOutTrack.Events.Last();
+            const float TrimmedPreviousEnd = FMath::Max(PreviousEvent.FinalRenderCenterSeconds, E.FinalRenderCenterSeconds - 0.001f);
+            PreviousEvent.RenderEndSeconds = FMath::Min(PreviousEvent.RenderEndSeconds, TrimmedPreviousEnd);
+        }
         if (LastCenter >= 0.0f && E.FinalRenderCenterSeconds < LastCenter + 0.001f)
         {
             float ForcedCenter = LastCenter + 0.001f;
@@ -943,7 +1745,11 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             {
                 ForcedCenter = 0.0f;
             }
-            E.FinalRenderCenterSeconds = ForcedCenter;
+            ShiftEventForwardToCenter(E, ForcedCenter);
+        }
+        if (E.AcousticAnchorSeconds >= 0.0f)
+        {
+            E.AcousticAnchorErrorSeconds = E.FinalRenderCenterSeconds - E.AcousticAnchorSeconds;
         }
         E.RenderStartSeconds = FMath::Min(E.RenderStartSeconds, E.FinalRenderCenterSeconds);
         E.RenderEndSeconds = FMath::Max(E.RenderEndSeconds, E.FinalRenderCenterSeconds);
@@ -953,9 +1759,9 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
     }
 
     // The LineCoach samples only when the committed track is marked built.
-    // In the simplified occupancy runtime, the track is intentionally live and
-    // prefix-built: as soon as any stable speech-occupancy events have been
-    // committed, they are authoritative and must be available to the performer.
+    // In the current runtime, the track is intentionally live and prefix-built.
+    // Once text-prior visemes are anchored by stable speech start/resume evidence
+    // and committed, they are authoritative and must be available to the performer.
     // Waiting until final/full completion causes the whole front of each line to
     // be missed live, even though runtime_commit_events.csv contains early
     // committed centers.

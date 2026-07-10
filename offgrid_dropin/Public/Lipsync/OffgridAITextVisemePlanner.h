@@ -34,9 +34,9 @@ struct FOffgridAITextVisemeEvent
     FString SourceText;
     int32 WordIndex = INDEX_NONE;
 
-    // Text-derived speech-region ownership. Runtime audio occupancy still owns
-    // when a region opens/closes, but event identity is assigned to one planned
-    // region and must not leak into later regions.
+    // Text-derived speech-region ownership. The streaming speech detector still
+    // owns when an observed region opens/closes, but event identity is assigned
+    // to one planned region and must not leak into later regions.
     int32 SpeechRegionIndex = 0;
 
     // Text sentence metadata for diagnostics only.

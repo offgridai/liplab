@@ -2,12 +2,15 @@ case: case_0067_20260629_103906_082_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_
 transcript: Ghana is famous for cocoa and gold. Want a quick bite?
 audio: 4.217s @ 24000 Hz
 speech regions: 2
+pause boundaries: 10
+pause-driven region breaks: 1
 word heads: 11
 dense visemes: 37
 draft flags: 2
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

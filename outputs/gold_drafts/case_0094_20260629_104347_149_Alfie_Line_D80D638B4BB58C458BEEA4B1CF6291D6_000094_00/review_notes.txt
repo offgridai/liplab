@@ -2,12 +2,15 @@ case: case_0094_20260629_104347_149_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_
 transcript: Riga's old town is beautiful. Want a sandwich?
 audio: 3.577s @ 24000 Hz
 speech regions: 2
+pause boundaries: 7
+pause-driven region breaks: 1
 word heads: 8
 dense visemes: 28
-draft flags: 2
+draft flags: 3
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

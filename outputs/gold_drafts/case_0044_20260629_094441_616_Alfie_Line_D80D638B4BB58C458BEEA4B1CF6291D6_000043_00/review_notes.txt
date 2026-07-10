@@ -2,12 +2,15 @@ case: case_0044_20260629_094441_616_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_
 transcript: Croatia has stunning coastlines and historic cities!
 audio: 3.497s @ 24000 Hz
 speech regions: 1
+pause boundaries: 6
+pause-driven region breaks: 0
 word heads: 7
 dense visemes: 39
 draft flags: 1
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

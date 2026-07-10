@@ -4,13 +4,7 @@
 
 struct FOffgridAIStreamingSpeechRegion
 {
-    union
-    {
-        int32 SpeechRegionIndex = INDEX_NONE;
-        // Deprecated compatibility alias for older code that still refers to
-        // speech regions as islands.
-        int32 IslandIndex;
-    };
+    int32 SpeechRegionIndex = INDEX_NONE;
     float AudioBufferStartSec = 0.0f;
     float AudioBufferLastSpeechSec = 0.0f;
     float AudioBufferEndSec = 0.0f;
@@ -31,30 +25,12 @@ struct FOffgridAIStreamingSpeechRegion
 struct FOffgridAIStreamingSpeechGapCandidate
 {
     int32 GapIndex = INDEX_NONE;
-    union
-    {
-        int32 PrevSpeechRegionIndex = INDEX_NONE;
-        // Deprecated compatibility alias for older code that still refers to
-        // speech regions as islands.
-        int32 PrevIslandIndex;
-    };
-    union
-    {
-        int32 NextSpeechRegionIndex = INDEX_NONE;
-        // Deprecated compatibility alias for older code that still refers to
-        // speech regions as islands.
-        int32 NextIslandIndex;
-    };
+    int32 PrevSpeechRegionIndex = INDEX_NONE;
+    int32 NextSpeechRegionIndex = INDEX_NONE;
     float GapStartSec = 0.0f;
     float GapEndSec = 0.0f;
     float GapDurationSec = 0.0f;
-    union
-    {
-        float PrevSpeechRegionDurationSec = 0.0f;
-        // Deprecated compatibility alias for older code that still refers to
-        // speech regions as islands.
-        float PrevIslandDurationSec;
-    };
+    float PrevSpeechRegionDurationSec = 0.0f;
     float QuietEvidence = 0.0f;
     float QuietRMSNorm = 0.0f;
     int32 GapFrameCount = 0;
@@ -102,20 +78,8 @@ struct FOffgridAIStreamingAudioFeatureFrame
     float CloseThreshold = 0.0f;
     float SilenceAccumSec = 0.0f;
     float EndpointCandidateStartSec = -1.0f;
-    union
-    {
-        float ActiveSpeechRegionStartSec = -1.0f;
-        // Deprecated compatibility alias for older code that still refers to
-        // speech regions as islands.
-        float ActiveIslandStartSec;
-    };
-    union
-    {
-        float ActiveSpeechRegionEndSec = -1.0f;
-        // Deprecated compatibility alias for older code that still refers to
-        // speech regions as islands.
-        float ActiveIslandEndSec;
-    };
+    float ActiveSpeechRegionStartSec = -1.0f;
+    float ActiveSpeechRegionEndSec = -1.0f;
     bool bInSpeechBeforeFrame = false;
     bool bInSpeechAfterFrame = false;
     bool bOpenCandidate = false;
@@ -124,46 +88,15 @@ struct FOffgridAIStreamingAudioFeatureFrame
     bool bStrongQuiet = false;
     bool bLowEvidence = false;
     bool bEndpointCandidateActive = false;
-    union
-    {
-        bool bFrameStartedSpeechRegion = false;
-        // Deprecated compatibility alias for older code that still refers to
-        // speech regions as islands.
-        bool bFrameStartedIsland;
-    };
-    union
-    {
-        bool bFrameClosedSpeechRegion = false;
-        // Deprecated compatibility alias for older code that still refers to
-        // speech regions as islands.
-        bool bFrameClosedIsland;
-    };
-    union
-    {
-        bool bFrameBridgedSpeechRegion = false;
-        // Deprecated compatibility alias for older code that still refers to
-        // speech regions as islands.
-        bool bFrameBridgedIsland;
-    };
+    bool bFrameStartedSpeechRegion = false;
+    bool bFrameClosedSpeechRegion = false;
+    bool bFrameBridgedSpeechRegion = false;
     FName OccupancyDecision = NAME_None;
 
     bool bLocalRMSPeak = false;
     bool bLocalRMSValley = false;
     bool bLocalFluxPeak = false;
 
-    // Detector-owned pause-family cue for nearby silence/gap structure.
-    FName PauseFamily = NAME_None;
-    float PauseFamilyConfidence = 0.0f;
-    float PauseGapAgeSec = 0.0f;
-};
-
-struct FOffgridAIStreamingPauseCue
-{
-    FName Family = NAME_None;
-    float Confidence = 0.0f;
-    float GapAgeSec = 0.0f;
-    bool bInSpeech = false;
-    bool bEndpointCandidateActive = false;
 };
 
 class OFFGRIDAI_API FOffgridAIStreamingSpeechDetector
@@ -174,11 +107,8 @@ public:
     void Finalize(float FinalObservedAudioBufferEndSec = -1.0f);
 
     const TArray<FOffgridAIStreamingSpeechRegion>& GetSpeechRegions() const { return SpeechRegions; }
-    // Deprecated compatibility alias. New code should use GetSpeechRegions().
-    const TArray<FOffgridAIStreamingSpeechRegion>& GetIslands() const { return SpeechRegions; }
     const TArray<FOffgridAIStreamingSpeechGapCandidate>& GetGapCandidates() const { return GapCandidates; }
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& GetFeatureFrames() const { return FeatureFrames; }
-    const FOffgridAIStreamingPauseCue& GetLatestPauseCue() const { return LatestPauseCue; }
     bool HasObservedFirstSpeechStart() const { return bHasObservedFirstSpeechStart; }
     float GetFirstSpeechAudioBufferStartSec() const { return FirstSpeechAudioBufferStartSec; }
     float GetObservedAudioBufferEndSec() const { return ObservedAudioBufferEndSec; }
@@ -186,13 +116,9 @@ public:
 private:
     void ProcessAnalysisFrame(float FrameStartSeconds, float FrameEndSeconds, float RMS, float ZCR, float LowBandNorm, float MidBandNorm, float HighBandNorm, float SpectralCentroidNorm, float Periodicity);
     void SuppressRecentMicroSpeechRegionIfNeeded();
-    // Deprecated compatibility alias. New code should use SuppressRecentMicroSpeechRegionIfNeeded().
-    void SuppressRecentMicroIslandIfNeeded();
     void RefreshLocalFeatureFlags();
 
-    using FOffgridAIStreamingSpeechIsland = FOffgridAIStreamingSpeechRegion;
     TArray<FOffgridAIStreamingSpeechRegion> SpeechRegions;
-    TArray<FOffgridAIStreamingSpeechRegion>& Islands = SpeechRegions;
     TArray<FOffgridAIStreamingSpeechGapCandidate> GapCandidates;
     TArray<FOffgridAIStreamingAudioFeatureFrame> FeatureFrames;
     bool bInSpeech = false;
@@ -216,18 +142,9 @@ private:
     float EndpointCandidateMinRMSNorm = 1.0f;
     float EndpointCandidateMaxPeriodicity = 0.0f;
     float EndpointCandidateMaxFlux = 0.0f;
-    union
-    {
-        float ActiveSpeechRegionPeakRMS = 0.0001f;
-        float ActiveIslandPeakRMS;
-    };
+    float ActiveSpeechRegionPeakRMS = 0.0001f;
     TArray<float> ActiveSpeechRegionRMSHistory;
-    TArray<float>& ActiveIslandSpeechRMSHistory = ActiveSpeechRegionRMSHistory;
-    union
-    {
-        float ActiveSpeechRegionSeconds = 0.0f;
-        float ActiveIslandSpeechSeconds;
-    };
+    float ActiveSpeechRegionSeconds = 0.0f;
     float ActiveSoftCollapseAccumSeconds = 0.0f;
     float ActiveSoftCollapseStartSeconds = 0.0f;
     float ActiveLowEnergyAccumSeconds = 0.0f;
@@ -246,7 +163,5 @@ private:
 
     float SpeechPeakRMS = 0.0001f;
     float NoiseFloorRMS = 0.0001f;
-    FOffgridAIStreamingPauseCue LatestPauseCue;
 };
 
-using FOffgridAIStreamingSpeechIsland = FOffgridAIStreamingSpeechRegion;

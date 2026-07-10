@@ -5,8 +5,9 @@
 #include "Lipsync/OffgridAITextVisemePlanner.h"
 #include "Lipsync/OffgridAIStreamingSpeechDetector.h"
 
-// Simplified runtime input: text plan + speech occupancy only.
-// There is intentionally no phone/Viterbi/acoustic-class alignment path here.
+// Runtime input: text plan + detected speech regions.
+// No phone/Viterbi/acoustic-class/landmark timing path is active here.
+// Landmarks are advisory debug output owned by LineCoach finalization logs.
 struct FOffgridAILipsyncRuntimeUpdateInput
 {
     const FOffgridAITextVisemePlan* TextPlan = nullptr;
@@ -18,15 +19,14 @@ struct FOffgridAILipsyncRuntimeUpdateInput
     float ObservedAudioBufferEndSec = 0.0f;
     bool bInputStreamClosed = false;
     bool bPlaybackFinalized = false;
-    bool bEnableLandmarkPacing = false;
-    bool bLandmarkPacingPermissive = false;
-    uint8 LandmarkPacingTypeMask = 0x1F;
 
     FName NPCID = NAME_None;
     FName LineID = NAME_None;
 };
 
-struct FOffgridAIAudioOccupancyDiagnosticRow
+// Per-commit diagnostics for text-prior monotonic playback gated by detected
+// speech start and punctuation resume evidence.
+struct FOffgridAIRuntimeCommitDiagnosticRow
 {
     FName LineID = NAME_None;
     int32 UpdateOrdinal = 0;
@@ -44,18 +44,21 @@ struct FOffgridAIAudioOccupancyDiagnosticRow
     FName CommitReason = NAME_None;
     FName PlaybackMode = NAME_None;
 
-    float AudioActiveSec = 0.0f;
-    float TextPlayheadSec = 0.0f;
-
-    float RequiredActiveElapsedSec = 0.0f;
-    float ObservedActiveElapsedSec = 0.0f;
-    float ActiveProgressDeficitSec = 0.0f;
-    float RequiredProgressNorm = 0.0f;
-    float ObservedProgressNorm = 0.0f;
-    float ActiveProgressRatio = 1.0f;
     bool bMappedToObservedSpeech = false;
 
     FName DiagnosticKind = NAME_None;
+
+    bool bUsedInitialSpeechAnchor = false;
+    bool bUsedResumeAnchor = false;
+    FName AcousticAnchorKind = NAME_None;
+    float AcousticAnchorSec = -1.0f;
+    float AcousticAnchorErrorSec = 0.0f;
+    float ObservedPauseDecaySec = -1.0f;
+    float ObservedResumeOnsetSec = -1.0f;
+    float ObservedResumeEnergyAnchorSec = -1.0f;
+    int32 BoundaryWordIndex = INDEX_NONE;
+    FString BoundaryMark;
+    FName BoundaryOutcome = NAME_None;
 };
 
 struct FOffgridAIStreamTailDiagnosticRow
@@ -94,7 +97,6 @@ struct FOffgridAIRuntimeSpeechRegionDiagnosticRow
     bool bContainsPlaybackSec = false;
 
     int32 CommittedEventCount = 0;
-    int32 DroppedEventCount = 0;
     FName CloseReason = NAME_None;
     FName DiagnosticKind = NAME_None;
 };
@@ -105,12 +107,19 @@ struct FOffgridAILipsyncRuntimeBeginInput
     FName NPCID = NAME_None;
     FName LineID = NAME_None;
     float PrerollSec = 0.350f;
-    bool bEnableLandmarkPacing = false;
-    bool bLandmarkPacingPermissive = false;
-    uint8 LandmarkPacingTypeMask = 0x1F;
 };
 
-struct FOffgridAIPunctuationHoldState
+struct FOffgridAIResolvedBoundaryDiagnostic
+{
+    FName Outcome = NAME_None;
+    int32 WordIndex = INDEX_NONE;
+    TCHAR Mark = TCHAR(0);
+    float DecaySec = -1.0f;
+    float ResumeOnsetSec = -1.0f;
+    float ResumeEnergyAnchorSec = -1.0f;
+};
+
+struct FOffgridAIBoundaryPlaybackState
 {
     bool bPlayheadStarted = false;
     bool bHoldActive = false;
@@ -122,20 +131,38 @@ struct FOffgridAIPunctuationHoldState
     float ActivePlayheadSec = 0.0f;
     float TotalPausedSec = 0.0f;
     float HoldStartPlaybackSec = 0.0f;
+    // Acoustic decay search may begin slightly before the runtime entered the hold,
+    // because the waveform trough can precede the final pre-boundary viseme center.
+    float BoundarySearchStartPlaybackSec = 0.0f;
     float HoldDeadlinePlaybackSec = 0.0f;
-};
+    float HoldResumeTargetActiveSec = 0.0f;
+    float HoldResumeTargetLeadSec = 0.0f;
+    // Punctuation is a freeze/wait/resume state, not a timer delay. Every
+    // punctuation mark stops new commits, waits for decay/resume, then anchors
+    // the first post-boundary viseme to resumed speech. Marks differ only by
+    // patience window.
+    int32 HoldStartSpeechRegionIndex = INDEX_NONE;
+    bool bSawConfirmedOutOfSpeechAfterBoundary = false;
+    float ConfirmedQuietStartPlaybackSec = -1.0f;
+    float QuietRMSNormAtDecay = 1.0f;
+    float QuietEvidenceAtDecay = 1.0f;
+    float QuietRawRMSAtDecay = 1.0f;
+    TCHAR ActiveBoundaryMark = TCHAR(0);
+    float ObservedResumeOnsetPlaybackSec = -1.0f;
+    float ObservedResumeEnergyAnchorSec = -1.0f;
+    FOffgridAIResolvedBoundaryDiagnostic LastResolvedBoundary;
 
-struct FOffgridAILandmarkPacingState
-{
-    bool bSeeded = false;
-    int32 SpeechRegionIndex = INDEX_NONE;
-    int32 AnchorPhoneIndex = INDEX_NONE;
-    float AnchorPriorActiveSec = 0.0f;
-    float AnchorObservedSec = 0.0f;
-    float PlayRate = 1.0f;
-    float Confidence = 0.0f;
-    float LastAppliedObservedSec = -1.0f;
-    FName AnchorType = NAME_None;
+    // Punctuation resume anchor. When a real pause/resume cycle is observed,
+    // the first visible post-boundary phone is attached directly to the new
+    // acoustic onset. Later phones are scheduled relative to this anchor so
+    // the pause does not get absorbed as a long gap inside the first word.
+    bool bInitialSpeechAnchorResolved = false;
+    bool bResumeAnchorActive = false;
+    bool bResumeAnchorFromInitialSpeech = false;
+    int32 ResumeAnchorEventIndex = INDEX_NONE;
+    float ResumeAnchorActiveSec = 0.0f;
+    float ResumeAnchorLeadSec = 0.0f;
+    float ResumeAnchorFinalCenterSec = 0.0f;
 };
 
 class OFFGRIDAI_API FOffgridAILipsyncRuntimeSession
@@ -159,22 +186,18 @@ public:
     void Finalize(float FinalPlaybackSec);
 
     const FOffgridAITextVisemePlan& GetTextPlan() const { return TextPlan; }
-    FOffgridAITextVisemePlan& GetMutableTextPlan() { return TextPlan; }
     const FOffgridAIStreamingSpeechDetector& GetSpeechDetector() const { return Detector; }
     const TArray<FOffgridAIStreamingSpeechRegion>& GetSpeechRegions() const { return ResolvedSpeechRegions; }
-    // Deprecated compatibility alias. New code should use GetSpeechRegions().
-    const TArray<FOffgridAIStreamingSpeechRegion>& GetSpeechIslands() const { return ResolvedSpeechRegions; }
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& GetAudioFeatureFrames() const { return Detector.GetFeatureFrames(); }
-    const FOffgridAIAlignedVisemeTrack& GetCommittedTrack() const { return CommittedTrack; }
-    const TArray<FOffgridAIAudioOccupancyDiagnosticRow>& GetAudioOccupancyDiagnosticRows() const { return AudioOccupancyDiagnosticRows; }
+    const FOffgridAICommittedVisemeTrack& GetCommittedTrack() const { return CommittedTrack; }
+    const TArray<FOffgridAIRuntimeCommitDiagnosticRow>& GetRuntimeCommitDiagnosticRows() const { return RuntimeCommitDiagnosticRows; }
     const TArray<FOffgridAIRuntimeSpeechRegionDiagnosticRow>& GetRuntimeSpeechRegionDiagnosticRows() const { return RuntimeSpeechRegionDiagnosticRows; }
     const FOffgridAIStreamTailDiagnosticRow& GetStreamTailDiagnosticRow() const { return StreamTailDiagnosticRow; }
-    FOffgridAIAlignedVisemeTrack& GetMutableCommittedTrack() { return CommittedTrack; }
+    FOffgridAICommittedVisemeTrack& GetMutableCommittedTrack() { return CommittedTrack; }
     bool IsCommittedTrackBuilt() const { return bCommittedTrackBuilt; }
     bool HasPlaybackStarted() const { return bPlaybackStarted; }
     float GetPlaybackSeconds() const { return PlaybackSec; }
     float GetPrerollSeconds() const { return PrerollSec; }
-    bool IsLandmarkPacingEnabled() const { return bEnableLandmarkPacing; }
 
 private:
     void UpdatePlaybackGate(float ObservedEndSec);
@@ -190,17 +213,14 @@ private:
     bool bPlaybackStarted = false;
     bool bCommittedTrackBuilt = false;
     bool bInputStreamClosed = false;
-    bool bEnableLandmarkPacing = false;
-    bool bLandmarkPacingPermissive = false;
-    uint8 LandmarkPacingTypeMask = 0x1F;
 
     FOffgridAITextVisemePlan TextPlan;
     FOffgridAIStreamingSpeechDetector Detector;
     TArray<FOffgridAIStreamingSpeechRegion> ResolvedSpeechRegions;
-    FOffgridAIAlignedVisemeTrack CommittedTrack;
-    TArray<FOffgridAIAudioOccupancyDiagnosticRow> AudioOccupancyDiagnosticRows;
+    FOffgridAICommittedVisemeTrack CommittedTrack;
+    TArray<FOffgridAIRuntimeCommitDiagnosticRow> RuntimeCommitDiagnosticRows;
     TArray<FOffgridAIRuntimeSpeechRegionDiagnosticRow> RuntimeSpeechRegionDiagnosticRows;
-    int32 AudioOccupancyDiagnosticUpdateOrdinal = 0;
+    int32 RuntimeCommitDiagnosticUpdateOrdinal = 0;
     FOffgridAIStreamTailDiagnosticRow StreamTailDiagnosticRow;
 
     int32 PCMChunkCount = 0;
@@ -210,8 +230,7 @@ private:
     int32 LastPCMChunkChannels = 0;
     int64 LastPCMChunkStartSample = -1;
     int64 LastPCMChunkEndSample = -1;
-    FOffgridAIPunctuationHoldState PunctuationHoldState;
-    FOffgridAILandmarkPacingState LandmarkPacingState;
+    FOffgridAIBoundaryPlaybackState PunctuationHoldState;
 };
 
 class OFFGRIDAI_API FOffgridAILipsyncRuntimeAdapter
@@ -219,7 +238,7 @@ class OFFGRIDAI_API FOffgridAILipsyncRuntimeAdapter
 public:
     static void UpdateCommittedTrack(
         const FOffgridAILipsyncRuntimeUpdateInput& Input,
-        FOffgridAIAlignedVisemeTrack& InOutTrack,
-        FOffgridAIPunctuationHoldState& InOutHoldState,
+        FOffgridAICommittedVisemeTrack& InOutTrack,
+        FOffgridAIBoundaryPlaybackState& InOutHoldState,
         bool& bInOutTrackBuilt);
 };

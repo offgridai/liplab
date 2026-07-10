@@ -177,6 +177,11 @@ public:
     FString(const char* value) : value_(value ? value : "") {}
     FString(const std::string& value) : value_(value) {}
 
+    static FString Chr(TCHAR ch)
+    {
+        return FString(std::string(1, ch));
+    }
+
     bool IsEmpty() const { return value_.empty(); }
     int32 Len() const { return static_cast<int32>(value_.size()); }
     void Reset() { value_.clear(); }
@@ -313,6 +318,7 @@ struct FChar
 {
     static bool IsAlnum(TCHAR ch) { return std::isalnum(static_cast<unsigned char>(ch)) != 0; }
     static bool IsDigit(TCHAR ch) { return std::isdigit(static_cast<unsigned char>(ch)) != 0; }
+    static bool IsWhitespace(TCHAR ch) { return std::isspace(static_cast<unsigned char>(ch)) != 0; }
     static TCHAR ToLower(TCHAR ch) { return static_cast<TCHAR>(std::tolower(static_cast<unsigned char>(ch))); }
 };
 

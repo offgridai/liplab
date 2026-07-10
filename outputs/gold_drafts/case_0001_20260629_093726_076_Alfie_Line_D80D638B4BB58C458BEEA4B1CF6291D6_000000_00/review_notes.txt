@@ -2,12 +2,15 @@ case: case_0001_20260629_093726_076_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_
 transcript: Hello there, what can I get for you today?
 audio: 2.377s @ 24000 Hz
 speech regions: 2
+pause boundaries: 8
+pause-driven region breaks: 1
 word heads: 9
 dense visemes: 26
 draft flags: 2
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

@@ -13,12 +13,6 @@ static bool IsPose(FName PoseID, const TCHAR* Literal)
     return PoseID == FName(Literal);
 }
 
-static bool IsStrongPose(FName PoseID)
-{
-    return IsPose(PoseID, TEXT("22_MBP")) || IsPose(PoseID, TEXT("20_FV")) || IsPose(PoseID, TEXT("14_ChJjSh"))
-        || IsPose(PoseID, TEXT("12_Ww-Oo-"));
-}
-
 static bool IsVowelPose(FName PoseID)
 {
     return IsPose(PoseID, TEXT("07_Aa")) || IsPose(PoseID, TEXT("08_Ah")) || IsPose(PoseID, TEXT("06_Eh"))
@@ -26,6 +20,7 @@ static bool IsVowelPose(FName PoseID)
         || IsPose(PoseID, TEXT("09_Oh")) || IsPose(PoseID, TEXT("10_Or")) || IsPose(PoseID, TEXT("11_Oo"))
         || IsPose(PoseID, TEXT("12_Ww-Oo-")) || IsPose(PoseID, TEXT("18_Uh"));
 }
+
 
 static void EnvelopeForPose(FName PoseID, float& OutAttack, float& OutRelease, float& OutHoldHalf)
 {
@@ -82,7 +77,7 @@ static float PeakForPose(FName PoseID, float SourceStrength)
     return Peak;
 }
 
-static bool SameContinuousSpeechGroup(const FOffgridAIAlignedVisemeEvent* A, const FOffgridAIAlignedVisemeEvent* B)
+static bool SameContinuousSpeechGroup(const FOffgridAICommittedVisemeEvent* A, const FOffgridAICommittedVisemeEvent* B)
 {
     if (!A || !B) return false;
     if (A->SpeechRegionIndex != INDEX_NONE && B->SpeechRegionIndex != INDEX_NONE && A->SpeechRegionIndex != B->SpeechRegionIndex) return false;
@@ -98,7 +93,7 @@ static bool SameContinuousSpeechGroup(const FOffgridAIAlignedVisemeEvent* A, con
     return true;
 }
 
-static float EventWeightAt(const FOffgridAIAlignedVisemeEvent& E, const FOffgridAIAlignedVisemeEvent* Prev, const FOffgridAIAlignedVisemeEvent* Next, float PlaybackSeconds)
+static float EventWeightAt(const FOffgridAICommittedVisemeEvent& E, const FOffgridAICommittedVisemeEvent* Prev, const FOffgridAICommittedVisemeEvent* Next, float PlaybackSeconds)
 {
     float Attack = 0.060f;
     float Release = 0.075f;
@@ -111,11 +106,11 @@ static float EventWeightAt(const FOffgridAIAlignedVisemeEvent& E, const FOffgrid
     float AttackStart = PeakStart - Attack;
     float ReleaseEnd = PeakEnd + Release;
 
-    // Treat aligned visemes as states over a continuous phrase, not as
-    // isolated impulses. The occupancy runtime commits a monotonic text-viseme prefix;
+    // Treat committed visemes as states over a continuous phrase, not as
+    // isolated impulses. The runtime commits a monotonic text-prior viseme prefix;
     // the performer should therefore keep a mouth state alive until the next
     // same-phrase state takes over. This fixes perceptual dead zones without
-    // moving the committed alignment centers or adding a scheduler.
+    // moving the committed event centers or adding a scheduler.
     if (SameContinuousSpeechGroup(Prev, &E) && FMath::IsFinite(Prev->FinalRenderCenterSeconds))
     {
         const float PrevCenter = Prev->FinalRenderCenterSeconds;
@@ -157,7 +152,7 @@ static float EventWeightAt(const FOffgridAIAlignedVisemeEvent& E, const FOffgrid
 }
 }
 
-TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const FOffgridAIAlignedVisemeTrack& Track, float PlaybackSeconds, bool bGateBeforeSpeechStart)
+TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const FOffgridAICommittedVisemeTrack& Track, float PlaybackSeconds, bool bGateBeforeSpeechStart)
 {
     TArray<FOffgridAISubmittedVisemeSample> Out;
     if (bGateBeforeSpeechStart && Track.SpeechEndSeconds > Track.SpeechStartSeconds && PlaybackSeconds + 0.001f < Track.SpeechStartSeconds)
@@ -167,10 +162,10 @@ TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const 
 
     for (int32 I = 0; I < Track.Events.Num(); ++I)
     {
-        const FOffgridAIAlignedVisemeEvent& E = Track.Events[I];
+        const FOffgridAICommittedVisemeEvent& E = Track.Events[I];
         if (!FMath::IsFinite(E.FinalRenderCenterSeconds)) continue;
-        const FOffgridAIAlignedVisemeEvent* Prev = I > 0 ? &Track.Events[I - 1] : nullptr;
-        const FOffgridAIAlignedVisemeEvent* Next = I + 1 < Track.Events.Num() ? &Track.Events[I + 1] : nullptr;
+        const FOffgridAICommittedVisemeEvent* Prev = I > 0 ? &Track.Events[I - 1] : nullptr;
+        const FOffgridAICommittedVisemeEvent* Next = I + 1 < Track.Events.Num() ? &Track.Events[I + 1] : nullptr;
         const float W = EventWeightAt(E, Prev, Next, PlaybackSeconds);
         if (W <= 0.012f) continue;
         FOffgridAISubmittedVisemeSample S;
@@ -190,6 +185,8 @@ TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const 
 
 TMap<FName, float> FOffgridAIVisemePerformer::CollapseByPoseID(const TArray<FOffgridAISubmittedVisemeSample>& Samples)
 {
+    // Baseline renderer: no dominance/coarticulation suppression.  Multiple
+    // overlapping committed visemes collapse by PoseID using max weight only.
     TMap<FName, float> Out;
     for (const FOffgridAISubmittedVisemeSample& S : Samples)
     {
@@ -199,24 +196,6 @@ TMap<FName, float> FOffgridAIVisemePerformer::CollapseByPoseID(const TArray<FOff
     }
     return Out;
 }
-
-TArray<FOffgridAIPerformedVisemeFrame> FOffgridAIVisemePerformer::BuildFrames(const FOffgridAIAlignedVisemeTrack& Track, float FPS)
-{
-    TArray<FOffgridAIPerformedVisemeFrame> Frames;
-    const float SafeFPS = FMath::Max(FPS, 1.0f);
-    const float End = Track.SpeechEndSeconds > Track.SpeechStartSeconds ? Track.SpeechEndSeconds + 0.25f : 0.0f;
-    for (float T = 0.0f; T <= End; T += 1.0f / SafeFPS)
-    {
-        FOffgridAIPerformedVisemeFrame F;
-        F.PlaybackSeconds = T;
-        F.NPCID = Track.NPCID;
-        F.LineID = Track.LineID;
-        F.AbstractVisemeWeights = CollapseByPoseID(Sample(Track, T, false));
-        Frames.Add(F);
-    }
-    return Frames;
-}
-
 
 FOffgridAILipsyncPoseRuntimeState FOffgridAIVisemePerformer::BuildPoseStateFromPoseWeights(const TMap<FName, float>& PoseWeights)
 {

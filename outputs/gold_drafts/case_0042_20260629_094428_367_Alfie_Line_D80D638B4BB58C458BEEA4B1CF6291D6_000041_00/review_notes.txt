@@ -2,12 +2,15 @@ case: case_0042_20260629_094428_367_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_
 transcript: Costa Rica has plenty of national parks and cute sloths!
 audio: 3.897s @ 24000 Hz
 speech regions: 1
+pause boundaries: 9
+pause-driven region breaks: 0
 word heads: 10
 dense visemes: 43
 draft flags: 1
 
 review order:
 1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
 2. Confirm the first visible viseme for each word against the WAV.
 3. Review dense intra-word visemes, prioritizing flagged regions.
 

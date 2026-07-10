@@ -101,7 +101,7 @@ def validate_manifest(root: pathlib.Path) -> list[str]:
             errors.append("manifest.json: case entry missing case_id")
             continue
         case_dir = root / "inputs" / "gold" / case_id
-        for name in ("visemes.csv", "words.csv", "speech.csv", "metadata.json"):
+        for name in ("visemes.csv", "phones.csv", "words.csv", "speech.csv", "boundaries.csv", "metadata.json"):
             if not (case_dir / name).exists():
                 errors.append(f"manifest.json: {case_id} missing {name}")
     return errors

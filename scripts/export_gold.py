@@ -159,6 +159,51 @@ def export_speech(case_dir, payload: dict) -> None:
             )
 
 
+def export_boundaries(case_dir, payload: dict) -> None:
+    dest = case_dir / "boundaries.csv"
+    with dest.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(
+            [
+                "word_index",
+                "word",
+                "next_word_index",
+                "next_word",
+                "mark",
+                "mark_sequence",
+                "pause_class",
+                "split_applied",
+                "split_reason",
+                "direct_word_gap_seconds",
+                "phone_gap_seconds",
+                "wave_silence_seconds",
+                "acoustic_gap_seconds",
+                "speech_region_index_before",
+                "speech_region_index_after",
+            ]
+        )
+        for boundary in payload.get("pause_boundaries", []):
+            writer.writerow(
+                [
+                    int(boundary.get("word_index", -1)),
+                    boundary.get("word", ""),
+                    int(boundary.get("next_word_index", -1)),
+                    boundary.get("next_word", ""),
+                    boundary.get("mark", ""),
+                    boundary.get("mark_sequence", ""),
+                    boundary.get("pause_class", ""),
+                    1 if bool(boundary.get("split_applied")) else 0,
+                    boundary.get("split_reason", ""),
+                    f"{float(boundary.get('direct_word_gap_seconds', 0.0)):.6f}",
+                    f"{float(boundary.get('phone_gap_seconds', 0.0)):.6f}",
+                    f"{float(boundary.get('wave_silence_seconds', 0.0)):.6f}",
+                    f"{float(boundary.get('acoustic_gap_seconds', 0.0)):.6f}",
+                    int(boundary.get("speech_region_index_before", -1)),
+                    int(boundary.get("speech_region_index_after", -1)),
+                ]
+            )
+
+
 def export_metadata(case_id: str, case_dir, payload: dict) -> None:
     metadata = {
         "schema_version": 1,
@@ -191,6 +236,7 @@ def export_case(case_id: str) -> bool:
     export_phones(case_dir, payload)
     export_words(case_dir, payload)
     export_speech(case_dir, payload)
+    export_boundaries(case_dir, payload)
     export_metadata(case_id, case_dir, payload)
     return True
 
