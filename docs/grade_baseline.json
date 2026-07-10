@@ -12,9 +12,177 @@
   "phoneme_coverage_rate": 0.6961236732810336,
   "phoneme_end_ms": 77.08269607843138,
   "phoneme_start_ms": 72.92553921568627,
+  "playback": {
+    "bulk_cases": 102,
+    "cases": 109,
+    "clause_region_count_mismatch_cases": 0,
+    "degenerate_cases": 0,
+    "direct_aligner_available": false,
+    "graded_cases": 109,
+    "intra_word_center_ms": 69.76882352941176,
+    "intra_word_coverage_rate": 0.5985267034990792,
+    "order_fail_cases": 0,
+    "phoneme_center_ms": 70.18769607843137,
+    "phoneme_coverage_rate": 0.6961236732810336,
+    "phoneme_end_ms": 77.08269607843138,
+    "phoneme_start_ms": 72.92553921568627,
+    "qualified_cases": 102,
+    "region_early_leak_ms": 56.99774509803921,
+    "region_overrun_ms": 167.37736274509803,
+    "sentence_region_count_mismatch_cases": 0,
+    "speech_boundary_end_median_ms": 35.0,
+    "speech_boundary_end_ms": 60.91501960784314,
+    "speech_boundary_start_median_ms": 20.0,
+    "speech_boundary_start_ms": 56.78103921568628,
+    "speech_lead_in_ms": 45.359460784313725,
+    "speech_match_rate": 1.0,
+    "speech_region_count_mismatch_cases": 7,
+    "speech_tail_leakage_ms": 4.983666666666667,
+    "text_sentence_region_subspan_count_mismatch_cases": 35,
+    "text_sentence_span_count_mismatch_cases": 109,
+    "ungraded_cases": 0,
+    "visible_speech_region_count_mismatch_cases": 0,
+    "word_duration_ms": 59.413754901960786,
+    "word_head_start_median_ms": 107.50200000000001,
+    "word_head_start_ms": 189.42153921568627,
+    "word_match_rate": 0.9897769516728625,
+    "word_start_ms": 189.42153921568627
+  },
   "qualified_cases": 102,
   "region_early_leak_ms": 56.99774509803921,
   "region_overrun_ms": 167.37736274509803,
+  "runtime_detector_available_cases": 102,
+  "runtime_detector_observation_count": 888,
+  "runtime_detector_planned_landmark_by_type": {
+    "chjjsh": {
+      "matched_observation_count": 10,
+      "matched_target_count": 10,
+      "mean_abs_center_error_ms": 15.50007,
+      "observation_count": 92,
+      "precision": 0.10869565217391304,
+      "recall": 0.08403361344537816,
+      "target_count": 119
+    },
+    "fv": {
+      "matched_observation_count": 23,
+      "matched_target_count": 23,
+      "mean_abs_center_error_ms": 39.34783273913043,
+      "observation_count": 141,
+      "precision": 0.16312056737588654,
+      "recall": 0.1597222222222222,
+      "target_count": 144
+    },
+    "mbp": {
+      "matched_observation_count": 35,
+      "matched_target_count": 35,
+      "mean_abs_center_error_ms": 45.28573108571428,
+      "observation_count": 242,
+      "precision": 0.1446280991735537,
+      "recall": 0.14056224899598393,
+      "target_count": 249
+    },
+    "pause_lull": {
+      "matched_observation_count": 2,
+      "matched_target_count": 2,
+      "mean_abs_center_error_ms": 32.5,
+      "observation_count": 65,
+      "precision": 0.03076923076923077,
+      "recall": 0.019801980198019802,
+      "target_count": 101
+    },
+    "round": {
+      "matched_observation_count": 29,
+      "matched_target_count": 29,
+      "mean_abs_center_error_ms": 30.00001027586207,
+      "observation_count": 206,
+      "precision": 0.1407766990291262,
+      "recall": 0.13122171945701358,
+      "target_count": 221
+    },
+    "w": {
+      "matched_observation_count": 12,
+      "matched_target_count": 12,
+      "mean_abs_center_error_ms": 38.750010583333335,
+      "observation_count": 142,
+      "precision": 0.08450704225352113,
+      "recall": 0.08391608391608392,
+      "target_count": 143
+    }
+  },
+  "runtime_detector_planned_landmark_center_median_ms": 32.500044,
+  "runtime_detector_planned_landmark_center_ms": 36.441458252252254,
+  "runtime_detector_planned_landmark_center_p90_ms": 70.0,
+  "runtime_detector_planned_landmark_precision": 0.125,
+  "runtime_detector_planned_landmark_recall": 0.11361310133060389,
+  "runtime_detector_planned_landmark_selection_rate": 0.9089048106448311,
+  "runtime_detector_target_count": 977,
+  "runtime_detector_vs_text_plan": {
+    "available_cases": 102,
+    "observed_landmark_count": 888,
+    "planned_landmark_by_type": {
+      "chjjsh": {
+        "matched_observation_count": 10,
+        "matched_target_count": 10,
+        "mean_abs_center_error_ms": 15.50007,
+        "observation_count": 92,
+        "precision": 0.10869565217391304,
+        "recall": 0.08403361344537816,
+        "target_count": 119
+      },
+      "fv": {
+        "matched_observation_count": 23,
+        "matched_target_count": 23,
+        "mean_abs_center_error_ms": 39.34783273913043,
+        "observation_count": 141,
+        "precision": 0.16312056737588654,
+        "recall": 0.1597222222222222,
+        "target_count": 144
+      },
+      "mbp": {
+        "matched_observation_count": 35,
+        "matched_target_count": 35,
+        "mean_abs_center_error_ms": 45.28573108571428,
+        "observation_count": 242,
+        "precision": 0.1446280991735537,
+        "recall": 0.14056224899598393,
+        "target_count": 249
+      },
+      "pause_lull": {
+        "matched_observation_count": 2,
+        "matched_target_count": 2,
+        "mean_abs_center_error_ms": 32.5,
+        "observation_count": 65,
+        "precision": 0.03076923076923077,
+        "recall": 0.019801980198019802,
+        "target_count": 101
+      },
+      "round": {
+        "matched_observation_count": 29,
+        "matched_target_count": 29,
+        "mean_abs_center_error_ms": 30.00001027586207,
+        "observation_count": 206,
+        "precision": 0.1407766990291262,
+        "recall": 0.13122171945701358,
+        "target_count": 221
+      },
+      "w": {
+        "matched_observation_count": 12,
+        "matched_target_count": 12,
+        "mean_abs_center_error_ms": 38.750010583333335,
+        "observation_count": 142,
+        "precision": 0.08450704225352113,
+        "recall": 0.08391608391608392,
+        "target_count": 143
+      }
+    },
+    "planned_landmark_center_median_ms": 32.500044,
+    "planned_landmark_center_ms": 36.441458252252254,
+    "planned_landmark_center_p90_ms": 70.0,
+    "planned_landmark_precision": 0.125,
+    "planned_landmark_recall": 0.11361310133060389,
+    "planned_landmark_selection_rate": 0.9089048106448311,
+    "planned_landmark_target_count": 977
+  },
   "sentence_region_count_mismatch_cases": 109,
   "speech_boundary_end_median_ms": 35.0,
   "speech_boundary_end_ms": 60.91501960784314,
@@ -22,17 +190,196 @@
   "speech_boundary_start_ms": 56.78103921568628,
   "speech_f1": 1.0,
   "speech_lead_in_ms": 45.359460784313725,
+  "speech_match_rate": 1.0,
   "speech_region_count_mismatch_cases": 7,
   "speech_tail_leakage_ms": 4.983666666666667,
-  "streaming_pause_top1_accuracy": 0.8040298532110092,
-  "streaming_word_boundary_f1": 0.28706529357798166,
+  "streaming_landmark_available_cases": 102,
+  "streaming_landmark_by_type": {
+    "chjjsh": {
+      "matched_observation_count": 10,
+      "matched_target_count": 10,
+      "mean_abs_center_error_ms": 15.50007,
+      "observation_count": 92,
+      "precision": 0.10869565217391304,
+      "recall": 0.08403361344537816,
+      "target_count": 119
+    },
+    "fv": {
+      "matched_observation_count": 23,
+      "matched_target_count": 23,
+      "mean_abs_center_error_ms": 39.34783273913043,
+      "observation_count": 141,
+      "precision": 0.16312056737588654,
+      "recall": 0.1597222222222222,
+      "target_count": 144
+    },
+    "mbp": {
+      "matched_observation_count": 35,
+      "matched_target_count": 35,
+      "mean_abs_center_error_ms": 45.28573108571428,
+      "observation_count": 242,
+      "precision": 0.1446280991735537,
+      "recall": 0.14056224899598393,
+      "target_count": 249
+    },
+    "pause_lull": {
+      "matched_observation_count": 2,
+      "matched_target_count": 2,
+      "mean_abs_center_error_ms": 32.5,
+      "observation_count": 65,
+      "precision": 0.03076923076923077,
+      "recall": 0.019801980198019802,
+      "target_count": 101
+    },
+    "round": {
+      "matched_observation_count": 29,
+      "matched_target_count": 29,
+      "mean_abs_center_error_ms": 30.00001027586207,
+      "observation_count": 206,
+      "precision": 0.1407766990291262,
+      "recall": 0.13122171945701358,
+      "target_count": 221
+    },
+    "w": {
+      "matched_observation_count": 12,
+      "matched_target_count": 12,
+      "mean_abs_center_error_ms": 38.750010583333335,
+      "observation_count": 142,
+      "precision": 0.08450704225352113,
+      "recall": 0.08391608391608392,
+      "target_count": 143
+    }
+  },
+  "streaming_landmark_center_median_ms": 32.500044,
+  "streaming_landmark_center_ms": 36.441458252252254,
+  "streaming_landmark_center_p90_ms": 70.0,
+  "streaming_landmark_observation_count": 888,
+  "streaming_landmark_precision": 0.125,
+  "streaming_landmark_recall": 0.11361310133060389,
+  "streaming_landmark_selection_rate": 0.9089048106448311,
+  "streaming_landmark_target_count": 977,
+  "text_landmark_by_type": {
+    "chjjsh": {
+      "matched_count": 87,
+      "precision": 0.6641221374045801,
+      "predicted_count": 131,
+      "recall": 0.6541353383458647,
+      "reference_count": 133
+    },
+    "fv": {
+      "matched_count": 120,
+      "precision": 0.8333333333333334,
+      "predicted_count": 144,
+      "recall": 0.8275862068965517,
+      "reference_count": 145
+    },
+    "mbp": {
+      "matched_count": 195,
+      "precision": 0.7831325301204819,
+      "predicted_count": 249,
+      "recall": 0.7442748091603053,
+      "reference_count": 262
+    },
+    "pause_lull": {
+      "matched_count": 101,
+      "precision": 0.9351851851851852,
+      "predicted_count": 108,
+      "recall": 1.0,
+      "reference_count": 101
+    },
+    "round": {
+      "matched_count": 146,
+      "precision": 0.6576576576576577,
+      "predicted_count": 222,
+      "recall": 0.7891891891891892,
+      "reference_count": 185
+    },
+    "w": {
+      "matched_count": 84,
+      "precision": 0.5793103448275863,
+      "predicted_count": 145,
+      "recall": 0.5753424657534246,
+      "reference_count": 146
+    }
+  },
+  "text_landmark_precision": 0.7337337337337337,
+  "text_landmark_prior_center_ms": 621.9984676847566,
+  "text_landmark_recall": 0.7541152263374485,
+  "text_pause_class_accuracy": 0.9865856365856365,
+  "text_phone_base_rate": 0.7502274795268425,
+  "text_phone_exact_rate": 0.7386260236578708,
+  "text_phone_prior_center_ms": 525.8268853468661,
+  "text_plan_available_cases": 102,
+  "text_plan_vs_mfa": {
+    "text_landmark_by_type": {
+      "chjjsh": {
+        "matched_count": 87,
+        "precision": 0.6641221374045801,
+        "predicted_count": 131,
+        "recall": 0.6541353383458647,
+        "reference_count": 133
+      },
+      "fv": {
+        "matched_count": 120,
+        "precision": 0.8333333333333334,
+        "predicted_count": 144,
+        "recall": 0.8275862068965517,
+        "reference_count": 145
+      },
+      "mbp": {
+        "matched_count": 195,
+        "precision": 0.7831325301204819,
+        "predicted_count": 249,
+        "recall": 0.7442748091603053,
+        "reference_count": 262
+      },
+      "pause_lull": {
+        "matched_count": 101,
+        "precision": 0.9351851851851852,
+        "predicted_count": 108,
+        "recall": 1.0,
+        "reference_count": 101
+      },
+      "round": {
+        "matched_count": 146,
+        "precision": 0.6576576576576577,
+        "predicted_count": 222,
+        "recall": 0.7891891891891892,
+        "reference_count": 185
+      },
+      "w": {
+        "matched_count": 84,
+        "precision": 0.5793103448275863,
+        "predicted_count": 145,
+        "recall": 0.5753424657534246,
+        "reference_count": 146
+      }
+    },
+    "text_landmark_precision": 0.7337337337337337,
+    "text_landmark_prior_center_ms": 621.9984676847566,
+    "text_landmark_recall": 0.7541152263374485,
+    "text_pause_class_accuracy": 0.9865856365856365,
+    "text_phone_base_rate": 0.7502274795268425,
+    "text_phone_exact_rate": 0.7386260236578708,
+    "text_phone_prior_center_ms": 525.8268853468661,
+    "text_plan_available_cases": 102,
+    "text_region_break_precision": 0.9368421052631579,
+    "text_region_break_recall": 0.9368421052631579,
+    "text_word_prior_start_ms": 532.2474131690461,
+    "text_word_sequence_exact_rate": 0.9990757855822551
+  },
+  "text_region_break_precision": 0.9368421052631579,
+  "text_region_break_recall": 0.9368421052631579,
   "text_sentence_region_subspan_count_mismatch_cases": 35,
   "text_sentence_span_count_mismatch_cases": 109,
+  "text_word_prior_start_ms": 532.2474131690461,
+  "text_word_sequence_exact_rate": 0.9990757855822551,
   "ungraded_cases": 0,
   "visible_speech_region_count_mismatch_cases": 0,
   "word_duration_ms": 59.413754901960786,
   "word_f1": 0.9897769516728625,
   "word_head_start_median_ms": 107.50200000000001,
   "word_head_start_ms": 189.42153921568627,
+  "word_match_rate": 0.9897769516728625,
   "word_start_ms": 189.42153921568627
 }

@@ -549,6 +549,23 @@ static float ExpectedPhoneWeightSeconds(const FString& Base)
     return 0.060f;
 }
 
+static float ExpectedPauseSeconds(EOffgridAIBoundaryPauseClass PauseClass)
+{
+    switch (PauseClass)
+    {
+    case EOffgridAIBoundaryPauseClass::HardBreakPause:
+        // Runtime pacing needs a compressed prior rather than the full MFA
+        // median, otherwise we over-hold boundaries before occupancy can
+        // resolve the actual resume.
+        return 0.200f;
+    case EOffgridAIBoundaryPauseClass::SoftListPause:
+        return 0.040f;
+    case EOffgridAIBoundaryPauseClass::None:
+    default:
+        return 0.0f;
+    }
+}
+
 static bool PhoneHasVisibleViseme(const TArray<FOffgridAITextVisemeEvent>& Events, int32 WordIndex, int32 SourcePhoneIndex)
 {
     for (const FOffgridAITextVisemeEvent& E : Events)
@@ -651,6 +668,7 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
         const EOffgridAIBoundaryPauseClass BoundaryPauseClass = ClassifyBoundaryPause(Words, Boundaries, W);
         BoundaryPauseClasses.Add(BoundaryPauseClass);
         Plan.WordBoundaryPauseClassAfter.Add(BoundaryPauseClass);
+        Plan.WordBoundaryPauseSecondsAfter.Add(ExpectedPauseSeconds(BoundaryPauseClass));
         const TCHAR B = Boundaries.IsValidIndex(W) ? Boundaries[W] : TCHAR(0);
         if (IsHardSentenceBoundary(B)) { ++Sentence; }
     }

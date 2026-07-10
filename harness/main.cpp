@@ -124,6 +124,23 @@ struct GoldSpeechRegion
     double last_speech = 0.0;
 };
 
+struct GoldBoundaryTiming
+{
+    int word_index = -1;
+    std::string word;
+    int next_word_index = -1;
+    std::string next_word;
+    std::string mark;
+    std::string pause_class;
+    bool split_applied = false;
+    double direct_word_gap_seconds = 0.0;
+    double phone_gap_seconds = 0.0;
+    double wave_silence_seconds = 0.0;
+    double acoustic_gap_seconds = 0.0;
+    int speech_region_index_before = -1;
+    int speech_region_index_after = -1;
+};
+
 struct StreamingDetectorReport
 {
     int pause_frames = 0;
@@ -138,25 +155,31 @@ struct StreamingDetectorReport
 
 struct LandmarkTarget
 {
+    int target_index = -1;
     std::string type;
     int expected_phone_index = -1;
     int global_phone_index = -1;
     int word_index = -1;
+    int next_word_index = -1;
     int speech_region_index = -1;
     int sentence_index = -1;
     std::string word;
+    std::string next_word;
     std::string phone;
     std::string phone_base;
+    std::string boundary_mark;
     double gold_start = 0.0;
     double gold_end = 0.0;
     double gold_center = 0.0;
     double prior_start = 0.0;
     double prior_end = 0.0;
     double prior_center = 0.0;
+    bool has_gold_reference = false;
 };
 
 struct LandmarkObservation
 {
+    int target_index = -1;
     std::string type;
     int frame_index = -1;
     double start = 0.0;
@@ -409,12 +432,34 @@ static std::string to_std(const FName& value) { return value.Str(); }
 static std::vector<std::string> parse_csv_cells(const std::string& line)
 {
     std::vector<std::string> cells;
-    std::stringstream ss(line);
     std::string cell;
-    while (std::getline(ss, cell, ','))
+    bool in_quotes = false;
+    for (size_t i = 0; i < line.size(); ++i)
     {
-        cells.push_back(cell);
+        const char c = line[i];
+        if (c == '"')
+        {
+            const bool escaped_quote = in_quotes && (i + 1) < line.size() && line[i + 1] == '"';
+            if (escaped_quote)
+            {
+                cell.push_back('"');
+                ++i;
+            }
+            else
+            {
+                in_quotes = !in_quotes;
+            }
+            continue;
+        }
+        if (c == ',' && !in_quotes)
+        {
+            cells.push_back(cell);
+            cell.clear();
+            continue;
+        }
+        cell.push_back(c);
     }
+    cells.push_back(cell);
     return cells;
 }
 
@@ -686,6 +731,11 @@ static std::optional<std::string> transcript_landmark_type_for_phone_base(const 
     return std::nullopt;
 }
 
+static bool is_pause_lull_type(const std::string& type)
+{
+    return type == "comma_lull" || type == "pause_lull";
+}
+
 static std::vector<GoldPhoneTiming> read_gold_phones_csv(const fs::path& path)
 {
     std::vector<GoldPhoneTiming> out;
@@ -831,6 +881,79 @@ static std::vector<GoldSpeechRegion> read_gold_speech_csv(const fs::path& path)
     return out;
 }
 
+static std::vector<GoldBoundaryTiming> read_gold_boundaries_csv(const fs::path& path)
+{
+    std::vector<GoldBoundaryTiming> out;
+    std::ifstream file(path);
+    if (!file) return out;
+
+    std::string line;
+    std::getline(file, line);
+    const std::vector<std::string> header = parse_csv_cells(line);
+    const bool has_header = !header.empty() && header[0] == "word_index";
+    const int word_index_col = has_header ? header_index(header, "word_index") : 0;
+    const int word_col = has_header ? header_index(header, "word") : 1;
+    const int next_word_index_col = has_header ? header_index(header, "next_word_index") : 2;
+    const int next_word_col = has_header ? header_index(header, "next_word") : 3;
+    const int mark_col = has_header ? header_index(header, "mark") : 4;
+    const int pause_class_col = has_header ? header_index(header, "pause_class") : 6;
+    const int split_applied_col = has_header ? header_index(header, "split_applied") : 7;
+    const int direct_word_gap_seconds_col = has_header ? header_index(header, "direct_word_gap_seconds") : 9;
+    const int phone_gap_seconds_col = has_header ? header_index(header, "phone_gap_seconds") : 10;
+    const int wave_silence_seconds_col = has_header ? header_index(header, "wave_silence_seconds") : 11;
+    const int acoustic_gap_seconds_col = has_header ? header_index(header, "acoustic_gap_seconds") : 12;
+    const int speech_region_index_before_col = has_header ? header_index(header, "speech_region_index_before") : 13;
+    const int speech_region_index_after_col = has_header ? header_index(header, "speech_region_index_after") : 14;
+
+    while (std::getline(file, line))
+    {
+        if (line.empty()) continue;
+        const std::vector<std::string> cells = parse_csv_cells(line);
+        GoldBoundaryTiming boundary;
+
+        const std::string word_index = csv_cell(cells, word_index_col);
+        const std::string next_word_index = csv_cell(cells, next_word_index_col);
+        const std::string split_applied = csv_cell(cells, split_applied_col);
+        const std::string direct_word_gap_seconds = csv_cell(cells, direct_word_gap_seconds_col);
+        const std::string phone_gap_seconds = csv_cell(cells, phone_gap_seconds_col);
+        const std::string wave_silence_seconds = csv_cell(cells, wave_silence_seconds_col);
+        const std::string acoustic_gap_seconds = csv_cell(cells, acoustic_gap_seconds_col);
+        const std::string speech_region_index_before = csv_cell(cells, speech_region_index_before_col);
+        const std::string speech_region_index_after = csv_cell(cells, speech_region_index_after_col);
+
+        if (!word_index.empty()) boundary.word_index = std::stoi(word_index);
+        boundary.word = csv_cell(cells, word_col);
+        if (!next_word_index.empty()) boundary.next_word_index = std::stoi(next_word_index);
+        boundary.next_word = csv_cell(cells, next_word_col);
+        boundary.mark = csv_cell(cells, mark_col);
+        boundary.pause_class = csv_cell(cells, pause_class_col);
+        boundary.split_applied = !split_applied.empty() && split_applied != "0";
+        if (!direct_word_gap_seconds.empty()) boundary.direct_word_gap_seconds = std::stod(direct_word_gap_seconds);
+        if (!phone_gap_seconds.empty()) boundary.phone_gap_seconds = std::stod(phone_gap_seconds);
+        if (!wave_silence_seconds.empty()) boundary.wave_silence_seconds = std::stod(wave_silence_seconds);
+        if (!acoustic_gap_seconds.empty()) boundary.acoustic_gap_seconds = std::stod(acoustic_gap_seconds);
+        if (!speech_region_index_before.empty()) boundary.speech_region_index_before = std::stoi(speech_region_index_before);
+        if (!speech_region_index_after.empty()) boundary.speech_region_index_after = std::stoi(speech_region_index_after);
+        out.push_back(std::move(boundary));
+    }
+
+    return out;
+}
+
+static std::string pause_class_name(EOffgridAIBoundaryPauseClass pause_class)
+{
+    switch (pause_class)
+    {
+    case EOffgridAIBoundaryPauseClass::HardBreakPause:
+        return "hard_break_pause";
+    case EOffgridAIBoundaryPauseClass::SoftListPause:
+        return "soft_list_pause";
+    case EOffgridAIBoundaryPauseClass::None:
+    default:
+        return "none";
+    }
+}
+
 static double landmark_detection_threshold(const std::string& type)
 {
     if (type == "mbp") return 0.55;
@@ -838,7 +961,7 @@ static double landmark_detection_threshold(const std::string& type)
     if (type == "w") return 0.45;
     if (type == "chjjsh") return 0.50;
     if (type == "round") return 0.55;
-    if (type == "comma_lull") return 0.62;
+    if (is_pause_lull_type(type)) return 0.62;
     return 1.0;
 }
 
@@ -856,7 +979,7 @@ static double landmark_reference_duration_seconds(const std::string& type)
     if (type == "w") return 0.080;
     if (type == "chjjsh") return 0.110;
     if (type == "round") return 0.110;
-    if (type == "comma_lull") return 0.200;
+    if (is_pause_lull_type(type)) return 0.200;
     return 0.100;
 }
 
@@ -873,7 +996,7 @@ static double landmark_conditioned_half_window_seconds(const std::string& type)
     if (type == "w") return 0.120;
     if (type == "chjjsh") return 0.160;
     if (type == "round") return 0.160;
-    if (type == "comma_lull") return 0.180;
+    if (is_pause_lull_type(type)) return 0.180;
     return 0.100;
 }
 
@@ -884,7 +1007,7 @@ static double landmark_conditioned_detection_threshold(const std::string& type)
     if (type == "w") return 0.30;
     if (type == "chjjsh") return 0.38;
     if (type == "round") return 0.40;
-    if (type == "comma_lull") return 0.44;
+    if (is_pause_lull_type(type)) return 0.44;
     return landmark_detection_threshold(type);
 }
 
@@ -895,7 +1018,7 @@ static double landmark_conditioned_distance_penalty_scale(const std::string& typ
     if (type == "w") return 0.28;
     if (type == "chjjsh") return 0.24;
     if (type == "round") return 0.32;
-    if (type == "comma_lull") return 0.14;
+    if (is_pause_lull_type(type)) return 0.14;
     return 0.18;
 }
 
@@ -983,7 +1106,7 @@ static double landmark_score_for_frame(
     const std::string& type,
     const FOffgridAIStreamingAudioFeatureFrame& frame)
 {
-    if (type == "comma_lull")
+    if (is_pause_lull_type(type))
     {
         return comma_lull_score_for_frame(frame);
     }
@@ -1373,7 +1496,7 @@ static double conditioned_landmark_target_score(
             voiced_stability * 0.08 +
             local_peak_shape * 0.06);
     }
-    else if (target.type == "comma_lull")
+    else if (is_pause_lull_type(target.type))
     {
         const double reopen = std::max(next_speech, static_cast<double>(frames.IsValidIndex(index + 4) ? frames[index + 4].SpeechEvidence : 0.0f));
         const double pre_speech = std::max(prev_speech, static_cast<double>(frames.IsValidIndex(index - 4) ? frames[index - 4].SpeechEvidence : 0.0f));
@@ -1388,7 +1511,7 @@ static double conditioned_landmark_target_score(
     }
 
     double family_competitor = 0.0;
-    for (const std::string& candidate_type : {"mbp", "fv", "w", "chjjsh", "round", "comma_lull"})
+    for (const std::string& candidate_type : {"mbp", "fv", "w", "chjjsh", "round", "pause_lull"})
     {
         if (candidate_type == target.type)
         {
@@ -1402,88 +1525,92 @@ static double conditioned_landmark_target_score(
     return clamp01(subtype_score * 0.82 + family_margin * 0.18);
 }
 
-static void build_expected_phone_prior_times(
+static void build_runtime_phone_prior_times(
     const FOffgridAITextVisemePlan& plan,
-    const std::vector<GoldPhoneTiming>& gold_phones,
-    const std::vector<GoldSpeechRegion>& gold_speech,
     std::vector<double>& out_start_by_index,
-    std::vector<double>& out_end_by_index)
+    std::vector<double>& out_end_by_index,
+    std::vector<double>& out_word_start_by_index,
+    std::vector<double>& out_word_end_by_index)
 {
+    constexpr double kActiveDurationScale = 0.90;
+    constexpr double kMinPhoneSeconds = 0.018;
+    constexpr double kInterWordSpacerSeconds = 0.020;
+
     out_start_by_index.assign(plan.ExpectedPhones.Num(), 0.0);
     out_end_by_index.assign(plan.ExpectedPhones.Num(), 0.0);
+    out_word_start_by_index.assign(plan.WordPhoneBeginIndices.Num(), 0.0);
+    out_word_end_by_index.assign(plan.WordPhoneBeginIndices.Num(), 0.0);
     if (plan.ExpectedPhones.Num() <= 0)
     {
         return;
     }
 
-    std::vector<const GoldPhoneTiming*> by_global_index(gold_phones.size(), nullptr);
-    for (const GoldPhoneTiming& phone : gold_phones)
+    double cursor = 0.0;
+    for (int32 phone_index = 0; phone_index < plan.ExpectedPhones.Num(); ++phone_index)
     {
-        if (phone.global_phone_index >= 0 && static_cast<size_t>(phone.global_phone_index) < by_global_index.size())
+        const FOffgridAIExpectedPhone& phone = plan.ExpectedPhones[phone_index];
+        const int32 word_index = phone.WordIndex;
+        const double duration = std::max(
+            static_cast<double>(phone.WeightSeconds) * kActiveDurationScale,
+            kMinPhoneSeconds);
+
+        if (word_index >= 0
+            && word_index < static_cast<int32>(out_word_start_by_index.size())
+            && phone_index == plan.WordPhoneBeginIndices[word_index])
         {
-            by_global_index[static_cast<size_t>(phone.global_phone_index)] = &phone;
+            out_word_start_by_index[static_cast<size_t>(word_index)] = cursor;
+        }
+
+        out_start_by_index[static_cast<size_t>(phone_index)] = cursor;
+        cursor += duration;
+        out_end_by_index[static_cast<size_t>(phone_index)] = cursor;
+
+        const bool is_last_phone_of_word =
+            word_index >= 0
+            && word_index < plan.WordPhoneEndIndices.Num()
+            && (phone_index + 1) == plan.WordPhoneEndIndices[word_index];
+        if (!is_last_phone_of_word)
+        {
+            continue;
+        }
+
+        if (word_index >= 0 && word_index < static_cast<int32>(out_word_end_by_index.size()))
+        {
+            out_word_end_by_index[static_cast<size_t>(word_index)] = cursor;
+        }
+
+        if ((phone_index + 1) < plan.ExpectedPhones.Num())
+        {
+            cursor += kInterWordSpacerSeconds;
         }
     }
+}
 
-    std::map<int, std::vector<int32>> phone_indices_by_region;
-    std::map<int, double> weight_by_region;
-    for (int32 i = 0; i < plan.ExpectedPhones.Num(); ++i)
-    {
-        const auto& expected = plan.ExpectedPhones[i];
-        int region_index = expected.SpeechRegionIndex;
-        if (expected.PhoneIndex >= 0 && static_cast<size_t>(expected.PhoneIndex) < by_global_index.size())
-        {
-            const GoldPhoneTiming* gold = by_global_index[static_cast<size_t>(expected.PhoneIndex)];
-            if (gold != nullptr && gold->speech_region_index >= 0)
-            {
-                region_index = gold->speech_region_index;
-            }
-        }
-        phone_indices_by_region[region_index].push_back(i);
-        weight_by_region[region_index] += std::clamp(static_cast<double>(expected.WeightSeconds), 0.025, 0.180);
-    }
-
-    std::map<int, GoldSpeechRegion> speech_region_by_index;
-    for (const auto& region : gold_speech)
-    {
-        speech_region_by_index[region.index] = region;
-    }
-
-    const double estimated_duration = std::max(static_cast<double>(plan.EstimatedDurationSeconds), 0.001);
-    for (const auto& entry : phone_indices_by_region)
-    {
-        const int region_index = entry.first;
-        const auto& indices = entry.second;
-        const auto region_it = speech_region_by_index.find(region_index);
-        const bool have_region_span = region_it != speech_region_by_index.end() && region_it->second.end > region_it->second.start;
-        const double region_start = have_region_span ? region_it->second.start : 0.0;
-        const double region_end = have_region_span ? region_it->second.end : estimated_duration;
-        const double region_duration = std::max(region_end - region_start, 0.001);
-        const double total_weight = std::max(weight_by_region[region_index], 0.001);
-        double cursor = region_start;
-        for (size_t ordinal = 0; ordinal < indices.size(); ++ordinal)
-        {
-            const int32 i = indices[ordinal];
-            const double weight = std::clamp(static_cast<double>(plan.ExpectedPhones[i].WeightSeconds), 0.025, 0.180);
-            const double dur = (weight / total_weight) * region_duration;
-            out_start_by_index[static_cast<size_t>(i)] = cursor;
-            const double end = (ordinal + 1 == indices.size())
-                ? region_end
-                : std::min(region_end, cursor + dur);
-            out_end_by_index[static_cast<size_t>(i)] = end;
-            cursor = end;
-        }
-    }
+static void build_expected_phone_prior_times(
+    const FOffgridAITextVisemePlan& plan,
+    const std::vector<GoldPhoneTiming>&,
+    const std::vector<GoldSpeechRegion>&,
+    std::vector<double>& out_start_by_index,
+    std::vector<double>& out_end_by_index)
+{
+    std::vector<double> word_start_by_index;
+    std::vector<double> word_end_by_index;
+    build_runtime_phone_prior_times(
+        plan,
+        out_start_by_index,
+        out_end_by_index,
+        word_start_by_index,
+        word_end_by_index);
 }
 
 static std::vector<LandmarkTarget> build_landmark_targets(
     const FOffgridAITextVisemePlan& plan,
     const std::vector<GoldPhoneTiming>& gold_phones,
     const std::vector<GoldWordTiming>& gold_words,
-    const std::vector<GoldSpeechRegion>& gold_speech)
+    const std::vector<GoldBoundaryTiming>& gold_boundaries)
 {
     std::vector<LandmarkTarget> targets;
-    if (plan.ExpectedPhones.Num() <= 0 || gold_phones.empty())
+    if (plan.ExpectedPhones.Num() <= 0)
     {
         return targets;
     }
@@ -1497,9 +1624,38 @@ static std::vector<LandmarkTarget> build_landmark_targets(
         }
     }
 
+    std::vector<const GoldWordTiming*> words_by_index(gold_words.size(), nullptr);
+    for (const GoldWordTiming& word : gold_words)
+    {
+        if (word.word_index >= 0 && static_cast<size_t>(word.word_index) < words_by_index.size())
+        {
+            words_by_index[static_cast<size_t>(word.word_index)] = &word;
+        }
+    }
+
+    std::vector<const GoldBoundaryTiming*> boundaries_by_word_index(
+        std::max(
+            static_cast<size_t>(plan.WordBoundaryPunctuationAfter.Num()),
+            gold_boundaries.size()) + 1,
+        nullptr);
+    for (const GoldBoundaryTiming& boundary : gold_boundaries)
+    {
+        if (boundary.word_index >= 0 && static_cast<size_t>(boundary.word_index) < boundaries_by_word_index.size())
+        {
+            boundaries_by_word_index[static_cast<size_t>(boundary.word_index)] = &boundary;
+        }
+    }
+
     std::vector<double> expected_start_by_index;
     std::vector<double> expected_end_by_index;
-    build_expected_phone_prior_times(plan, gold_phones, gold_speech, expected_start_by_index, expected_end_by_index);
+    std::vector<double> word_start_by_index;
+    std::vector<double> word_end_by_index;
+    build_runtime_phone_prior_times(
+        plan,
+        expected_start_by_index,
+        expected_end_by_index,
+        word_start_by_index,
+        word_end_by_index);
 
     for (int32 i = 0; i < plan.ExpectedPhones.Num(); ++i)
     {
@@ -1516,49 +1672,43 @@ static std::vector<LandmarkTarget> build_landmark_targets(
         {
             gold = by_global_index[static_cast<size_t>(expected.PhoneIndex)];
         }
-        if (gold == nullptr)
-        {
-            continue;
-        }
-
         LandmarkTarget target;
+        target.target_index = static_cast<int>(targets.size());
         target.type = *type;
         target.expected_phone_index = i;
         target.global_phone_index = expected.PhoneIndex;
         target.word_index = expected.WordIndex;
-        target.speech_region_index = (gold->speech_region_index >= 0)
-            ? gold->speech_region_index
-            : expected.SpeechRegionIndex;
+        target.speech_region_index = expected.SpeechRegionIndex;
         target.sentence_index = expected.SentenceIndex;
         target.word = to_std(expected.SourceWord);
         target.phone = to_std(expected.Phone);
         target.phone_base = phone_base;
-        target.gold_start = gold->start;
-        target.gold_end = gold->end;
-        target.gold_center = 0.5 * (gold->start + gold->end);
         target.prior_start = expected_start_by_index[static_cast<size_t>(i)];
         target.prior_end = expected_end_by_index[static_cast<size_t>(i)];
         target.prior_center = 0.5 * (target.prior_start + target.prior_end);
-        targets.push_back(std::move(target));
-    }
-
-    std::vector<const GoldWordTiming*> words_by_index(gold_words.size(), nullptr);
-    for (const GoldWordTiming& word : gold_words)
-    {
-        if (word.word_index >= 0 && static_cast<size_t>(word.word_index) < words_by_index.size())
+        if (gold != nullptr)
         {
-            words_by_index[static_cast<size_t>(word.word_index)] = &word;
+            target.gold_start = gold->start;
+            target.gold_end = gold->end;
+            target.gold_center = 0.5 * (gold->start + gold->end);
+            target.speech_region_index = (gold->speech_region_index >= 0)
+                ? gold->speech_region_index
+                : target.speech_region_index;
+            target.has_gold_reference = true;
         }
+        targets.push_back(std::move(target));
     }
 
     const int32 boundary_count = std::min(plan.WordBoundaryPunctuationAfter.Num(), plan.WordBoundaryPauseClassAfter.Num());
     for (int32 word_index = 0; word_index < boundary_count; ++word_index)
     {
-        if (plan.WordBoundaryPunctuationAfter[word_index] != ',')
+        const TCHAR boundary_mark = plan.WordBoundaryPunctuationAfter[word_index];
+        const EOffgridAIBoundaryPauseClass pause_class = plan.WordBoundaryPauseClassAfter[word_index];
+        if (pause_class == EOffgridAIBoundaryPauseClass::None)
         {
             continue;
         }
-        if (word_index + 1 >= static_cast<int32>(words_by_index.size()))
+        if (word_index + 1 >= static_cast<int32>(word_start_by_index.size()))
         {
             continue;
         }
@@ -1567,33 +1717,49 @@ static std::vector<LandmarkTarget> build_landmark_targets(
             ? words_by_index[static_cast<size_t>(word_index)]
             : nullptr;
         const GoldWordTiming* right = words_by_index[static_cast<size_t>(word_index + 1)];
-        if (left == nullptr || right == nullptr)
+        const double prior_start = word_index >= 0 && static_cast<size_t>(word_index) < word_end_by_index.size()
+            ? word_end_by_index[static_cast<size_t>(word_index)]
+            : 0.0;
+        const double prior_end = (word_index + 1) >= 0 && static_cast<size_t>(word_index + 1) < word_start_by_index.size()
+            ? word_start_by_index[static_cast<size_t>(word_index + 1)]
+            : prior_start;
+        if (prior_end <= prior_start)
         {
             continue;
         }
 
         LandmarkTarget target;
-        target.type = "comma_lull";
+        target.target_index = static_cast<int>(targets.size());
+        target.type = "pause_lull";
         target.word_index = word_index;
-        target.speech_region_index = left->speech_region_index;
-        target.sentence_index = left->sentence_index;
-        target.word = left->word;
-        target.gold_start = left->end;
-        target.gold_end = right->start;
-        target.gold_center = 0.5 * (left->end + right->start);
-        const int32 left_phone_index = word_index < plan.WordPhoneEndIndices.Num()
-            ? (plan.WordPhoneEndIndices[word_index] - 1)
-            : INDEX_NONE;
-        const int32 right_phone_index = (word_index + 1) < plan.WordPhoneBeginIndices.Num()
-            ? plan.WordPhoneBeginIndices[word_index + 1]
-            : INDEX_NONE;
-        if (left_phone_index >= 0 && right_phone_index >= 0
-            && left_phone_index < plan.ExpectedPhones.Num()
-            && right_phone_index < plan.ExpectedPhones.Num())
+        target.next_word_index = word_index + 1;
+        target.speech_region_index = left ? left->speech_region_index : 0;
+        target.sentence_index = left ? left->sentence_index : (right ? right->sentence_index : 0);
+        target.word = left ? left->word : "";
+        target.next_word = right ? right->word : "";
+        target.boundary_mark = std::string(1, static_cast<char>(boundary_mark));
+        target.prior_start = prior_start;
+        target.prior_end = prior_end;
+        target.prior_center = 0.5 * (prior_start + prior_end);
+        const GoldBoundaryTiming* gold_boundary =
+            (word_index >= 0 && static_cast<size_t>(word_index) < boundaries_by_word_index.size())
+                ? boundaries_by_word_index[static_cast<size_t>(word_index)]
+                : nullptr;
+        if (gold_boundary != nullptr && !gold_boundary->pause_class.empty() && gold_boundary->pause_class != "none")
         {
-            target.prior_start = expected_end_by_index[static_cast<size_t>(left_phone_index)];
-            target.prior_end = expected_start_by_index[static_cast<size_t>(right_phone_index)];
-            target.prior_center = 0.5 * (target.prior_start + target.prior_end);
+            const double gap_seconds = std::max({
+                gold_boundary->direct_word_gap_seconds,
+                gold_boundary->phone_gap_seconds,
+                gold_boundary->wave_silence_seconds,
+                gold_boundary->acoustic_gap_seconds,
+                0.0});
+            const double center = (left != nullptr && right != nullptr)
+                ? 0.5 * (left->end + right->start)
+                : target.prior_center;
+            target.gold_center = center;
+            target.gold_start = center - gap_seconds * 0.5;
+            target.gold_end = center + gap_seconds * 0.5;
+            target.has_gold_reference = true;
         }
         targets.push_back(std::move(target));
     }
@@ -1604,6 +1770,10 @@ static std::vector<LandmarkTarget> build_landmark_targets(
         if (a.word_index != b.word_index) return a.word_index < b.word_index;
         return a.type < b.type;
     });
+    for (size_t i = 0; i < targets.size(); ++i)
+    {
+        targets[i].target_index = static_cast<int>(i);
+    }
 
     return targets;
 }
@@ -1611,7 +1781,7 @@ static std::vector<LandmarkTarget> build_landmark_targets(
 static std::string transcript_landmarks_csv(const std::vector<LandmarkTarget>& targets)
 {
     std::ostringstream out;
-    out << "target_index,type,expected_phone_index,global_phone_index,word_index,speech_region_index,sentence_index,word,phone,phone_base,gold_start,gold_end,gold_center,prior_start,prior_end,prior_center\n";
+    out << "target_index,type,expected_phone_index,global_phone_index,word_index,next_word_index,speech_region_index,sentence_index,word,next_word,phone,phone_base,boundary_mark,has_gold_reference,gold_start,gold_end,gold_center,prior_start,prior_end,prior_center\n";
     out << std::fixed << std::setprecision(6);
     for (size_t i = 0; i < targets.size(); ++i)
     {
@@ -1621,11 +1791,15 @@ static std::string transcript_landmarks_csv(const std::vector<LandmarkTarget>& t
             << target.expected_phone_index << ','
             << target.global_phone_index << ','
             << target.word_index << ','
+            << target.next_word_index << ','
             << target.speech_region_index << ','
             << target.sentence_index << ','
             << target.word << ','
+            << target.next_word << ','
             << target.phone << ','
             << target.phone_base << ','
+            << target.boundary_mark << ','
+            << (target.has_gold_reference ? 1 : 0) << ','
             << target.gold_start << ','
             << target.gold_end << ','
             << target.gold_center << ','
@@ -1642,7 +1816,7 @@ static double landmark_pacing_threshold(const std::string& type)
     if (type == "fv") return 0.70;
     if (type == "w") return 0.88;
     if (type == "chjjsh") return 0.80;
-    if (type == "comma_lull") return 0.80;
+    if (is_pause_lull_type(type)) return 0.80;
     return 1.10;
 }
 
@@ -1652,13 +1826,13 @@ static double landmark_pacing_reliability(const std::string& type)
     if (type == "fv") return 0.72;
     if (type == "w") return 0.72;
     if (type == "chjjsh") return 0.75;
-    if (type == "comma_lull") return 0.65;
+    if (is_pause_lull_type(type)) return 0.65;
     return 0.0;
 }
 
 static bool landmark_pacing_trusted(const std::string& type)
 {
-    return type == "mbp" || type == "fv" || type == "w" || type == "chjjsh" || type == "comma_lull";
+    return type == "mbp" || type == "fv" || type == "w" || type == "chjjsh" || is_pause_lull_type(type);
 }
 
 static std::string classify_gap_subkind(const FOffgridAITextVisemePlan& plan, int word_index)
@@ -2461,6 +2635,7 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
 
         const auto& frame = frames[chosen.frame_index];
         LandmarkObservation obs;
+        obs.target_index = targets[target_index].target_index;
         obs.type = targets[target_index].type;
         obs.frame_index = chosen.frame_index;
         obs.start = frame.AudioBufferStartSec;
@@ -2481,12 +2656,13 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
 static std::string audio_landmark_observations_csv(const std::vector<LandmarkObservation>& observations)
 {
     std::ostringstream out;
-    out << "observation_index,type,frame_index,start,end,center,score,top_class,matched_target_index,matched_error_ms\n";
+    out << "observation_index,target_index,type,frame_index,start,end,center,score,top_class,matched_target_index,matched_error_ms\n";
     out << std::fixed << std::setprecision(6);
     for (size_t i = 0; i < observations.size(); ++i)
     {
         const auto& obs = observations[i];
         out << i << ','
+            << obs.target_index << ','
             << obs.type << ','
             << obs.frame_index << ','
             << obs.start << ','
@@ -2514,7 +2690,7 @@ static LandmarkAuditReport grade_landmark_audit(
         return report;
     }
 
-    const std::vector<std::string> types = {"mbp", "fv", "w", "chjjsh", "round", "comma_lull"};
+    const std::vector<std::string> types = {"mbp", "fv", "w", "chjjsh", "round", "pause_lull"};
     const std::vector<std::pair<std::string, double>> score_thresholds = {
         {"0.60", 0.60},
         {"0.70", 0.70},
@@ -2537,6 +2713,10 @@ static LandmarkAuditReport grade_landmark_audit(
 
     for (const LandmarkTarget& target : targets)
     {
+        if (!target.has_gold_reference)
+        {
+            continue;
+        }
         auto& stats = report.by_type[target.type];
         ++stats.target_count;
 
@@ -2549,7 +2729,7 @@ static LandmarkAuditReport grade_landmark_audit(
             {
                 continue;
             }
-            const double score = (target.type == "comma_lull")
+            const double score = is_pause_lull_type(target.type)
                 ? comma_lull_score_for_frame(frame)
                 : landmark_score_for_type(
                     target.type,
@@ -2577,72 +2757,53 @@ static LandmarkAuditReport grade_landmark_audit(
         observations_by_type[observations[i].type].push_back(static_cast<int>(i));
     }
 
+    std::map<int, int> observation_index_by_target;
+    for (size_t i = 0; i < observations.size(); ++i)
+    {
+        if (observations[i].target_index >= 0)
+        {
+            observation_index_by_target[observations[i].target_index] = static_cast<int>(i);
+        }
+    }
+
     for (const std::string& type : types)
     {
         auto& stats = report.by_type[type];
         std::vector<double> match_errors_ms;
         std::vector<double> matched_scores;
-        auto obs_it = observations_by_type.find(type);
-        std::vector<int> obs_indices = (obs_it != observations_by_type.end()) ? obs_it->second : std::vector<int>{};
-        size_t obs_cursor = 0;
 
         for (size_t target_index = 0; target_index < targets.size(); ++target_index)
         {
             const LandmarkTarget& target = targets[target_index];
-            if (target.type != type)
+            if (target.type != type || !target.has_gold_reference)
             {
                 continue;
             }
 
-            const double tolerance = landmark_match_tolerance_seconds(type);
-            while (obs_cursor < obs_indices.size() &&
-                   observations[obs_indices[obs_cursor]].center < (target.gold_center - tolerance))
+            const auto obs_it = observation_index_by_target.find(static_cast<int>(target_index));
+            if (obs_it == observation_index_by_target.end())
             {
-                ++obs_cursor;
+                continue;
             }
-
-            int best_observation = -1;
-            double best_error = std::numeric_limits<double>::max();
-            for (size_t candidate_cursor = obs_cursor; candidate_cursor < obs_indices.size(); ++candidate_cursor)
-            {
-                const int obs_index = obs_indices[candidate_cursor];
-                const double delta = observations[obs_index].center - target.gold_center;
-                if (delta > tolerance)
-                {
-                    break;
-                }
-                const double error = std::abs(delta);
-                if (error < best_error)
-                {
-                    best_error = error;
-                    best_observation = obs_index;
-                }
-            }
-
-            if (best_observation >= 0)
+            const int obs_index = obs_it->second;
+            LandmarkObservation& observation = observations[static_cast<size_t>(obs_index)];
+            const double error_ms = std::abs(observation.center - target.gold_center) * 1000.0;
+            const double tolerance_ms = landmark_match_tolerance_seconds(type) * 1000.0;
+            if (error_ms <= tolerance_ms)
             {
                 ++stats.matched_target_count;
                 ++stats.matched_observation_count;
-                observations[best_observation].matched_target_index = static_cast<int>(target_index);
-                observations[best_observation].matched_error_ms = best_error * 1000.0;
-                match_errors_ms.push_back(best_error * 1000.0);
-                matched_scores.push_back(observations[best_observation].score);
+                observation.matched_target_index = static_cast<int>(target_index);
+                observation.matched_error_ms = error_ms;
+                match_errors_ms.push_back(error_ms);
+                matched_scores.push_back(observation.score);
                 for (const auto& [label, threshold] : score_thresholds)
                 {
-                    if (observations[best_observation].score >= threshold)
+                    if (observation.score >= threshold)
                     {
                         ++stats.threshold_matched_target_count[label];
                         ++stats.threshold_matched_observation_count[label];
                     }
-                }
-
-                while (obs_cursor < obs_indices.size() && obs_indices[obs_cursor] != best_observation)
-                {
-                    ++obs_cursor;
-                }
-                if (obs_cursor < obs_indices.size())
-                {
-                    ++obs_cursor;
                 }
             }
         }
@@ -2664,6 +2825,12 @@ static LandmarkAuditReport grade_landmark_audit(
 
         report.matched_target_count += stats.matched_target_count;
         report.matched_observation_count += stats.matched_observation_count;
+    }
+
+    report.target_count = 0;
+    for (const auto& [_, stats] : report.by_type)
+    {
+        report.target_count += stats.target_count;
     }
 
     return report;
@@ -2923,10 +3090,83 @@ static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
     return out.str();
 }
 
+static std::string planned_words_csv(const FOffgridAITextVisemePlan& plan)
+{
+    std::ostringstream out;
+    out << "word_index,word,text_sentence_index,phone_begin_index,phone_end_index,visible_event_begin_index,visible_event_end_index,boundary_mark,pause_class,pause_seconds\n";
+    for (int32 word_index = 0; word_index < plan.WordPhoneBeginIndices.Num(); ++word_index)
+    {
+        std::string word;
+        if (word_index >= 0)
+        {
+            const int32 phone_begin = plan.WordPhoneBeginIndices[word_index];
+            if (phone_begin >= 0 && phone_begin < plan.ExpectedPhones.Num())
+            {
+                word = to_std(plan.ExpectedPhones[phone_begin].SourceWord);
+            }
+        }
+        const TCHAR boundary_mark = plan.WordBoundaryPunctuationAfter.IsValidIndex(word_index)
+            ? plan.WordBoundaryPunctuationAfter[word_index]
+            : TCHAR(0);
+        out << word_index << ','
+            << word << ','
+            << (plan.WordSentenceIndices.IsValidIndex(word_index) ? plan.WordSentenceIndices[word_index] : 0) << ','
+            << plan.WordPhoneBeginIndices[word_index] << ','
+            << plan.WordPhoneEndIndices[word_index] << ','
+            << (plan.WordVisibleEventBeginIndices.IsValidIndex(word_index) ? plan.WordVisibleEventBeginIndices[word_index] : INDEX_NONE) << ','
+            << (plan.WordVisibleEventEndIndices.IsValidIndex(word_index) ? plan.WordVisibleEventEndIndices[word_index] : INDEX_NONE) << ','
+            << static_cast<int>(boundary_mark) << ','
+            << pause_class_name(plan.WordBoundaryPauseClassAfter.IsValidIndex(word_index)
+                ? plan.WordBoundaryPauseClassAfter[word_index]
+                : EOffgridAIBoundaryPauseClass::None) << ','
+            << (plan.WordBoundaryPauseSecondsAfter.IsValidIndex(word_index)
+                ? plan.WordBoundaryPauseSecondsAfter[word_index]
+                : 0.0f)
+            << '\n';
+    }
+    return out.str();
+}
+
+static std::string planned_boundaries_csv(const FOffgridAITextVisemePlan& plan, const std::vector<LandmarkTarget>& targets)
+{
+    std::map<int32, const LandmarkTarget*> pause_targets_by_word_index;
+    for (const LandmarkTarget& target : targets)
+    {
+        if (target.type == "pause_lull" && target.word_index >= 0)
+        {
+            pause_targets_by_word_index[target.word_index] = &target;
+        }
+    }
+
+    std::ostringstream out;
+    out << "word_index,next_word_index,boundary_mark,pause_class,pause_seconds,prior_start,prior_end,prior_center\n";
+    out << std::fixed << std::setprecision(6);
+    const int32 boundary_count = std::min(plan.WordBoundaryPunctuationAfter.Num(), plan.WordBoundaryPauseClassAfter.Num());
+    for (int32 word_index = 0; word_index < boundary_count; ++word_index)
+    {
+        const TCHAR boundary_mark = plan.WordBoundaryPunctuationAfter[word_index];
+        const EOffgridAIBoundaryPauseClass pause_class = plan.WordBoundaryPauseClassAfter[word_index];
+        const auto it = pause_targets_by_word_index.find(word_index);
+        const LandmarkTarget* target = (it != pause_targets_by_word_index.end()) ? it->second : nullptr;
+        out << word_index << ','
+            << (word_index + 1) << ','
+            << static_cast<int>(boundary_mark) << ','
+            << pause_class_name(pause_class) << ','
+            << (plan.WordBoundaryPauseSecondsAfter.IsValidIndex(word_index)
+                ? plan.WordBoundaryPauseSecondsAfter[word_index]
+                : 0.0f) << ','
+            << (target ? target->prior_start : 0.0) << ','
+            << (target ? target->prior_end : 0.0) << ','
+            << (target ? target->prior_center : 0.0)
+            << '\n';
+    }
+    return out.str();
+}
+
 static std::string expected_phones_csv(const FOffgridAITextVisemePlan& plan)
 {
     std::ostringstream out;
-    out << "phone_index,word_phone_index,phone,base_phone,word,word_index,text_sentence_index,is_vowel,is_visible_viseme,first_visible_event_index,boundary_after_word,weight_seconds\n";
+    out << "phone_index,word_phone_index,phone,base_phone,word,word_index,speech_region_index,text_sentence_index,is_vowel,is_visible_viseme,first_visible_event_index,boundary_after_word,pause_class_after_word,pause_seconds_after_word,weight_seconds\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& phone : plan.ExpectedPhones)
     {
@@ -2936,11 +3176,19 @@ static std::string expected_phones_csv(const FOffgridAITextVisemePlan& plan)
             << to_std(phone.BasePhone) << ','
             << to_std(phone.SourceWord) << ','
             << phone.WordIndex << ','
+            << phone.SpeechRegionIndex << ','
             << phone.SentenceIndex << ','
             << (phone.bIsVowel ? 1 : 0) << ','
             << (phone.bIsVisibleViseme ? 1 : 0) << ','
             << phone.FirstVisibleEventIndex << ','
             << static_cast<int>(phone.BoundaryAfterWord) << ','
+            << pause_class_name(
+                plan.WordBoundaryPauseClassAfter.IsValidIndex(phone.WordIndex)
+                    ? plan.WordBoundaryPauseClassAfter[phone.WordIndex]
+                    : EOffgridAIBoundaryPauseClass::None) << ','
+            << (plan.WordBoundaryPauseSecondsAfter.IsValidIndex(phone.WordIndex)
+                ? plan.WordBoundaryPauseSecondsAfter[phone.WordIndex]
+                : 0.0f) << ','
             << phone.WeightSeconds << '\n';
     }
     return out.str();
@@ -4546,7 +4794,6 @@ int main(int argc, char** argv)
             const fs::path case_dir = out_root / stem;
             fs::create_directories(case_dir);
             write_text(case_dir / "planned.csv", planned_csv(plan));
-            write_text(case_dir / "expected_phones.csv", expected_phones_csv(plan));
             write_text(case_dir / "speech_regions.csv", speech_csv(speech));
             write_text(case_dir / "committed.csv", committed_csv(committed));
             write_text(case_dir / "dropped.csv", dropped_csv(committed));
@@ -4565,30 +4812,41 @@ int main(int argc, char** argv)
             const fs::path gold_phones_path = gold_case_dir / "phones.csv";
             const fs::path gold_words_path = gold_case_dir / "words.csv";
             const fs::path gold_speech_path = gold_case_dir / "speech.csv";
-            const bool gold_available = fs::exists(gold_phones_path) && fs::exists(gold_words_path) && fs::exists(gold_speech_path);
+            const fs::path gold_boundaries_path = gold_case_dir / "boundaries.csv";
+            const bool gold_available =
+                fs::exists(gold_phones_path)
+                && fs::exists(gold_words_path)
+                && fs::exists(gold_speech_path)
+                && fs::exists(gold_boundaries_path);
             size_t gold_viseme_count = 0;
             if (gold_available)
             {
                 const auto gold_phones = read_gold_phones_csv(gold_phones_path);
                 const auto gold_words = read_gold_words_csv(gold_words_path);
                 const auto gold_speech = read_gold_speech_csv(gold_speech_path);
+                const auto gold_boundaries = read_gold_boundaries_csv(gold_boundaries_path);
+                const auto transcript_landmarks = build_landmark_targets(plan, gold_phones, gold_words, gold_boundaries);
                 const auto handmade = build_gold_visible_labels(plan, gold_phones);
                 gold_viseme_count = handmade.size();
+                write_text(case_dir / "planned_words.csv", planned_words_csv(plan));
+                write_text(case_dir / "expected_phones.csv", expected_phones_csv(plan));
+                write_text(case_dir / "planned_boundaries.csv", planned_boundaries_csv(plan, transcript_landmarks));
+                write_text(case_dir / "transcript_landmarks.csv", transcript_landmarks_csv(transcript_landmarks));
                 write_text(case_dir / "gold_visible_visemes.csv", gold_visible_visemes_csv(handmade));
                 report = grade(committed, speech, handmade, gold_words, gold_speech);
-                StreamingDetectorReport detector_report;
                 if (output.write_detailed_diagnostics)
                 {
-                    write_text(
-                        case_dir / "streaming_detector_frames.csv",
-                        streaming_detector_frames_csv(
-                            detector_report,
-                            session.GetSpeechDetector().GetFeatureFrames(),
-                            gold_words,
-                            gold_speech,
-                            static_cast<double>(wav.samples.size()) / static_cast<double>(std::max(wav.sample_rate * wav.channels, 1))));
+                    write_text(case_dir / "audio_landmark_frames.csv", audio_landmark_frames_csv(session.GetSpeechDetector().GetFeatureFrames()));
                 }
-                write_text(case_dir / "streaming_detector_summary.json", streaming_detector_summary_json(detector_report));
+                std::vector<LandmarkObservation> observations = detect_transcript_conditioned_landmark_observations(
+                    session.GetSpeechDetector().GetFeatureFrames(),
+                    transcript_landmarks);
+                LandmarkAuditReport landmark_report = grade_landmark_audit(
+                    observations,
+                    transcript_landmarks,
+                    session.GetSpeechDetector().GetFeatureFrames());
+                write_text(case_dir / "streaming_landmark_observations.csv", audio_landmark_observations_csv(observations));
+                write_text(case_dir / "streaming_landmark_grade.json", landmark_audit_json(landmark_report));
                 write_text(case_dir / "word_onset_diagnostics.csv", word_onset_diagnostics_csv(committed, handmade, gold_words));
             }
             else

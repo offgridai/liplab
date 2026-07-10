@@ -85,6 +85,7 @@ struct FOffgridAITextVisemePlan
     // Boundary punctuation following each tokenized word. Zero means no boundary.
     TArray<TCHAR> WordBoundaryPunctuationAfter;
     TArray<EOffgridAIBoundaryPauseClass> WordBoundaryPauseClassAfter;
+    TArray<float> WordBoundaryPauseSecondsAfter;
 };
 
 
