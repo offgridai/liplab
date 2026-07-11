@@ -1021,22 +1021,25 @@ static double landmark_match_tolerance_seconds(const std::string& type)
 
 static double landmark_conditioned_half_window_seconds(const std::string& type)
 {
-    if (type == "mbp") return 0.120;
-    if (type == "fv") return 0.120;
-    if (type == "w") return 0.120;
-    if (type == "chjjsh") return 0.160;
-    if (type == "round") return 0.160;
-    if (is_pause_lull_type(type)) return 0.180;
+    // Text durations are useful pacing priors, not absolute alignment. Search
+    // enough streamed context for the monotonic sequence model to recover from
+    // accumulated prior drift (roughly 0.55 s on this corpus).
+    if (type == "mbp") return 0.750;
+    if (type == "fv") return 0.750;
+    if (type == "w") return 0.750;
+    if (type == "chjjsh") return 0.750;
+    if (type == "round") return 0.750;
+    if (is_pause_lull_type(type)) return 0.750;
     return 0.100;
 }
 
 static double landmark_conditioned_detection_threshold(const std::string& type)
 {
-    if (type == "mbp") return 0.34;
-    if (type == "fv") return 0.34;
-    if (type == "w") return 0.30;
-    if (type == "chjjsh") return 0.38;
-    if (type == "round") return 0.40;
+    if (type == "mbp") return 0.27;
+    if (type == "fv") return 0.28;
+    if (type == "w") return 0.24;
+    if (type == "chjjsh") return 0.32;
+    if (type == "round") return 0.32;
     if (is_pause_lull_type(type)) return 0.44;
     return landmark_detection_threshold(type);
 }
@@ -2441,6 +2444,7 @@ static std::string audio_landmark_frames_csv(const TArray<FOffgridAIStreamingAud
 
 static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_observations(
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames,
+    const TArray<FOffgridAIStreamingSpeechRegion>& speech_regions,
     const TArray<FOffgridAIStreamingSpeechGapCandidate>& gaps,
     const TArray<FOffgridAIStreamingSoftLullCandidate>& soft_lulls,
     const std::vector<LandmarkTarget>& targets)
@@ -2875,6 +2879,49 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
         return best;
     };
 
+    std::vector<double> aligned_prior_centers(targets.size(), 0.0);
+    std::map<int, double> first_prior_by_region;
+    std::map<int, double> last_prior_by_region;
+    for (const LandmarkTarget& target : targets)
+    {
+        if (!is_pause_lull_type(target.type))
+        {
+            auto [it, inserted] = first_prior_by_region.emplace(target.speech_region_index, target.prior_center);
+            if (!inserted)
+            {
+                it->second = std::min(it->second, target.prior_center);
+            }
+            auto [last_it, last_inserted] = last_prior_by_region.emplace(target.speech_region_index, target.prior_center);
+            if (!last_inserted)
+            {
+                last_it->second = std::max(last_it->second, target.prior_center);
+            }
+        }
+    }
+    for (size_t target_index = 0; target_index < targets.size(); ++target_index)
+    {
+        const LandmarkTarget& target = targets[target_index];
+        double center = target.prior_center;
+        const auto first_it = first_prior_by_region.find(target.speech_region_index);
+        if (first_it != first_prior_by_region.end() && speech_regions.IsValidIndex(target.speech_region_index))
+        {
+            const FOffgridAIStreamingSpeechRegion& region = speech_regions[target.speech_region_index];
+            const auto last_it = last_prior_by_region.find(target.speech_region_index);
+            const double prior_span = last_it != last_prior_by_region.end() ? last_it->second - first_it->second : 0.0;
+            const double observed_span = static_cast<double>(region.AudioBufferLastSpeechSec - region.AudioBufferStartSec);
+            if (region.bEnded && prior_span > 0.050 && observed_span > 0.050)
+            {
+                const double progress = clamp01((target.prior_center - first_it->second) / prior_span);
+                center = static_cast<double>(region.AudioBufferStartSec) + progress * observed_span;
+            }
+            else
+            {
+                center += static_cast<double>(region.AudioBufferStartSec) - first_it->second;
+            }
+        }
+        aligned_prior_centers[target_index] = center;
+    }
+
     std::vector<std::vector<Candidate>> candidates_by_target(targets.size());
     for (size_t target_index = 0; target_index < targets.size(); ++target_index)
     {
@@ -2885,18 +2932,12 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
             continue;
         }
         const double half_window = landmark_conditioned_half_window_seconds(target.type);
-        double search_start = target.prior_center - half_window;
-        double search_end = target.prior_center + half_window;
-        if (target_index > 0)
-        {
-            const double midpoint = 0.5 * (targets[target_index - 1].prior_center + target.prior_center);
-            search_start = std::max(search_start, midpoint);
-        }
-        if (target_index + 1 < targets.size())
-        {
-            const double midpoint = 0.5 * (target.prior_center + targets[target_index + 1].prior_center);
-            search_end = std::min(search_end, midpoint);
-        }
+        const double aligned_prior_center = aligned_prior_centers[target_index];
+        double search_start = aligned_prior_center - half_window;
+        double search_end = aligned_prior_center + half_window;
+        // Adjacent targets may be displaced together by speaking-rate drift.
+        // Do not partition their searches at stale prior midpoints; monotonic DP
+        // below owns target ordering and resolves competing candidates.
 
         std::vector<Candidate> local_candidates;
         const double threshold = std::max(0.18, landmark_conditioned_detection_threshold(target.type) + 0.02);
@@ -2911,7 +2952,7 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
             }
 
             const double distance_penalty = (half_window > 0.0)
-                ? (std::abs(center - target.prior_center) / half_window) * landmark_conditioned_distance_penalty_scale(target.type)
+                ? (std::abs(center - aligned_prior_center) / half_window) * landmark_conditioned_distance_penalty_scale(target.type)
                 : 0.0;
             const double base_score = conditioned_landmark_target_score(target, frames, i);
             double neighbor_bonus = 0.0;
@@ -2965,7 +3006,9 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
                 base_score * 0.50 +
                 conditioned_landmark_target_score(target, frames, i + 1) * 0.25);
             const double score = base_score - distance_penalty + neighbor_bonus + x_lull_y_bonus;
-            if (score < threshold || family_margin < 0.08 || local_stability < (threshold - 0.03))
+            const double required_margin =
+                (target.type == "chjjsh" || target.type == "fv") ? 0.03 : 0.0;
+            if (score < threshold || family_margin < required_margin || local_stability < (threshold - 0.05))
             {
                 continue;
             }
@@ -2973,14 +3016,14 @@ static std::vector<LandmarkObservation> detect_transcript_conditioned_landmark_o
             const double prev_score = frames.IsValidIndex(i - 1)
                 ? (conditioned_landmark_target_score(target, frames, i - 1) -
                    ((half_window > 0.0)
-                        ? (std::abs(static_cast<double>(frames[i - 1].AudioBufferCenterSec) - target.prior_center) / half_window) *
+                ? (std::abs(static_cast<double>(frames[i - 1].AudioBufferCenterSec) - aligned_prior_center) / half_window) *
                             landmark_conditioned_distance_penalty_scale(target.type)
                         : 0.0))
                 : score;
             const double next_score = frames.IsValidIndex(i + 1)
                 ? (conditioned_landmark_target_score(target, frames, i + 1) -
                    ((half_window > 0.0)
-                        ? (std::abs(static_cast<double>(frames[i + 1].AudioBufferCenterSec) - target.prior_center) / half_window) *
+                ? (std::abs(static_cast<double>(frames[i + 1].AudioBufferCenterSec) - aligned_prior_center) / half_window) *
                             landmark_conditioned_distance_penalty_scale(target.type)
                         : 0.0))
                 : score;
@@ -5612,6 +5655,7 @@ int main(int argc, char** argv)
                 }
                 std::vector<LandmarkObservation> observations = detect_transcript_conditioned_landmark_observations(
                     session.GetSpeechDetector().GetFeatureFrames(),
+                    session.GetSpeechDetector().GetSpeechRegions(),
                     session.GetSpeechDetector().GetGapCandidates(),
                     session.GetSpeechDetector().GetSoftLullCandidates(),
                     transcript_landmarks);
