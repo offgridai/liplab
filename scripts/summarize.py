@@ -70,6 +70,24 @@ def main() -> int:
             f"resume_r={summary['runtime_resume_recall']:.3f} "
             f"resume_ms={summary['runtime_resume_error_ms']:.1f}"
         )
+    if summary.get("prosodic_peak_available_cases", 0) > 0:
+        print(
+            f"Prosodic peaks advisory: precision={summary['prosodic_peak_precision']:.3f} "
+            f"recall={summary['prosodic_peak_recall']:.3f} "
+            f"center_ms={summary['prosodic_peak_error_ms']:.1f} "
+            f"decision_ms={summary['prosodic_peak_decision_latency_ms']:.1f}"
+        )
+        print(
+            f"Raw syllabic pulses vs MFA vowel intervals: precision={summary['raw_prosodic_peak_precision']:.3f} "
+            f"recall={summary['raw_prosodic_peak_recall']:.3f}"
+        )
+    if summary.get("strict_punctuation_available_cases", 0) > 0:
+        print(
+            f"Strict punctuation mapping: close_p={summary['strict_punctuation_close_precision']:.3f} "
+            f"close_r={summary['strict_punctuation_close_recall']:.3f} "
+            f"resume_p={summary['strict_punctuation_resume_precision']:.3f} "
+            f"resume_r={summary['strict_punctuation_resume_recall']:.3f}"
+        )
     print(f"Wrote {summary_path}")
     return 0
 
