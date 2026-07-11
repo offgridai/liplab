@@ -4319,6 +4319,59 @@ static std::string runtime_speech_regions_csv(const TArray<FOffgridAIRuntimeSpee
     return out.str();
 }
 
+static std::string runtime_boundary_state_csv(const TArray<FOffgridAIRuntimeBoundaryDiagnosticRow>& rows)
+{
+    std::ostringstream out;
+    out << "line_id,update_ordinal,final_replay,current_playback_sec,b_playhead_started,b_hold_active,b_observed_pause_lull,b_saw_confirmed_out_of_speech_after_boundary,b_resume_anchor_active,b_resume_anchor_from_initial_speech,boundary_word_index,boundary_mark,pause_class,hold_start_speech_region_index,resume_anchor_event_index,playback_origin_sec,last_playback_sec,active_playhead_sec,total_paused_sec,hold_start_playback_sec,boundary_search_start_playback_sec,hold_deadline_playback_sec,hold_resume_target_active_sec,hold_resume_target_lead_sec,confirmed_quiet_start_playback_sec,quiet_rms_norm_at_decay,quiet_evidence_at_decay,quiet_raw_rms_at_decay,observed_resume_onset_playback_sec,observed_resume_energy_anchor_sec,resume_anchor_active_sec,resume_anchor_lead_sec,resume_anchor_final_center_sec,last_fence_estimator_outcome,last_resolved_boundary_outcome,last_resolved_boundary_word_index,last_resolved_boundary_mark,last_resolved_boundary_decay_sec,last_resolved_boundary_resume_onset_sec,last_resolved_boundary_resume_energy_anchor_sec,committed_event_count,diagnostic_kind\n";
+    out << std::fixed << std::setprecision(6);
+    for (const auto& row : rows)
+    {
+        out << to_std(row.LineID) << ','
+            << row.UpdateOrdinal << ','
+            << (row.bFinalReplay ? 1 : 0) << ','
+            << row.CurrentPlaybackSec << ','
+            << (row.bPlayheadStarted ? 1 : 0) << ','
+            << (row.bHoldActive ? 1 : 0) << ','
+            << (row.bObservedPauseLull ? 1 : 0) << ','
+            << (row.bSawConfirmedOutOfSpeechAfterBoundary ? 1 : 0) << ','
+            << (row.bResumeAnchorActive ? 1 : 0) << ','
+            << (row.bResumeAnchorFromInitialSpeech ? 1 : 0) << ','
+            << row.BoundaryWordIndex << ','
+            << to_std(row.BoundaryMark) << ','
+            << to_std(row.PauseClass) << ','
+            << row.HoldStartSpeechRegionIndex << ','
+            << row.ResumeAnchorEventIndex << ','
+            << row.PlaybackOriginSec << ','
+            << row.LastPlaybackSec << ','
+            << row.ActivePlayheadSec << ','
+            << row.TotalPausedSec << ','
+            << row.HoldStartPlaybackSec << ','
+            << row.BoundarySearchStartPlaybackSec << ','
+            << row.HoldDeadlinePlaybackSec << ','
+            << row.HoldResumeTargetActiveSec << ','
+            << row.HoldResumeTargetLeadSec << ','
+            << row.ConfirmedQuietStartPlaybackSec << ','
+            << row.QuietRMSNormAtDecay << ','
+            << row.QuietEvidenceAtDecay << ','
+            << row.QuietRawRMSAtDecay << ','
+            << row.ObservedResumeOnsetPlaybackSec << ','
+            << row.ObservedResumeEnergyAnchorSec << ','
+            << row.ResumeAnchorActiveSec << ','
+            << row.ResumeAnchorLeadSec << ','
+            << row.ResumeAnchorFinalCenterSec << ','
+            << to_std(row.LastFenceEstimatorOutcome) << ','
+            << to_std(row.LastResolvedBoundaryOutcome) << ','
+            << row.LastResolvedBoundaryWordIndex << ','
+            << to_std(row.LastResolvedBoundaryMark) << ','
+            << row.LastResolvedBoundaryDecaySec << ','
+            << row.LastResolvedBoundaryResumeOnsetSec << ','
+            << row.LastResolvedBoundaryResumeEnergyAnchorSec << ','
+            << row.CommittedEventCount << ','
+            << to_std(row.DiagnosticKind) << '\n';
+    }
+    return out.str();
+}
+
 struct MatchState
 {
     int matched_count = -1;
@@ -5523,6 +5576,7 @@ int main(int argc, char** argv)
                 write_text(case_dir / "phone_class_frames.csv", phone_class_frames_csv(session.GetSpeechDetector().GetFeatureFrames()));
                 write_text(case_dir / "commit_decisions.csv", commit_decisions_csv(committed));
                 write_text(case_dir / "runtime_speech_regions.csv", runtime_speech_regions_csv(session.GetRuntimeSpeechRegionDiagnosticRows()));
+                write_text(case_dir / "runtime_boundary_state.csv", runtime_boundary_state_csv(session.GetRuntimeBoundaryDiagnosticRows()));
                 write_text(case_dir / "stream_tail.csv", stream_tail_csv(session.GetStreamTailDiagnosticRow()));
             }
             GradeReport report;
