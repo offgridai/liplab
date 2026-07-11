@@ -142,6 +142,14 @@ struct FOffgridAIRuntimeBoundaryDiagnosticRow
     float ResumeAnchorLeadSec = 0.0f;
     float ResumeAnchorFinalCenterSec = 0.0f;
 
+    bool bSyllableRebaseActive = false;
+    int32 SyllableAnchorPhoneIndex = INDEX_NONE;
+    int32 NextExpectedSyllablePhoneIndex = INDEX_NONE;
+    float SyllableAnchorActiveSec = 0.0f;
+    float SyllableAnchorAudioSec = 0.0f;
+    float SyllableRate = 1.0f;
+    float SyllableSectionStartAudioSec = 0.0f;
+
     FString LastFenceEstimatorOutcome;
     FString LastResolvedBoundaryOutcome;
     int32 LastResolvedBoundaryWordIndex = INDEX_NONE;
@@ -190,7 +198,6 @@ struct FOffgridAIBoundaryPlaybackState
     float HoldDeadlinePlaybackSec = 0.0f;
     float HoldResumeTargetActiveSec = 0.0f;
     float HoldResumeTargetLeadSec = 0.0f;
-    float HoldPreviousCommittedRenderEndSec = -1.0f;
     // Punctuation is a freeze/wait/resume state, not a timer delay. Every
     // punctuation mark stops new commits, waits for decay/resume, then anchors
     // the first post-boundary viseme to resumed speech. Marks differ only by
@@ -218,6 +225,19 @@ struct FOffgridAIBoundaryPlaybackState
     float ResumeAnchorActiveSec = 0.0f;
     float ResumeAnchorLeadSec = 0.0f;
     float ResumeAnchorFinalCenterSec = 0.0f;
+
+    // Advisory-quality syllable pulses may rebase only the uncommitted suffix
+    // inside the current punctuation-bounded speech section. Phone identity is
+    // never inferred from audio; the transcript supplies the expected nucleus.
+    bool bSyllableRebaseActive = false;
+    int32 SyllableAnchorPhoneIndex = INDEX_NONE;
+    int32 NextExpectedSyllablePhoneIndex = INDEX_NONE;
+    int32 LastSyllableScanFrameIndex = INDEX_NONE;
+    float SyllableAnchorActiveSec = 0.0f;
+    float SyllableAnchorAudioSec = 0.0f;
+    float SyllableRate = 1.0f;
+    float SyllableSectionStartAudioSec = 0.0f;
+
 };
 
 class OFFGRIDAI_API FOffgridAILipsyncRuntimeSession

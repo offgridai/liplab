@@ -354,6 +354,8 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "grade": grade,
             "text_plan_grade": text_plan_grade,
             "streaming_landmark_grade": _read_json(case_dir / "streaming_landmark_grade.json"),
+            "streaming_prosodic_peak_grade": _read_json(case_dir / "streaming_prosodic_peak_grade.json"),
+            "strict_punctuation_grade": _read_json(case_dir / "strict_punctuation_alignment_grade.json"),
             "committed_rows": _read_csv_rows(case_dir / "committed.csv"),
             "commit_rows": _read_csv_rows(case_dir / "commit_decisions.csv"),
             "speech_rows": _read_csv_rows(case_dir / "speech_regions.csv"),
@@ -402,6 +404,8 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
 
     text_available = [row for row in bulk if row["text_plan_grade"].get("available")]
     landmark_available = [row for row in bulk if row["streaming_landmark_grade"].get("available")]
+    prosodic_available = [row for row in bulk if row["streaming_prosodic_peak_grade"].get("available")]
+    strict_punctuation_available = [row for row in bulk if row["strict_punctuation_grade"].get("available")]
 
     text_by_type: dict[str, dict[str, float]] = {}
     text_predicted_break_count = sum(int(row["text_plan_grade"].get("predicted_region_break_count", 0)) for row in text_available)
@@ -592,6 +596,25 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "boundary_events": runtime_boundary_summary,
     }
 
+    prosodic_targets = sum(int(row["streaming_prosodic_peak_grade"].get("target_count", 0)) for row in prosodic_available)
+    prosodic_observations = sum(int(row["streaming_prosodic_peak_grade"].get("observation_count", 0)) for row in prosodic_available)
+    prosodic_matches = sum(int(row["streaming_prosodic_peak_grade"].get("matched_count", 0)) for row in prosodic_available)
+    raw_prosodic_observations = sum(int(row["streaming_prosodic_peak_grade"].get("raw_observation_count", 0)) for row in prosodic_available)
+    raw_prosodic_matches = sum(int(row["streaming_prosodic_peak_grade"].get("raw_matched_count", 0)) for row in prosodic_available)
+    prosodic_errors = []
+    prosodic_latencies = []
+    for row in prosodic_available:
+        grade = row["streaming_prosodic_peak_grade"]
+        count = int(grade.get("matched_count", 0))
+        if count > 0:
+            prosodic_errors.extend([float(grade.get("mean_abs_error_ms", 0.0))] * count)
+            prosodic_latencies.extend([float(grade.get("mean_decision_latency_ms", 0.0))] * count)
+
+    strict_punctuation_targets = sum(int(row["strict_punctuation_grade"].get("target_count", 0)) for row in strict_punctuation_available)
+    strict_close_observations = sum(int(row["strict_punctuation_grade"].get("close_observation_count", 0)) for row in strict_punctuation_available)
+    strict_close_matches = sum(int(row["strict_punctuation_grade"].get("close_match_count", 0)) for row in strict_punctuation_available)
+    strict_resume_observations = sum(int(row["strict_punctuation_grade"].get("resume_observation_count", 0)) for row in strict_punctuation_available)
+    strict_resume_matches = sum(int(row["strict_punctuation_grade"].get("resume_match_count", 0)) for row in strict_punctuation_available)
     summary = {
         **playback_summary,
         **text_plan_summary,
@@ -613,6 +636,23 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "runtime_resume_recall": runtime_boundary_summary["resume"]["recall"],
         "runtime_resume_error_ms": runtime_boundary_summary["resume"]["mean_abs_error_ms"],
         "runtime_resume_latency_ms": runtime_boundary_summary["resume"]["mean_decision_latency_ms"],
+        "prosodic_peak_available_cases": len(prosodic_available),
+        "prosodic_peak_target_count": prosodic_targets,
+        "prosodic_peak_observation_count": prosodic_observations,
+        "prosodic_peak_matched_count": prosodic_matches,
+        "prosodic_peak_precision": prosodic_matches / prosodic_observations if prosodic_observations else 0.0,
+        "prosodic_peak_recall": prosodic_matches / prosodic_targets if prosodic_targets else 0.0,
+        "prosodic_peak_error_ms": _mean(prosodic_errors),
+        "prosodic_peak_decision_latency_ms": _mean(prosodic_latencies),
+        "raw_prosodic_peak_observation_count": raw_prosodic_observations,
+        "raw_prosodic_peak_matched_count": raw_prosodic_matches,
+        "raw_prosodic_peak_precision": raw_prosodic_matches / raw_prosodic_observations if raw_prosodic_observations else 0.0,
+        "raw_prosodic_peak_recall": raw_prosodic_matches / prosodic_targets if prosodic_targets else 0.0,
+        "strict_punctuation_available_cases": len(strict_punctuation_available),
+        "strict_punctuation_close_precision": strict_close_matches / strict_close_observations if strict_close_observations else 0.0,
+        "strict_punctuation_close_recall": strict_close_matches / strict_punctuation_targets if strict_punctuation_targets else 0.0,
+        "strict_punctuation_resume_precision": strict_resume_matches / strict_resume_observations if strict_resume_observations else 0.0,
+        "strict_punctuation_resume_recall": strict_resume_matches / strict_punctuation_targets if strict_punctuation_targets else 0.0,
         "streaming_landmark_available_cases": runtime_detector_summary["available_cases"],
         "streaming_landmark_target_count": runtime_detector_summary["planned_landmark_target_count"],
         "streaming_landmark_observation_count": runtime_detector_summary["observed_landmark_count"],

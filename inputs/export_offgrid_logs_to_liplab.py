@@ -112,9 +112,16 @@ def collect_cases(source_root: Path, liplab_root: Path) -> list[ExportCase]:
     transcript_dir = liplab_root / "inputs" / "transcripts"
     wav_dir = liplab_root / "inputs" / "wav"
 
+    existing_indices: list[int] = []
+    for existing in list(transcript_dir.glob("case_*.txt")) + list(wav_dir.glob("case_*.wav")):
+        match = re.match(r"^case_(\d+)_", existing.name)
+        if match:
+            existing_indices.append(int(match.group(1)))
+    first_index = max(existing_indices, default=0) + 1
+
     cases: list[ExportCase] = []
 
-    for i, log_dir in enumerate(find_log_dirs(source_root), start=1):
+    for i, log_dir in enumerate(find_log_dirs(source_root), start=first_index):
         metadata_path = log_dir / "line_metadata.txt"
         metadata = parse_metadata(metadata_path)
 
@@ -155,6 +162,9 @@ def export_cases(cases: list[ExportCase], liplab_root: Path, overwrite: bool) ->
     index_path.parent.mkdir(parents=True, exist_ok=True)
 
     rows: list[dict[str, str]] = []
+    if index_path.exists():
+        with index_path.open(newline="", encoding="utf-8") as f:
+            rows.extend(csv.DictReader(f))
 
     for case in cases:
         if not overwrite and (case.transcript_out.exists() or case.wav_out.exists()):

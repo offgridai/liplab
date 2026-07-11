@@ -21,6 +21,7 @@ def repo_root() -> pathlib.Path:
 def find_runner() -> pathlib.Path:
     bin_name = "liplab_runner.exe" if sys.platform.startswith("win") else "liplab_runner"
     candidates = [
+        ROOT / "build-ninja" / bin_name,
         ROOT / "build" / bin_name,
         ROOT / "build" / "Release" / bin_name,
         ROOT / "build" / "Debug" / bin_name,
