@@ -12,6 +12,8 @@ struct FOffgridAILipsyncRuntimeUpdateInput
 {
     const FOffgridAITextVisemePlan* TextPlan = nullptr;
     const TArray<FOffgridAIStreamingSpeechRegion>* SpeechRegions = nullptr;
+    const TArray<FOffgridAIStreamingSpeechGapCandidate>* GapCandidates = nullptr;
+    const TArray<FOffgridAIStreamingSoftLullCandidate>* SoftLullCandidates = nullptr;
     const TArray<FOffgridAIStreamingAudioFeatureFrame>* AudioFeatureFrames = nullptr;
 
     float CurrentPlaybackSec = 0.0f;
@@ -101,6 +103,57 @@ struct FOffgridAIRuntimeSpeechRegionDiagnosticRow
     FName DiagnosticKind = NAME_None;
 };
 
+struct FOffgridAIRuntimeBoundaryDiagnosticRow
+{
+    FName LineID = NAME_None;
+    int32 UpdateOrdinal = 0;
+    bool bFinalReplay = false;
+    float CurrentPlaybackSec = 0.0f;
+
+    bool bPlayheadStarted = false;
+    bool bHoldActive = false;
+    bool bObservedPauseLull = false;
+    bool bSawConfirmedOutOfSpeechAfterBoundary = false;
+    bool bResumeAnchorActive = false;
+    bool bResumeAnchorFromInitialSpeech = false;
+
+    int32 BoundaryWordIndex = INDEX_NONE;
+    FString BoundaryMark;
+    FString PauseClass;
+    int32 HoldStartSpeechRegionIndex = INDEX_NONE;
+    int32 ResumeAnchorEventIndex = INDEX_NONE;
+
+    float PlaybackOriginSec = 0.0f;
+    float LastPlaybackSec = 0.0f;
+    float ActivePlayheadSec = 0.0f;
+    float TotalPausedSec = 0.0f;
+    float HoldStartPlaybackSec = 0.0f;
+    float BoundarySearchStartPlaybackSec = 0.0f;
+    float HoldDeadlinePlaybackSec = 0.0f;
+    float HoldResumeTargetActiveSec = 0.0f;
+    float HoldResumeTargetLeadSec = 0.0f;
+    float ConfirmedQuietStartPlaybackSec = -1.0f;
+    float QuietRMSNormAtDecay = 1.0f;
+    float QuietEvidenceAtDecay = 1.0f;
+    float QuietRawRMSAtDecay = 1.0f;
+    float ObservedResumeOnsetPlaybackSec = -1.0f;
+    float ObservedResumeEnergyAnchorSec = -1.0f;
+    float ResumeAnchorActiveSec = 0.0f;
+    float ResumeAnchorLeadSec = 0.0f;
+    float ResumeAnchorFinalCenterSec = 0.0f;
+
+    FString LastFenceEstimatorOutcome;
+    FString LastResolvedBoundaryOutcome;
+    int32 LastResolvedBoundaryWordIndex = INDEX_NONE;
+    FString LastResolvedBoundaryMark;
+    float LastResolvedBoundaryDecaySec = -1.0f;
+    float LastResolvedBoundaryResumeOnsetSec = -1.0f;
+    float LastResolvedBoundaryResumeEnergyAnchorSec = -1.0f;
+
+    int32 CommittedEventCount = 0;
+    FName DiagnosticKind = NAME_None;
+};
+
 struct FOffgridAILipsyncRuntimeBeginInput
 {
     FString DialogueText;
@@ -137,6 +190,7 @@ struct FOffgridAIBoundaryPlaybackState
     float HoldDeadlinePlaybackSec = 0.0f;
     float HoldResumeTargetActiveSec = 0.0f;
     float HoldResumeTargetLeadSec = 0.0f;
+    float HoldPreviousCommittedRenderEndSec = -1.0f;
     // Punctuation is a freeze/wait/resume state, not a timer delay. Every
     // punctuation mark stops new commits, waits for decay/resume, then anchors
     // the first post-boundary viseme to resumed speech. Marks differ only by
@@ -151,6 +205,7 @@ struct FOffgridAIBoundaryPlaybackState
     float ObservedResumeOnsetPlaybackSec = -1.0f;
     float ObservedResumeEnergyAnchorSec = -1.0f;
     FOffgridAIResolvedBoundaryDiagnostic LastResolvedBoundary;
+    FName LastFenceEstimatorOutcome = NAME_None;
 
     // Punctuation resume anchor. When a real pause/resume cycle is observed,
     // the first visible post-boundary phone is attached directly to the new
@@ -192,6 +247,7 @@ public:
     const FOffgridAICommittedVisemeTrack& GetCommittedTrack() const { return CommittedTrack; }
     const TArray<FOffgridAIRuntimeCommitDiagnosticRow>& GetRuntimeCommitDiagnosticRows() const { return RuntimeCommitDiagnosticRows; }
     const TArray<FOffgridAIRuntimeSpeechRegionDiagnosticRow>& GetRuntimeSpeechRegionDiagnosticRows() const { return RuntimeSpeechRegionDiagnosticRows; }
+    const TArray<FOffgridAIRuntimeBoundaryDiagnosticRow>& GetRuntimeBoundaryDiagnosticRows() const { return RuntimeBoundaryDiagnosticRows; }
     const FOffgridAIStreamTailDiagnosticRow& GetStreamTailDiagnosticRow() const { return StreamTailDiagnosticRow; }
     FOffgridAICommittedVisemeTrack& GetMutableCommittedTrack() { return CommittedTrack; }
     bool IsCommittedTrackBuilt() const { return bCommittedTrackBuilt; }
@@ -220,6 +276,7 @@ private:
     FOffgridAICommittedVisemeTrack CommittedTrack;
     TArray<FOffgridAIRuntimeCommitDiagnosticRow> RuntimeCommitDiagnosticRows;
     TArray<FOffgridAIRuntimeSpeechRegionDiagnosticRow> RuntimeSpeechRegionDiagnosticRows;
+    TArray<FOffgridAIRuntimeBoundaryDiagnosticRow> RuntimeBoundaryDiagnosticRows;
     int32 RuntimeCommitDiagnosticUpdateOrdinal = 0;
     FOffgridAIStreamTailDiagnosticRow StreamTailDiagnosticRow;
 
