@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0086_20260629_104220_891_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000086_00",
-  "created_utc": "2026-07-11T22:14:47.735172+00:00",
+  "created_utc": "2026-07-12T14:15:34.496571+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 125,
     "source_run_dir": "outputs/offline_gold/latest/case_0086_20260629_104220_891_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000086_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-11T22:14:47.735286+00:00"
+    "reviewed_utc": "2026-07-12T14:15:34.496681+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -1373,7 +1373,7 @@
       "phone": "IH0",
       "phone_base": "IH",
       "start": 7.29,
-      "end": 7.36,
+      "end": 7.37,
       "word_index": 12,
       "word": "sandwich"
     },
@@ -1381,7 +1381,7 @@
       "index_in_word": 6,
       "phone": "CH",
       "phone_base": "CH",
-      "start": 7.36,
+      "start": 7.37,
       "end": 7.62,
       "word_index": 12,
       "word": "sandwich"
@@ -1626,11 +1626,11 @@
     {
       "phone": "IH0",
       "start": 7.29,
-      "end": 7.36
+      "end": 7.37
     },
     {
       "phone": "CH",
-      "start": 7.36,
+      "start": 7.37,
       "end": 7.62
     }
   ],
@@ -3608,8 +3608,8 @@
       "pose": "IH0",
       "phone": "IH0",
       "start": 7.29,
-      "center": 7.325,
-      "end": 7.36,
+      "center": 7.33,
+      "end": 7.37,
       "word": "sandwich",
       "mfa_word": "sandwich",
       "word_index": 12,
@@ -3635,8 +3635,8 @@
       "id": "CH",
       "pose": "CH",
       "phone": "CH",
-      "start": 7.36,
-      "center": 7.49,
+      "start": 7.37,
+      "center": 7.495,
       "end": 7.62,
       "word": "sandwich",
       "mfa_word": "sandwich",
@@ -3668,7 +3668,7 @@
     {
       "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 2,
-      "gap_threshold_seconds": 0.15,
+      "gap_threshold_seconds": 0.125,
       "largest_split_gap_seconds": 3.24,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }

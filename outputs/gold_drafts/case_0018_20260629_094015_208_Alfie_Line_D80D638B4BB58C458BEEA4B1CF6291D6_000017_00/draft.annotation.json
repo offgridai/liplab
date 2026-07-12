@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0018_20260629_094015_208_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000017_00",
-  "created_utc": "2026-07-11T22:14:45.689108+00:00",
+  "created_utc": "2026-07-12T14:15:31.913499+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 125,
     "source_run_dir": "outputs/offline_gold/latest/case_0018_20260629_094015_208_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000017_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-11T22:14:45.689203+00:00"
+    "reviewed_utc": "2026-07-12T14:15:31.913611+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -1427,6 +1427,16 @@
   ],
   "wave_silence_spans": [
     {
+      "start": 0.0,
+      "end": 0.12,
+      "duration_seconds": 0.12
+    },
+    {
+      "start": 1.12,
+      "end": 1.24,
+      "duration_seconds": 0.11999999999999988
+    },
+    {
       "start": 1.42,
       "end": 1.58,
       "duration_seconds": 0.16000000000000014
@@ -1445,6 +1455,11 @@
       "start": 2.46,
       "end": 2.68,
       "duration_seconds": 0.2200000000000002
+    },
+    {
+      "start": 2.74,
+      "end": 2.88,
+      "duration_seconds": 0.13999999999999968
     },
     {
       "start": 3.06,

@@ -1,0 +1,21 @@
+case: case_0178_20260711_203001_077_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000005_00
+transcript: Muffins are good! We don't have them, but I can order some in if you want.
+audio: 4.537s @ 24000 Hz
+speech regions: 1
+pause boundaries: 15
+pause-driven region breaks: 0
+word heads: 16
+dense visemes: 45
+draft flags: 0
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading

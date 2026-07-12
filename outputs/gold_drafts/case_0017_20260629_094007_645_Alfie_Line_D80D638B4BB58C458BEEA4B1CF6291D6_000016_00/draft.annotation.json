@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0017_20260629_094007_645_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000016_00",
-  "created_utc": "2026-07-11T22:14:45.663134+00:00",
+  "created_utc": "2026-07-12T14:15:31.883681+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 125,
     "source_run_dir": "outputs/offline_gold/latest/case_0017_20260629_094007_645_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000016_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-11T22:14:45.663231+00:00"
+    "reviewed_utc": "2026-07-12T14:15:31.883794+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -1183,7 +1183,7 @@
       "phone": "IH1",
       "phone_base": "IH",
       "start": 2.0,
-      "end": 2.09,
+      "end": 2.1,
       "word_index": 7,
       "word": "clear"
     },
@@ -1191,7 +1191,7 @@
       "index_in_word": 3,
       "phone": "R",
       "phone_base": "R",
-      "start": 2.09,
+      "start": 2.1,
       "end": 2.19,
       "word_index": 7,
       "word": "clear"
@@ -1530,11 +1530,11 @@
     {
       "phone": "IH1",
       "start": 2.0,
-      "end": 2.09
+      "end": 2.1
     },
     {
       "phone": "R",
-      "start": 2.09,
+      "start": 2.1,
       "end": 2.19
     },
     {
@@ -1648,6 +1648,11 @@
       "start": 1.34,
       "end": 1.5,
       "duration_seconds": 0.15999999999999992
+    },
+    {
+      "start": 1.58,
+      "end": 1.7,
+      "duration_seconds": 0.11999999999999988
     },
     {
       "start": 1.78,
@@ -3126,8 +3131,8 @@
       "pose": "IH1",
       "phone": "IH1",
       "start": 2.0,
-      "center": 2.045,
-      "end": 2.09,
+      "center": 2.05,
+      "end": 2.1,
       "word": "clear",
       "mfa_word": "clear",
       "word_index": 7,
@@ -3153,8 +3158,8 @@
       "id": "R",
       "pose": "R",
       "phone": "R",
-      "start": 2.09,
-      "center": 2.1399999999999997,
+      "start": 2.1,
+      "center": 2.145,
       "end": 2.19,
       "word": "clear",
       "mfa_word": "clear",

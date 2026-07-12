@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0117_20260711_150154_861_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000005_00",
-  "created_utc": "2026-07-11T22:14:48.892009+00:00",
+  "created_utc": "2026-07-12T14:15:35.488570+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 125,
     "source_run_dir": "outputs/offline_gold/latest/case_0117_20260711_150154_861_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000005_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-11T22:14:48.892110+00:00"
+    "reviewed_utc": "2026-07-12T14:15:35.488679+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -75,14 +75,14 @@
     },
     {
       "index": 2,
-      "start": 2.39,
+      "start": 2.38,
       "end": 4.64,
       "word_start_index": 3,
       "word_end_index": 7,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -134,10 +134,10 @@
       "pause_class": "region_break",
       "split_applied": true,
       "split_reason": "comma_with_lull",
-      "direct_word_gap_seconds": 0.16000000000000014,
-      "phone_gap_seconds": 0.16000000000000014,
-      "wave_silence_seconds": 0.16000000000000014,
-      "acoustic_gap_seconds": 0.16000000000000014,
+      "direct_word_gap_seconds": 0.1499999999999999,
+      "phone_gap_seconds": 0.1499999999999999,
+      "wave_silence_seconds": 0.1499999999999999,
+      "acoustic_gap_seconds": 0.1499999999999999,
       "speech_region_index_before": 1,
       "speech_region_index_after": 2
     },
@@ -272,7 +272,7 @@
       "word_index": 3,
       "word": "and",
       "mfa_word": "and",
-      "start": 2.39,
+      "start": 2.38,
       "end": 2.62,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -410,7 +410,7 @@
     {
       "word_index": 3,
       "word": "and",
-      "start": 2.39,
+      "start": 2.38,
       "end": 2.47,
       "pose": "AE1",
       "phrase_index": 2,
@@ -550,7 +550,7 @@
       "word_index": 3,
       "word": "and",
       "mfa_word": "and",
-      "start": 2.39,
+      "start": 2.38,
       "end": 2.62,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -776,7 +776,7 @@
       "index_in_word": 0,
       "phone": "AE1",
       "phone_base": "AE",
-      "start": 2.39,
+      "start": 2.38,
       "end": 2.47,
       "word_index": 3,
       "word": "and"
@@ -1067,7 +1067,7 @@
     },
     {
       "phone": "AE1",
-      "start": 2.39,
+      "start": 2.38,
       "end": 2.47
     },
     {
@@ -2140,8 +2140,8 @@
       "id": "AE1",
       "pose": "AE1",
       "phone": "AE1",
-      "start": 2.39,
-      "center": 2.43,
+      "start": 2.38,
+      "center": 2.425,
       "end": 2.47,
       "word": "and",
       "mfa_word": "and",
@@ -2812,7 +2812,7 @@
     {
       "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 3,
-      "gap_threshold_seconds": 0.15,
+      "gap_threshold_seconds": 0.125,
       "largest_split_gap_seconds": 0.17,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }

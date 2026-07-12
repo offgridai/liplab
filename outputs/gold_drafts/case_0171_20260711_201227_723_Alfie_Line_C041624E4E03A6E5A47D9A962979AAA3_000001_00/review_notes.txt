@@ -1,0 +1,21 @@
+case: case_0171_20260711_201227_723_Alfie_Line_C041624E4E03A6E5A47D9A962979AAA3_000001_00
+transcript: Red, orange, yellow, green, blue, indigo, violet. Need anything else?
+audio: 7.577s @ 24000 Hz
+speech regions: 8
+pause boundaries: 9
+pause-driven region breaks: 7
+word heads: 10
+dense visemes: 43
+draft flags: 1
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading

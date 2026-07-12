@@ -1,0 +1,21 @@
+case: case_0242_20260712_054923_633_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000007_00
+transcript: Red, orange, yellow, green, blue, indigo, violet. Though we stick to ham, lettuce, and tomato here. Enjoy
+audio: 10.857s @ 24000 Hz
+speech regions: 10
+pause boundaries: 16
+pause-driven region breaks: 9
+word heads: 17
+dense visemes: 64
+draft flags: 2
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading

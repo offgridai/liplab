@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0106_20260629_104751_112_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000106_00",
-  "created_utc": "2026-07-11T22:14:48.276944+00:00",
+  "created_utc": "2026-07-12T14:15:35.178081+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 125,
     "source_run_dir": "outputs/offline_gold/latest/case_0106_20260629_104751_112_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000106_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-11T22:14:48.277046+00:00"
+    "reviewed_utc": "2026-07-12T14:15:35.178217+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -696,7 +696,7 @@
       "phone": "AH0",
       "phone_base": "AH",
       "start": 2.21,
-      "end": 2.3,
+      "end": 2.29,
       "word_index": 1,
       "word": "mountainous"
     },
@@ -704,7 +704,7 @@
       "index_in_word": 7,
       "phone": "S",
       "phone_base": "S",
-      "start": 2.3,
+      "start": 2.29,
       "end": 2.4,
       "word_index": 1,
       "word": "mountainous"
@@ -974,11 +974,11 @@
     {
       "phone": "AH0",
       "start": 2.21,
-      "end": 2.3
+      "end": 2.29
     },
     {
       "phone": "S",
-      "start": 2.3,
+      "start": 2.29,
       "end": 2.4
     },
     {
@@ -1097,6 +1097,11 @@
       "start": 3.06,
       "end": 3.48,
       "duration_seconds": 0.41999999999999993
+    },
+    {
+      "start": 4.32,
+      "end": 4.456875,
+      "duration_seconds": 0.13687499999999986
     }
   ],
   "planned_visemes": [
@@ -2050,8 +2055,8 @@
       "pose": "AH0",
       "phone": "AH0",
       "start": 2.21,
-      "center": 2.255,
-      "end": 2.3,
+      "center": 2.25,
+      "end": 2.29,
       "word": "mountainous",
       "mfa_word": "mountainous",
       "word_index": 1,
@@ -2077,8 +2082,8 @@
       "id": "S",
       "pose": "S",
       "phone": "S",
-      "start": 2.3,
-      "center": 2.3499999999999996,
+      "start": 2.29,
+      "center": 2.3449999999999998,
       "end": 2.4,
       "word": "mountainous",
       "mfa_word": "mountainous",
@@ -2665,7 +2670,7 @@
     {
       "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 2,
-      "gap_threshold_seconds": 0.15,
+      "gap_threshold_seconds": 0.125,
       "largest_split_gap_seconds": 0.14,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }

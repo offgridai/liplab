@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0035_20260629_094323_803_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000034_00",
-  "created_utc": "2026-07-11T22:14:46.198982+00:00",
+  "created_utc": "2026-07-12T14:15:32.700510+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 125,
     "source_run_dir": "outputs/offline_gold/latest/case_0035_20260629_094323_803_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000034_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-11T22:14:46.199083+00:00"
+    "reviewed_utc": "2026-07-12T14:15:32.700590+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -82,7 +82,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -1113,7 +1113,7 @@
       "phone": "ER0",
       "phone_base": "ER",
       "start": 1.56,
-      "end": 1.65,
+      "end": 1.59,
       "word_index": 3,
       "word": "cameroon"
     },
@@ -1121,7 +1121,7 @@
       "index_in_word": 4,
       "phone": "UW2",
       "phone_base": "UW",
-      "start": 1.65,
+      "start": 1.59,
       "end": 1.86,
       "word_index": 3,
       "word": "cameroon"
@@ -1607,11 +1607,11 @@
     {
       "phone": "ER0",
       "start": 1.56,
-      "end": 1.65
+      "end": 1.59
     },
     {
       "phone": "UW2",
-      "start": 1.65,
+      "start": 1.59,
       "end": 1.86
     },
     {
@@ -1840,6 +1840,11 @@
       "start": 0.0,
       "end": 0.2,
       "duration_seconds": 0.2
+    },
+    {
+      "start": 1.24,
+      "end": 1.36,
+      "duration_seconds": 0.1200000000000001
     },
     {
       "start": 1.86,
@@ -3112,8 +3117,8 @@
       "pose": "ER0",
       "phone": "ER0",
       "start": 1.56,
-      "center": 1.605,
-      "end": 1.65,
+      "center": 1.5750000000000002,
+      "end": 1.59,
       "word": "cameroon",
       "mfa_word": "cameroon",
       "word_index": 3,
@@ -3139,8 +3144,8 @@
       "id": "UW2",
       "pose": "UW2",
       "phone": "UW2",
-      "start": 1.65,
-      "center": 1.755,
+      "start": 1.59,
+      "center": 1.725,
       "end": 1.86,
       "word": "cameroon",
       "mfa_word": "cameroon",
@@ -4399,7 +4404,7 @@
     {
       "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 3,
-      "gap_threshold_seconds": 0.15,
+      "gap_threshold_seconds": 0.125,
       "largest_split_gap_seconds": 0.45,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }

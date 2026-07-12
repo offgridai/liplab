@@ -113,6 +113,11 @@ static bool IsHardPausePunctuation(TCHAR C)
         || C == TEXT('–');
 }
 
+static bool IsSentenceTerminalPunctuation(TCHAR C)
+{
+    return C == TEXT('.') || C == TEXT('!') || C == TEXT('?');
+}
+
 static bool IsHardLikeBoundaryClass(TCHAR C, EOffgridAIBoundaryPauseClass PauseClass)
 {
     return PauseClass == EOffgridAIBoundaryPauseClass::HardBreakPause || IsHardPausePunctuation(C);
@@ -150,6 +155,12 @@ static float HoldSecondsForBoundaryClass(TCHAR C, EOffgridAIBoundaryPauseClass P
     }
     if (IsHardLikeBoundaryClass(C, PauseClass))
     {
+        // A clause comma can be spoken through. Waiting for the full sentence
+        // fence window in that case creates a conspicuous stall and burst.
+        if (C == TEXT(','))
+        {
+            return 0.520f;
+        }
         // Text-prior pacing can arrive at a sentence fence well before the TTS
         // audio when the preceding clause contains several cadence pauses. Give
         // hard punctuation enough time to observe the real close/resume rather
@@ -202,7 +213,7 @@ static float LiveResumeSearchLookaheadForBoundaryClass(TCHAR C, EOffgridAIBounda
     {
         return 0.180f;
     }
-    return IsSoftListBoundaryClass(C, PauseClass) ? 0.120f : 0.060f;
+    return IsSoftListBoundaryClass(C, PauseClass) ? 0.200f : 0.060f;
 }
 
 static float ResumeBloomRawRMSForBoundaryClass(
@@ -575,6 +586,46 @@ static bool FindBufferedBoundaryResumeAnchorSec(
     return false;
 }
 
+static bool FindNextSpeechRegionResumeAnchorSec(
+    const TArray<FOffgridAIStreamingSpeechRegion>* SpeechRegions,
+    int32 HoldStartSpeechRegionIndex,
+    float MinDecayToResumeGapSec,
+    float& OutQuietStartSec,
+    float& OutResumeOnsetSec,
+    float& OutResumeAnchorSec)
+{
+    if (!SpeechRegions || SpeechRegions->Num() < 2)
+    {
+        return false;
+    }
+
+    for (int32 Index = 0; Index + 1 < SpeechRegions->Num(); ++Index)
+    {
+        const FOffgridAIStreamingSpeechRegion& Before = (*SpeechRegions)[Index];
+        const FOffgridAIStreamingSpeechRegion& After = (*SpeechRegions)[Index + 1];
+        if (!Before.bEnded || !After.bStarted)
+        {
+            continue;
+        }
+        if (Before.SpeechRegionIndex != HoldStartSpeechRegionIndex
+            || After.SpeechRegionIndex <= HoldStartSpeechRegionIndex)
+        {
+            continue;
+        }
+        if (After.AudioBufferStartSec + 0.001f
+            < Before.AudioBufferEndSec + MinDecayToResumeGapSec)
+        {
+            continue;
+        }
+
+        OutQuietStartSec = Before.AudioBufferEndSec;
+        OutResumeOnsetSec = After.AudioBufferStartSec;
+        OutResumeAnchorSec = After.AudioBufferStartSec;
+        return true;
+    }
+    return false;
+}
+
 struct FCausalBoundaryFenceEstimate
 {
     bool bObservedClose = false;
@@ -589,6 +640,71 @@ struct FCausalBoundaryFenceEstimate
     float QuietRawRMS = 1.0f;
     FName Outcome = NAME_None;
 };
+
+static bool IsCausalSyllablePulse(
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& Frames,
+    int32 FrameIndex,
+    float& OutProminence);
+
+static bool HasSufficientNucleusProgressBefore(
+    const FOffgridAILipsyncRuntimeUpdateInput& Input,
+    const FOffgridAIBoundaryPlaybackState& State,
+    float CandidateCloseSec,
+    float* OutLastPulseSec = nullptr,
+    int32* OutObservedPulses = nullptr,
+    int32* OutExpectedNuclei = nullptr)
+{
+    if (OutLastPulseSec) *OutLastPulseSec = -1.0f;
+    if (OutObservedPulses) *OutObservedPulses = 0;
+    if (OutExpectedNuclei) *OutExpectedNuclei = 0;
+    if (!Input.TextPlan || !Input.AudioFeatureFrames)
+    {
+        return true;
+    }
+    const int32 FirstWordIndex = State.LastResolvedBoundary.WordIndex >= 0
+        ? State.LastResolvedBoundary.WordIndex + 1
+        : 0;
+    int32 ExpectedNuclei = 0;
+    for (const FOffgridAIExpectedPhone& Phone : Input.TextPlan->ExpectedPhones)
+    {
+        if (Phone.bIsVowel
+            && Phone.WordIndex >= FirstWordIndex
+            && Phone.WordIndex <= State.BoundaryWordIndex)
+        {
+            ++ExpectedNuclei;
+        }
+    }
+    if (ExpectedNuclei <= 0)
+    {
+        return true;
+    }
+    if (OutExpectedNuclei) *OutExpectedNuclei = ExpectedNuclei;
+
+    int32 ObservedPulses = 0;
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& Frames = *Input.AudioFeatureFrames;
+    for (int32 FrameIndex = 14; FrameIndex + 1 < Frames.Num(); ++FrameIndex)
+    {
+        const float FrameSec = Frames[FrameIndex].AudioBufferCenterSec;
+        if (FrameSec + 0.001f < State.SyllableSectionStartAudioSec) continue;
+        if (FrameSec > CandidateCloseSec + 0.001f) break;
+        float Prominence = 0.0f;
+        if (IsCausalSyllablePulse(Frames, FrameIndex, Prominence) && Prominence >= 0.10f)
+        {
+            ++ObservedPulses;
+            if (OutLastPulseSec) *OutLastPulseSec = FrameSec;
+        }
+    }
+
+    // The pulse detector has high precision but imperfect recall. Permit one
+    // missed nucleus in a multi-syllable section while still distinguishing
+    // the internal valley before a word's final pulse.
+    // At a list fence, accepting one fewer pulse systematically advances
+    // multi-syllable items after their first nucleus (tur-key, let-tuce,
+    // to-ma-to). Require the transcript's complete nucleus count here.
+    const int32 RequiredPulses = ExpectedNuclei;
+    if (OutObservedPulses) *OutObservedPulses = ObservedPulses;
+    return ObservedPulses >= RequiredPulses;
+}
 
 static float GapCloseConfidence(const FOffgridAIStreamingSpeechGapCandidate& Gap)
 {
@@ -684,6 +800,64 @@ static float SoftLullConfidence(const FOffgridAIStreamingSoftLullCandidate& Lull
         1.0f);
 }
 
+static void UpdateProvisionalListPause(
+    const FOffgridAILipsyncRuntimeUpdateInput& Input,
+    float PlaybackSec,
+    FOffgridAIBoundaryPlaybackState& State)
+{
+    if (!State.bHoldActive
+        || !IsSoftListBoundaryClass(State.ActiveBoundaryMark, State.ActivePauseClass)
+        || !Input.SoftLullCandidates)
+    {
+        return;
+    }
+
+    const float MaxCandidateStartSec = FMath::Min(
+        Input.ObservedAudioBufferEndSec,
+        PlaybackSec + LiveResumeSearchLookaheadForBoundaryClass(State.ActiveBoundaryMark, State.ActivePauseClass));
+    for (const FOffgridAIStreamingSoftLullCandidate& Lull : *Input.SoftLullCandidates)
+    {
+        if (Lull.FrameCount <= 0
+            || Lull.LullDurationSec < 0.020f
+            || Lull.LullStartSec + 0.020f < State.BoundarySearchStartPlaybackSec)
+        {
+            continue;
+        }
+        if (Lull.LullStartSec > MaxCandidateStartSec + 0.001f)
+        {
+            break;
+        }
+
+        const float Confidence = SoftLullConfidence(Lull);
+        if (Confidence < 0.18f)
+        {
+            continue;
+        }
+        if (Lull.LullDurationSec < 0.100f
+            && !HasSufficientNucleusProgressBefore(Input, State, Lull.LullStartSec))
+        {
+            continue;
+        }
+
+        const bool bSameCandidate = State.bProvisionalListPause
+            && Lull.LullStartSec <= State.ProvisionalListPauseEndSec + 0.040f
+            && Lull.LullEndSec + 0.040f >= State.ProvisionalListPauseStartSec;
+        if (!State.bProvisionalListPause || bSameCandidate)
+        {
+            State.bProvisionalListPause = true;
+            State.ProvisionalListPauseStartSec = State.ProvisionalListPauseStartSec < 0.0f
+                ? Lull.LullStartSec
+                : FMath::Min(State.ProvisionalListPauseStartSec, Lull.LullStartSec);
+            State.ProvisionalListPauseEndSec = FMath::Max(State.ProvisionalListPauseEndSec, Lull.LullEndSec);
+            State.ProvisionalListPauseConfidence = FMath::Max(State.ProvisionalListPauseConfidence, Confidence);
+            State.ProvisionalListPauseRMSNorm = FMath::Min(State.ProvisionalListPauseRMSNorm, Lull.RelativeRMSMin);
+            State.ProvisionalListPauseEvidence = FMath::Min(
+                State.ProvisionalListPauseEvidence,
+                Lull.EvidenceSum / Lull.FrameCount);
+        }
+    }
+}
+
 static bool FindStableResumeAnchorAfterTime(
     const TArray<FOffgridAIStreamingAudioFeatureFrame>* AudioFeatureFrames,
     TCHAR BoundaryMark,
@@ -729,8 +903,37 @@ static bool FindStableResumeAnchorAfterTime(
             continue;
         }
 
-        OutResumeOnsetSec = Frame.AudioBufferCenterSec;
-        OutResumeAnchorSec = Frame.AudioBufferCenterSec;
+        const float EarliestBacktrackSec = FMath::Max(
+            QuietStartSec + MinDecayToResumeGapForBoundaryClass(BoundaryMark, PauseClass),
+            Frame.AudioBufferCenterSec - 0.080f);
+        const float OnsetRawRMS = FMath::Max(0.0020f, QuietRawRMS * 1.5f + 0.0005f);
+        const float OnsetEvidence = FMath::Max(QuietEvidence + 0.05f, 0.12f);
+        int32 EarliestOnsetFrameIndex = FrameIndex;
+        int32 ConsecutiveFloorFrames = 0;
+        for (int32 BackIndex = FrameIndex - 1; BackIndex >= 0; --BackIndex)
+        {
+            const FOffgridAIStreamingAudioFeatureFrame& BackFrame = (*AudioFeatureFrames)[BackIndex];
+            if (BackFrame.AudioBufferCenterSec + 0.001f < EarliestBacktrackSec)
+            {
+                break;
+            }
+            const bool bMeaningfulEnergy = BackFrame.RMS >= OnsetRawRMS
+                || BackFrame.SpeechEvidence >= OnsetEvidence
+                || BackFrame.bStrongOnsetAnchor;
+            if (bMeaningfulEnergy)
+            {
+                EarliestOnsetFrameIndex = BackIndex;
+                ConsecutiveFloorFrames = 0;
+            }
+            else if (++ConsecutiveFloorFrames >= 2)
+            {
+                break;
+            }
+        }
+
+        const float ResumeOnsetSec = (*AudioFeatureFrames)[EarliestOnsetFrameIndex].AudioBufferCenterSec;
+        OutResumeOnsetSec = ResumeOnsetSec;
+        OutResumeAnchorSec = ResumeOnsetSec;
         return true;
     }
 
@@ -744,15 +947,77 @@ static FCausalBoundaryFenceEstimate EvaluateCausalBoundaryFence(
 {
     FCausalBoundaryFenceEstimate Estimate;
     const bool bHardBoundary = IsHardLikeBoundaryClass(State.ActiveBoundaryMark, State.ActivePauseClass);
+    const bool bSoftListBoundary = IsSoftListBoundaryClass(State.ActiveBoundaryMark, State.ActivePauseClass);
+    FCausalBoundaryFenceEstimate BestSoftListEstimate;
+    float BestSoftListScore = -1.0f;
+    auto ConsiderSoftListEstimate = [&](const FCausalBoundaryFenceEstimate& Candidate, float AcousticConfidence)
+    {
+        const float Proximity = FMath::Clamp(
+            1.0f - FMath::Abs(Candidate.CloseSec - PlaybackSec) / 0.200f,
+            0.0f,
+            1.0f);
+        const float Score = AcousticConfidence * 0.75f
+            + Proximity * 0.20f
+            + (Candidate.bObservedResume ? 0.05f : 0.0f);
+        if (Score > BestSoftListScore)
+        {
+            BestSoftListScore = Score;
+            BestSoftListEstimate = Candidate;
+        }
+    };
     const float HoldWindowSec = HoldSecondsForBoundaryClass(State.ActiveBoundaryMark, State.ActivePauseClass);
-    const float MaxObservedSearchSec = Input.bPlaybackFinalized
-        ? TNumericLimits<float>::Max()
+    const float MaxObservedSearchSec = (Input.bInputStreamClosed || Input.bPlaybackFinalized)
+        ? Input.ObservedAudioBufferEndSec
         : FMath::Min(
             Input.ObservedAudioBufferEndSec,
             PlaybackSec + LiveResumeSearchLookaheadForBoundaryClass(State.ActiveBoundaryMark, State.ActivePauseClass));
 
     const float MinResumeGapSec = MinDecayToResumeGapForBoundaryClass(State.ActiveBoundaryMark, State.ActivePauseClass);
-
+    if (bSoftListBoundary && State.bProvisionalListPause)
+    {
+        const float CandidateDurationSec = FMath::Max(
+            State.ProvisionalListPauseEndSec - State.ProvisionalListPauseStartSec,
+            0.0f);
+        const bool bMatureClose = State.ProvisionalListPauseConfidence >= 0.40f
+            || CandidateDurationSec >= 0.070f;
+        float ResumeOnsetSec = -1.0f;
+        float ResumeAnchorSec = -1.0f;
+        const bool bFoundResume = FindStableResumeAnchorAfterTime(
+            Input.AudioFeatureFrames,
+            State.ActiveBoundaryMark,
+            State.ActivePauseClass,
+            State.ProvisionalListPauseStartSec,
+            State.ProvisionalListPauseRMSNorm,
+            State.ProvisionalListPauseEvidence,
+            0.001f,
+            State.ProvisionalListPauseEndSec,
+            MaxObservedSearchSec,
+            ResumeOnsetSec,
+            ResumeAnchorSec);
+        if (bMatureClose && bFoundResume)
+        {
+            Estimate.bObservedClose = true;
+            Estimate.bObservedResume = true;
+            Estimate.bUsedSoftLull = true;
+            Estimate.CloseSec = State.ProvisionalListPauseStartSec;
+            Estimate.ResumeOnsetSec = ResumeOnsetSec;
+            Estimate.ResumeAnchorSec = ResumeAnchorSec;
+            Estimate.QuietRMSNorm = State.ProvisionalListPauseRMSNorm;
+            Estimate.QuietEvidence = State.ProvisionalListPauseEvidence;
+            Estimate.QuietRawRMS = 0.001f;
+            Estimate.Outcome = FName(TEXT("confirmed_resume_anchor_provisional_list"));
+            return Estimate;
+        }
+        if (!bMatureClose
+            && bFoundResume
+            && Input.ObservedAudioBufferEndSec >= State.ProvisionalListPauseEndSec + 0.080f)
+        {
+            Estimate.bContinuousSpeech = true;
+            Estimate.Outcome = FName(TEXT("provisional_list_shallow_continuation"));
+            return Estimate;
+        }
+        return Estimate;
+    }
     if (Input.GapCandidates)
     {
         for (const FOffgridAIStreamingSpeechGapCandidate& Gap : *Input.GapCandidates)
@@ -786,15 +1051,22 @@ static FCausalBoundaryFenceEstimate EvaluateCausalBoundaryFence(
                 continue;
             }
 
-            Estimate.bObservedClose = true;
-            Estimate.CloseSec = Gap.GapStartSec + FMath::Min(0.060f, FMath::Max(0.020f, Gap.GapDurationSec * 0.20f));
-            Estimate.QuietRMSNorm = Gap.QuietRMSNorm;
-            Estimate.QuietEvidence = Gap.QuietEvidence;
-            Estimate.QuietRawRMS = 0.001f;
-            Estimate.Outcome = FName(TEXT("pause_close_candidate"));
+            FCausalBoundaryFenceEstimate Candidate;
+            Candidate.bObservedClose = true;
+            Candidate.CloseSec = Gap.GapStartSec + FMath::Min(0.060f, FMath::Max(0.020f, Gap.GapDurationSec * 0.20f));
+            Candidate.QuietRMSNorm = Gap.QuietRMSNorm;
+            Candidate.QuietEvidence = Gap.QuietEvidence;
+            Candidate.QuietRawRMS = 0.001f;
+            Candidate.Outcome = FName(TEXT("pause_close_candidate"));
+            if (bSoftListBoundary
+                && Gap.GapDurationSec < 0.100f
+                && !HasSufficientNucleusProgressBefore(Input, State, Candidate.CloseSec))
+            {
+                continue;
+            }
 
             if (ResumeConfidence >= MinResumeConfidenceForBoundaryClass(State.ActiveBoundaryMark, State.ActivePauseClass)
-                && Gap.GapEndSec + 0.001f >= Estimate.CloseSec + MinResumeGapSec)
+                && Gap.GapEndSec + 0.001f >= Candidate.CloseSec + MinResumeGapSec)
             {
                 float ResumeOnsetSec = -1.0f;
                 float ResumeAnchorSec = -1.0f;
@@ -803,7 +1075,7 @@ static FCausalBoundaryFenceEstimate EvaluateCausalBoundaryFence(
                         Input.AudioFeatureFrames,
                         State.ActiveBoundaryMark,
                         State.ActivePauseClass,
-                        Estimate.CloseSec,
+                        Candidate.CloseSec,
                         Gap.QuietRMSNorm,
                         Gap.QuietEvidence,
                         QuietRawRMS,
@@ -812,15 +1084,22 @@ static FCausalBoundaryFenceEstimate EvaluateCausalBoundaryFence(
                         ResumeOnsetSec,
                         ResumeAnchorSec))
                 {
-                    Estimate.bObservedResume = true;
-                    Estimate.ResumeOnsetSec = ResumeOnsetSec;
-                    Estimate.ResumeAnchorSec = ResumeAnchorSec;
-                    Estimate.QuietRawRMS = QuietRawRMS;
-                    Estimate.Outcome = FName(TEXT("confirmed_resume_anchor_gap"));
+                    Candidate.bObservedResume = true;
+                    Candidate.ResumeOnsetSec = ResumeOnsetSec;
+                    Candidate.ResumeAnchorSec = ResumeAnchorSec;
+                    Candidate.QuietRawRMS = QuietRawRMS;
+                    Candidate.Outcome = FName(TEXT("confirmed_resume_anchor_gap"));
                 }
             }
 
-            if (Estimate.bObservedResume)
+            if (bSoftListBoundary)
+            {
+                ConsiderSoftListEstimate(Candidate, (CloseConfidence + ResumeConfidence) * 0.5f);
+                continue;
+            }
+
+            Estimate = Candidate;
+            if (Candidate.bObservedResume)
             {
                 return Estimate;
             }
@@ -862,13 +1141,20 @@ static FCausalBoundaryFenceEstimate EvaluateCausalBoundaryFence(
                 continue;
             }
 
-            Estimate.bObservedClose = true;
-            Estimate.bUsedSoftLull = true;
-            Estimate.CloseSec = Lull.LullStartSec + FMath::Min(0.050f, Lull.LullDurationSec);
-            Estimate.QuietRMSNorm = Lull.RelativeRMSMin;
-            Estimate.QuietEvidence = Lull.FrameCount > 0 ? (Lull.EvidenceSum / Lull.FrameCount) : 0.0f;
-            Estimate.QuietRawRMS = 0.001f;
-            Estimate.Outcome = FName(TEXT("pause_close_soft_lull"));
+            FCausalBoundaryFenceEstimate Candidate;
+            Candidate.bObservedClose = true;
+            Candidate.bUsedSoftLull = true;
+            Candidate.CloseSec = Lull.LullStartSec + FMath::Min(0.050f, Lull.LullDurationSec);
+            Candidate.QuietRMSNorm = Lull.RelativeRMSMin;
+            Candidate.QuietEvidence = Lull.FrameCount > 0 ? (Lull.EvidenceSum / Lull.FrameCount) : 0.0f;
+            Candidate.QuietRawRMS = 0.001f;
+            Candidate.Outcome = FName(TEXT("pause_close_soft_lull"));
+            if (bSoftListBoundary
+                && Lull.LullDurationSec < 0.100f
+                && !HasSufficientNucleusProgressBefore(Input, State, Candidate.CloseSec))
+            {
+                continue;
+            }
 
             float ResumeOnsetSec = -1.0f;
             float ResumeAnchorSec = -1.0f;
@@ -876,23 +1162,33 @@ static FCausalBoundaryFenceEstimate EvaluateCausalBoundaryFence(
                     Input.AudioFeatureFrames,
                     State.ActiveBoundaryMark,
                     State.ActivePauseClass,
-                    Estimate.CloseSec,
-                    Estimate.QuietRMSNorm,
-                    Estimate.QuietEvidence,
-                    Estimate.QuietRawRMS,
+                    Candidate.CloseSec,
+                    Candidate.QuietRMSNorm,
+                    Candidate.QuietEvidence,
+                    Candidate.QuietRawRMS,
                     Lull.LullEndSec,
                     MaxObservedSearchSec,
                     ResumeOnsetSec,
                     ResumeAnchorSec))
             {
-                Estimate.bObservedResume = true;
-                Estimate.ResumeOnsetSec = ResumeOnsetSec;
-                Estimate.ResumeAnchorSec = ResumeAnchorSec;
-                Estimate.Outcome = FName(TEXT("confirmed_resume_anchor_soft_lull"));
+                Candidate.bObservedResume = true;
+                Candidate.ResumeOnsetSec = ResumeOnsetSec;
+                Candidate.ResumeAnchorSec = ResumeAnchorSec;
+                Candidate.Outcome = FName(TEXT("confirmed_resume_anchor_soft_lull"));
             }
 
-            return Estimate;
+            if (bSoftListBoundary)
+            {
+                ConsiderSoftListEstimate(Candidate, Confidence);
+                continue;
+            }
+            return Candidate;
         }
+    }
+
+    if (BestSoftListEstimate.bObservedClose)
+    {
+        return BestSoftListEstimate;
     }
 
     // Once a deadline-time tail check has confirmed that audio is becoming
@@ -928,7 +1224,48 @@ static FCausalBoundaryFenceEstimate EvaluateCausalBoundaryFence(
             Estimate.ResumeAnchorSec = ResumeAnchorSec;
             Estimate.Outcome = FName(TEXT("confirmed_resume_anchor_pending_close"));
         }
+        else
+        {
+            const float MaxPendingHoldSec = HoldWindowSec + 0.250f;
+            const bool bPendingHoldExpired = HoldWindowSec > 0.0f
+                && PlaybackSec >= State.HoldStartPlaybackSec + MaxPendingHoldSec
+                && Input.ObservedAudioBufferEndSec + 0.001f >= PlaybackSec;
+            if (bPendingHoldExpired)
+            {
+                Estimate.bObservedClose = false;
+                Estimate.bContinuousSpeech = true;
+                Estimate.Outcome = FName(TEXT("pending_close_expired_continuous"));
+            }
+        }
         return Estimate;
+    }
+
+    if (bSoftListBoundary)
+    {
+        float LastPulseSec = -1.0f;
+        int32 ObservedPulses = 0;
+        int32 ExpectedNuclei = 0;
+        const bool bNucleiComplete = HasSufficientNucleusProgressBefore(
+            Input,
+            State,
+            MaxObservedSearchSec,
+            &LastPulseSec,
+            &ObservedPulses,
+            &ExpectedNuclei);
+        const bool bNextItemPulseObserved = bNucleiComplete
+            && ExpectedNuclei > 0
+            && ObservedPulses > ExpectedNuclei;
+        if (bNextItemPulseObserved)
+        {
+            Estimate.bContinuousSpeech = true;
+            Estimate.Outcome = FName(TEXT("list_next_item_pulse_continuous"));
+            return Estimate;
+        }
+        if (!Input.bPlaybackFinalized
+            && PlaybackSec < State.HoldStartPlaybackSec + 0.750f)
+        {
+            return Estimate;
+        }
     }
 
     const bool bCoveredPatienceWindow =
@@ -1268,7 +1605,67 @@ static void AdvancePlaybackHoldState(
 
     if (InOutState.bHoldActive)
     {
-        FCausalBoundaryFenceEstimate Fence = EvaluateCausalBoundaryFence(Input, InOutState, PlaybackSec);
+        UpdateProvisionalListPause(Input, PlaybackSec, InOutState);
+        FCausalBoundaryFenceEstimate Fence;
+        // Text can misclassify appositive/list commas as hard clause breaks.
+        // Audio may confirm a nearby comma pause, but no comma is allowed to
+        // own the scheduler indefinitely or attach to a later sentence gap.
+        if (InOutState.ActiveBoundaryMark == TEXT(',')
+            && PlaybackSec >= InOutState.HoldStartPlaybackSec + 0.750f)
+        {
+            Fence.bContinuousSpeech = true;
+            Fence.Outcome = FName(TEXT("comma_patience_expired_continuous"));
+        }
+        else if (IsSentenceTerminalPunctuation(InOutState.ActiveBoundaryMark)
+            && InOutState.HoldStartPlaybackSec - InOutState.BoundarySearchStartPlaybackSec <= 0.120f
+            && PlaybackSec >= InOutState.HoldStartPlaybackSec + 0.260f)
+        {
+            // A hard fence immediately after a previously consumed boundary
+            // can be reached before the short intervening word has played. If
+            // no new close appears, do not let that chained fence starve the
+            // rest of the line.
+            Fence.bContinuousSpeech = true;
+            Fence.Outcome = FName(TEXT("chained_hard_patience_expired_continuous"));
+        }
+        else
+        {
+            Fence = EvaluateCausalBoundaryFence(Input, InOutState, PlaybackSec);
+        }
+        if (!Fence.bObservedResume && IsSentenceTerminalPunctuation(InOutState.ActiveBoundaryMark))
+        {
+            float RegionQuietSec = -1.0f;
+            float RegionResumeSec = -1.0f;
+            float RegionAnchorSec = -1.0f;
+            if (FindNextSpeechRegionResumeAnchorSec(
+                    Input.SpeechRegions,
+                    InOutState.HoldStartSpeechRegionIndex,
+                    MinDecayToResumeGapForBoundaryClass(InOutState.ActiveBoundaryMark, InOutState.ActivePauseClass),
+                    RegionQuietSec,
+                    RegionResumeSec,
+                    RegionAnchorSec))
+            {
+                Fence.bObservedClose = true;
+                Fence.bObservedResume = true;
+                Fence.bContinuousSpeech = false;
+                Fence.CloseSec = RegionQuietSec;
+                Fence.ResumeOnsetSec = RegionResumeSec;
+                Fence.ResumeAnchorSec = RegionAnchorSec;
+                Fence.QuietRMSNorm = 0.0f;
+                Fence.QuietEvidence = 0.0f;
+                Fence.QuietRawRMS = 0.0f;
+                Fence.Outcome = FName(TEXT("sentence_next_speech_region"));
+            }
+        }
+        if (Fence.bObservedResume
+            && Fence.bObservedClose
+            && Fence.ResumeOnsetSec + 0.001f < Fence.CloseSec
+                + MinDecayToResumeGapForBoundaryClass(InOutState.ActiveBoundaryMark, InOutState.ActivePauseClass))
+        {
+            Fence.bObservedResume = false;
+            Fence.ResumeOnsetSec = -1.0f;
+            Fence.ResumeAnchorSec = -1.0f;
+            Fence.Outcome = FName(TEXT("resume_precedes_close_rejected"));
+        }
         if (!Fence.bObservedResume && Input.bPlaybackFinalized)
         {
             float BufferedQuietSec = -1.0f;
@@ -1277,7 +1674,7 @@ static void AdvancePlaybackHoldState(
             float BufferedQuietRMSNorm = 1.0f;
             float BufferedQuietEvidence = 1.0f;
             float BufferedQuietRawRMS = 1.0f;
-            const bool bFoundBufferedResume = FindBufferedBoundaryResumeAnchorSec(
+            bool bFoundBufferedResume = FindBufferedBoundaryResumeAnchorSec(
                 Input.AudioFeatureFrames,
                 InOutState.ActiveBoundaryMark,
                 InOutState.ActivePauseClass,
@@ -1290,6 +1687,39 @@ static void AdvancePlaybackHoldState(
                 BufferedQuietRMSNorm,
                 BufferedQuietEvidence,
                 BufferedQuietRawRMS);
+            if (bFoundBufferedResume
+                && BufferedResumeOnsetSec + 0.001f < BufferedQuietSec
+                    + MinDecayToResumeGapForBoundaryClass(InOutState.ActiveBoundaryMark, InOutState.ActivePauseClass))
+            {
+                bFoundBufferedResume = false;
+            }
+            if (!bFoundBufferedResume && IsSentenceTerminalPunctuation(InOutState.ActiveBoundaryMark))
+            {
+                bFoundBufferedResume = FindNextSpeechRegionResumeAnchorSec(
+                    Input.SpeechRegions,
+                    InOutState.HoldStartSpeechRegionIndex,
+                    MinDecayToResumeGapForBoundaryClass(InOutState.ActiveBoundaryMark, InOutState.ActivePauseClass),
+                    BufferedQuietSec,
+                    BufferedResumeOnsetSec,
+                    BufferedResumeAnchorSec);
+                if (bFoundBufferedResume)
+                {
+                    BufferedQuietRMSNorm = 0.0f;
+                    BufferedQuietEvidence = 0.0f;
+                    BufferedQuietRawRMS = 0.0f;
+                }
+            }
+            // Every final-search source must obey the same causal ordering.
+            // In particular, a terminal speech-region fallback must not pair
+            // end-of-stream quiet with an earlier historical resume.
+            if (bFoundBufferedResume
+                && BufferedResumeOnsetSec + 0.001f < BufferedQuietSec
+                    + MinDecayToResumeGapForBoundaryClass(
+                        InOutState.ActiveBoundaryMark,
+                        InOutState.ActivePauseClass))
+            {
+                bFoundBufferedResume = false;
+            }
             if (bFoundBufferedResume)
             {
                 Fence.bObservedClose = true;
@@ -1328,6 +1758,10 @@ static void AdvancePlaybackHoldState(
 
         if (Fence.bObservedResume)
         {
+            // A provisional close can be superseded by the close/resume pair
+            // that actually resolved the fence. Keep diagnostics and future
+            // matching attached to that causal pair, not to stale quiet.
+            InOutState.ConfirmedQuietStartPlaybackSec = Fence.CloseSec;
             InOutState.ObservedResumeOnsetPlaybackSec = Fence.ResumeOnsetSec;
             InOutState.ObservedResumeEnergyAnchorSec = Fence.ResumeAnchorSec;
             InOutState.QuietRMSNormAtDecay = Fence.QuietRMSNorm;
@@ -1349,7 +1783,29 @@ static void AdvancePlaybackHoldState(
         }
         else if (Fence.bContinuousSpeech)
         {
-            InOutState.ActivePlayheadSec += FMath::Max(PlaybackSec - InOutState.HoldStartPlaybackSec, 0.0f);
+            // The speculative punctuation hold stopped commits while wall-clock
+            // playback continued. If audio never confirms a close/resume, do not
+            // expose the resulting backlog to the live scheduler: its lateness
+            // guard would compress the suffix into 50 ms steps. Translate the
+            // uncommitted schedule to resume just ahead of playback and preserve
+            // every text-prior interval from that point onward.
+            if (Fence.Outcome == FName(TEXT("comma_patience_expired_continuous"))
+                || Fence.Outcome == FName(TEXT("chained_hard_patience_expired_continuous")))
+            {
+                const float ResumeCenterSec = PlaybackSec + 0.040f;
+                const float DesiredPausedSec =
+                    ResumeCenterSec + InOutState.HoldResumeTargetLeadSec
+                    - InOutState.PlaybackOriginSec
+                    - InOutState.HoldResumeTargetActiveSec;
+                InOutState.TotalPausedSec = FMath::Max(DesiredPausedSec, 0.0f);
+                InOutState.ActivePlayheadSec = InOutState.HoldResumeTargetActiveSec;
+            }
+            else
+            {
+                InOutState.ActivePlayheadSec += FMath::Max(
+                    PlaybackSec - InOutState.HoldStartPlaybackSec,
+                    0.0f);
+            }
             InOutState.LastResolvedBoundary.Outcome = Fence.Outcome;
             InOutState.LastResolvedBoundary.WordIndex = InOutState.BoundaryWordIndex;
             InOutState.LastResolvedBoundary.Mark = InOutState.ActiveBoundaryMark;
@@ -1657,7 +2113,9 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(float CurrentPlay
 
     RuntimeCommitDiagnosticRows.Reset();
     RuntimeSpeechRegionDiagnosticRows.Reset();
-    RuntimeBoundaryDiagnosticRows.Reset();
+    // Boundary state is a timeline, not a final snapshot. Retaining one row per
+    // update makes stalls and premature releases diagnosable; resetting here
+    // previously erased every transition except finalization.
     for (const FOffgridAICommittedVisemeEvent& E : CommittedTrack.Events)
     {
         FOffgridAIRuntimeCommitDiagnosticRow R;
@@ -1965,11 +2423,23 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
                 InOutHoldState.BoundaryWordIndex = BoundaryWordIndex;
                 InOutHoldState.ActivePauseClass = EffectivePauseClass;
                 InOutHoldState.HoldStartPlaybackSec = Input.CurrentPlaybackSec;
-                // Search only a small recent acoustic window. Using the last
-                // text-scheduled center here allowed severe pacing drift to make
-                // an old sentence gap attach to a later, unrelated boundary.
+                // Hard punctuation may be reached after its acoustic pause has
+                // already started. Search the bounded preroll for those strict
+                // fences; keep commas local so they cannot attach to an older
+                // list valley.
+                const float BoundaryLookbackSec = Boundary == TEXT(',')
+                    ? 0.120f
+                    : (IsHardLikeBoundaryClass(Boundary, EffectivePauseClass)
+                        ? FMath::Min(FMath::Max(Input.PrerollSec, 0.080f), 0.300f)
+                        : 0.080f);
+                const float PreviousBoundaryResumeFloorSec =
+                    InOutHoldState.LastResolvedBoundary.ResumeOnsetSec >= 0.0f
+                        ? InOutHoldState.LastResolvedBoundary.ResumeOnsetSec + 0.020f
+                        : 0.0f;
                 InOutHoldState.BoundarySearchStartPlaybackSec = FMath::Max(
-                    Input.CurrentPlaybackSec - 0.080f,
+                    FMath::Max(
+                        Input.CurrentPlaybackSec - BoundaryLookbackSec,
+                        PreviousBoundaryResumeFloorSec),
                     0.0f);
                 InOutHoldState.HoldDeadlinePlaybackSec = Input.CurrentPlaybackSec + HoldSeconds;
                 InOutHoldState.HoldStartSpeechRegionIndex = FindRegionIndexAtPlayback(EffectiveRegions, Input.CurrentPlaybackSec);
@@ -1979,6 +2449,12 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
                 InOutHoldState.QuietEvidenceAtDecay = 1.0f;
                 InOutHoldState.QuietRawRMSAtDecay = 1.0f;
                 InOutHoldState.ActiveBoundaryMark = Boundary;
+                InOutHoldState.bProvisionalListPause = false;
+                InOutHoldState.ProvisionalListPauseStartSec = -1.0f;
+                InOutHoldState.ProvisionalListPauseEndSec = -1.0f;
+                InOutHoldState.ProvisionalListPauseConfidence = 0.0f;
+                InOutHoldState.ProvisionalListPauseRMSNorm = 1.0f;
+                InOutHoldState.ProvisionalListPauseEvidence = 1.0f;
                 InOutHoldState.LastResolvedBoundary.Outcome = NAME_None;
                 InOutHoldState.LastResolvedBoundary.WordIndex = INDEX_NONE;
                 InOutHoldState.LastResolvedBoundary.Mark = TCHAR(0);
@@ -2149,10 +2625,6 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             const float RebasedEnd = InOutHoldState.SyllableAnchorAudioSec
                 + InOutHoldState.SyllableRate
                     * (RequiredPhoneEndActiveSec - InOutHoldState.SyllableAnchorActiveSec);
-            // Punctuation anchors are strict; syllable anchors are soft. Limit
-            // each correction against the already-safe text schedule so a bad
-            // pulse assignment cannot move the next punctuation fence out of
-            // its observable audio window.
             const float CenterCorrectionSec = FMath::Clamp(RebasedCenter - Center, -0.025f, 0.025f);
             BaseStart += FMath::Clamp(RebasedStart - BaseStart, -0.025f, 0.025f);
             Center += CenterCorrectionSec;

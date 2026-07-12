@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0056_20260629_103618_921_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000055_00",
-  "created_utc": "2026-07-11T22:14:46.898783+00:00",
+  "created_utc": "2026-07-12T14:15:33.484978+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 125,
     "source_run_dir": "outputs/offline_gold/latest/case_0056_20260629_103618_921_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000055_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-11T22:14:46.898899+00:00"
+    "reviewed_utc": "2026-07-12T14:15:33.485084+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -441,7 +441,7 @@
       "word": "some",
       "mfa_word": "some",
       "start": 5.17,
-      "end": 5.37,
+      "end": 5.38,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -457,7 +457,7 @@
       "word_index": 11,
       "word": "chips",
       "mfa_word": "chips",
-      "start": 5.37,
+      "start": 5.38,
       "end": 5.85,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -653,7 +653,7 @@
     {
       "word_index": 11,
       "word": "chips",
-      "start": 5.37,
+      "start": 5.38,
       "end": 5.49,
       "pose": "CH",
       "phrase_index": 1,
@@ -845,7 +845,7 @@
       "word": "some",
       "mfa_word": "some",
       "start": 5.17,
-      "end": 5.37,
+      "end": 5.38,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -861,7 +861,7 @@
       "word_index": 11,
       "word": "chips",
       "mfa_word": "chips",
-      "start": 5.37,
+      "start": 5.38,
       "end": 5.85,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -1153,21 +1153,30 @@
       "phone": "N",
       "phone_base": "N",
       "start": 3.84,
-      "end": 3.89,
+      "end": 3.87,
       "word_index": 6,
       "word": "landscapes"
     },
     {
       "index_in_word": 3,
-      "phone": "S",
-      "phone_base": "S",
-      "start": 3.89,
-      "end": 3.98,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 3.87,
+      "end": 3.92,
       "word_index": 6,
       "word": "landscapes"
     },
     {
       "index_in_word": 4,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 3.92,
+      "end": 3.98,
+      "word_index": 6,
+      "word": "landscapes"
+    },
+    {
+      "index_in_word": 5,
       "phone": "K",
       "phone_base": "K",
       "start": 3.98,
@@ -1176,7 +1185,7 @@
       "word": "landscapes"
     },
     {
-      "index_in_word": 5,
+      "index_in_word": 6,
       "phone": "EY2",
       "phone_base": "EY",
       "start": 4.03,
@@ -1185,7 +1194,7 @@
       "word": "landscapes"
     },
     {
-      "index_in_word": 6,
+      "index_in_word": 7,
       "phone": "P",
       "phone_base": "P",
       "start": 4.2,
@@ -1194,7 +1203,7 @@
       "word": "landscapes"
     },
     {
-      "index_in_word": 7,
+      "index_in_word": 8,
       "phone": "S",
       "phone_base": "S",
       "start": 4.24,
@@ -1306,7 +1315,7 @@
       "phone": "M",
       "phone_base": "M",
       "start": 5.31,
-      "end": 5.37,
+      "end": 5.38,
       "word_index": 10,
       "word": "some"
     },
@@ -1314,7 +1323,7 @@
       "index_in_word": 0,
       "phone": "CH",
       "phone_base": "CH",
-      "start": 5.37,
+      "start": 5.38,
       "end": 5.49,
       "word_index": 11,
       "word": "chips"
@@ -1501,11 +1510,16 @@
     {
       "phone": "N",
       "start": 3.84,
-      "end": 3.89
+      "end": 3.87
+    },
+    {
+      "phone": "D",
+      "start": 3.87,
+      "end": 3.92
     },
     {
       "phone": "S",
-      "start": 3.89,
+      "start": 3.92,
       "end": 3.98
     },
     {
@@ -1586,11 +1600,11 @@
     {
       "phone": "M",
       "start": 5.31,
-      "end": 5.37
+      "end": 5.38
     },
     {
       "phone": "CH",
-      "start": 5.37,
+      "start": 5.38,
       "end": 5.49
     },
     {
@@ -3073,8 +3087,8 @@
       "pose": "N",
       "phone": "N",
       "start": 3.84,
-      "center": 3.865,
-      "end": 3.89,
+      "center": 3.855,
+      "end": 3.87,
       "word": "landscapes",
       "mfa_word": "landscapes",
       "word_index": 6,
@@ -3097,12 +3111,12 @@
     },
     {
       "index": 31,
-      "id": "S",
-      "pose": "S",
-      "phone": "S",
-      "start": 3.89,
-      "center": 3.935,
-      "end": 3.98,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 3.87,
+      "center": 3.895,
+      "end": 3.92,
       "word": "landscapes",
       "mfa_word": "landscapes",
       "word_index": 6,
@@ -3111,7 +3125,7 @@
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
-      "source_phone": "S",
+      "source_phone": "D",
       "source_phone_index": 3,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
@@ -3125,6 +3139,34 @@
     },
     {
       "index": 32,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 3.92,
+      "center": 3.95,
+      "end": 3.98,
+      "word": "landscapes",
+      "mfa_word": "landscapes",
+      "word_index": 6,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 33,
       "id": "K",
       "pose": "K",
       "phone": "K",
@@ -3140,7 +3182,7 @@
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
       "source_phone": "K",
-      "source_phone_index": 4,
+      "source_phone_index": 5,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
       "approval": {
@@ -3152,7 +3194,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 33,
+      "index": 34,
       "id": "EY2",
       "pose": "EY2",
       "phone": "EY2",
@@ -3168,7 +3210,7 @@
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
       "source_phone": "EY2",
-      "source_phone_index": 5,
+      "source_phone_index": 6,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
       "approval": {
@@ -3180,7 +3222,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 34,
+      "index": 35,
       "id": "P",
       "pose": "P",
       "phone": "P",
@@ -3196,7 +3238,7 @@
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
       "source_phone": "P",
-      "source_phone_index": 6,
+      "source_phone_index": 7,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
       "approval": {
@@ -3208,7 +3250,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 35,
+      "index": 36,
       "id": "S",
       "pose": "S",
       "phone": "S",
@@ -3224,7 +3266,7 @@
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
       "source_phone": "S",
-      "source_phone_index": 7,
+      "source_phone_index": 8,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
       "approval": {
@@ -3236,7 +3278,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 36,
+      "index": 37,
       "id": "W",
       "pose": "W",
       "phone": "W",
@@ -3264,7 +3306,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 37,
+      "index": 38,
       "id": "AA1",
       "pose": "AA1",
       "phone": "AA1",
@@ -3292,7 +3334,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 38,
+      "index": 39,
       "id": "N",
       "pose": "N",
       "phone": "N",
@@ -3320,7 +3362,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 39,
+      "index": 40,
       "id": "T",
       "pose": "T",
       "phone": "T",
@@ -3348,7 +3390,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 40,
+      "index": 41,
       "id": "T",
       "pose": "T",
       "phone": "T",
@@ -3376,7 +3418,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 41,
+      "index": 42,
       "id": "IH0",
       "pose": "IH0",
       "phone": "IH0",
@@ -3404,7 +3446,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 42,
+      "index": 43,
       "id": "T",
       "pose": "T",
       "phone": "T",
@@ -3432,7 +3474,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 43,
+      "index": 44,
       "id": "R",
       "pose": "R",
       "phone": "R",
@@ -3460,7 +3502,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 44,
+      "index": 45,
       "id": "AY1",
       "pose": "AY1",
       "phone": "AY1",
@@ -3488,7 +3530,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 45,
+      "index": 46,
       "id": "S",
       "pose": "S",
       "phone": "S",
@@ -3516,7 +3558,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 46,
+      "index": 47,
       "id": "AH1",
       "pose": "AH1",
       "phone": "AH1",
@@ -3544,13 +3586,13 @@
       "speech_region_index": 1
     },
     {
-      "index": 47,
+      "index": 48,
       "id": "M",
       "pose": "M",
       "phone": "M",
       "start": 5.31,
-      "center": 5.34,
-      "end": 5.37,
+      "center": 5.345,
+      "end": 5.38,
       "word": "some",
       "mfa_word": "some",
       "word_index": 10,
@@ -3572,12 +3614,12 @@
       "speech_region_index": 1
     },
     {
-      "index": 48,
+      "index": 49,
       "id": "CH",
       "pose": "CH",
       "phone": "CH",
-      "start": 5.37,
-      "center": 5.43,
+      "start": 5.38,
+      "center": 5.4350000000000005,
       "end": 5.49,
       "word": "chips",
       "mfa_word": "chips",
@@ -3600,7 +3642,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 49,
+      "index": 50,
       "id": "IH1",
       "pose": "IH1",
       "phone": "IH1",
@@ -3628,7 +3670,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 50,
+      "index": 51,
       "id": "P",
       "pose": "P",
       "phone": "P",
@@ -3656,7 +3698,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 51,
+      "index": 52,
       "id": "S",
       "pose": "S",
       "phone": "S",
@@ -3688,7 +3730,7 @@
     {
       "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 2,
-      "gap_threshold_seconds": 0.15,
+      "gap_threshold_seconds": 0.125,
       "largest_split_gap_seconds": 0.29,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }
@@ -3700,17 +3742,17 @@
     "pause_boundary_count": 11,
     "pause_region_break_count": 1,
     "word_head_count": 12,
-    "viseme_count": 52,
+    "viseme_count": 53,
     "flag_count": 1,
     "flags_by_kind": {
       "speech_regions_split_on_pause_boundaries": 1
     },
     "commit_reasons": {
-      "mfa_phone_interval": 52
+      "mfa_phone_interval": 53
     },
     "alignment_reasons": {
-      "mfa_textgrid_phone": 52
+      "mfa_textgrid_phone": 53
     },
-    "mapped_to_observed_speech_count": 52
+    "mapped_to_observed_speech_count": 53
   }
 }

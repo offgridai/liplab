@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0079_20260629_104042_251_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000078_00",
-  "created_utc": "2026-07-11T22:14:47.537407+00:00",
+  "created_utc": "2026-07-12T14:15:34.238341+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 125,
     "source_run_dir": "outputs/offline_gold/latest/case_0079_20260629_104042_251_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000078_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-11T22:14:47.537507+00:00"
+    "reviewed_utc": "2026-07-12T14:15:34.238436+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -60,14 +60,14 @@
     },
     {
       "index": 1,
-      "start": 2.74,
+      "start": 2.75,
       "end": 4.53,
       "word_start_index": 4,
       "word_end_index": 9,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -104,7 +104,7 @@
       "split_reason": "none",
       "direct_word_gap_seconds": 0.050000000000000044,
       "phone_gap_seconds": 0.050000000000000044,
-      "wave_silence_seconds": 0.0,
+      "wave_silence_seconds": 0.050000000000000044,
       "acoustic_gap_seconds": 0.050000000000000044,
       "speech_region_index_before": 0,
       "speech_region_index_after": 0
@@ -136,10 +136,10 @@
       "pause_class": "region_break",
       "split_applied": true,
       "split_reason": "hard_punctuation_with_lull",
-      "direct_word_gap_seconds": 0.2400000000000002,
-      "phone_gap_seconds": 0.2400000000000002,
-      "wave_silence_seconds": 0.2400000000000002,
-      "acoustic_gap_seconds": 0.2400000000000002,
+      "direct_word_gap_seconds": 0.25,
+      "phone_gap_seconds": 0.25,
+      "wave_silence_seconds": 0.25,
+      "acoustic_gap_seconds": 0.25,
       "speech_region_index_before": 0,
       "speech_region_index_after": 1
     },
@@ -304,7 +304,7 @@
       "word_index": 4,
       "word": "want",
       "mfa_word": "want",
-      "start": 2.74,
+      "start": 2.75,
       "end": 3.05,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -473,7 +473,7 @@
     {
       "word_index": 4,
       "word": "want",
-      "start": 2.74,
+      "start": 2.75,
       "end": 2.92,
       "pose": "W",
       "phrase_index": 1,
@@ -642,7 +642,7 @@
       "word_index": 4,
       "word": "want",
       "mfa_word": "want",
-      "start": 2.74,
+      "start": 2.75,
       "end": 3.05,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -803,7 +803,7 @@
       "phone": "ZH",
       "phone_base": "ZH",
       "start": 0.73,
-      "end": 0.8,
+      "end": 0.81,
       "word_index": 0,
       "word": "indonesia's"
     },
@@ -811,7 +811,7 @@
       "index_in_word": 7,
       "phone": "AH0",
       "phone_base": "AH",
-      "start": 0.8,
+      "start": 0.81,
       "end": 0.89,
       "word_index": 0,
       "word": "indonesia's"
@@ -955,7 +955,7 @@
       "index_in_word": 0,
       "phone": "W",
       "phone_base": "W",
-      "start": 2.74,
+      "start": 2.75,
       "end": 2.92,
       "word_index": 4,
       "word": "want"
@@ -1184,11 +1184,11 @@
     {
       "phone": "ZH",
       "start": 0.73,
-      "end": 0.8
+      "end": 0.81
     },
     {
       "phone": "AH0",
-      "start": 0.8,
+      "start": 0.81,
       "end": 0.89
     },
     {
@@ -1268,7 +1268,7 @@
     },
     {
       "phone": "W",
-      "start": 2.74,
+      "start": 2.75,
       "end": 2.92
     },
     {
@@ -1382,6 +1382,11 @@
       "start": 0.0,
       "end": 0.32,
       "duration_seconds": 0.32
+    },
+    {
+      "start": 1.42,
+      "end": 1.54,
+      "duration_seconds": 0.1200000000000001
     },
     {
       "start": 1.7,
@@ -2174,8 +2179,8 @@
       "pose": "ZH",
       "phone": "ZH",
       "start": 0.73,
-      "center": 0.765,
-      "end": 0.8,
+      "center": 0.77,
+      "end": 0.81,
       "word": "indonesia's",
       "mfa_word": "indonesia's",
       "word_index": 0,
@@ -2201,8 +2206,8 @@
       "id": "AH0",
       "pose": "AH0",
       "phone": "AH0",
-      "start": 0.8,
-      "center": 0.845,
+      "start": 0.81,
+      "center": 0.8500000000000001,
       "end": 0.89,
       "word": "indonesia's",
       "mfa_word": "indonesia's",
@@ -2649,8 +2654,8 @@
       "id": "W",
       "pose": "W",
       "phone": "W",
-      "start": 2.74,
-      "center": 2.83,
+      "start": 2.75,
+      "center": 2.835,
       "end": 2.92,
       "word": "want",
       "mfa_word": "want",
@@ -3265,8 +3270,8 @@
     {
       "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 2,
-      "gap_threshold_seconds": 0.15,
-      "largest_split_gap_seconds": 0.24,
+      "gap_threshold_seconds": 0.125,
+      "largest_split_gap_seconds": 0.25,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }
   ],

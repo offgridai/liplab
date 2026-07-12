@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0025_20260629_094202_889_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000024_00",
-  "created_utc": "2026-07-11T22:14:45.897479+00:00",
+  "created_utc": "2026-07-12T14:15:32.261242+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 125,
     "source_run_dir": "outputs/offline_gold/latest/case_0025_20260629_094202_889_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000024_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-11T22:14:45.897570+00:00"
+    "reviewed_utc": "2026-07-12T14:15:32.261344+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -70,10 +70,10 @@
       "pause_class": "none",
       "split_applied": false,
       "split_reason": "none",
-      "direct_word_gap_seconds": 0.06999999999999995,
-      "phone_gap_seconds": 0.06999999999999995,
+      "direct_word_gap_seconds": 0.05999999999999994,
+      "phone_gap_seconds": 0.05999999999999994,
       "wave_silence_seconds": 0.0,
-      "acoustic_gap_seconds": 0.06999999999999995,
+      "acoustic_gap_seconds": 0.05999999999999994,
       "speech_region_index_before": 0,
       "speech_region_index_after": 0
     },
@@ -219,7 +219,7 @@
       "word_index": 1,
       "word": "is",
       "mfa_word": "is",
-      "start": 0.99,
+      "start": 0.98,
       "end": 1.16,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -374,7 +374,7 @@
     {
       "word_index": 1,
       "word": "is",
-      "start": 0.99,
+      "start": 0.98,
       "end": 1.06,
       "pose": "IH1",
       "phrase_index": 0,
@@ -522,7 +522,7 @@
       "word_index": 1,
       "word": "is",
       "mfa_word": "is",
-      "start": 0.99,
+      "start": 0.98,
       "end": 1.16,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -725,7 +725,7 @@
       "index_in_word": 0,
       "phone": "IH1",
       "phone_base": "IH",
-      "start": 0.99,
+      "start": 0.98,
       "end": 1.06,
       "word_index": 1,
       "word": "is"
@@ -1003,7 +1003,7 @@
     },
     {
       "phone": "IH1",
-      "start": 0.99,
+      "start": 0.98,
       "end": 1.06
     },
     {
@@ -1142,6 +1142,11 @@
       "start": 0.04,
       "end": 0.34,
       "duration_seconds": 0.30000000000000004
+    },
+    {
+      "start": 1.54,
+      "end": 1.68,
+      "duration_seconds": 0.1399999999999999
     },
     {
       "start": 2.96,
@@ -1795,8 +1800,8 @@
       "id": "IH1",
       "pose": "IH1",
       "phone": "IH1",
-      "start": 0.99,
-      "center": 1.025,
+      "start": 0.98,
+      "center": 1.02,
       "end": 1.06,
       "word": "is",
       "mfa_word": "is",

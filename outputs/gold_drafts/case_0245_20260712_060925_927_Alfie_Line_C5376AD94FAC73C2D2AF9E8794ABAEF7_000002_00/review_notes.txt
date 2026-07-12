@@ -1,0 +1,21 @@
+case: case_0245_20260712_060925_927_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000002_00
+transcript: We've got turkey, ham, and veggie sandwiches. Which one sounds good?
+audio: 4.777s @ 24000 Hz
+speech regions: 2
+pause boundaries: 10
+pause-driven region breaks: 1
+word heads: 11
+dense visemes: 42
+draft flags: 1
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading

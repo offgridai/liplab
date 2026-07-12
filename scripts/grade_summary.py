@@ -41,6 +41,136 @@ def _read_csv_rows(path: pathlib.Path) -> list[dict[str, str]]:
         return []
 
 
+def _merge_intervals(intervals: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    merged: list[list[float]] = []
+    for start, end in sorted(intervals):
+        if end <= start:
+            continue
+        if not merged or start > merged[-1][1]:
+            merged.append([start, end])
+        else:
+            merged[-1][1] = max(merged[-1][1], end)
+    return [(start, end) for start, end in merged]
+
+
+def _interval_overlap_seconds(
+    left: list[tuple[float, float]], right: list[tuple[float, float]]
+) -> float:
+    total = 0.0
+    i = 0
+    j = 0
+    while i < len(left) and j < len(right):
+        total += max(0.0, min(left[i][1], right[j][1]) - max(left[i][0], right[j][0]))
+        if left[i][1] <= right[j][1]:
+            i += 1
+        else:
+            j += 1
+    return total
+
+
+def _longest_uncovered_seconds(
+    containers: list[tuple[float, float]], coverage: list[tuple[float, float]]
+) -> float:
+    longest = 0.0
+    for container_start, container_end in containers:
+        cursor = container_start
+        for covered_start, covered_end in coverage:
+            if covered_end <= cursor or covered_start >= container_end:
+                continue
+            longest = max(longest, max(0.0, covered_start - cursor))
+            cursor = max(cursor, min(covered_end, container_end))
+            if cursor >= container_end:
+                break
+        longest = max(longest, max(0.0, container_end - cursor))
+    return longest
+
+
+def _compute_playback_health(
+    commit_rows: list[dict[str, str]], speech_rows: list[dict[str, str]]
+) -> dict[str, Any]:
+    if not commit_rows:
+        return {"available": False}
+
+    usable_intervals: list[tuple[float, float]] = []
+    late_start_count = 0
+    late_center_count = 0
+    expired_count = 0
+    commits_by_tick: dict[int, list[dict[str, str]]] = {}
+    for row in commit_rows:
+        render_start = _safe_float(row, "render_start")
+        render_center = _safe_float(row, "render_center")
+        render_end = _safe_float(row, "render_end")
+        commit_time = _safe_float(row, "commit_playback")
+        late_start_count += int(commit_time > render_start)
+        late_center_count += int(commit_time > render_center)
+        expired_count += int(commit_time >= render_end)
+        if commit_time < render_end:
+            usable_intervals.append((max(render_start, commit_time), render_end))
+        commits_by_tick.setdefault(round(commit_time * 1000.0), []).append(row)
+
+    late_burst_count = 0
+    late_burst_event_count = 0
+    for tick_rows in commits_by_tick.values():
+        late_rows = [row for row in tick_rows if _safe_float(row, "commit_lead") < 0.0]
+        if len(late_rows) >= 2:
+            late_burst_count += 1
+            late_burst_event_count += len(late_rows)
+
+    compressed_cadence_count = 0
+    longest_compressed_cadence_run = 0
+    compressed_run = 0
+    for previous, current in zip(commit_rows, commit_rows[1:]):
+        planned_delta = (
+            _safe_float(current, "text_diagnostic_center")
+            - _safe_float(previous, "text_diagnostic_center")
+        )
+        committed_delta = (
+            _safe_float(current, "render_center")
+            - _safe_float(previous, "render_center")
+        )
+        # Ignore naturally dense phones. Flag only cadence that was materially
+        # compressed relative to the transcript prior by runtime scheduling.
+        if planned_delta >= 0.075 and committed_delta <= planned_delta * 0.60:
+            compressed_cadence_count += 1
+            compressed_run += 1
+            longest_compressed_cadence_run = max(longest_compressed_cadence_run, compressed_run)
+        else:
+            compressed_run = 0
+
+    speech_intervals = _merge_intervals(
+        [(_safe_float(row, "start"), _safe_float(row, "end")) for row in speech_rows]
+    )
+    rendered_intervals = _merge_intervals(usable_intervals)
+    speech_seconds = sum(end - start for start, end in speech_intervals)
+    covered_seconds = _interval_overlap_seconds(speech_intervals, rendered_intervals)
+    uncovered_seconds = max(0.0, speech_seconds - covered_seconds)
+    last_speech_end = speech_intervals[-1][1] if speech_intervals else 0.0
+    scheduled_after_speech_count = sum(
+        1 for row in commit_rows if _safe_float(row, "render_center") > last_speech_end + 0.050
+    ) if speech_intervals else 0
+    scheduled_tail_overrun_ms = max(
+        [_safe_float(row, "render_end") - last_speech_end for row in commit_rows] + [0.0]
+    ) * 1000.0 if speech_intervals else 0.0
+
+    return {
+        "available": True,
+        "event_count": len(commit_rows),
+        "late_start_count": late_start_count,
+        "late_center_count": late_center_count,
+        "expired_count": expired_count,
+        "late_burst_count": late_burst_count,
+        "late_burst_event_count": late_burst_event_count,
+        "compressed_cadence_count": compressed_cadence_count,
+        "longest_compressed_cadence_run": longest_compressed_cadence_run,
+        "scheduled_after_speech_count": scheduled_after_speech_count,
+        "scheduled_tail_overrun_ms": scheduled_tail_overrun_ms,
+        "renderable_event_rate": (len(commit_rows) - expired_count) / len(commit_rows),
+        "speech_animation_coverage_rate": covered_seconds / speech_seconds if speech_seconds else 1.0,
+        "speech_animation_dropout_ms": uncovered_seconds * 1000.0,
+        "longest_speech_animation_dropout_ms": _longest_uncovered_seconds(
+            speech_intervals, rendered_intervals
+        ) * 1000.0,
+    }
 def _nested(dct: dict[str, Any], *keys: str, default: float = 0.0) -> float:
     cur: Any = dct
     try:
@@ -349,6 +479,12 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
         if not text_plan_grade:
             text_plan_grade = _read_json(case_dir / "text_plan_grade.json")
 
+        commit_rows = _read_csv_rows(case_dir / "commit_decisions.csv")
+        speech_rows = _read_csv_rows(case_dir / "speech_regions.csv")
+        playback_health = _compute_playback_health(commit_rows, speech_rows)
+        if playback_health.get("available"):
+            _write_json(case_dir / "playback_health.json", playback_health)
+
         row = {
             "case": case_dir.name,
             "grade": grade,
@@ -357,8 +493,9 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "streaming_prosodic_peak_grade": _read_json(case_dir / "streaming_prosodic_peak_grade.json"),
             "strict_punctuation_grade": _read_json(case_dir / "strict_punctuation_alignment_grade.json"),
             "committed_rows": _read_csv_rows(case_dir / "committed.csv"),
-            "commit_rows": _read_csv_rows(case_dir / "commit_decisions.csv"),
-            "speech_rows": _read_csv_rows(case_dir / "speech_regions.csv"),
+            "commit_rows": commit_rows,
+            "speech_rows": speech_rows,
+            "playback_health": playback_health,
             "runtime_region_rows": _read_csv_rows(case_dir / "runtime_speech_regions.csv"),
             "occupancy_rows": _read_csv_rows(case_dir / "occupancy_frames.csv"),
             "gap_rows": _read_csv_rows(case_dir / "gap_candidates.csv"),
@@ -406,6 +543,7 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
     landmark_available = [row for row in bulk if row["streaming_landmark_grade"].get("available")]
     prosodic_available = [row for row in bulk if row["streaming_prosodic_peak_grade"].get("available")]
     strict_punctuation_available = [row for row in bulk if row["strict_punctuation_grade"].get("available")]
+    playback_health_available = [row for row in bulk if row["playback_health"].get("available")]
 
     text_by_type: dict[str, dict[str, float]] = {}
     text_predicted_break_count = sum(int(row["text_plan_grade"].get("predicted_region_break_count", 0)) for row in text_available)
@@ -564,6 +702,28 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "region_overrun_ms": _mean(underrun_tail_values),
         "region_early_leak_ms": _mean(overrun_lead_values),
         "direct_aligner_available": False,
+        "renderable_event_rate": (
+            sum(int(row["playback_health"].get("event_count", 0)) - int(row["playback_health"].get("expired_count", 0)) for row in playback_health_available)
+            / max(sum(int(row["playback_health"].get("event_count", 0)) for row in playback_health_available), 1)
+        ),
+        "late_commit_event_count": sum(int(row["playback_health"].get("late_start_count", 0)) for row in playback_health_available),
+        "expired_commit_event_count": sum(int(row["playback_health"].get("expired_count", 0)) for row in playback_health_available),
+        "scheduled_after_speech_event_count": sum(int(row["playback_health"].get("scheduled_after_speech_count", 0)) for row in playback_health_available),
+        "scheduled_tail_overrun_ms": _mean([float(row["playback_health"].get("scheduled_tail_overrun_ms", 0.0)) for row in playback_health_available]),
+        "late_commit_burst_count": sum(int(row["playback_health"].get("late_burst_count", 0)) for row in playback_health_available),
+        "compressed_cadence_event_count": sum(int(row["playback_health"].get("compressed_cadence_count", 0)) for row in playback_health_available),
+        "compressed_cadence_case_count": sum(1 for row in playback_health_available if int(row["playback_health"].get("compressed_cadence_count", 0)) > 0),
+        "max_compressed_cadence_run": max([int(row["playback_health"].get("longest_compressed_cadence_run", 0)) for row in playback_health_available] + [0]),
+        "speech_animation_coverage_rate": _mean([float(row["playback_health"].get("speech_animation_coverage_rate", 0.0)) for row in playback_health_available]),
+        "speech_animation_dropout_ms": _mean([float(row["playback_health"].get("speech_animation_dropout_ms", 0.0)) for row in playback_health_available]),
+        "longest_speech_animation_dropout_ms": _mean([float(row["playback_health"].get("longest_speech_animation_dropout_ms", 0.0)) for row in playback_health_available]),
+        "playback_health_failure_cases": sum(
+            1
+            for row in playback_health_available
+            if int(row["playback_health"].get("expired_count", 0)) > 0
+            or int(row["playback_health"].get("late_burst_count", 0)) > 0
+            or int(row["playback_health"].get("scheduled_after_speech_count", 0)) > 0
+        ),
     }
 
     text_plan_summary = {

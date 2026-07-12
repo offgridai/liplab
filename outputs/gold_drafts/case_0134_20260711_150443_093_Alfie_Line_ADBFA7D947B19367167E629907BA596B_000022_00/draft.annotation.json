@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0134_20260711_150443_093_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000022_00",
-  "created_utc": "2026-07-11T22:14:49.457863+00:00",
+  "created_utc": "2026-07-12T14:15:36.119773+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 125,
     "source_run_dir": "outputs/offline_gold/latest/case_0134_20260711_150443_093_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000022_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-11T22:14:49.457968+00:00"
+    "reviewed_utc": "2026-07-12T14:15:36.119888+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -337,7 +337,7 @@
       "word": "or",
       "mfa_word": "or",
       "start": 1.18,
-      "end": 1.31,
+      "end": 1.3,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -353,7 +353,7 @@
       "word_index": 3,
       "word": "a",
       "mfa_word": "a",
-      "start": 1.31,
+      "start": 1.3,
       "end": 1.37,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -595,7 +595,7 @@
     {
       "word_index": 3,
       "word": "a",
-      "start": 1.31,
+      "start": 1.3,
       "end": 1.37,
       "pose": "AH0",
       "phrase_index": 0,
@@ -809,7 +809,7 @@
       "word": "or",
       "mfa_word": "or",
       "start": 1.18,
-      "end": 1.31,
+      "end": 1.3,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -825,7 +825,7 @@
       "word_index": 3,
       "word": "a",
       "mfa_word": "a",
-      "start": 1.31,
+      "start": 1.3,
       "end": 1.37,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -1111,7 +1111,7 @@
       "phone": "R",
       "phone_base": "R",
       "start": 1.25,
-      "end": 1.31,
+      "end": 1.3,
       "word_index": 2,
       "word": "or"
     },
@@ -1119,7 +1119,7 @@
       "index_in_word": 0,
       "phone": "AH0",
       "phone_base": "AH",
-      "start": 1.31,
+      "start": 1.3,
       "end": 1.37,
       "word_index": 3,
       "word": "a"
@@ -1476,11 +1476,11 @@
     {
       "phone": "R",
       "start": 1.25,
-      "end": 1.31
+      "end": 1.3
     },
     {
       "phone": "AH0",
-      "start": 1.31,
+      "start": 1.3,
       "end": 1.37
     },
     {
@@ -1656,9 +1656,19 @@
       "duration_seconds": 0.21999999999999997
     },
     {
+      "start": 1.36,
+      "end": 1.5,
+      "duration_seconds": 0.1399999999999999
+    },
+    {
       "start": 2.34,
       "end": 2.76,
       "duration_seconds": 0.41999999999999993
+    },
+    {
+      "start": 2.86,
+      "end": 3.0,
+      "duration_seconds": 0.14000000000000012
     },
     {
       "start": 3.5,
@@ -2545,8 +2555,8 @@
       "pose": "R",
       "phone": "R",
       "start": 1.25,
-      "center": 1.28,
-      "end": 1.31,
+      "center": 1.275,
+      "end": 1.3,
       "word": "or",
       "mfa_word": "or",
       "word_index": 2,
@@ -2572,8 +2582,8 @@
       "id": "AH0",
       "pose": "AH0",
       "phone": "AH0",
-      "start": 1.31,
-      "center": 1.34,
+      "start": 1.3,
+      "center": 1.335,
       "end": 1.37,
       "word": "a",
       "mfa_word": "a",
@@ -3524,7 +3534,7 @@
     {
       "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 2,
-      "gap_threshold_seconds": 0.15,
+      "gap_threshold_seconds": 0.125,
       "largest_split_gap_seconds": 0.3,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }

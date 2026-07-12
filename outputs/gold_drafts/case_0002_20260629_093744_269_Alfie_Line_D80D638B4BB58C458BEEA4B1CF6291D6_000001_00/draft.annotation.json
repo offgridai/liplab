@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0002_20260629_093744_269_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000001_00",
-  "created_utc": "2026-07-11T22:14:45.173346+00:00",
+  "created_utc": "2026-07-12T14:15:31.335349+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 125,
     "source_run_dir": "outputs/offline_gold/latest/case_0002_20260629_093744_269_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000001_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-11T22:14:45.173448+00:00"
+    "reviewed_utc": "2026-07-12T14:15:31.335443+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -1022,21 +1022,30 @@
       "phone": "N",
       "phone_base": "N",
       "start": 0.98,
-      "end": 1.06,
+      "end": 1.01,
       "word_index": 2,
       "word": "sandwiches"
     },
     {
       "index_in_word": 3,
-      "phone": "W",
-      "phone_base": "W",
-      "start": 1.06,
-      "end": 1.11,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 1.01,
+      "end": 1.07,
       "word_index": 2,
       "word": "sandwiches"
     },
     {
       "index_in_word": 4,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 1.07,
+      "end": 1.11,
+      "word_index": 2,
+      "word": "sandwiches"
+    },
+    {
+      "index_in_word": 5,
       "phone": "IH0",
       "phone_base": "IH",
       "start": 1.11,
@@ -1045,7 +1054,7 @@
       "word": "sandwiches"
     },
     {
-      "index_in_word": 5,
+      "index_in_word": 6,
       "phone": "CH",
       "phone_base": "CH",
       "start": 1.15,
@@ -1054,7 +1063,7 @@
       "word": "sandwiches"
     },
     {
-      "index_in_word": 6,
+      "index_in_word": 7,
       "phone": "IH0",
       "phone_base": "IH",
       "start": 1.26,
@@ -1063,7 +1072,7 @@
       "word": "sandwiches"
     },
     {
-      "index_in_word": 7,
+      "index_in_word": 8,
       "phone": "Z",
       "phone_base": "Z",
       "start": 1.38,
@@ -1404,11 +1413,16 @@
     {
       "phone": "N",
       "start": 0.98,
-      "end": 1.06
+      "end": 1.01
+    },
+    {
+      "phone": "D",
+      "start": 1.01,
+      "end": 1.07
     },
     {
       "phone": "W",
-      "start": 1.06,
+      "start": 1.07,
       "end": 1.11
     },
     {
@@ -1594,14 +1608,34 @@
   ],
   "wave_silence_spans": [
     {
+      "start": 0.28,
+      "end": 0.4,
+      "duration_seconds": 0.12
+    },
+    {
+      "start": 1.44,
+      "end": 1.56,
+      "duration_seconds": 0.1200000000000001
+    },
+    {
       "start": 1.62,
       "end": 1.86,
       "duration_seconds": 0.24
     },
     {
+      "start": 2.12,
+      "end": 2.26,
+      "duration_seconds": 0.13999999999999968
+    },
+    {
       "start": 3.12,
       "end": 3.4,
       "duration_seconds": 0.2799999999999998
+    },
+    {
+      "start": 3.44,
+      "end": 3.58,
+      "duration_seconds": 0.14000000000000012
     },
     {
       "start": 3.82,
@@ -2458,8 +2492,8 @@
       "pose": "N",
       "phone": "N",
       "start": 0.98,
-      "center": 1.02,
-      "end": 1.06,
+      "center": 0.995,
+      "end": 1.01,
       "word": "sandwiches",
       "mfa_word": "sandwiches",
       "word_index": 2,
@@ -2482,12 +2516,12 @@
     },
     {
       "index": 9,
-      "id": "W",
-      "pose": "W",
-      "phone": "W",
-      "start": 1.06,
-      "center": 1.085,
-      "end": 1.11,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 1.01,
+      "center": 1.04,
+      "end": 1.07,
       "word": "sandwiches",
       "mfa_word": "sandwiches",
       "word_index": 2,
@@ -2496,7 +2530,7 @@
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
-      "source_phone": "W",
+      "source_phone": "D",
       "source_phone_index": 3,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
@@ -2510,6 +2544,34 @@
     },
     {
       "index": 10,
+      "id": "W",
+      "pose": "W",
+      "phone": "W",
+      "start": 1.07,
+      "center": 1.09,
+      "end": 1.11,
+      "word": "sandwiches",
+      "mfa_word": "sandwiches",
+      "word_index": 2,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "W",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 11,
       "id": "IH0",
       "pose": "IH0",
       "phone": "IH0",
@@ -2525,7 +2587,7 @@
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
       "source_phone": "IH0",
-      "source_phone_index": 4,
+      "source_phone_index": 5,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
       "approval": {
@@ -2537,7 +2599,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 11,
+      "index": 12,
       "id": "CH",
       "pose": "CH",
       "phone": "CH",
@@ -2553,7 +2615,7 @@
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
       "source_phone": "CH",
-      "source_phone_index": 5,
+      "source_phone_index": 6,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
       "approval": {
@@ -2565,7 +2627,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 12,
+      "index": 13,
       "id": "IH0",
       "pose": "IH0",
       "phone": "IH0",
@@ -2581,7 +2643,7 @@
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
       "source_phone": "IH0",
-      "source_phone_index": 6,
+      "source_phone_index": 7,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
       "approval": {
@@ -2593,7 +2655,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 13,
+      "index": 14,
       "id": "Z",
       "pose": "Z",
       "phone": "Z",
@@ -2609,7 +2671,7 @@
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
       "source_phone": "Z",
-      "source_phone_index": 7,
+      "source_phone_index": 8,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
       "approval": {
@@ -2621,7 +2683,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 14,
+      "index": 15,
       "id": "F",
       "pose": "F",
       "phone": "F",
@@ -2649,7 +2711,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 15,
+      "index": 16,
       "id": "R",
       "pose": "R",
       "phone": "R",
@@ -2677,7 +2739,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 16,
+      "index": 17,
       "id": "ER0",
       "pose": "ER0",
       "phone": "ER0",
@@ -2705,7 +2767,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 17,
+      "index": 18,
       "id": "F",
       "pose": "F",
       "phone": "F",
@@ -2733,7 +2795,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 18,
+      "index": 19,
       "id": "AY1",
       "pose": "AY1",
       "phone": "AY1",
@@ -2761,7 +2823,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 19,
+      "index": 20,
       "id": "V",
       "pose": "V",
       "phone": "V",
@@ -2789,7 +2851,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 20,
+      "index": 21,
       "id": "D",
       "pose": "D",
       "phone": "D",
@@ -2817,7 +2879,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 21,
+      "index": 22,
       "id": "AA1",
       "pose": "AA1",
       "phone": "AA1",
@@ -2845,7 +2907,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 22,
+      "index": 23,
       "id": "L",
       "pose": "L",
       "phone": "L",
@@ -2873,7 +2935,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 23,
+      "index": 24,
       "id": "ER0",
       "pose": "ER0",
       "phone": "ER0",
@@ -2901,7 +2963,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 24,
+      "index": 25,
       "id": "Z",
       "pose": "Z",
       "phone": "Z",
@@ -2929,7 +2991,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 25,
+      "index": 26,
       "id": "AH0",
       "pose": "AH0",
       "phone": "AH0",
@@ -2957,7 +3019,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 26,
+      "index": 27,
       "id": "N",
       "pose": "N",
       "phone": "N",
@@ -2985,7 +3047,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 27,
+      "index": 28,
       "id": "D",
       "pose": "D",
       "phone": "D",
@@ -3013,7 +3075,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 28,
+      "index": 29,
       "id": "CH",
       "pose": "CH",
       "phone": "CH",
@@ -3041,7 +3103,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 29,
+      "index": 30,
       "id": "IH1",
       "pose": "IH1",
       "phone": "IH1",
@@ -3069,7 +3131,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 30,
+      "index": 31,
       "id": "P",
       "pose": "P",
       "phone": "P",
@@ -3097,7 +3159,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 31,
+      "index": 32,
       "id": "S",
       "pose": "S",
       "phone": "S",
@@ -3125,7 +3187,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 32,
+      "index": 33,
       "id": "F",
       "pose": "F",
       "phone": "F",
@@ -3153,7 +3215,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 33,
+      "index": 34,
       "id": "ER0",
       "pose": "ER0",
       "phone": "ER0",
@@ -3181,7 +3243,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 34,
+      "index": 35,
       "id": "T",
       "pose": "T",
       "phone": "T",
@@ -3209,7 +3271,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 35,
+      "index": 36,
       "id": "UW1",
       "pose": "UW1",
       "phone": "UW1",
@@ -3237,7 +3299,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 36,
+      "index": 37,
       "id": "HH",
       "pose": "HH",
       "phone": "HH",
@@ -3265,7 +3327,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 37,
+      "index": 38,
       "id": "W",
       "pose": "W",
       "phone": "W",
@@ -3293,7 +3355,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 38,
+      "index": 39,
       "id": "AH1",
       "pose": "AH1",
       "phone": "AH1",
@@ -3321,7 +3383,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 39,
+      "index": 40,
       "id": "T",
       "pose": "T",
       "phone": "T",
@@ -3349,7 +3411,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 40,
+      "index": 41,
       "id": "AH0",
       "pose": "AH0",
       "phone": "AH0",
@@ -3377,7 +3439,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 41,
+      "index": 42,
       "id": "L",
       "pose": "L",
       "phone": "L",
@@ -3405,7 +3467,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 42,
+      "index": 43,
       "id": "IH0",
       "pose": "IH0",
       "phone": "IH0",
@@ -3433,7 +3495,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 43,
+      "index": 44,
       "id": "T",
       "pose": "T",
       "phone": "T",
@@ -3461,7 +3523,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 44,
+      "index": 45,
       "id": "B",
       "pose": "B",
       "phone": "B",
@@ -3489,7 +3551,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 45,
+      "index": 46,
       "id": "IY1",
       "pose": "IY1",
       "phone": "IY1",
@@ -3521,7 +3583,7 @@
     {
       "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 2,
-      "gap_threshold_seconds": 0.15,
+      "gap_threshold_seconds": 0.125,
       "largest_split_gap_seconds": 0.57,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }
@@ -3533,17 +3595,17 @@
     "pause_boundary_count": 12,
     "pause_region_break_count": 1,
     "word_head_count": 13,
-    "viseme_count": 46,
+    "viseme_count": 47,
     "flag_count": 1,
     "flags_by_kind": {
       "speech_regions_split_on_pause_boundaries": 1
     },
     "commit_reasons": {
-      "mfa_phone_interval": 46
+      "mfa_phone_interval": 47
     },
     "alignment_reasons": {
-      "mfa_textgrid_phone": 46
+      "mfa_textgrid_phone": 47
     },
-    "mapped_to_observed_speech_count": 46
+    "mapped_to_observed_speech_count": 47
   }
 }

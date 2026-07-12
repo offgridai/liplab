@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0014_20260629_093947_935_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000013_00",
-  "created_utc": "2026-07-11T22:14:45.573928+00:00",
+  "created_utc": "2026-07-12T14:15:31.767151+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 125,
     "source_run_dir": "outputs/offline_gold/latest/case_0014_20260629_093947_935_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000013_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-11T22:14:45.574015+00:00"
+    "reviewed_utc": "2026-07-12T14:15:31.767415+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -157,7 +157,7 @@
       "split_reason": "none",
       "direct_word_gap_seconds": 0.029999999999999805,
       "phone_gap_seconds": 0.029999999999999805,
-      "wave_silence_seconds": 0.0,
+      "wave_silence_seconds": 0.029999999999999805,
       "acoustic_gap_seconds": 0.029999999999999805,
       "speech_region_index_before": 0,
       "speech_region_index_after": 0
@@ -390,7 +390,7 @@
       "word": "the",
       "mfa_word": "the",
       "start": 3.04,
-      "end": 3.11,
+      "end": 3.1,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -406,7 +406,7 @@
       "word_index": 10,
       "word": "world",
       "mfa_word": "world",
-      "start": 3.11,
+      "start": 3.1,
       "end": 3.47,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -586,8 +586,8 @@
     {
       "word_index": 10,
       "word": "world",
-      "start": 3.11,
-      "end": 3.2,
+      "start": 3.1,
+      "end": 3.21,
       "pose": "W",
       "phrase_index": 0,
       "sentence_index": -1,
@@ -759,7 +759,7 @@
       "word": "the",
       "mfa_word": "the",
       "start": 3.04,
-      "end": 3.11,
+      "end": 3.1,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -775,7 +775,7 @@
       "word_index": 10,
       "word": "world",
       "mfa_word": "world",
-      "start": 3.11,
+      "start": 3.1,
       "end": 3.47,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -1166,7 +1166,7 @@
       "phone": "AH1",
       "phone_base": "AH",
       "start": 3.07,
-      "end": 3.11,
+      "end": 3.1,
       "word_index": 9,
       "word": "the"
     },
@@ -1174,8 +1174,8 @@
       "index_in_word": 0,
       "phone": "W",
       "phone_base": "W",
-      "start": 3.11,
-      "end": 3.2,
+      "start": 3.1,
+      "end": 3.21,
       "word_index": 10,
       "word": "world"
     },
@@ -1183,7 +1183,7 @@
       "index_in_word": 1,
       "phone": "ER1",
       "phone_base": "ER",
-      "start": 3.2,
+      "start": 3.21,
       "end": 3.33,
       "word_index": 10,
       "word": "world"
@@ -1416,16 +1416,16 @@
     {
       "phone": "AH1",
       "start": 3.07,
-      "end": 3.11
+      "end": 3.1
     },
     {
       "phone": "W",
-      "start": 3.11,
-      "end": 3.2
+      "start": 3.1,
+      "end": 3.21
     },
     {
       "phone": "ER1",
-      "start": 3.2,
+      "start": 3.21,
       "end": 3.33
     },
     {
@@ -1449,6 +1449,11 @@
       "start": 1.66,
       "end": 1.82,
       "duration_seconds": 0.16000000000000014
+    },
+    {
+      "start": 2.28,
+      "end": 2.42,
+      "duration_seconds": 0.14000000000000012
     },
     {
       "start": 3.3,
@@ -3198,8 +3203,8 @@
       "pose": "AH1",
       "phone": "AH1",
       "start": 3.07,
-      "center": 3.09,
-      "end": 3.11,
+      "center": 3.085,
+      "end": 3.1,
       "word": "the",
       "mfa_word": "the",
       "word_index": 9,
@@ -3225,9 +3230,9 @@
       "id": "W",
       "pose": "W",
       "phone": "W",
-      "start": 3.11,
+      "start": 3.1,
       "center": 3.1550000000000002,
-      "end": 3.2,
+      "end": 3.21,
       "word": "world",
       "mfa_word": "world",
       "word_index": 10,
@@ -3253,8 +3258,8 @@
       "id": "ER1",
       "pose": "ER1",
       "phone": "ER1",
-      "start": 3.2,
-      "center": 3.265,
+      "start": 3.21,
+      "center": 3.27,
       "end": 3.33,
       "word": "world",
       "mfa_word": "world",

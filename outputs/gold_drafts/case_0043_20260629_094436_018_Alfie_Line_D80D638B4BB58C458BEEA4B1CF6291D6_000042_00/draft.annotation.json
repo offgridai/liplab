@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0043_20260629_094436_018_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000042_00",
-  "created_utc": "2026-07-11T22:14:46.504192+00:00",
+  "created_utc": "2026-07-12T14:15:33.018641+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 125,
     "source_run_dir": "outputs/offline_gold/latest/case_0043_20260629_094436_018_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000042_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-11T22:14:46.504288+00:00"
+    "reviewed_utc": "2026-07-12T14:15:33.018753+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -45,14 +45,14 @@
   "speech_regions": [
     {
       "index": 0,
-      "start": 0.03,
+      "start": 0.04,
       "end": 2.64,
       "word_start_index": 0,
       "word_end_index": 8,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -202,7 +202,7 @@
       "word_index": 0,
       "word": "ivory",
       "mfa_word": "ivory",
-      "start": 0.03,
+      "start": 0.04,
       "end": 0.42,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -305,7 +305,7 @@
       "word": "cocoa",
       "mfa_word": "cocoa",
       "start": 1.63,
-      "end": 2.04,
+      "end": 2.03,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -321,7 +321,7 @@
       "word_index": 7,
       "word": "and",
       "mfa_word": "and",
-      "start": 2.04,
+      "start": 2.03,
       "end": 2.17,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -358,7 +358,7 @@
     {
       "word_index": 0,
       "word": "ivory",
-      "start": 0.03,
+      "start": 0.04,
       "end": 0.17,
       "pose": "AY1",
       "phrase_index": 0,
@@ -470,7 +470,7 @@
     {
       "word_index": 7,
       "word": "and",
-      "start": 2.04,
+      "start": 2.03,
       "end": 2.09,
       "pose": "AH0",
       "phrase_index": 0,
@@ -505,7 +505,7 @@
       "word_index": 0,
       "word": "ivory",
       "mfa_word": "ivory",
-      "start": 0.03,
+      "start": 0.04,
       "end": 0.42,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -608,7 +608,7 @@
       "word": "cocoa",
       "mfa_word": "cocoa",
       "start": 1.63,
-      "end": 2.04,
+      "end": 2.03,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -624,7 +624,7 @@
       "word_index": 7,
       "word": "and",
       "mfa_word": "and",
-      "start": 2.04,
+      "start": 2.03,
       "end": 2.17,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -662,7 +662,7 @@
       "index_in_word": 0,
       "phone": "AY1",
       "phone_base": "AY",
-      "start": 0.03,
+      "start": 0.04,
       "end": 0.17,
       "word_index": 0,
       "word": "ivory"
@@ -861,7 +861,7 @@
       "phone": "OW0",
       "phone_base": "OW",
       "start": 1.94,
-      "end": 2.04,
+      "end": 2.03,
       "word_index": 6,
       "word": "cocoa"
     },
@@ -869,7 +869,7 @@
       "index_in_word": 0,
       "phone": "AH0",
       "phone_base": "AH",
-      "start": 2.04,
+      "start": 2.03,
       "end": 2.09,
       "word_index": 7,
       "word": "and"
@@ -932,7 +932,7 @@
   "mfa_non_silence_phone_intervals": [
     {
       "phone": "AY1",
-      "start": 0.03,
+      "start": 0.04,
       "end": 0.17
     },
     {
@@ -1043,11 +1043,11 @@
     {
       "phone": "OW0",
       "start": 1.94,
-      "end": 2.04
+      "end": 2.03
     },
     {
       "phone": "AH0",
-      "start": 2.04,
+      "start": 2.03,
       "end": 2.09
     },
     {
@@ -1486,8 +1486,8 @@
       "id": "AY1",
       "pose": "AY1",
       "phone": "AY1",
-      "start": 0.03,
-      "center": 0.1,
+      "start": 0.04,
+      "center": 0.10500000000000001,
       "end": 0.17,
       "word": "ivory",
       "mfa_word": "ivory",
@@ -2103,8 +2103,8 @@
       "pose": "OW0",
       "phone": "OW0",
       "start": 1.94,
-      "center": 1.99,
-      "end": 2.04,
+      "center": 1.9849999999999999,
+      "end": 2.03,
       "word": "cocoa",
       "mfa_word": "cocoa",
       "word_index": 6,
@@ -2130,8 +2130,8 @@
       "id": "AH0",
       "pose": "AH0",
       "phone": "AH0",
-      "start": 2.04,
-      "center": 2.065,
+      "start": 2.03,
+      "center": 2.0599999999999996,
       "end": 2.09,
       "word": "and",
       "mfa_word": "and",

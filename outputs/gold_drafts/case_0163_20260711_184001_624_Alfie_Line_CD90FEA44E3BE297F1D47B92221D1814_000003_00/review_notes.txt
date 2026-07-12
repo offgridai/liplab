@@ -1,0 +1,21 @@
+case: case_0163_20260711_184001_624_Alfie_Line_CD90FEA44E3BE297F1D47B92221D1814_000003_00
+transcript: Ham, lettuce, tomato, and mayo on rye.
+audio: 4.057s @ 24000 Hz
+speech regions: 3
+pause boundaries: 6
+pause-driven region breaks: 2
+word heads: 7
+dense visemes: 24
+draft flags: 1
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading

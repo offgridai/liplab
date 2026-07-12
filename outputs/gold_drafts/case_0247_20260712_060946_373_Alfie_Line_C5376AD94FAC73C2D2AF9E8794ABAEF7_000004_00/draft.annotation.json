@@ -1,0 +1,1904 @@
+{
+  "schema_version": 1,
+  "case_id": "case_0247_20260712_060946_373_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000004_00",
+  "created_utc": "2026-07-12T14:15:39.437581+00:00",
+  "generator": {
+    "kind": "liplab_gold_mfa_phase1",
+    "buffer_ms": 600000,
+    "chunk_ms": 600000,
+    "mfa_num_jobs": 4,
+    "speech_merge_gap_ms": 125,
+    "source_run_dir": "outputs/offline_gold/latest/case_0247_20260712_060946_373_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000004_00",
+    "mfa_align_dir": "outputs/mfa_align/latest"
+  },
+  "approval": {
+    "status": "approved_gold",
+    "reviewed": true,
+    "reviewer": "auto_mfa_phone_export",
+    "reviewed_utc": "2026-07-12T14:15:39.437679+00:00"
+  },
+  "review_layers": {
+    "speech_regions": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "word_heads": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "dense_visemes": {
+      "status": "reviewed_dense",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    }
+  },
+  "transcript": "Turkey, lettuce, tomato, and mayo. Yum!",
+  "audio": {
+    "path": "inputs/wav/case_0247_20260712_060946_373_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000004_00.wav",
+    "sample_rate_hz": 24000,
+    "channels": 1,
+    "frame_count": 87765,
+    "duration_sec": 3.656875
+  },
+  "speech_regions": [
+    {
+      "index": 0,
+      "start": 0.21,
+      "end": 0.75,
+      "word_start_index": 0,
+      "word_end_index": 0,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.125,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    },
+    {
+      "index": 1,
+      "start": 0.9,
+      "end": 1.45,
+      "word_start_index": 1,
+      "word_end_index": 1,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.125,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    },
+    {
+      "index": 2,
+      "start": 1.62,
+      "end": 2.81,
+      "word_start_index": 2,
+      "word_end_index": 4,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.125,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    },
+    {
+      "index": 3,
+      "start": 3.01,
+      "end": 3.53,
+      "word_start_index": 5,
+      "word_end_index": 5,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.125,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    }
+  ],
+  "pause_boundaries": [
+    {
+      "word_index": 0,
+      "word": "turkey",
+      "next_word_index": 1,
+      "next_word": "lettuce",
+      "mark": ",",
+      "mark_sequence": ",",
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "comma_with_lull",
+      "direct_word_gap_seconds": 0.15000000000000002,
+      "phone_gap_seconds": 0.15000000000000002,
+      "wave_silence_seconds": 0.15000000000000002,
+      "acoustic_gap_seconds": 0.15000000000000002,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 1,
+      "word": "lettuce",
+      "next_word_index": 2,
+      "next_word": "tomato",
+      "mark": ",",
+      "mark_sequence": ",",
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "comma_with_lull",
+      "direct_word_gap_seconds": 0.17000000000000015,
+      "phone_gap_seconds": 0.17000000000000015,
+      "wave_silence_seconds": 0.17000000000000015,
+      "acoustic_gap_seconds": 0.17000000000000015,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 2
+    },
+    {
+      "word_index": 2,
+      "word": "tomato",
+      "next_word_index": 3,
+      "next_word": "and",
+      "mark": ",",
+      "mark_sequence": ",",
+      "pause_class": "soft_pause",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.029999999999999805,
+      "phone_gap_seconds": 0.029999999999999805,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.029999999999999805,
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 2
+    },
+    {
+      "word_index": 3,
+      "word": "and",
+      "next_word_index": 4,
+      "next_word": "mayo",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 2
+    },
+    {
+      "word_index": 4,
+      "word": "mayo",
+      "next_word_index": 5,
+      "next_word": "yum",
+      "mark": ".",
+      "mark_sequence": ".",
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "hard_punctuation_with_lull",
+      "direct_word_gap_seconds": 0.19999999999999973,
+      "phone_gap_seconds": 0.19999999999999973,
+      "wave_silence_seconds": 0.19999999999999973,
+      "acoustic_gap_seconds": 0.19999999999999973,
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 3
+    }
+  ],
+  "gold_words": [
+    {
+      "word_index": 0,
+      "word": "turkey",
+      "mfa_word": "turkey",
+      "start": 0.21,
+      "end": 0.75,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "lettuce",
+      "mfa_word": "lettuce",
+      "start": 0.9,
+      "end": 1.45,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 2,
+      "word": "tomato",
+      "mfa_word": "tomato",
+      "start": 1.62,
+      "end": 2.18,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 2
+    },
+    {
+      "word_index": 3,
+      "word": "and",
+      "mfa_word": "and",
+      "start": 2.21,
+      "end": 2.37,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 2
+    },
+    {
+      "word_index": 4,
+      "word": "mayo",
+      "mfa_word": "mayo",
+      "start": 2.37,
+      "end": 2.81,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        "."
+      ],
+      "boundary_mark_after": ".",
+      "speech_region_index": 2
+    },
+    {
+      "word_index": 5,
+      "word": "yum",
+      "mfa_word": "yum",
+      "start": 3.01,
+      "end": 3.53,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        "!"
+      ],
+      "boundary_mark_after": "!",
+      "speech_region_index": 3
+    }
+  ],
+  "word_heads": [
+    {
+      "word_index": 0,
+      "word": "turkey",
+      "start": 0.21,
+      "end": 0.3,
+      "pose": "T",
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "source_phone": "T",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 1,
+      "word": "lettuce",
+      "start": 0.9,
+      "end": 1.03,
+      "pose": "L",
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "source_phone": "L",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 2,
+      "word": "tomato",
+      "start": 1.62,
+      "end": 1.7,
+      "pose": "T",
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "source_phone": "T",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 3,
+      "word": "and",
+      "start": 2.21,
+      "end": 2.27,
+      "pose": "AE1",
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "source_phone": "AE1",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 4,
+      "word": "mayo",
+      "start": 2.37,
+      "end": 2.4,
+      "pose": "M",
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "source_phone": "M",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 5,
+      "word": "yum",
+      "start": 3.01,
+      "end": 3.13,
+      "pose": "Y",
+      "phrase_index": 3,
+      "sentence_index": -1,
+      "source_phone": "Y",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    }
+  ],
+  "mfa_words": [
+    {
+      "word_index": 0,
+      "word": "turkey",
+      "mfa_word": "turkey",
+      "start": 0.21,
+      "end": 0.75,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "lettuce",
+      "mfa_word": "lettuce",
+      "start": 0.9,
+      "end": 1.45,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 2,
+      "word": "tomato",
+      "mfa_word": "tomato",
+      "start": 1.62,
+      "end": 2.18,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 2
+    },
+    {
+      "word_index": 3,
+      "word": "and",
+      "mfa_word": "and",
+      "start": 2.21,
+      "end": 2.37,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 2
+    },
+    {
+      "word_index": 4,
+      "word": "mayo",
+      "mfa_word": "mayo",
+      "start": 2.37,
+      "end": 2.81,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        "."
+      ],
+      "boundary_mark_after": ".",
+      "speech_region_index": 2
+    },
+    {
+      "word_index": 5,
+      "word": "yum",
+      "mfa_word": "yum",
+      "start": 3.01,
+      "end": 3.53,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        "!"
+      ],
+      "boundary_mark_after": "!",
+      "speech_region_index": 3
+    }
+  ],
+  "mfa_phones": [
+    {
+      "index_in_word": 0,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 0.21,
+      "end": 0.3,
+      "word_index": 0,
+      "word": "turkey"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "ER1",
+      "phone_base": "ER",
+      "start": 0.3,
+      "end": 0.42,
+      "word_index": 0,
+      "word": "turkey"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "K",
+      "phone_base": "K",
+      "start": 0.42,
+      "end": 0.51,
+      "word_index": 0,
+      "word": "turkey"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "IY0",
+      "phone_base": "IY",
+      "start": 0.51,
+      "end": 0.75,
+      "word_index": 0,
+      "word": "turkey"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 0.9,
+      "end": 1.03,
+      "word_index": 1,
+      "word": "lettuce"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "EH1",
+      "phone_base": "EH",
+      "start": 1.03,
+      "end": 1.1,
+      "word_index": 1,
+      "word": "lettuce"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 1.1,
+      "end": 1.14,
+      "word_index": 1,
+      "word": "lettuce"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 1.14,
+      "end": 1.24,
+      "word_index": 1,
+      "word": "lettuce"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 1.24,
+      "end": 1.45,
+      "word_index": 1,
+      "word": "lettuce"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 1.62,
+      "end": 1.7,
+      "word_index": 2,
+      "word": "tomato"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 1.7,
+      "end": 1.73,
+      "word_index": 2,
+      "word": "tomato"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "M",
+      "phone_base": "M",
+      "start": 1.73,
+      "end": 1.82,
+      "word_index": 2,
+      "word": "tomato"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "EY1",
+      "phone_base": "EY",
+      "start": 1.82,
+      "end": 1.94,
+      "word_index": 2,
+      "word": "tomato"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 1.94,
+      "end": 1.98,
+      "word_index": 2,
+      "word": "tomato"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "OW2",
+      "phone_base": "OW",
+      "start": 1.98,
+      "end": 2.18,
+      "word_index": 2,
+      "word": "tomato"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "AE1",
+      "phone_base": "AE",
+      "start": 2.21,
+      "end": 2.27,
+      "word_index": 3,
+      "word": "and"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 2.27,
+      "end": 2.31,
+      "word_index": 3,
+      "word": "and"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 2.31,
+      "end": 2.37,
+      "word_index": 3,
+      "word": "and"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "M",
+      "phone_base": "M",
+      "start": 2.37,
+      "end": 2.4,
+      "word_index": 4,
+      "word": "mayo"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "EY1",
+      "phone_base": "EY",
+      "start": 2.4,
+      "end": 2.58,
+      "word_index": 4,
+      "word": "mayo"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "OW0",
+      "phone_base": "OW",
+      "start": 2.58,
+      "end": 2.81,
+      "word_index": 4,
+      "word": "mayo"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "Y",
+      "phone_base": "Y",
+      "start": 3.01,
+      "end": 3.13,
+      "word_index": 5,
+      "word": "yum"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AH1",
+      "phone_base": "AH",
+      "start": 3.13,
+      "end": 3.33,
+      "word_index": 5,
+      "word": "yum"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "M",
+      "phone_base": "M",
+      "start": 3.33,
+      "end": 3.53,
+      "word_index": 5,
+      "word": "yum"
+    }
+  ],
+  "mfa_non_silence_phone_intervals": [
+    {
+      "phone": "T",
+      "start": 0.21,
+      "end": 0.3
+    },
+    {
+      "phone": "ER1",
+      "start": 0.3,
+      "end": 0.42
+    },
+    {
+      "phone": "K",
+      "start": 0.42,
+      "end": 0.51
+    },
+    {
+      "phone": "IY0",
+      "start": 0.51,
+      "end": 0.75
+    },
+    {
+      "phone": "L",
+      "start": 0.9,
+      "end": 1.03
+    },
+    {
+      "phone": "EH1",
+      "start": 1.03,
+      "end": 1.1
+    },
+    {
+      "phone": "T",
+      "start": 1.1,
+      "end": 1.14
+    },
+    {
+      "phone": "AH0",
+      "start": 1.14,
+      "end": 1.24
+    },
+    {
+      "phone": "S",
+      "start": 1.24,
+      "end": 1.45
+    },
+    {
+      "phone": "T",
+      "start": 1.62,
+      "end": 1.7
+    },
+    {
+      "phone": "AH0",
+      "start": 1.7,
+      "end": 1.73
+    },
+    {
+      "phone": "M",
+      "start": 1.73,
+      "end": 1.82
+    },
+    {
+      "phone": "EY1",
+      "start": 1.82,
+      "end": 1.94
+    },
+    {
+      "phone": "T",
+      "start": 1.94,
+      "end": 1.98
+    },
+    {
+      "phone": "OW2",
+      "start": 1.98,
+      "end": 2.18
+    },
+    {
+      "phone": "AE1",
+      "start": 2.21,
+      "end": 2.27
+    },
+    {
+      "phone": "N",
+      "start": 2.27,
+      "end": 2.31
+    },
+    {
+      "phone": "D",
+      "start": 2.31,
+      "end": 2.37
+    },
+    {
+      "phone": "M",
+      "start": 2.37,
+      "end": 2.4
+    },
+    {
+      "phone": "EY1",
+      "start": 2.4,
+      "end": 2.58
+    },
+    {
+      "phone": "OW0",
+      "start": 2.58,
+      "end": 2.81
+    },
+    {
+      "phone": "Y",
+      "start": 3.01,
+      "end": 3.13
+    },
+    {
+      "phone": "AH1",
+      "start": 3.13,
+      "end": 3.33
+    },
+    {
+      "phone": "M",
+      "start": 3.33,
+      "end": 3.53
+    }
+  ],
+  "wave_silence_spans": [
+    {
+      "start": 0.0,
+      "end": 0.3,
+      "duration_seconds": 0.3
+    },
+    {
+      "start": 0.64,
+      "end": 0.96,
+      "duration_seconds": 0.31999999999999995
+    },
+    {
+      "start": 1.24,
+      "end": 1.7,
+      "duration_seconds": 0.45999999999999996
+    },
+    {
+      "start": 2.66,
+      "end": 3.04,
+      "duration_seconds": 0.3799999999999999
+    },
+    {
+      "start": 3.42,
+      "end": 3.656875,
+      "duration_seconds": 0.23687499999999995
+    }
+  ],
+  "planned_visemes": [
+    {
+      "index": 0,
+      "pose": "01_TDS-Ah-",
+      "word": "turkey",
+      "word_index": 0,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.020833,
+      "strength": 0.4,
+      "source_phone": "T",
+      "source_phone_index": 0,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 1,
+      "pose": "17_Rr",
+      "word": "turkey",
+      "word_index": 0,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.0625,
+      "strength": 0.92,
+      "source_phone": "ER",
+      "source_phone_index": 1,
+      "generator": "cmu_rhotic_vowel"
+    },
+    {
+      "index": 2,
+      "pose": "13_KGY_TDS",
+      "word": "turkey",
+      "word_index": 0,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.104167,
+      "strength": 0.34,
+      "source_phone": "K",
+      "source_phone_index": 2,
+      "generator": "cmu_velar_stop"
+    },
+    {
+      "index": 3,
+      "pose": "03_Ee",
+      "word": "turkey",
+      "word_index": 0,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.145833,
+      "strength": 0.5,
+      "source_phone": "IY",
+      "source_phone_index": 3,
+      "generator": "cmu_front_vowel"
+    },
+    {
+      "index": 4,
+      "pose": "23_Tongue_LNTDS",
+      "word": "lettuce",
+      "word_index": 1,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.183333,
+      "strength": 0.46,
+      "source_phone": "L",
+      "source_phone_index": 0,
+      "generator": "cmu_lingual"
+    },
+    {
+      "index": 5,
+      "pose": "06_Eh",
+      "word": "lettuce",
+      "word_index": 1,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.216667,
+      "strength": 0.92,
+      "source_phone": "EH",
+      "source_phone_index": 1,
+      "generator": "cmu_eh_vowel"
+    },
+    {
+      "index": 6,
+      "pose": "01_TDS-Ah-",
+      "word": "lettuce",
+      "word_index": 1,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.25,
+      "strength": 0.4,
+      "source_phone": "T",
+      "source_phone_index": 2,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 7,
+      "pose": "07_Aa",
+      "word": "lettuce",
+      "word_index": 1,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.283333,
+      "strength": 0.5,
+      "source_phone": "AH",
+      "source_phone_index": 3,
+      "generator": "cmu_open_vowel"
+    },
+    {
+      "index": 8,
+      "pose": "21_FV-Ee-",
+      "word": "lettuce",
+      "word_index": 1,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.316667,
+      "strength": 0.42,
+      "source_phone": "S",
+      "source_phone_index": 4,
+      "generator": "cmu_sibilant_teeth_wide"
+    },
+    {
+      "index": 9,
+      "pose": "01_TDS-Ah-",
+      "word": "tomato",
+      "word_index": 2,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.356481,
+      "strength": 0.4,
+      "source_phone": "T",
+      "source_phone_index": 0,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 10,
+      "pose": "07_Aa",
+      "word": "tomato",
+      "word_index": 2,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.402778,
+      "strength": 0.5,
+      "source_phone": "AH",
+      "source_phone_index": 1,
+      "generator": "cmu_open_vowel"
+    },
+    {
+      "index": 11,
+      "pose": "22_MBP",
+      "word": "tomato",
+      "word_index": 2,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.449074,
+      "strength": 1.0,
+      "source_phone": "M",
+      "source_phone_index": 2,
+      "generator": "cmu_bilabial"
+    },
+    {
+      "index": 12,
+      "pose": "06_Eh",
+      "word": "tomato",
+      "word_index": 2,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.49537,
+      "strength": 0.92,
+      "source_phone": "EY",
+      "source_phone_index": 3,
+      "generator": "cmu_eh_vowel"
+    },
+    {
+      "index": 13,
+      "pose": "01_TDS-Ah-",
+      "word": "tomato",
+      "word_index": 2,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.541667,
+      "strength": 0.4,
+      "source_phone": "T",
+      "source_phone_index": 4,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 14,
+      "pose": "09_Oh",
+      "word": "tomato",
+      "word_index": 2,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.587963,
+      "strength": 0.92,
+      "source_phone": "OW",
+      "source_phone_index": 5,
+      "generator": "cmu_oh_vowel"
+    },
+    {
+      "index": 15,
+      "pose": "07_Aa",
+      "word": "and",
+      "word_index": 3,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.62963,
+      "strength": 0.5,
+      "source_phone": "AH",
+      "source_phone_index": 0,
+      "generator": "cmu_open_vowel"
+    },
+    {
+      "index": 16,
+      "pose": "23_Tongue_LNTDS",
+      "word": "and",
+      "word_index": 3,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.666667,
+      "strength": 0.46,
+      "source_phone": "N",
+      "source_phone_index": 1,
+      "generator": "cmu_lingual"
+    },
+    {
+      "index": 17,
+      "pose": "01_TDS-Ah-",
+      "word": "and",
+      "word_index": 3,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.703704,
+      "strength": 0.4,
+      "source_phone": "D",
+      "source_phone_index": 2,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 18,
+      "pose": "22_MBP",
+      "word": "mayo",
+      "word_index": 4,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.75,
+      "strength": 1.0,
+      "source_phone": "M",
+      "source_phone_index": 0,
+      "generator": "cmu_bilabial"
+    },
+    {
+      "index": 19,
+      "pose": "06_Eh",
+      "word": "mayo",
+      "word_index": 4,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.805556,
+      "strength": 0.92,
+      "source_phone": "EY",
+      "source_phone_index": 1,
+      "generator": "cmu_eh_vowel"
+    },
+    {
+      "index": 20,
+      "pose": "09_Oh",
+      "word": "mayo",
+      "word_index": 4,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.861111,
+      "strength": 0.5,
+      "source_phone": "OW",
+      "source_phone_index": 2,
+      "generator": "cmu_oh_vowel"
+    },
+    {
+      "index": 21,
+      "pose": "02_TDS_KGY-Ee-",
+      "word": "yum",
+      "word_index": 5,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.907407,
+      "strength": 0.4,
+      "source_phone": "Y",
+      "source_phone_index": 0,
+      "generator": "cmu_palatal_glide"
+    },
+    {
+      "index": 22,
+      "pose": "07_Aa",
+      "word": "yum",
+      "word_index": 5,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.944444,
+      "strength": 0.92,
+      "source_phone": "AH",
+      "source_phone_index": 1,
+      "generator": "cmu_open_vowel"
+    },
+    {
+      "index": 23,
+      "pose": "22_MBP",
+      "word": "yum",
+      "word_index": 5,
+      "phrase_index": -1,
+      "sentence_index": -1,
+      "text_center_norm": 0.981481,
+      "strength": 1.0,
+      "source_phone": "M",
+      "source_phone_index": 2,
+      "generator": "cmu_bilabial"
+    }
+  ],
+  "visemes": [
+    {
+      "index": 0,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 0.21,
+      "center": 0.255,
+      "end": 0.3,
+      "word": "turkey",
+      "mfa_word": "turkey",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 1,
+      "id": "ER1",
+      "pose": "ER1",
+      "phone": "ER1",
+      "start": 0.3,
+      "center": 0.36,
+      "end": 0.42,
+      "word": "turkey",
+      "mfa_word": "turkey",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "ER1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 2,
+      "id": "K",
+      "pose": "K",
+      "phone": "K",
+      "start": 0.42,
+      "center": 0.46499999999999997,
+      "end": 0.51,
+      "word": "turkey",
+      "mfa_word": "turkey",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "K",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 3,
+      "id": "IY0",
+      "pose": "IY0",
+      "phone": "IY0",
+      "start": 0.51,
+      "center": 0.63,
+      "end": 0.75,
+      "word": "turkey",
+      "mfa_word": "turkey",
+      "word_index": 0,
+      "phrase_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IY0",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 4,
+      "id": "L",
+      "pose": "L",
+      "phone": "L",
+      "start": 0.9,
+      "center": 0.9650000000000001,
+      "end": 1.03,
+      "word": "lettuce",
+      "mfa_word": "lettuce",
+      "word_index": 1,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "L",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 5,
+      "id": "EH1",
+      "pose": "EH1",
+      "phone": "EH1",
+      "start": 1.03,
+      "center": 1.065,
+      "end": 1.1,
+      "word": "lettuce",
+      "mfa_word": "lettuce",
+      "word_index": 1,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EH1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 6,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 1.1,
+      "center": 1.12,
+      "end": 1.14,
+      "word": "lettuce",
+      "mfa_word": "lettuce",
+      "word_index": 1,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 7,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 1.14,
+      "center": 1.19,
+      "end": 1.24,
+      "word": "lettuce",
+      "mfa_word": "lettuce",
+      "word_index": 1,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 8,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 1.24,
+      "center": 1.345,
+      "end": 1.45,
+      "word": "lettuce",
+      "mfa_word": "lettuce",
+      "word_index": 1,
+      "phrase_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 9,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 1.62,
+      "center": 1.6600000000000001,
+      "end": 1.7,
+      "word": "tomato",
+      "mfa_word": "tomato",
+      "word_index": 2,
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 10,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 1.7,
+      "center": 1.7149999999999999,
+      "end": 1.73,
+      "word": "tomato",
+      "mfa_word": "tomato",
+      "word_index": 2,
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 11,
+      "id": "M",
+      "pose": "M",
+      "phone": "M",
+      "start": 1.73,
+      "center": 1.775,
+      "end": 1.82,
+      "word": "tomato",
+      "mfa_word": "tomato",
+      "word_index": 2,
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "M",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 12,
+      "id": "EY1",
+      "pose": "EY1",
+      "phone": "EY1",
+      "start": 1.82,
+      "center": 1.88,
+      "end": 1.94,
+      "word": "tomato",
+      "mfa_word": "tomato",
+      "word_index": 2,
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EY1",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 13,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 1.94,
+      "center": 1.96,
+      "end": 1.98,
+      "word": "tomato",
+      "mfa_word": "tomato",
+      "word_index": 2,
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 14,
+      "id": "OW2",
+      "pose": "OW2",
+      "phone": "OW2",
+      "start": 1.98,
+      "center": 2.08,
+      "end": 2.18,
+      "word": "tomato",
+      "mfa_word": "tomato",
+      "word_index": 2,
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "OW2",
+      "source_phone_index": 5,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 15,
+      "id": "AE1",
+      "pose": "AE1",
+      "phone": "AE1",
+      "start": 2.21,
+      "center": 2.24,
+      "end": 2.27,
+      "word": "and",
+      "mfa_word": "and",
+      "word_index": 3,
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AE1",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 16,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 2.27,
+      "center": 2.29,
+      "end": 2.31,
+      "word": "and",
+      "mfa_word": "and",
+      "word_index": 3,
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 17,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 2.31,
+      "center": 2.34,
+      "end": 2.37,
+      "word": "and",
+      "mfa_word": "and",
+      "word_index": 3,
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "D",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 18,
+      "id": "M",
+      "pose": "M",
+      "phone": "M",
+      "start": 2.37,
+      "center": 2.385,
+      "end": 2.4,
+      "word": "mayo",
+      "mfa_word": "mayo",
+      "word_index": 4,
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "M",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 19,
+      "id": "EY1",
+      "pose": "EY1",
+      "phone": "EY1",
+      "start": 2.4,
+      "center": 2.49,
+      "end": 2.58,
+      "word": "mayo",
+      "mfa_word": "mayo",
+      "word_index": 4,
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EY1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 20,
+      "id": "OW0",
+      "pose": "OW0",
+      "phone": "OW0",
+      "start": 2.58,
+      "center": 2.6950000000000003,
+      "end": 2.81,
+      "word": "mayo",
+      "mfa_word": "mayo",
+      "word_index": 4,
+      "phrase_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "OW0",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 21,
+      "id": "Y",
+      "pose": "Y",
+      "phone": "Y",
+      "start": 3.01,
+      "center": 3.07,
+      "end": 3.13,
+      "word": "yum",
+      "mfa_word": "yum",
+      "word_index": 5,
+      "phrase_index": 3,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "Y",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 3
+    },
+    {
+      "index": 22,
+      "id": "AH1",
+      "pose": "AH1",
+      "phone": "AH1",
+      "start": 3.13,
+      "center": 3.23,
+      "end": 3.33,
+      "word": "yum",
+      "mfa_word": "yum",
+      "word_index": 5,
+      "phrase_index": 3,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 3
+    },
+    {
+      "index": 23,
+      "id": "M",
+      "pose": "M",
+      "phone": "M",
+      "start": 3.33,
+      "center": 3.4299999999999997,
+      "end": 3.53,
+      "word": "yum",
+      "mfa_word": "yum",
+      "word_index": 5,
+      "phrase_index": 3,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "M",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 3
+    }
+  ],
+  "flags": [
+    {
+      "kind": "speech_regions_split_on_pause_boundaries",
+      "region_count": 4,
+      "gap_threshold_seconds": 0.125,
+      "largest_split_gap_seconds": 0.2,
+      "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
+    }
+  ],
+  "notes": [],
+  "summary": {
+    "word_count": 6,
+    "speech_region_count": 4,
+    "pause_boundary_count": 5,
+    "pause_region_break_count": 3,
+    "word_head_count": 6,
+    "viseme_count": 24,
+    "flag_count": 1,
+    "flags_by_kind": {
+      "speech_regions_split_on_pause_boundaries": 1
+    },
+    "commit_reasons": {
+      "mfa_phone_interval": 24
+    },
+    "alignment_reasons": {
+      "mfa_textgrid_phone": 24
+    },
+    "mapped_to_observed_speech_count": 24
+  }
+}

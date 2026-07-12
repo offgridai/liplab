@@ -209,6 +209,12 @@ struct FOffgridAIBoundaryPlaybackState
     float QuietEvidenceAtDecay = 1.0f;
     float QuietRawRMSAtDecay = 1.0f;
     TCHAR ActiveBoundaryMark = TCHAR(0);
+    bool bProvisionalListPause = false;
+    float ProvisionalListPauseStartSec = -1.0f;
+    float ProvisionalListPauseEndSec = -1.0f;
+    float ProvisionalListPauseConfidence = 0.0f;
+    float ProvisionalListPauseRMSNorm = 1.0f;
+    float ProvisionalListPauseEvidence = 1.0f;
     float ObservedResumeOnsetPlaybackSec = -1.0f;
     float ObservedResumeEnergyAnchorSec = -1.0f;
     FOffgridAIResolvedBoundaryDiagnostic LastResolvedBoundary;

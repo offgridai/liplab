@@ -321,6 +321,29 @@ static bool LookupCmuPronunciation(const FString& Word, TArray<FString>& OutPhon
         }
     }
 
+    // Product dialogue contains invented compounds and names. If both sides
+    // are ordinary CMU words, preserve their full phone sequence rather than
+    // collapsing the entire unknown token to one generic vowel.
+    for (int32 Split = 3; Split <= Word.Len() - 3; ++Split)
+    {
+        FString Suffix;
+        for (int32 Index = Split; Index < Word.Len(); ++Index)
+        {
+            Suffix.AppendChar(Word[Index]);
+        }
+        const TArray<FString>* Left = Dict.Find(Word.Left(Split));
+        const TArray<FString>* Right = Dict.Find(Suffix);
+        if (Left && Right)
+        {
+            OutPhones = *Left;
+            for (const FString& Phone : *Right)
+            {
+                OutPhones.Add(Phone);
+            }
+            return true;
+        }
+    }
+
     return false;
 }
 

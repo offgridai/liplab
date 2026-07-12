@@ -42,6 +42,19 @@ def main() -> int:
         f"Intra-word: coverage={summary['intra_word_coverage_rate']:.3f} "
         f"center_ms={summary['intra_word_center_ms']:.1f}"
     )
+    print(
+        f"Playback health: renderable={summary['renderable_event_rate']:.3f} "
+        f"speech_coverage={summary['speech_animation_coverage_rate']:.3f} "
+        f"dropout_ms={summary['speech_animation_dropout_ms']:.1f} "
+        f"longest_dropout_ms={summary['longest_speech_animation_dropout_ms']:.1f} "
+        f"tail_overrun_ms={summary['scheduled_tail_overrun_ms']:.1f} "
+        f"after_speech={summary['scheduled_after_speech_event_count']} "
+        f"late_bursts={summary['late_commit_burst_count']} "
+        f"compressed={summary['compressed_cadence_event_count']} "
+        f"compressed_cases={summary['compressed_cadence_case_count']} "
+        f"max_compressed_run={summary['max_compressed_cadence_run']} "
+        f"failed_cases={summary['playback_health_failure_cases']}"
+    )
     if summary["text_plan_available_cases"] > 0:
         print(
             f"Text plan vs MFA: words={summary['text_word_sequence_exact_rate']:.3f} "

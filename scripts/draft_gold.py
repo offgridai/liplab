@@ -1225,7 +1225,7 @@ def main() -> int:
     parser.add_argument("--buffer-ms", type=int, default=600000)
     parser.add_argument("--chunk-ms", type=int, default=600000)
     parser.add_argument("--mfa-num-jobs", type=int, default=4)
-    parser.add_argument("--speech-merge-gap-ms", type=int, default=150)
+    parser.add_argument("--speech-merge-gap-ms", type=int, default=125)
     parser.add_argument("--case", action="append", dest="cases", default=[])
     parser.add_argument("--skip-runner", action="store_true")
     parser.add_argument("--skip-mfa", action="store_true")

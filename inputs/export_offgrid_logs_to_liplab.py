@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""
+r"""
 export_offgrid_logs_to_liplab.py
 
 Convert OffgridAI lipsync debug log folders into liplab input folders.
@@ -52,7 +52,10 @@ def sanitize_token(value: str, fallback: str = "unknown") -> str:
 
 def parse_metadata(metadata_path: Path) -> dict[str, str]:
     result: dict[str, str] = {}
-    text = metadata_path.read_text(encoding="utf-8", errors="replace")
+    raw = metadata_path.read_bytes()
+    encoding = "utf-16" if raw.startswith((b"\xff\xfe", b"\xfe\xff")) else "utf-8-sig"
+    text = raw.decode(encoding, errors="replace")
+    text = text.replace("â€”", "—").replace("â€“", "–")
 
     for raw_line in text.splitlines():
         if "=" not in raw_line:
@@ -165,8 +168,12 @@ def export_cases(cases: list[ExportCase], liplab_root: Path, overwrite: bool) ->
     if index_path.exists():
         with index_path.open(newline="", encoding="utf-8") as f:
             rows.extend(csv.DictReader(f))
+    existing_sources = {str(Path(row["source_dir"]).resolve()).lower() for row in rows}
 
     for case in cases:
+        source_key = str(case.source_dir.resolve()).lower()
+        if source_key in existing_sources:
+            continue
         if not overwrite and (case.transcript_out.exists() or case.wav_out.exists()):
             print(f"SKIP existing: {case.case_id}", file=sys.stderr)
             continue
@@ -183,6 +190,7 @@ def export_cases(cases: list[ExportCase], liplab_root: Path, overwrite: bool) ->
                 "text": case.transcript,
             }
         )
+        existing_sources.add(source_key)
 
     with index_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(

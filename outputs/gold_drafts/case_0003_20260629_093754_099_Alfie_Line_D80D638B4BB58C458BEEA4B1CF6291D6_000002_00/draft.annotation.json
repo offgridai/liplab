@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0003_20260629_093754_099_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000002_00",
-  "created_utc": "2026-07-11T22:14:45.199099+00:00",
+  "created_utc": "2026-07-12T14:15:31.366175+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 150,
+    "speech_merge_gap_ms": 125,
     "source_run_dir": "outputs/offline_gold/latest/case_0003_20260629_093754_099_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000002_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-11T22:14:45.199198+00:00"
+    "reviewed_utc": "2026-07-12T14:15:31.366278+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -45,14 +45,14 @@
   "speech_regions": [
     {
       "index": 0,
-      "start": 0.28,
-      "end": 2.38,
+      "start": 0.29,
+      "end": 2.37,
       "word_start_index": 0,
       "word_end_index": 5,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.15,
+      "merge_gap_seconds": 0.125,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -121,7 +121,7 @@
       "split_reason": "none",
       "direct_word_gap_seconds": 0.030000000000000027,
       "phone_gap_seconds": 0.030000000000000027,
-      "wave_silence_seconds": 0.0,
+      "wave_silence_seconds": 0.030000000000000027,
       "acoustic_gap_seconds": 0.030000000000000027,
       "speech_region_index_before": 0,
       "speech_region_index_after": 0
@@ -170,10 +170,10 @@
       "pause_class": "region_break",
       "split_applied": true,
       "split_reason": "hard_punctuation_with_lull",
-      "direct_word_gap_seconds": 0.08000000000000007,
-      "phone_gap_seconds": 0.08000000000000007,
-      "wave_silence_seconds": 0.08000000000000007,
-      "acoustic_gap_seconds": 0.08000000000000007,
+      "direct_word_gap_seconds": 0.08999999999999986,
+      "phone_gap_seconds": 0.08999999999999986,
+      "wave_silence_seconds": 0.08999999999999986,
+      "acoustic_gap_seconds": 0.08999999999999986,
       "speech_region_index_before": 0,
       "speech_region_index_after": 1
     },
@@ -234,7 +234,7 @@
       "word_index": 0,
       "word": "we've",
       "mfa_word": "we've",
-      "start": 0.28,
+      "start": 0.29,
       "end": 0.51,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -324,7 +324,7 @@
       "word": "veggie",
       "mfa_word": "veggie",
       "start": 1.93,
-      "end": 2.38,
+      "end": 2.37,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -413,7 +413,7 @@
     {
       "word_index": 0,
       "word": "we've",
-      "start": 0.28,
+      "start": 0.29,
       "end": 0.37,
       "pose": "W",
       "phrase_index": 0,
@@ -576,7 +576,7 @@
       "word_index": 0,
       "word": "we've",
       "mfa_word": "we've",
-      "start": 0.28,
+      "start": 0.29,
       "end": 0.51,
       "phrase_index": -1,
       "sentence_index": -1,
@@ -666,7 +666,7 @@
       "word": "veggie",
       "mfa_word": "veggie",
       "start": 1.93,
-      "end": 2.38,
+      "end": 2.37,
       "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -756,7 +756,7 @@
       "index_in_word": 0,
       "phone": "W",
       "phone_base": "W",
-      "start": 0.28,
+      "start": 0.29,
       "end": 0.37,
       "word_index": 0,
       "word": "we've"
@@ -928,7 +928,7 @@
       "phone": "IY0",
       "phone_base": "IY",
       "start": 2.21,
-      "end": 2.38,
+      "end": 2.37,
       "word_index": 5,
       "word": "veggie"
     },
@@ -1071,7 +1071,7 @@
   "mfa_non_silence_phone_intervals": [
     {
       "phone": "W",
-      "start": 0.28,
+      "start": 0.29,
       "end": 0.37
     },
     {
@@ -1167,7 +1167,7 @@
     {
       "phone": "IY0",
       "start": 2.21,
-      "end": 2.38
+      "end": 2.37
     },
     {
       "phone": "HH",
@@ -1250,6 +1250,11 @@
       "start": 0.0,
       "end": 0.32,
       "duration_seconds": 0.32
+    },
+    {
+      "start": 1.26,
+      "end": 1.38,
+      "duration_seconds": 0.11999999999999988
     },
     {
       "start": 2.24,
@@ -1712,8 +1717,8 @@
       "id": "W",
       "pose": "W",
       "phone": "W",
-      "start": 0.28,
-      "center": 0.325,
+      "start": 0.29,
+      "center": 0.32999999999999996,
       "end": 0.37,
       "word": "we've",
       "mfa_word": "we've",
@@ -2245,8 +2250,8 @@
       "pose": "IY0",
       "phone": "IY0",
       "start": 2.21,
-      "center": 2.295,
-      "end": 2.38,
+      "center": 2.29,
+      "end": 2.37,
       "word": "veggie",
       "mfa_word": "veggie",
       "word_index": 5,
@@ -2692,8 +2697,8 @@
     {
       "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 2,
-      "gap_threshold_seconds": 0.15,
-      "largest_split_gap_seconds": 0.08,
+      "gap_threshold_seconds": 0.125,
+      "largest_split_gap_seconds": 0.09,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }
   ],

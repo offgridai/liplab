@@ -509,6 +509,24 @@ struct OraclePhoneDurationReport
 static std::string to_std(const FString& value) { return value.Str(); }
 static std::string to_std(const FName& value) { return value.Str(); }
 
+static std::string csv_value(const std::string& value)
+{
+    if (value.find_first_of(",\"\r\n") == std::string::npos)
+    {
+        return value;
+    }
+    std::string escaped;
+    escaped.reserve(value.size() + 2);
+    escaped.push_back('"');
+    for (const char ch : value)
+    {
+        if (ch == '"') escaped.push_back('"');
+        escaped.push_back(ch);
+    }
+    escaped.push_back('"');
+    return escaped;
+}
+
 static std::vector<std::string> parse_csv_cells(const std::string& line)
 {
     std::vector<std::string> cells;
@@ -4767,7 +4785,7 @@ static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
             << event.ObservedResumeOnsetSeconds << ','
             << event.ObservedResumeEnergyAnchorSeconds << ','
             << event.BoundaryWordIndex << ','
-            << to_std(event.BoundaryMark) << ','
+            << csv_value(to_std(event.BoundaryMark)) << ','
             << to_std(event.BoundaryOutcome) << '\n';
     }
     return out.str();
@@ -4890,7 +4908,7 @@ static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& trac
             << event.ObservedResumeOnsetSeconds << ','
             << event.ObservedResumeEnergyAnchorSeconds << ','
             << event.BoundaryWordIndex << ','
-            << to_std(event.BoundaryMark) << ','
+            << csv_value(to_std(event.BoundaryMark)) << ','
             << to_std(event.BoundaryOutcome) << '\n';
     }
     return out.str();
@@ -4965,7 +4983,7 @@ static std::string runtime_boundary_state_csv(const TArray<FOffgridAIRuntimeBoun
             << (row.bResumeAnchorActive ? 1 : 0) << ','
             << (row.bResumeAnchorFromInitialSpeech ? 1 : 0) << ','
             << row.BoundaryWordIndex << ','
-            << to_std(row.BoundaryMark) << ','
+            << csv_value(to_std(row.BoundaryMark)) << ','
             << to_std(row.PauseClass) << ','
             << row.HoldStartSpeechRegionIndex << ','
             << row.ResumeAnchorEventIndex << ','
@@ -4997,7 +5015,7 @@ static std::string runtime_boundary_state_csv(const TArray<FOffgridAIRuntimeBoun
             << to_std(row.LastFenceEstimatorOutcome) << ','
             << to_std(row.LastResolvedBoundaryOutcome) << ','
             << row.LastResolvedBoundaryWordIndex << ','
-            << to_std(row.LastResolvedBoundaryMark) << ','
+            << csv_value(to_std(row.LastResolvedBoundaryMark)) << ','
             << row.LastResolvedBoundaryDecaySec << ','
             << row.LastResolvedBoundaryResumeOnsetSec << ','
             << row.LastResolvedBoundaryResumeEnergyAnchorSec << ','
@@ -6142,7 +6160,12 @@ static void run_streamed_runtime_session(
     session.CloseInputStream();
 
     const float duration_seconds = wav_duration_seconds(wav);
-    advance_playback_to(std::max(0.0f, duration_seconds - buffer_seconds));
+    // Input completion is not playback completion. Drain the buffered tail
+    // through ordinary Update() calls so the final preroll window can resolve
+    // boundaries and commit live events before Finalize() records terminal
+    // diagnostics. Skipping this interval manufactured late suffix bursts that
+    // the real renderer could never present.
+    advance_playback_to(duration_seconds);
 
     session.Finalize(duration_seconds);
 }

@@ -80,7 +80,7 @@ constexpr float DetectorSharpRestartSplitReopenFluxMin = 0.180f;
 constexpr float DetectorLeadingBlipMaxDurationSec = 0.160f;
 constexpr float DetectorLeadingBlipReplacementMinGapSec = 0.120f;
 constexpr float DetectorMicroSpeechRegionMaxDurationSec = 0.350f;
-constexpr float DetectorMicroSpeechRegionPrevGapMinSec = 0.120f;
+constexpr float DetectorMicroSpeechRegionPrevGapMinSec = 0.080f;
 constexpr float DetectorMicroSpeechRegionNextGapMinSec = 0.180f;
 constexpr float DetectorMicroSpeechRegionCombinedGapMinSec = 0.350f;
 constexpr float DetectorSpeechBaselinePercentile = 0.60f;
@@ -286,7 +286,12 @@ static FDetectorGapDecision ClassifyGapDecision(
         && ReopenEvidence <= DetectorAmbiguousValleyBridgeReopenEvidenceMax;
     if (bAmbiguousInternalValleyBridge)
     {
-        return { true, FName(TEXT("candidate_ambiguous_valley_bridge")) };
+        const bool bShortContinuousValley =
+            GapDurationSec <= 0.190f
+            && MeanEvidence >= 0.085f;
+        return bShortContinuousValley
+            ? FDetectorGapDecision{ true, FName(TEXT("candidate_ambiguous_valley_bridge")) }
+            : FDetectorGapDecision{ false, FName(TEXT("candidate_ambiguous_valley_split")) };
     }
 
     const bool bShallowContinuityBridge =
@@ -294,7 +299,8 @@ static FDetectorGapDecision ClassifyGapDecision(
         && GapDurationSec <= DetectorShallowContinuityBridgeMaxSec
         && MeanRMSNorm >= DetectorShallowContinuityBridgeMeanRMSMin
         && ReopenFlux >= DetectorShallowContinuityBridgeReopenFluxMin
-        && ReopenFlux <= DetectorShallowContinuityBridgeReopenFluxMax;
+        && ReopenFlux <= DetectorShallowContinuityBridgeReopenFluxMax
+        && !(MeanEvidence <= 0.050f && LowEvidenceRatio >= 0.75f);
     if (bShallowContinuityBridge)
     {
         return { true, FName(TEXT("candidate_shallow_continuity_bridge")) };
@@ -519,7 +525,8 @@ void FOffgridAIStreamingSpeechDetector::SuppressRecentMicroSpeechRegionIfNeeded(
         || NextGapSec < DetectorMicroSpeechRegionNextGapMinSec
         || (PreviousGapSec + NextGapSec) < DetectorMicroSpeechRegionCombinedGapMinSec
         || MiddleSpeechRegion.ReopenCount > 3
-        || MiddleSpeechRegion.EndReason != FName(TEXT("strong_quiet_hangover")))
+        || (MiddleSpeechRegion.EndReason != FName(TEXT("strong_quiet_hangover"))
+            && MiddleSpeechRegion.EndReason != FName(TEXT("weak_evidence_hangover"))))
     {
         return;
     }
@@ -840,9 +847,19 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                     && PendingGapAgeSec <= DetectorSoftBridgeWindowSec
                     && SpeechCandidatePeakEvidence <= DetectorModerateGapBridgeReopenEvidenceMax
                     && Frame.Flux <= DetectorModerateGapBridgeReopenFluxMax;
+                const float PendingMeanEvidence = SafeGapMean(
+                    PendingGapCandidate.GapEvidenceSum,
+                    PendingGapCandidate.GapFrameCount);
+                const bool bCanConsiderHighFluxContinuationBridge = bCanConsiderReopen
+                    && PendingGapAgeSec >= 0.200f
+                    && PendingGapAgeSec <= 0.235f
+                    && PendingMeanEvidence >= 0.070f
+                    && Frame.Flux >= 0.250f;
                 if (SpeechRegions.Num() > 0
                     && SpeechRegions.Last().bEnded
-                    && (PendingGapAgeSec <= DetectorBridgeWindowSec(SpeechRegions.Last().EndReason) || bCanConsiderSoftBridge))
+                    && (PendingGapAgeSec <= DetectorBridgeWindowSec(SpeechRegions.Last().EndReason)
+                        || bCanConsiderSoftBridge
+                        || bCanConsiderHighFluxContinuationBridge))
                 {
                     const float PendingMeanRMSNorm = SafeGapMean(PendingGapCandidate.GapRMSNormSum, PendingGapCandidate.GapFrameCount);
                     const bool bShortIsolatedRestartOverride =
@@ -853,7 +870,9 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                         && PendingGapCandidate.PrevSpeechRegionDurationSec <= DetectorShortIsolatedRestartSplitPrevSpeechRegionMaxSec
                         && Frame.Flux >= DetectorShortIsolatedRestartSplitReopenFluxMin
                         && SpeechCandidatePeakEvidence >= DetectorShortIsolatedRestartSplitReopenEvidenceMin;
-                    const FDetectorGapDecision GapDecision = bShortIsolatedRestartOverride
+                    FDetectorGapDecision GapDecision = bCanConsiderHighFluxContinuationBridge
+                        ? FDetectorGapDecision{ true, FName(TEXT("candidate_high_flux_continuation_bridge")) }
+                        : bShortIsolatedRestartOverride
                         ? FDetectorGapDecision{ false, FName(TEXT("candidate_short_isolated_restart_split")) }
                         : ClassifyGapDecision(
                             SpeechRegions.Last(),

@@ -1,0 +1,21 @@
+case: case_0231_20260711_215058_778_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000011_00
+transcript: A nice comedy or a classic maybe? She'd enjoy that.
+audio: 3.657s @ 24000 Hz
+speech regions: 2
+pause boundaries: 9
+pause-driven region breaks: 1
+word heads: 10
+dense visemes: 33
+draft flags: 1
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading
