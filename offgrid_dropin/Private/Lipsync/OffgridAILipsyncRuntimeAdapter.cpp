@@ -1401,10 +1401,20 @@ static float SmoothedPulseEnvelope(
     return WeightSum > 0.0f ? WeightedSum / WeightSum : 0.0f;
 }
 
-static bool IsCausalSyllablePulse(
+struct FCausalSyllableEnvelope
+{
+    float Prominence = 0.0f;
+    float PeakSec = 0.0f;
+    float StartSec = 0.0f;
+    float CenterSec = 0.0f;
+    float EndSec = 0.0f;
+    float WidthSec = 0.0f;
+};
+
+static bool TryGetCausalSyllableEnvelope(
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& Frames,
     int32 FrameIndex,
-    float& OutProminence)
+    FCausalSyllableEnvelope& OutEnvelope)
 {
     if (!Frames.IsValidIndex(FrameIndex - 14) || !Frames.IsValidIndex(FrameIndex + 14)) return false;
     const float Center = SmoothedPulseEnvelope(Frames, FrameIndex, 6);
@@ -1415,15 +1425,53 @@ static bool IsCausalSyllablePulse(
     }
     float LeftFloor = Center;
     float RightFloor = Center;
+    int32 LeftFloorIndex = FrameIndex;
+    int32 RightFloorIndex = FrameIndex;
     for (int32 Index = FrameIndex - 14; Index <= FrameIndex - 6; ++Index)
-        LeftFloor = FMath::Min(LeftFloor, SmoothedPulseEnvelope(Frames, Index, 6));
+    {
+        const float Value = SmoothedPulseEnvelope(Frames, Index, 6);
+        if (Value <= LeftFloor)
+        {
+            LeftFloor = Value;
+            LeftFloorIndex = Index;
+        }
+    }
     for (int32 Index = FrameIndex + 6; Index <= FrameIndex + 14; ++Index)
-        RightFloor = FMath::Min(RightFloor, SmoothedPulseEnvelope(Frames, Index, 6));
-    OutProminence = FMath::Clamp(FMath::Min(Center - LeftFloor, Center - RightFloor) / 0.12f, 0.0f, 1.0f);
+    {
+        const float Value = SmoothedPulseEnvelope(Frames, Index, 6);
+        if (Value <= RightFloor)
+        {
+            RightFloor = Value;
+            RightFloorIndex = Index;
+        }
+    }
+    OutEnvelope.Prominence = FMath::Clamp(FMath::Min(Center - LeftFloor, Center - RightFloor) / 0.12f, 0.0f, 1.0f);
     const FOffgridAIStreamingAudioFeatureFrame& Frame = Frames[FrameIndex];
-    return OutProminence >= 0.16f
+    const float StartSec = Frames[LeftFloorIndex].AudioBufferCenterSec;
+    const float EndSec = Frames[RightFloorIndex].AudioBufferCenterSec;
+    const float WidthSec = FMath::Max(EndSec - StartSec, 0.0f);
+    const float CenterSec = 0.5f * (StartSec + EndSec);
+    OutEnvelope.PeakSec = Frame.AudioBufferCenterSec;
+    OutEnvelope.StartSec = StartSec;
+    OutEnvelope.CenterSec = CenterSec;
+    OutEnvelope.EndSec = EndSec;
+    OutEnvelope.WidthSec = WidthSec;
+    return OutEnvelope.Prominence >= 0.16f
         && Frame.SpeechEvidence >= 0.18f
-        && Frame.Periodicity >= 0.20f;
+        && Frame.Periodicity >= 0.20f
+        && WidthSec >= 0.060f
+        && WidthSec <= 0.320f;
+}
+
+static bool IsCausalSyllablePulse(
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& Frames,
+    int32 FrameIndex,
+    float& OutProminence)
+{
+    FCausalSyllableEnvelope Envelope;
+    if (!TryGetCausalSyllableEnvelope(Frames, FrameIndex, Envelope)) return false;
+    OutProminence = Envelope.Prominence;
+    return true;
 }
 
 static void ResetSyllableRebaseForSection(
@@ -1433,12 +1481,23 @@ static void ResetSyllableRebaseForSection(
 {
     State.bSyllableRebaseActive = false;
     State.SyllableAnchorPhoneIndex = INDEX_NONE;
+    State.SyllableRebaseEndPhoneIndex = INDEX_NONE;
     State.NextExpectedSyllablePhoneIndex = INDEX_NONE;
     State.LastSyllableScanFrameIndex = LastDecidableFrameIndex;
     State.SyllableAnchorActiveSec = 0.0f;
     State.SyllableAnchorAudioSec = 0.0f;
     State.SyllableRate = 1.0f;
     State.SyllableSectionStartAudioSec = FMath::Max(SectionStartAudioSec, 0.0f);
+}
+
+static void ClearLocalSyllableRebase(FOffgridAIBoundaryPlaybackState& State)
+{
+    State.bSyllableRebaseActive = false;
+    State.SyllableAnchorPhoneIndex = INDEX_NONE;
+    State.SyllableRebaseEndPhoneIndex = INDEX_NONE;
+    State.SyllableAnchorActiveSec = 0.0f;
+    State.SyllableAnchorAudioSec = 0.0f;
+    State.SyllableRate = 1.0f;
 }
 
 static void UpdateSyllableRebaseState(
@@ -1453,6 +1512,13 @@ static void UpdateSyllableRebaseState(
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& Frames = *Input.AudioFeatureFrames;
     const int32 LastDecidableFrame = Frames.Num() - 15;
     if (LastDecidableFrame <= State.LastSyllableScanFrameIndex) return;
+
+    if (State.bSyllableRebaseActive
+        && State.SyllableRebaseEndPhoneIndex != INDEX_NONE
+        && FirstMutablePhoneIndex >= State.SyllableRebaseEndPhoneIndex)
+    {
+        ClearLocalSyllableRebase(State);
+    }
 
     if (State.NextExpectedSyllablePhoneIndex == INDEX_NONE)
     {
@@ -1475,18 +1541,18 @@ static void UpdateSyllableRebaseState(
         FrameIndex <= LastDecidableFrame && State.NextExpectedSyllablePhoneIndex != INDEX_NONE;
         ++FrameIndex)
     {
-        float Prominence = 0.0f;
-        if (!IsCausalSyllablePulse(Frames, FrameIndex, Prominence)) continue;
+        FCausalSyllableEnvelope Envelope;
+        if (!TryGetCausalSyllableEnvelope(Frames, FrameIndex, Envelope)) continue;
         // Pulse detection itself is intentionally broad for diagnostics. Runtime
-        // rebasing uses only its high-salience subset because transcript-to-pulse
-        // assignment is less reliable than raw pulse presence.
-        if (Prominence < 0.45f) continue;
-        const float PulseSec = Frames[FrameIndex].AudioBufferCenterSec;
-        if (PulseSec + 0.001f < State.SyllableSectionStartAudioSec) continue;
+        // rebasing accepts a broader subset than strict landmarking because the
+        // fit is local to a single syllable span and resets immediately after it.
+        if (Envelope.Prominence < 0.34f) continue;
+        const float EnvelopeCenterSec = Envelope.CenterSec;
+        if (EnvelopeCenterSec + 0.001f < State.SyllableSectionStartAudioSec) continue;
         // Historical evidence remains useful diagnostically, but it cannot
         // safely rebase live animation once its visible center is behind the
         // renderer's minimum lead window.
-        if (!Input.bPlaybackFinalized && PulseSec < Input.CurrentPlaybackSec + 0.040f) continue;
+        if (!Input.bPlaybackFinalized && EnvelopeCenterSec < Input.CurrentPlaybackSec + 0.040f) continue;
 
         int32 ExpectedPhoneIndex = State.NextExpectedSyllablePhoneIndex;
         while (PhoneCenterActiveSeconds.IsValidIndex(ExpectedPhoneIndex))
@@ -1503,18 +1569,21 @@ static void UpdateSyllableRebaseState(
                 ExpectedAudioSec = State.SyllableAnchorAudioSec
                     + State.SyllableRate * (ExpectedActiveSec - State.SyllableAnchorActiveSec);
             }
-            if (PulseSec <= ExpectedAudioSec + 0.140f)
+            if (EnvelopeCenterSec <= ExpectedAudioSec + 0.120f)
             {
-                const float DistanceSec = FMath::Abs(PulseSec - ExpectedAudioSec);
-                if (DistanceSec <= 0.140f)
+                const float DistanceSec = FMath::Abs(EnvelopeCenterSec - ExpectedAudioSec);
+                if (DistanceSec <= 0.120f)
                 {
                     if (State.bSyllableRebaseActive)
                     {
                         const float PriorDelta = ExpectedActiveSec - State.SyllableAnchorActiveSec;
-                        const float AudioDelta = PulseSec - State.SyllableAnchorAudioSec;
+                        const float AudioDelta = EnvelopeCenterSec - State.SyllableAnchorAudioSec;
                         if (PriorDelta > 0.080f && AudioDelta > 0.030f)
                         {
-                            const float Confidence = FMath::Clamp(Prominence * (1.0f - DistanceSec / 0.140f), 0.0f, 1.0f);
+                            const float Confidence = FMath::Clamp(
+                                Envelope.Prominence * (1.0f - DistanceSec / 0.120f),
+                                0.0f,
+                                1.0f);
                             const float MeasuredRate = FMath::Clamp(AudioDelta / PriorDelta, 0.85f, 1.18f);
                             State.SyllableRate = FMath::Clamp(
                                 State.SyllableRate + (MeasuredRate - State.SyllableRate) * (0.18f + Confidence * 0.22f),
@@ -1525,8 +1594,9 @@ static void UpdateSyllableRebaseState(
                     State.bSyllableRebaseActive = true;
                     State.SyllableAnchorPhoneIndex = ExpectedPhoneIndex;
                     State.SyllableAnchorActiveSec = ExpectedActiveSec;
-                    State.SyllableAnchorAudioSec = PulseSec;
+                    State.SyllableAnchorAudioSec = EnvelopeCenterSec;
                     State.NextExpectedSyllablePhoneIndex = FindNextVowelPhoneIndex(Plan, ExpectedPhoneIndex + 1);
+                    State.SyllableRebaseEndPhoneIndex = State.NextExpectedSyllablePhoneIndex;
                 }
                 break;
             }
@@ -1837,6 +1907,91 @@ static void AdvancePlaybackHoldState(
     }
 
     InOutState.LastPlaybackSec = PlaybackSec;
+}
+
+struct FRuntimePhoneSchedule
+{
+    float BaseStart = 0.0f;
+    float Center = 0.0f;
+    float BaseEnd = 0.0f;
+    bool bUsingResumeAnchorSchedule = false;
+    bool bExactAcousticAnchorEvent = false;
+    bool bUsedResumeAnchor = false;
+    bool bUsedInitialSpeechAnchor = false;
+    FName AcousticAnchorKind = NAME_None;
+    float AcousticAnchorSec = -1.0f;
+};
+
+static FRuntimePhoneSchedule BuildRuntimePhoneSchedule(
+    const FOffgridAIBoundaryPlaybackState& HoldState,
+    int32 NextEventIndex,
+    int32 SourcePhoneGlobalIndex,
+    float PlaybackOffsetSec,
+    float RequiredPhoneStartActiveSec,
+    float RequiredActiveSec,
+    float RequiredPhoneEndActiveSec,
+    float PoseLeadSec)
+{
+    FRuntimePhoneSchedule Schedule;
+    Schedule.BaseStart = PlaybackOffsetSec + RequiredPhoneStartActiveSec;
+    Schedule.Center = PlaybackOffsetSec + RequiredActiveSec;
+    Schedule.BaseEnd = PlaybackOffsetSec + RequiredPhoneEndActiveSec;
+
+    const bool bScheduleUsesResumeAnchor = HoldState.bResumeAnchorActive
+        && NextEventIndex >= HoldState.ResumeAnchorEventIndex;
+    Schedule.bExactAcousticAnchorEvent = bScheduleUsesResumeAnchor
+        && NextEventIndex == HoldState.ResumeAnchorEventIndex;
+
+    if (bScheduleUsesResumeAnchor)
+    {
+        Schedule.bUsingResumeAnchorSchedule = true;
+        const float LeadDeltaSec = PoseLeadSec - HoldState.ResumeAnchorLeadSec;
+        Schedule.BaseStart = HoldState.ResumeAnchorFinalCenterSec
+            + (RequiredPhoneStartActiveSec - HoldState.ResumeAnchorActiveSec)
+            - LeadDeltaSec;
+        Schedule.Center = HoldState.ResumeAnchorFinalCenterSec
+            + (RequiredActiveSec - HoldState.ResumeAnchorActiveSec)
+            - LeadDeltaSec;
+        Schedule.BaseEnd = HoldState.ResumeAnchorFinalCenterSec
+            + (RequiredPhoneEndActiveSec - HoldState.ResumeAnchorActiveSec)
+            - LeadDeltaSec;
+
+        if (Schedule.bExactAcousticAnchorEvent)
+        {
+            Schedule.bUsedResumeAnchor = true;
+            Schedule.bUsedInitialSpeechAnchor = HoldState.bResumeAnchorFromInitialSpeech;
+            Schedule.AcousticAnchorKind = Schedule.bUsedInitialSpeechAnchor
+                ? FName(TEXT("initial_energy_anchor"))
+                : FName(TEXT("punctuation_resume_energy_anchor"));
+            Schedule.AcousticAnchorSec =
+                (!Schedule.bUsedInitialSpeechAnchor && HoldState.LastResolvedBoundary.ResumeEnergyAnchorSec >= 0.0f)
+                    ? HoldState.LastResolvedBoundary.ResumeEnergyAnchorSec
+                    : HoldState.ResumeAnchorFinalCenterSec;
+        }
+    }
+
+    const bool bWithinLocalSyllableRebaseSpan =
+        HoldState.SyllableRebaseEndPhoneIndex == INDEX_NONE
+        || SourcePhoneGlobalIndex < HoldState.SyllableRebaseEndPhoneIndex;
+    const bool bUseSyllableRebase = HoldState.bSyllableRebaseActive
+        && SourcePhoneGlobalIndex >= HoldState.SyllableAnchorPhoneIndex
+        && bWithinLocalSyllableRebaseSpan
+        && RequiredActiveSec >= HoldState.SyllableAnchorActiveSec
+        && !Schedule.bExactAcousticAnchorEvent;
+    if (bUseSyllableRebase)
+    {
+        Schedule.BaseStart = HoldState.SyllableAnchorAudioSec
+            + HoldState.SyllableRate
+                * (RequiredPhoneStartActiveSec - HoldState.SyllableAnchorActiveSec);
+        Schedule.Center = HoldState.SyllableAnchorAudioSec
+            + HoldState.SyllableRate
+                * (RequiredActiveSec - HoldState.SyllableAnchorActiveSec);
+        Schedule.BaseEnd = HoldState.SyllableAnchorAudioSec
+            + HoldState.SyllableRate
+                * (RequiredPhoneEndActiveSec - HoldState.SyllableAnchorActiveSec);
+    }
+
+    return Schedule;
 }
 
 static float SpeechRegionObservedEnd(const FOffgridAIStreamingSpeechRegion& SpeechRegion, float ObservedEndSec, bool bFinal)
@@ -2527,14 +2682,6 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             : (RequiredActiveSec + 0.040f);
 
         const float PoseLeadSec = LeadForPose(T.PoseID);
-        float BaseStart = PlaybackOffsetSec + RequiredPhoneStartActiveSec;
-        float Center = PlaybackOffsetSec + RequiredActiveSec;
-        float BaseEnd = PlaybackOffsetSec + RequiredPhoneEndActiveSec;
-        bool bUsedResumeAnchor = false;
-        bool bUsedInitialSpeechAnchor = false;
-        bool bUsingResumeAnchorSchedule = false;
-        FName AcousticAnchorKind = NAME_None;
-        float AcousticAnchorSec = -1.0f;
         int32 EventBoundaryWordIndex = INDEX_NONE;
         TCHAR EventBoundaryMark = TCHAR(0);
         EOffgridAIBoundaryPauseClass EventBoundaryPauseClass = EOffgridAIBoundaryPauseClass::None;
@@ -2559,77 +2706,35 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             }
         }
 
-        const bool bScheduleUsesResumeAnchor = InOutHoldState.bResumeAnchorActive
-            && NextEventIndex >= InOutHoldState.ResumeAnchorEventIndex;
-        const bool bExactAcousticAnchorEvent = bScheduleUsesResumeAnchor
-            && NextEventIndex == InOutHoldState.ResumeAnchorEventIndex;
-
-        if (bScheduleUsesResumeAnchor)
+        if (InOutHoldState.bResumeAnchorActive
+            && NextEventIndex >= InOutHoldState.ResumeAnchorEventIndex
+            && NextEventIndex == InOutHoldState.ResumeAnchorEventIndex)
         {
-            bUsingResumeAnchorSchedule = true;
-            // The target active time captured when the hold was created can go
-            // stale while streaming regions grow.  The invariant we actually
-            // need is simpler: the first post-boundary event center equals the
-            // acoustic anchor.  When that event is reached, refresh the schedule
-            // origin from the event's current active time and lead; later events
-            // then inherit timing relative to the now-correct anchor.
-            if (bExactAcousticAnchorEvent)
-            {
-                InOutHoldState.ResumeAnchorActiveSec = RequiredActiveSec;
-                InOutHoldState.ResumeAnchorLeadSec = PoseLeadSec;
-            }
-
-            // Schedule the resumed segment from the first post-punctuation phone,
-            // not from a globally delayed clock. This preserves the text-duration
-            // prior inside the resumed word/sentence while putting the visible
-            // restart exactly on the observed audio restart.
-            const float LeadDeltaSec = PoseLeadSec - InOutHoldState.ResumeAnchorLeadSec;
-            BaseStart = InOutHoldState.ResumeAnchorFinalCenterSec
-                + (RequiredPhoneStartActiveSec - InOutHoldState.ResumeAnchorActiveSec)
-                - LeadDeltaSec;
-            Center = InOutHoldState.ResumeAnchorFinalCenterSec
-                + (RequiredActiveSec - InOutHoldState.ResumeAnchorActiveSec)
-                - LeadDeltaSec;
-            BaseEnd = InOutHoldState.ResumeAnchorFinalCenterSec
-                + (RequiredPhoneEndActiveSec - InOutHoldState.ResumeAnchorActiveSec)
-                - LeadDeltaSec;
-
-            // Only the actual anchored event should carry anchor diagnostics.
-            // Later events are scheduled relative to that anchor but are not
-            // themselves anchor errors.
-            if (bExactAcousticAnchorEvent)
-            {
-                bUsedResumeAnchor = true;
-                bUsedInitialSpeechAnchor = InOutHoldState.bResumeAnchorFromInitialSpeech;
-                AcousticAnchorKind = bUsedInitialSpeechAnchor
-                    ? FName(TEXT("initial_energy_anchor"))
-                    : FName(TEXT("punctuation_resume_energy_anchor"));
-                AcousticAnchorSec = (!bUsedInitialSpeechAnchor && InOutHoldState.LastResolvedBoundary.ResumeEnergyAnchorSec >= 0.0f)
-                    ? InOutHoldState.LastResolvedBoundary.ResumeEnergyAnchorSec
-                    : InOutHoldState.ResumeAnchorFinalCenterSec;
-            }
+            // When the first post-boundary event is reached, refresh the active
+            // origin from that event's current transcript timing. Later events
+            // inherit the same acoustic anchor without drifting from the
+            // resumed word/sentence onset.
+            InOutHoldState.ResumeAnchorActiveSec = RequiredActiveSec;
+            InOutHoldState.ResumeAnchorLeadSec = PoseLeadSec;
         }
-
-        const bool bScheduleUsesSyllableRebase = InOutHoldState.bSyllableRebaseActive
-            && SourcePhoneGlobalIndex >= InOutHoldState.SyllableAnchorPhoneIndex
-            && RequiredActiveSec >= InOutHoldState.SyllableAnchorActiveSec
-            && !bExactAcousticAnchorEvent;
-        if (bScheduleUsesSyllableRebase)
-        {
-            const float RebasedStart = InOutHoldState.SyllableAnchorAudioSec
-                + InOutHoldState.SyllableRate
-                    * (RequiredPhoneStartActiveSec - InOutHoldState.SyllableAnchorActiveSec);
-            const float RebasedCenter = InOutHoldState.SyllableAnchorAudioSec
-                + InOutHoldState.SyllableRate
-                    * (RequiredActiveSec - InOutHoldState.SyllableAnchorActiveSec);
-            const float RebasedEnd = InOutHoldState.SyllableAnchorAudioSec
-                + InOutHoldState.SyllableRate
-                    * (RequiredPhoneEndActiveSec - InOutHoldState.SyllableAnchorActiveSec);
-            const float CenterCorrectionSec = FMath::Clamp(RebasedCenter - Center, -0.025f, 0.025f);
-            BaseStart += FMath::Clamp(RebasedStart - BaseStart, -0.025f, 0.025f);
-            Center += CenterCorrectionSec;
-            BaseEnd += FMath::Clamp(RebasedEnd - BaseEnd, -0.025f, 0.025f);
-        }
+        FRuntimePhoneSchedule Schedule = BuildRuntimePhoneSchedule(
+            InOutHoldState,
+            NextEventIndex,
+            SourcePhoneGlobalIndex,
+            PlaybackOffsetSec,
+            RequiredPhoneStartActiveSec,
+            RequiredActiveSec,
+            RequiredPhoneEndActiveSec,
+            PoseLeadSec);
+        float BaseStart = Schedule.BaseStart;
+        float Center = Schedule.Center;
+        float BaseEnd = Schedule.BaseEnd;
+        const bool bExactAcousticAnchorEvent = Schedule.bExactAcousticAnchorEvent;
+        const bool bUsingResumeAnchorSchedule = Schedule.bUsingResumeAnchorSchedule;
+        const bool bUsedResumeAnchor = Schedule.bUsedResumeAnchor;
+        const bool bUsedInitialSpeechAnchor = Schedule.bUsedInitialSpeechAnchor;
+        const FName AcousticAnchorKind = Schedule.AcousticAnchorKind;
+        const float AcousticAnchorSec = Schedule.AcousticAnchorSec;
 
         const float PriorCenter = Center;
 

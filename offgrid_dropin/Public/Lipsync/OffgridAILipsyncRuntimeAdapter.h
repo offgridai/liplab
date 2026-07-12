@@ -5,9 +5,10 @@
 #include "Lipsync/OffgridAITextVisemePlanner.h"
 #include "Lipsync/OffgridAIStreamingSpeechDetector.h"
 
-// Runtime input: text plan + detected speech regions.
-// No phone/Viterbi/acoustic-class/landmark timing path is active here.
-// Landmarks are advisory debug output owned by LineCoach finalization logs.
+// Runtime input: transcript timing priors plus detector-owned speech/pause
+// evidence. The live timing path has only two audio-driven corrections:
+// 1. speech start / punctuation resume anchors, and
+// 2. local syllable-envelope rebasing inside an already-open speech section.
 struct FOffgridAILipsyncRuntimeUpdateInput
 {
     const FOffgridAITextVisemePlan* TextPlan = nullptr;
@@ -26,8 +27,9 @@ struct FOffgridAILipsyncRuntimeUpdateInput
     FName LineID = NAME_None;
 };
 
-// Per-commit diagnostics for text-prior monotonic playback gated by detected
-// speech start and punctuation resume evidence.
+// Per-commit diagnostics for monotonic transcript playback, optionally reset by
+// detected speech start / punctuation resume anchors and locally rebased by
+// syllable envelopes.
 struct FOffgridAIRuntimeCommitDiagnosticRow
 {
     FName LineID = NAME_None;
@@ -237,6 +239,7 @@ struct FOffgridAIBoundaryPlaybackState
     // never inferred from audio; the transcript supplies the expected nucleus.
     bool bSyllableRebaseActive = false;
     int32 SyllableAnchorPhoneIndex = INDEX_NONE;
+    int32 SyllableRebaseEndPhoneIndex = INDEX_NONE;
     int32 NextExpectedSyllablePhoneIndex = INDEX_NONE;
     int32 LastSyllableScanFrameIndex = INDEX_NONE;
     float SyllableAnchorActiveSec = 0.0f;
