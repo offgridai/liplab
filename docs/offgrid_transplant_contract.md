@@ -36,7 +36,7 @@ LineCoach should not contain:
 
 - viseme planning,
 - phone/word scheduling,
-- phrase ownership rules,
+- speech-region ownership rules,
 - speech-region merging,
 - fallback viseme placement,
 - TTS hint interpretation.

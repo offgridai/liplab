@@ -22,9 +22,9 @@ The active path does not rely on:
 
 ## Compatibility notes
 
-Some public types still expose compatibility aliases such as `PhraseIndex` or `IslandIndex`.
-Those exist only to avoid breaking older Offgrid-side logging/export code.
-They are not the conceptual model of the current system.
+Some corpus CSV readers still accept the legacy `phrase_index` column as an
+alias for `speech_region_index`. This is an input-format compatibility detail,
+not part of the runtime model.
 
 The current conceptual model is:
 

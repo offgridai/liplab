@@ -101,35 +101,6 @@ def main() -> int:
             f"resume_p={summary['strict_punctuation_resume_precision']:.3f} "
             f"resume_r={summary['strict_punctuation_resume_recall']:.3f}"
         )
-    if summary.get("prosodic_time_mapper_available_cases", 0) > 0:
-        print(
-            f"Prosodic time mapper: progress_mean_ms={summary['prosodic_time_mapper_progress_mean_ms']:.1f} "
-            f"median_ms={summary['prosodic_time_mapper_progress_median_ms']:.1f} "
-            f"p90_ms={summary['prosodic_time_mapper_progress_p90_ms']:.1f} "
-            f"high_conf_coverage={summary['prosodic_time_mapper_high_confidence_coverage']:.3f} "
-            f"high_conf_ms={summary['prosodic_time_mapper_high_confidence_error_ms']:.1f}"
-        )
-        print(
-            f"Prosodic mapper regions: available_cases={summary['prosodic_time_mapper_available_cases']} "
-            f"ambiguous_cases={summary['prosodic_time_mapper_ambiguous_cases']} "
-            f"paired_regions={summary['prosodic_time_mapper']['paired_region_count']} "
-            f"skipped_outside={summary['prosodic_time_mapper']['skipped_outside_regions']}"
-        )
-        print(
-            f"Prosodic pacing projection: syllable_exact={summary['prosodic_time_mapper_syllable_exact_rate']:.3f} "
-            f"within_one={summary['prosodic_time_mapper_syllable_within_one_rate']:.3f} "
-            f"prior_ms={summary['prosodic_time_mapper_baseline_projection_ms']:.1f} "
-            f"corrected_ms={summary['prosodic_time_mapper_corrected_projection_ms']:.1f} "
-            f"improved={summary['prosodic_time_mapper_projection_improvement_rate']:.3f}"
-        )
-        print(
-            f"Prosodic advisory rebases: anchors={summary['prosodic_time_mapper_rebase_anchor_count']} "
-            f"targets={summary['prosodic_time_mapper_rebase_target_count']} "
-            f"prior_ms={summary['prosodic_time_mapper_rebase_baseline_ms']:.1f} "
-            f"rebased_ms={summary['prosodic_time_mapper_rebase_ms']:.1f} "
-            f"improved={summary['prosodic_time_mapper_rebase_improvement_rate']:.3f} "
-            f"degraded={summary['prosodic_time_mapper_rebase_degradation_rate']:.3f}"
-        )
     print(f"Wrote {summary_path}")
     return 0
 
