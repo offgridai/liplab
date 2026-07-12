@@ -80,11 +80,12 @@ static float PeakForPose(FName PoseID, float SourceStrength)
 static bool SameContinuousSpeechGroup(const FOffgridAICommittedVisemeEvent* A, const FOffgridAICommittedVisemeEvent* B)
 {
     if (!A || !B) return false;
+    if (B->bUsedResumeAnchor) return false;
     if (A->SpeechRegionIndex != INDEX_NONE && B->SpeechRegionIndex != INDEX_NONE && A->SpeechRegionIndex != B->SpeechRegionIndex) return false;
 
     // Runtime continuity follows the active detected speech region. Soft gaps
     // inside the same region may still keep a mouth state alive, but nothing
-    // may bridge across a true speech-region boundary.
+    // may bridge into an acoustically anchored punctuation resume.
     const float CenterGap = B->FinalRenderCenterSeconds - A->FinalRenderCenterSeconds;
     if (CenterGap > 0.420f)
     {
@@ -106,10 +107,10 @@ static float EventWeightAt(const FOffgridAICommittedVisemeEvent& E, const FOffgr
     float AttackStart = PeakStart - Attack;
     float ReleaseEnd = PeakEnd + Release;
 
-    // Treat committed visemes as states over a continuous phrase, not as
+    // Treat committed visemes as states over a continuous speech region, not as
     // isolated impulses. The runtime commits a monotonic text-prior viseme prefix;
     // the performer should therefore keep a mouth state alive until the next
-    // same-phrase state takes over. This fixes perceptual dead zones without
+    // same-region state takes over. This fixes perceptual dead zones without
     // moving the committed event centers or adding a scheduler.
     if (SameContinuousSpeechGroup(Prev, &E) && FMath::IsFinite(Prev->FinalRenderCenterSeconds))
     {

@@ -4,9 +4,6 @@ import pathlib
 import statistics
 from typing import Any
 
-from prosodic_time_mapper import compute_prosodic_time_mapper
-
-
 def _mean(values: list[float]) -> float:
     return sum(values) / len(values) if values else 0.0
 
@@ -472,29 +469,6 @@ def _compute_text_plan_grade(case_dir: pathlib.Path, gold_case_dir: pathlib.Path
     }
 
 
-def _compute_prosodic_time_mapper_grade(case_dir: pathlib.Path) -> dict[str, Any]:
-    target_rows = _read_csv_rows(case_dir / "transcript_prosodic_peaks.csv")
-    observation_rows = _read_csv_rows(case_dir / "streaming_raw_prosodic_peaks.csv")
-    speech_rows = _read_csv_rows(case_dir / "speech_regions.csv")
-    transcript_landmark_rows = _read_csv_rows(case_dir / "transcript_landmarks.csv")
-    landmark_observation_rows = _read_csv_rows(case_dir / "streaming_landmark_observations.csv")
-    if not target_rows or not observation_rows or not speech_rows:
-        return {"available": False}
-
-    report, trace_rows, projection_rows, rebase_rows = compute_prosodic_time_mapper(
-        target_rows,
-        observation_rows,
-        speech_rows,
-        transcript_landmark_rows,
-        landmark_observation_rows,
-    )
-    if report.get("available"):
-        _write_csv_rows(case_dir / "prosodic_time_mapper_trace.csv", trace_rows)
-        _write_csv_rows(case_dir / "prosodic_time_mapper_projections.csv", projection_rows)
-        _write_csv_rows(case_dir / "prosodic_time_mapper_rebases.csv", rebase_rows)
-    return report
-
-
 def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
     rows: list[dict[str, Any]] = []
     graded: list[dict[str, Any]] = []
@@ -506,19 +480,13 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
         case_dir = grade_path.parent
         grade = _read_json(grade_path)
         text_plan_grade: dict[str, Any] = {}
-        prosodic_time_mapper_grade: dict[str, Any] = {}
         if gold_root is not None:
             gold_case_dir = gold_root / case_dir.name
             text_plan_grade = _compute_text_plan_grade(case_dir, gold_case_dir)
             if text_plan_grade.get("available"):
                 _write_json(case_dir / "text_plan_grade.json", text_plan_grade)
-            prosodic_time_mapper_grade = _compute_prosodic_time_mapper_grade(case_dir)
-            if prosodic_time_mapper_grade.get("available"):
-                _write_json(case_dir / "prosodic_time_mapper_grade.json", prosodic_time_mapper_grade)
         if not text_plan_grade:
             text_plan_grade = _read_json(case_dir / "text_plan_grade.json")
-        if not prosodic_time_mapper_grade:
-            prosodic_time_mapper_grade = _read_json(case_dir / "prosodic_time_mapper_grade.json")
 
         commit_rows = _read_csv_rows(case_dir / "commit_decisions.csv")
         speech_rows = _read_csv_rows(case_dir / "speech_regions.csv")
@@ -533,7 +501,6 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "streaming_landmark_grade": _read_json(case_dir / "streaming_landmark_grade.json"),
             "streaming_prosodic_peak_grade": _read_json(case_dir / "streaming_prosodic_peak_grade.json"),
             "strict_punctuation_grade": _read_json(case_dir / "strict_punctuation_alignment_grade.json"),
-            "prosodic_time_mapper_grade": prosodic_time_mapper_grade,
             "committed_rows": _read_csv_rows(case_dir / "committed.csv"),
             "commit_rows": commit_rows,
             "speech_rows": speech_rows,
@@ -586,12 +553,6 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
     prosodic_available = [row for row in bulk if row["streaming_prosodic_peak_grade"].get("available")]
     strict_punctuation_available = [row for row in bulk if row["strict_punctuation_grade"].get("available")]
     playback_health_available = [row for row in bulk if row["playback_health"].get("available")]
-    prosodic_time_mapper_available = [row for row in bulk if row["prosodic_time_mapper_grade"].get("available")]
-    prosodic_time_mapper_ambiguous = [
-        row for row in bulk
-        if row["prosodic_time_mapper_grade"].get("ambiguous_region_pairing")
-    ]
-
     text_by_type: dict[str, dict[str, float]] = {}
     text_predicted_break_count = sum(int(row["text_plan_grade"].get("predicted_region_break_count", 0)) for row in text_available)
     text_reference_break_count = sum(int(row["text_plan_grade"].get("reference_region_break_count", 0)) for row in text_available)
@@ -823,76 +784,6 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
     strict_resume_observations = sum(int(row["strict_punctuation_grade"].get("resume_observation_count", 0)) for row in strict_punctuation_available)
     strict_resume_matches = sum(int(row["strict_punctuation_grade"].get("resume_match_count", 0)) for row in strict_punctuation_available)
 
-    mapper_observations = sum(
-        int(row["prosodic_time_mapper_grade"].get("observation_count", 0))
-        for row in prosodic_time_mapper_available
-    )
-    mapper_targets = sum(
-        int(row["prosodic_time_mapper_grade"].get("target_count", 0))
-        for row in prosodic_time_mapper_available
-    )
-    mapper_projections = sum(
-        int(row["prosodic_time_mapper_grade"].get("projection_count", 0))
-        for row in prosodic_time_mapper_available
-    )
-
-    def _mapper_weighted_mean(key: str, weight_key: str) -> float:
-        values = []
-        for row in prosodic_time_mapper_available:
-            grade = row["prosodic_time_mapper_grade"]
-            values.extend([float(grade.get(key, 0.0))] * int(grade.get(weight_key, 0)))
-        return _mean(values)
-
-    prosodic_time_mapper_summary = {
-        "available_cases": len(prosodic_time_mapper_available),
-        "ambiguous_region_pairing_cases": len(prosodic_time_mapper_ambiguous),
-        "target_count": mapper_targets,
-        "observation_count": mapper_observations,
-        "raw_observation_count": sum(
-            int(row["prosodic_time_mapper_grade"].get("raw_observation_count", 0))
-            for row in prosodic_time_mapper_available
-        ),
-        "skipped_outside_regions": sum(
-            int(row["prosodic_time_mapper_grade"].get("skipped_outside_regions", 0))
-            for row in prosodic_time_mapper_available
-        ),
-        "runtime_region_count": sum(
-            int(row["prosodic_time_mapper_grade"].get("runtime_region_count", 0))
-            for row in prosodic_time_mapper_available
-        ),
-        "transcript_region_count": sum(
-            int(row["prosodic_time_mapper_grade"].get("transcript_region_count", 0))
-            for row in prosodic_time_mapper_available
-        ),
-        "paired_region_count": sum(
-            int(row["prosodic_time_mapper_grade"].get("paired_region_count", 0))
-            for row in prosodic_time_mapper_available
-        ),
-        "acceptance_rate": _mapper_weighted_mean("acceptance_rate", "observation_count"),
-        "high_confidence_coverage": _mapper_weighted_mean("high_confidence_coverage", "target_count"),
-        "progress_error_mean_ms": _mapper_weighted_mean("progress_error_mean_ms", "observation_count"),
-        "progress_error_median_ms": _mapper_weighted_mean("progress_error_median_ms", "observation_count"),
-        "progress_error_p90_ms": _mapper_weighted_mean("progress_error_p90_ms", "observation_count"),
-        "high_confidence_progress_error_mean_ms": _mapper_weighted_mean("high_confidence_progress_error_mean_ms", "high_confidence_count"),
-        "syllable_index_exact_rate": _mapper_weighted_mean("syllable_index_exact_rate", "observation_count"),
-        "syllable_index_within_one_rate": _mapper_weighted_mean("syllable_index_within_one_rate", "observation_count"),
-        "projection_count": mapper_projections,
-        "baseline_future_nucleus_error_ms": _mapper_weighted_mean("baseline_future_nucleus_error_ms", "projection_count"),
-        "corrected_future_nucleus_error_ms": _mapper_weighted_mean("corrected_future_nucleus_error_ms", "projection_count"),
-        "projection_improvement_rate": _mapper_weighted_mean("projection_improvement_rate", "projection_count"),
-        "advisory_rebase_anchor_count": sum(
-            int(row["prosodic_time_mapper_grade"].get("advisory_rebase_anchor_count", 0))
-            for row in prosodic_time_mapper_available
-        ),
-        "advisory_rebase_target_count": sum(
-            int(row["prosodic_time_mapper_grade"].get("advisory_rebase_target_count", 0))
-            for row in prosodic_time_mapper_available
-        ),
-        "advisory_rebase_baseline_center_ms": _mapper_weighted_mean("advisory_rebase_baseline_center_ms", "advisory_rebase_target_count"),
-        "advisory_rebase_center_ms": _mapper_weighted_mean("advisory_rebase_center_ms", "advisory_rebase_target_count"),
-        "advisory_rebase_improvement_rate": _mapper_weighted_mean("advisory_rebase_improvement_rate", "advisory_rebase_target_count"),
-        "advisory_rebase_degradation_rate": _mapper_weighted_mean("advisory_rebase_degradation_rate", "advisory_rebase_target_count"),
-    }
     summary = {
         **playback_summary,
         **text_plan_summary,
@@ -931,25 +822,6 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "strict_punctuation_close_recall": strict_close_matches / strict_punctuation_targets if strict_punctuation_targets else 0.0,
         "strict_punctuation_resume_precision": strict_resume_matches / strict_resume_observations if strict_resume_observations else 0.0,
         "strict_punctuation_resume_recall": strict_resume_matches / strict_punctuation_targets if strict_punctuation_targets else 0.0,
-        "prosodic_time_mapper": prosodic_time_mapper_summary,
-        "prosodic_time_mapper_available_cases": prosodic_time_mapper_summary["available_cases"],
-        "prosodic_time_mapper_ambiguous_cases": prosodic_time_mapper_summary["ambiguous_region_pairing_cases"],
-        "prosodic_time_mapper_progress_mean_ms": prosodic_time_mapper_summary["progress_error_mean_ms"],
-        "prosodic_time_mapper_progress_median_ms": prosodic_time_mapper_summary["progress_error_median_ms"],
-        "prosodic_time_mapper_progress_p90_ms": prosodic_time_mapper_summary["progress_error_p90_ms"],
-        "prosodic_time_mapper_high_confidence_coverage": prosodic_time_mapper_summary["high_confidence_coverage"],
-        "prosodic_time_mapper_high_confidence_error_ms": prosodic_time_mapper_summary["high_confidence_progress_error_mean_ms"],
-        "prosodic_time_mapper_syllable_exact_rate": prosodic_time_mapper_summary["syllable_index_exact_rate"],
-        "prosodic_time_mapper_syllable_within_one_rate": prosodic_time_mapper_summary["syllable_index_within_one_rate"],
-        "prosodic_time_mapper_baseline_projection_ms": prosodic_time_mapper_summary["baseline_future_nucleus_error_ms"],
-        "prosodic_time_mapper_corrected_projection_ms": prosodic_time_mapper_summary["corrected_future_nucleus_error_ms"],
-        "prosodic_time_mapper_projection_improvement_rate": prosodic_time_mapper_summary["projection_improvement_rate"],
-        "prosodic_time_mapper_rebase_anchor_count": prosodic_time_mapper_summary["advisory_rebase_anchor_count"],
-        "prosodic_time_mapper_rebase_target_count": prosodic_time_mapper_summary["advisory_rebase_target_count"],
-        "prosodic_time_mapper_rebase_baseline_ms": prosodic_time_mapper_summary["advisory_rebase_baseline_center_ms"],
-        "prosodic_time_mapper_rebase_ms": prosodic_time_mapper_summary["advisory_rebase_center_ms"],
-        "prosodic_time_mapper_rebase_improvement_rate": prosodic_time_mapper_summary["advisory_rebase_improvement_rate"],
-        "prosodic_time_mapper_rebase_degradation_rate": prosodic_time_mapper_summary["advisory_rebase_degradation_rate"],
         "streaming_landmark_available_cases": runtime_detector_summary["available_cases"],
         "streaming_landmark_target_count": runtime_detector_summary["planned_landmark_target_count"],
         "streaming_landmark_observation_count": runtime_detector_summary["observed_landmark_count"],

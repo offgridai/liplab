@@ -34,7 +34,7 @@ static std::string derived_pause_family(const FOffgridAIStreamingAudioFeatureFra
         }
         if (frame.SilenceAccumSec >= 0.130f)
         {
-            return "phrase_gap";
+            return "speech_region_gap";
         }
         if (frame.SilenceAccumSec >= 0.065f)
         {
@@ -47,7 +47,7 @@ static std::string derived_pause_family(const FOffgridAIStreamingAudioFeatureFra
     {
         if (frame.SilenceAccumSec >= 0.130f)
         {
-            return "phrase_gap";
+            return "speech_region_gap";
         }
         if (frame.SilenceAccumSec >= 0.020f)
         {
@@ -300,79 +300,6 @@ struct ProsodicPeakReport
     double raw_mean_abs_error_ms = 0.0;
 };
 
-struct LandmarkPacingUpdate
-{
-    int speech_region_index = -1;
-    int anchor_target_index = -1;
-    std::string anchor_type;
-    double anchor_prior_sec = 0.0;
-    double anchor_observed_sec = 0.0;
-    double anchor_baseline_error_ms = 0.0;
-    double measured_rate = 1.0;
-    double filtered_rate_before = 1.0;
-    double filtered_rate_after = 1.0;
-    double confidence = 0.0;
-    bool seeded = false;
-};
-
-struct LandmarkPacingCheckpoint
-{
-    std::string kind;
-    std::string subkind;
-    std::string label;
-    int expected_phone_index = -1;
-    int global_phone_index = -1;
-    int word_index = -1;
-    int speech_region_index = -1;
-    double prior_time_sec = 0.0;
-    double gold_time_sec = 0.0;
-};
-
-struct LandmarkPacingPrediction
-{
-    std::string kind;
-    std::string subkind;
-    std::string label;
-    int expected_phone_index = -1;
-    int global_phone_index = -1;
-    int word_index = -1;
-    int speech_region_index = -1;
-    double prior_time_sec = 0.0;
-    double gold_time_sec = 0.0;
-    double predicted_time_sec = 0.0;
-    double baseline_error_ms = 0.0;
-    double predicted_error_ms = 0.0;
-    int advisory_active = 0;
-    int source_anchor_target_index = -1;
-    double source_rate = 1.0;
-};
-
-struct LandmarkPacingBucketSummary
-{
-    int target_count = 0;
-    int corrected_count = 0;
-    int improved_count = 0;
-    int worsened_count = 0;
-    double mean_baseline_error_ms = 0.0;
-    double mean_predicted_error_ms = 0.0;
-    double median_baseline_error_ms = 0.0;
-    double median_predicted_error_ms = 0.0;
-    double p90_baseline_error_ms = 0.0;
-    double p90_predicted_error_ms = 0.0;
-};
-
-struct LandmarkPacingAdvisoryReport
-{
-    bool available = false;
-    int update_count = 0;
-    int seeded_region_count = 0;
-    double mean_anchor_baseline_error_ms = 0.0;
-    double mean_abs_rate_change = 0.0;
-    double mean_filtered_rate = 1.0;
-    std::map<std::string, LandmarkPacingBucketSummary> buckets;
-    std::vector<LandmarkPacingUpdate> updates;
-    std::vector<LandmarkPacingPrediction> predictions;
-};
 
 struct BoundaryAlignmentReport
 {
@@ -2537,535 +2464,6 @@ static std::string transcript_landmarks_csv(const std::vector<LandmarkTarget>& t
     return out.str();
 }
 
-static double landmark_pacing_threshold(const std::string& type)
-{
-    if (type == "mbp") return 0.80;
-    if (type == "fv") return 0.70;
-    if (type == "w") return 0.88;
-    if (type == "chjjsh") return 0.80;
-    if (is_pause_lull_type(type)) return 0.80;
-    return 1.10;
-}
-
-static double landmark_pacing_reliability(const std::string& type)
-{
-    if (type == "mbp") return 0.70;
-    if (type == "fv") return 0.72;
-    if (type == "w") return 0.72;
-    if (type == "chjjsh") return 0.75;
-    if (is_pause_lull_type(type)) return 0.65;
-    return 0.0;
-}
-
-static bool landmark_pacing_trusted(const std::string& type)
-{
-    return type == "mbp" || type == "fv" || type == "w" || type == "chjjsh" || is_pause_lull_type(type);
-}
-
-static std::string classify_gap_subkind(const FOffgridAITextVisemePlan& plan, int word_index)
-{
-    if (word_index >= 0 && word_index < plan.WordBoundaryPunctuationAfter.Num())
-    {
-        if (plan.WordBoundaryPunctuationAfter[word_index] == ',')
-        {
-            return "comma_gap";
-        }
-    }
-    return "space_gap";
-}
-
-static std::vector<LandmarkPacingCheckpoint> build_landmark_pacing_checkpoints(
-    const FOffgridAITextVisemePlan& plan,
-    const std::vector<GoldPhoneTiming>& gold_phones,
-    const std::vector<GoldWordTiming>& gold_words,
-    const std::vector<GoldSpeechRegion>& gold_speech)
-{
-    std::vector<LandmarkPacingCheckpoint> checkpoints;
-    if (plan.ExpectedPhones.Num() <= 0)
-    {
-        return checkpoints;
-    }
-
-    std::vector<double> expected_start_by_index;
-    std::vector<double> expected_end_by_index;
-    build_expected_phone_prior_times(plan, gold_phones, gold_speech, expected_start_by_index, expected_end_by_index);
-
-    std::vector<const GoldPhoneTiming*> by_global_index(gold_phones.size(), nullptr);
-    for (const GoldPhoneTiming& phone : gold_phones)
-    {
-        if (phone.global_phone_index >= 0 && static_cast<size_t>(phone.global_phone_index) < by_global_index.size())
-        {
-            by_global_index[static_cast<size_t>(phone.global_phone_index)] = &phone;
-        }
-    }
-
-    for (int32 i = 0; i < plan.ExpectedPhones.Num(); ++i)
-    {
-        const auto& expected = plan.ExpectedPhones[i];
-        if (expected.PhoneIndex < 0 || static_cast<size_t>(expected.PhoneIndex) >= by_global_index.size())
-        {
-            continue;
-        }
-        const GoldPhoneTiming* gold = by_global_index[static_cast<size_t>(expected.PhoneIndex)];
-        if (gold == nullptr)
-        {
-            continue;
-        }
-
-        LandmarkPacingCheckpoint checkpoint;
-        checkpoint.kind = "phone_center";
-        checkpoint.label = gold->phone;
-        checkpoint.expected_phone_index = i;
-        checkpoint.global_phone_index = gold->global_phone_index;
-        checkpoint.word_index = gold->word_index;
-        checkpoint.speech_region_index = gold->speech_region_index;
-        checkpoint.prior_time_sec = 0.5 * (
-            expected_start_by_index[static_cast<size_t>(i)] +
-            expected_end_by_index[static_cast<size_t>(i)]);
-        checkpoint.gold_time_sec = 0.5 * (gold->start + gold->end);
-        checkpoints.push_back(std::move(checkpoint));
-    }
-
-    for (const GoldWordTiming& word : gold_words)
-    {
-        if (word.word_index < 0 || word.word_index >= plan.WordPhoneBeginIndices.Num())
-        {
-            continue;
-        }
-        const int32 begin_phone_index = plan.WordPhoneBeginIndices[word.word_index];
-        if (begin_phone_index < 0 || begin_phone_index >= plan.ExpectedPhones.Num())
-        {
-            continue;
-        }
-        LandmarkPacingCheckpoint checkpoint;
-        checkpoint.kind = "word_start";
-        checkpoint.label = word.word;
-        checkpoint.expected_phone_index = begin_phone_index;
-        checkpoint.word_index = word.word_index;
-        checkpoint.speech_region_index = word.speech_region_index;
-        checkpoint.prior_time_sec = expected_start_by_index[static_cast<size_t>(begin_phone_index)];
-        checkpoint.gold_time_sec = word.start;
-        checkpoints.push_back(std::move(checkpoint));
-    }
-
-    for (size_t i = 1; i < gold_words.size(); ++i)
-    {
-        const GoldWordTiming& left = gold_words[i - 1];
-        const GoldWordTiming& right = gold_words[i];
-        if (left.speech_region_index < 0 || left.speech_region_index != right.speech_region_index)
-        {
-            continue;
-        }
-        if (left.word_index < 0 || left.word_index >= plan.WordPhoneEndIndices.Num())
-        {
-            continue;
-        }
-        if (right.word_index < 0 || right.word_index >= plan.WordPhoneBeginIndices.Num())
-        {
-            continue;
-        }
-        const int32 left_end_phone_index = plan.WordPhoneEndIndices[left.word_index] - 1;
-        const int32 right_begin_phone_index = plan.WordPhoneBeginIndices[right.word_index];
-        if (left_end_phone_index < 0 || right_begin_phone_index < 0
-            || left_end_phone_index >= plan.ExpectedPhones.Num()
-            || right_begin_phone_index >= plan.ExpectedPhones.Num())
-        {
-            continue;
-        }
-
-        LandmarkPacingCheckpoint checkpoint;
-        checkpoint.kind = "gap_center";
-        checkpoint.subkind = classify_gap_subkind(plan, left.word_index);
-        checkpoint.label = left.word + " -> " + right.word;
-        checkpoint.word_index = right.word_index;
-        checkpoint.speech_region_index = left.speech_region_index;
-        checkpoint.prior_time_sec = 0.5 * (
-            expected_end_by_index[static_cast<size_t>(left_end_phone_index)] +
-            expected_start_by_index[static_cast<size_t>(right_begin_phone_index)]);
-        checkpoint.gold_time_sec = 0.5 * (left.end + right.start);
-        checkpoints.push_back(std::move(checkpoint));
-    }
-
-    std::sort(checkpoints.begin(), checkpoints.end(), [](const LandmarkPacingCheckpoint& a, const LandmarkPacingCheckpoint& b) {
-        if (a.speech_region_index != b.speech_region_index) return a.speech_region_index < b.speech_region_index;
-        if (a.prior_time_sec != b.prior_time_sec) return a.prior_time_sec < b.prior_time_sec;
-        if (a.kind != b.kind) return a.kind < b.kind;
-        return a.label < b.label;
-    });
-    return checkpoints;
-}
-
-static LandmarkPacingAdvisoryReport build_landmark_pacing_advisory_report(
-    const std::vector<LandmarkTarget>& targets,
-    const std::vector<LandmarkObservation>& observations,
-    const std::vector<LandmarkPacingCheckpoint>& checkpoints)
-{
-    LandmarkPacingAdvisoryReport report;
-    report.available = !targets.empty() && !observations.empty() && !checkpoints.empty();
-    if (!report.available)
-    {
-        return report;
-    }
-
-    struct Anchor
-    {
-        int target_index = -1;
-        int speech_region_index = -1;
-        std::string type;
-        double score = 0.0;
-        double normalized_score = 0.0;
-        double reliability = 0.0;
-        double prior_center = 0.0;
-        double observed_center = 0.0;
-        double confidence = 0.0;
-    };
-
-    std::map<int, const LandmarkTarget*> targets_by_index;
-    for (size_t i = 0; i < targets.size(); ++i)
-    {
-        targets_by_index[static_cast<int>(i)] = &targets[i];
-    }
-
-    std::map<int, Anchor> best_anchor_by_target;
-    for (const LandmarkObservation& observation : observations)
-    {
-        if (!landmark_pacing_trusted(observation.type))
-        {
-            continue;
-        }
-        const double threshold = landmark_pacing_threshold(observation.type);
-        if (observation.score < threshold)
-        {
-            continue;
-        }
-        auto it = targets_by_index.find(observation.matched_target_index);
-        if (it == targets_by_index.end() || it->second == nullptr)
-        {
-            continue;
-        }
-        const LandmarkTarget& target = *it->second;
-        Anchor candidate;
-        candidate.target_index = observation.matched_target_index;
-        candidate.speech_region_index = target.speech_region_index;
-        candidate.type = observation.type;
-        candidate.score = observation.score;
-        candidate.normalized_score = clamp01((observation.score - threshold) / std::max(1.0 - threshold, 1e-6));
-        candidate.reliability = landmark_pacing_reliability(observation.type);
-        candidate.prior_center = target.prior_center;
-        candidate.observed_center = observation.center;
-        candidate.confidence = clamp01(candidate.normalized_score * 0.7 + candidate.reliability * 0.3);
-
-        auto existing = best_anchor_by_target.find(candidate.target_index);
-        if (existing == best_anchor_by_target.end())
-        {
-            best_anchor_by_target[candidate.target_index] = candidate;
-            continue;
-        }
-        const Anchor& current = existing->second;
-        const std::tuple<double, double, double> current_rank{
-            current.confidence,
-            current.score,
-            -std::abs(current.observed_center - current.prior_center)};
-        const std::tuple<double, double, double> candidate_rank{
-            candidate.confidence,
-            candidate.score,
-            -std::abs(candidate.observed_center - candidate.prior_center)};
-        if (candidate_rank > current_rank)
-        {
-            best_anchor_by_target[candidate.target_index] = candidate;
-        }
-    }
-
-    std::map<int, std::vector<Anchor>> anchors_by_region;
-    for (const auto& [_, anchor] : best_anchor_by_target)
-    {
-        anchors_by_region[anchor.speech_region_index].push_back(anchor);
-    }
-
-    struct RegionState
-    {
-        bool seeded = false;
-        double play_rate = 1.0;
-        double anchor_prior = 0.0;
-        double anchor_observed = 0.0;
-        int anchor_target_index = -1;
-    };
-    std::map<int, RegionState> state_by_region;
-
-    std::vector<double> anchor_errors_ms;
-    std::vector<double> abs_rate_changes;
-    std::vector<double> filtered_rates;
-
-    for (auto& [speech_region_index, anchors] : anchors_by_region)
-    {
-        std::sort(anchors.begin(), anchors.end(), [](const Anchor& a, const Anchor& b) {
-            if (a.prior_center != b.prior_center) return a.prior_center < b.prior_center;
-            return a.target_index < b.target_index;
-        });
-
-        RegionState state;
-        for (const Anchor& anchor : anchors)
-        {
-            if (!state.seeded)
-            {
-                state.seeded = true;
-                state.play_rate = 1.0;
-                state.anchor_prior = anchor.prior_center;
-                state.anchor_observed = anchor.observed_center;
-                state.anchor_target_index = anchor.target_index;
-
-                LandmarkPacingUpdate update;
-                update.speech_region_index = speech_region_index;
-                update.anchor_target_index = anchor.target_index;
-                update.anchor_type = anchor.type;
-                update.anchor_prior_sec = anchor.prior_center;
-                update.anchor_observed_sec = anchor.observed_center;
-                update.anchor_baseline_error_ms = (anchor.observed_center - anchor.prior_center) * 1000.0;
-                update.measured_rate = 1.0;
-                update.filtered_rate_before = 1.0;
-                update.filtered_rate_after = 1.0;
-                update.confidence = anchor.confidence;
-                update.seeded = true;
-                report.updates.push_back(std::move(update));
-                anchor_errors_ms.push_back(std::abs((anchor.observed_center - anchor.prior_center) * 1000.0));
-                ++report.seeded_region_count;
-                continue;
-            }
-
-            const double prior_delta = anchor.prior_center - state.anchor_prior;
-            const double observed_delta = anchor.observed_center - state.anchor_observed;
-            if (prior_delta < 0.050 || observed_delta <= 0.0)
-            {
-                continue;
-            }
-
-            const double measured_rate = std::clamp(observed_delta / prior_delta, 0.88, 1.12);
-            const double alpha = 0.18 + 0.42 * anchor.confidence;
-            const double filtered_before = state.play_rate;
-            const double filtered_after = filtered_before + (measured_rate - filtered_before) * alpha;
-            const double predicted_anchor = state.anchor_observed + filtered_before * (anchor.prior_center - state.anchor_prior);
-            const double anchor_error_ms = (anchor.observed_center - predicted_anchor) * 1000.0;
-
-            LandmarkPacingUpdate update;
-            update.speech_region_index = speech_region_index;
-            update.anchor_target_index = anchor.target_index;
-            update.anchor_type = anchor.type;
-            update.anchor_prior_sec = anchor.prior_center;
-            update.anchor_observed_sec = anchor.observed_center;
-            update.anchor_baseline_error_ms = anchor_error_ms;
-            update.measured_rate = measured_rate;
-            update.filtered_rate_before = filtered_before;
-            update.filtered_rate_after = filtered_after;
-            update.confidence = anchor.confidence;
-            update.seeded = false;
-            report.updates.push_back(std::move(update));
-
-            anchor_errors_ms.push_back(std::abs(anchor_error_ms));
-            abs_rate_changes.push_back(std::abs(filtered_after - filtered_before));
-            filtered_rates.push_back(filtered_after);
-
-            state.play_rate = filtered_after;
-            state.anchor_prior = anchor.prior_center;
-            state.anchor_observed = anchor.observed_center;
-            state.anchor_target_index = anchor.target_index;
-        }
-
-        if (state.seeded)
-        {
-            state_by_region[speech_region_index] = state;
-        }
-    }
-
-    report.update_count = static_cast<int>(report.updates.size());
-    report.mean_anchor_baseline_error_ms = mean_ms(anchor_errors_ms);
-    report.mean_abs_rate_change = mean_ms(abs_rate_changes);
-    report.mean_filtered_rate = filtered_rates.empty() ? 1.0 : (std::accumulate(filtered_rates.begin(), filtered_rates.end(), 0.0) / static_cast<double>(filtered_rates.size()));
-
-    std::map<int, std::vector<LandmarkPacingUpdate>> updates_by_region;
-    for (const LandmarkPacingUpdate& update : report.updates)
-    {
-        updates_by_region[update.speech_region_index].push_back(update);
-    }
-
-    std::map<std::string, std::vector<double>> baseline_errors_by_kind;
-    std::map<std::string, std::vector<double>> predicted_errors_by_kind;
-    std::map<std::string, int> corrected_count_by_kind;
-    std::map<std::string, int> improved_count_by_kind;
-    std::map<std::string, int> worsened_count_by_kind;
-
-    for (const LandmarkPacingCheckpoint& checkpoint : checkpoints)
-    {
-        LandmarkPacingPrediction prediction;
-        prediction.kind = checkpoint.kind;
-        prediction.subkind = checkpoint.subkind;
-        prediction.label = checkpoint.label;
-        prediction.expected_phone_index = checkpoint.expected_phone_index;
-        prediction.global_phone_index = checkpoint.global_phone_index;
-        prediction.word_index = checkpoint.word_index;
-        prediction.speech_region_index = checkpoint.speech_region_index;
-        prediction.prior_time_sec = checkpoint.prior_time_sec;
-        prediction.gold_time_sec = checkpoint.gold_time_sec;
-        prediction.predicted_time_sec = checkpoint.prior_time_sec;
-        prediction.baseline_error_ms = std::abs(checkpoint.prior_time_sec - checkpoint.gold_time_sec) * 1000.0;
-        prediction.predicted_error_ms = prediction.baseline_error_ms;
-
-        const auto updates_it = updates_by_region.find(checkpoint.speech_region_index);
-        if (updates_it != updates_by_region.end())
-        {
-            const LandmarkPacingUpdate* chosen_update = nullptr;
-            for (const LandmarkPacingUpdate& update : updates_it->second)
-            {
-                if (update.anchor_prior_sec <= checkpoint.prior_time_sec + 1e-6)
-                {
-                    chosen_update = &update;
-                }
-                else
-                {
-                    break;
-                }
-            }
-            if (chosen_update != nullptr)
-            {
-                prediction.advisory_active = 1;
-                prediction.source_anchor_target_index = chosen_update->anchor_target_index;
-                prediction.source_rate = chosen_update->filtered_rate_after;
-                prediction.predicted_time_sec =
-                    chosen_update->anchor_observed_sec +
-                    chosen_update->filtered_rate_after * (checkpoint.prior_time_sec - chosen_update->anchor_prior_sec);
-                prediction.predicted_error_ms = std::abs(prediction.predicted_time_sec - checkpoint.gold_time_sec) * 1000.0;
-            }
-        }
-
-        const std::string bucket_key = checkpoint.subkind.empty() ? checkpoint.kind : checkpoint.subkind;
-        baseline_errors_by_kind[bucket_key].push_back(prediction.baseline_error_ms);
-        predicted_errors_by_kind[bucket_key].push_back(prediction.predicted_error_ms);
-        if (prediction.advisory_active != 0)
-        {
-            corrected_count_by_kind[bucket_key] += 1;
-        }
-        if (prediction.predicted_error_ms + 1e-6 < prediction.baseline_error_ms)
-        {
-            improved_count_by_kind[bucket_key] += 1;
-        }
-        else if (prediction.predicted_error_ms > prediction.baseline_error_ms + 1e-6)
-        {
-            worsened_count_by_kind[bucket_key] += 1;
-        }
-        report.predictions.push_back(std::move(prediction));
-    }
-
-    for (const auto& [bucket_key, baseline_errors] : baseline_errors_by_kind)
-    {
-        const auto predicted_it = predicted_errors_by_kind.find(bucket_key);
-        const std::vector<double>& predicted_errors = (predicted_it != predicted_errors_by_kind.end())
-            ? predicted_it->second
-            : baseline_errors;
-        LandmarkPacingBucketSummary bucket;
-        bucket.target_count = static_cast<int>(baseline_errors.size());
-        bucket.corrected_count = corrected_count_by_kind[bucket_key];
-        bucket.improved_count = improved_count_by_kind[bucket_key];
-        bucket.worsened_count = worsened_count_by_kind[bucket_key];
-        bucket.mean_baseline_error_ms = mean_ms(baseline_errors);
-        bucket.mean_predicted_error_ms = mean_ms(predicted_errors);
-        bucket.median_baseline_error_ms = percentile_ms(baseline_errors, 0.50);
-        bucket.median_predicted_error_ms = percentile_ms(predicted_errors, 0.50);
-        bucket.p90_baseline_error_ms = percentile_ms(baseline_errors, 0.90);
-        bucket.p90_predicted_error_ms = percentile_ms(predicted_errors, 0.90);
-        report.buckets[bucket_key] = std::move(bucket);
-    }
-
-    return report;
-}
-
-static std::string landmark_pacing_updates_csv(const LandmarkPacingAdvisoryReport& report)
-{
-    std::ostringstream out;
-    out << "update_index,speech_region_index,anchor_target_index,anchor_type,seeded,anchor_prior_sec,anchor_observed_sec,anchor_baseline_error_ms,measured_rate,filtered_rate_before,filtered_rate_after,confidence\n";
-    out << std::fixed << std::setprecision(6);
-    for (size_t i = 0; i < report.updates.size(); ++i)
-    {
-        const auto& update = report.updates[i];
-        out << i << ','
-            << update.speech_region_index << ','
-            << update.anchor_target_index << ','
-            << update.anchor_type << ','
-            << (update.seeded ? 1 : 0) << ','
-            << update.anchor_prior_sec << ','
-            << update.anchor_observed_sec << ','
-            << update.anchor_baseline_error_ms << ','
-            << update.measured_rate << ','
-            << update.filtered_rate_before << ','
-            << update.filtered_rate_after << ','
-            << update.confidence << '\n';
-    }
-    return out.str();
-}
-
-static std::string landmark_pacing_predictions_csv(const LandmarkPacingAdvisoryReport& report)
-{
-    std::ostringstream out;
-    out << "prediction_index,kind,subkind,label,expected_phone_index,global_phone_index,word_index,speech_region_index,prior_time_sec,gold_time_sec,predicted_time_sec,baseline_error_ms,predicted_error_ms,advisory_active,source_anchor_target_index,source_rate\n";
-    out << std::fixed << std::setprecision(6);
-    for (size_t i = 0; i < report.predictions.size(); ++i)
-    {
-        const auto& prediction = report.predictions[i];
-        out << i << ','
-            << prediction.kind << ','
-            << prediction.subkind << ','
-            << prediction.label << ','
-            << prediction.expected_phone_index << ','
-            << prediction.global_phone_index << ','
-            << prediction.word_index << ','
-            << prediction.speech_region_index << ','
-            << prediction.prior_time_sec << ','
-            << prediction.gold_time_sec << ','
-            << prediction.predicted_time_sec << ','
-            << prediction.baseline_error_ms << ','
-            << prediction.predicted_error_ms << ','
-            << prediction.advisory_active << ','
-            << prediction.source_anchor_target_index << ','
-            << prediction.source_rate << '\n';
-    }
-    return out.str();
-}
-
-static std::string landmark_pacing_summary_json(const LandmarkPacingAdvisoryReport& report)
-{
-    std::ostringstream out;
-    out << std::fixed << std::setprecision(6);
-    out << "{\n"
-        << "  \"available\": " << (report.available ? "true" : "false") << ",\n"
-        << "  \"update_count\": " << report.update_count << ",\n"
-        << "  \"seeded_region_count\": " << report.seeded_region_count << ",\n"
-        << "  \"mean_anchor_baseline_error_ms\": " << report.mean_anchor_baseline_error_ms << ",\n"
-        << "  \"mean_abs_rate_change\": " << report.mean_abs_rate_change << ",\n"
-        << "  \"mean_filtered_rate\": " << report.mean_filtered_rate << ",\n"
-        << "  \"buckets\": {\n";
-    bool first_bucket = true;
-    for (const auto& [name, bucket] : report.buckets)
-    {
-        if (!first_bucket)
-        {
-            out << ",\n";
-        }
-        first_bucket = false;
-        out << "    \"" << name << "\": {\n"
-            << "      \"target_count\": " << bucket.target_count << ",\n"
-            << "      \"corrected_count\": " << bucket.corrected_count << ",\n"
-            << "      \"improved_count\": " << bucket.improved_count << ",\n"
-            << "      \"worsened_count\": " << bucket.worsened_count << ",\n"
-            << "      \"mean_baseline_error_ms\": " << bucket.mean_baseline_error_ms << ",\n"
-            << "      \"mean_predicted_error_ms\": " << bucket.mean_predicted_error_ms << ",\n"
-            << "      \"median_baseline_error_ms\": " << bucket.median_baseline_error_ms << ",\n"
-            << "      \"median_predicted_error_ms\": " << bucket.median_predicted_error_ms << ",\n"
-            << "      \"p90_baseline_error_ms\": " << bucket.p90_baseline_error_ms << ",\n"
-            << "      \"p90_predicted_error_ms\": " << bucket.p90_predicted_error_ms << "\n"
-            << "    }";
-    }
-    out << "\n  }\n"
-        << "}\n";
-    return out.str();
-}
 
 static std::string audio_landmark_frames_csv(const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames)
 {
@@ -5167,7 +4565,7 @@ static std::vector<GradeMatch> compute_monotonic_matches(const FOffgridAIAligned
 static std::string classify_gap_family_by_duration(double gap_seconds)
 {
     if (gap_seconds >= 0.180) return "hard_silence";
-    if (gap_seconds >= 0.130) return "phrase_gap";
+    if (gap_seconds >= 0.130) return "speech_region_gap";
     if (gap_seconds >= 0.065) return "word_gap";
     if (gap_seconds >= 0.020) return "micro_gap";
     return "continuous_speech";
@@ -5418,17 +4816,17 @@ static std::vector<TimeSpan> build_gold_clause_regions(const std::vector<GoldWor
 {
     std::vector<TimeSpan> spans;
     int last_sentence = std::numeric_limits<int>::min();
-    int last_phrase = std::numeric_limits<int>::min();
+    int last_speech_region = std::numeric_limits<int>::min();
     int synthetic_key = -1;
     for (const auto& word : words)
     {
         if (word.speech_region_index < 0) continue;
-        if (spans.empty() || word.sentence_index != last_sentence || word.speech_region_index != last_phrase)
+        if (spans.empty() || word.sentence_index != last_sentence || word.speech_region_index != last_speech_region)
         {
             ++synthetic_key;
             spans.push_back(TimeSpan{synthetic_key, word.start, word.end});
             last_sentence = word.sentence_index;
-            last_phrase = word.speech_region_index;
+            last_speech_region = word.speech_region_index;
         }
         else
         {
@@ -5462,19 +4860,19 @@ static std::vector<TimeSpan> build_predicted_clause_regions(const FOffgridAIAlig
 {
     std::vector<TimeSpan> spans;
     int last_sentence = std::numeric_limits<int>::min();
-    int last_phrase = std::numeric_limits<int>::min();
+    int last_speech_region = std::numeric_limits<int>::min();
     int synthetic_key = -1;
     for (const auto& event : track.Events)
     {
         if (event.SpeechRegionIndex < 0) continue;
         const double start = static_cast<double>(event.RenderStartSeconds);
         const double end = static_cast<double>(event.RenderEndSeconds);
-        if (spans.empty() || event.SentenceIndex != last_sentence || event.SpeechRegionIndex != last_phrase)
+        if (spans.empty() || event.SentenceIndex != last_sentence || event.SpeechRegionIndex != last_speech_region)
         {
             ++synthetic_key;
             spans.push_back(TimeSpan{synthetic_key, start, end});
             last_sentence = event.SentenceIndex;
-            last_phrase = event.SpeechRegionIndex;
+            last_speech_region = event.SpeechRegionIndex;
         }
         else
         {
