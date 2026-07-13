@@ -9,6 +9,7 @@ from gold_tools import (
     gold_draft_dir,
     mfa_align_root,
     mfa_textgrid_path,
+    normalize_spoken_numbers,
     normalize_word,
     offline_gold_case_dir,
     offline_gold_run_root,
@@ -131,7 +132,8 @@ def word_metadata_by_index(planned_rows: list[dict[str, str]]) -> list[dict[str,
 
 def transcript_word_sequence_with_boundaries(transcript: str) -> list[dict[str, object]]:
     tokens: list[dict[str, object]] = []
-    for token in re.findall(r"[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*|[.,;:!?-]", transcript):
+    normalized_transcript = normalize_spoken_numbers(transcript)
+    for token in re.findall(r"[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*|[.,;:!?-]", normalized_transcript):
         if token in BOUNDARY_PUNCTUATION:
             if tokens:
                 tokens[-1]["boundary_marks"].append(token)
