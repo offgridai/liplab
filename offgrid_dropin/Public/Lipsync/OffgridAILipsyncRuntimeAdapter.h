@@ -151,6 +151,30 @@ struct FOffgridAIRuntimeBoundaryDiagnosticRow
     float SyllableAnchorAudioSec = 0.0f;
     float SyllableRate = 1.0f;
     float SyllableSectionStartAudioSec = 0.0f;
+    float SyllableAssignmentConfidence = 0.0f;
+    float SyllableAssignmentMargin = 0.0f;
+    int32 SyllableAssignmentSkipCount = 0;
+    float SyllableObservedAudioSec = 0.0f;
+    int32 SyllablePulseCount = 0;
+    int32 SyllableAssignmentCount = 0;
+    int32 SyllableLastAssignedPhoneIndex = INDEX_NONE;
+    int32 SyllableRejectLowProminenceCount = 0;
+    int32 SyllableRejectBeforeSectionCount = 0;
+    int32 SyllableLateAssignmentCount = 0;
+    int32 SyllableRejectNoCandidateCount = 0;
+    int32 SyllableAmbiguousAssignmentCount = 0;
+    int32 SyllableDuplicatePulseCount = 0;
+    bool bStrongPhoneRebaseActive = false;
+    int32 StrongPhoneAnchorPhoneIndex = INDEX_NONE;
+    float StrongPhoneAnchorActiveSec = 0.0f;
+    float StrongPhoneAnchorAudioSec = 0.0f;
+    float StrongPhoneAnchorConfidence = 0.0f;
+    int32 StrongPhoneCandidateCount = 0;
+    int32 StrongPhoneAssignmentCount = 0;
+    int32 TranscriptAnchorCursorPhoneIndex = 0;
+    int32 TranscriptAnchorFenceWordIndex = INDEX_NONE;
+    int32 TranscriptAnchorFencePhoneIndex = INDEX_NONE;
+    int32 TranscriptAnchorLastResolvedBoundaryWordIndex = INDEX_NONE;
 
     FString LastFenceEstimatorOutcome;
     FString LastResolvedBoundaryOutcome;
@@ -234,7 +258,7 @@ struct FOffgridAIBoundaryPlaybackState
     float ResumeAnchorLeadSec = 0.0f;
     float ResumeAnchorFinalCenterSec = 0.0f;
 
-    // Advisory-quality syllable pulses may rebase only the uncommitted suffix
+    // Syllable pulses rebase only the uncommitted suffix
     // inside the current punctuation-bounded speech section. Phone identity is
     // never inferred from audio; the transcript supplies the expected nucleus.
     bool bSyllableRebaseActive = false;
@@ -246,6 +270,39 @@ struct FOffgridAIBoundaryPlaybackState
     float SyllableAnchorAudioSec = 0.0f;
     float SyllableRate = 1.0f;
     float SyllableSectionStartAudioSec = 0.0f;
+    float SyllableAssignmentConfidence = 0.0f;
+    float SyllableAssignmentMargin = 0.0f;
+    int32 SyllableAssignmentSkipCount = 0;
+    float SyllableObservedAudioSec = 0.0f;
+    int32 SyllablePulseCount = 0;
+    int32 SyllableAssignmentCount = 0;
+    int32 SyllableLastAssignedPhoneIndex = INDEX_NONE;
+    int32 SyllableRejectLowProminenceCount = 0;
+    int32 SyllableRejectBeforeSectionCount = 0;
+    int32 SyllableLateAssignmentCount = 0;
+    int32 SyllableRejectNoCandidateCount = 0;
+    int32 SyllableAmbiguousAssignmentCount = 0;
+    int32 SyllableDuplicatePulseCount = 0;
+    float SyllableLastAssignedProminence = 0.0f;
+
+    // A strong transcript-known phone may refine timing inside the accepted
+    // syllable. It shares the syllable scheduler and expires at the next
+    // syllable; audio never changes phone identity or order.
+    bool bStrongPhoneRebaseActive = false;
+    int32 StrongPhoneAnchorPhoneIndex = INDEX_NONE;
+    float StrongPhoneAnchorActiveSec = 0.0f;
+    float StrongPhoneAnchorAudioSec = 0.0f;
+    float StrongPhoneAnchorConfidence = 0.0f;
+    int32 StrongPhoneCandidateCount = 0;
+    int32 StrongPhoneAssignmentCount = 0;
+
+    // One monotonic transcript cursor owns syllable, strong-phone, and
+    // punctuation anchor progression. Optional acoustic anchors may advance to
+    // this fence, but never through unresolved punctuation.
+    int32 TranscriptAnchorCursorPhoneIndex = 0;
+    int32 TranscriptAnchorFenceWordIndex = INDEX_NONE;
+    int32 TranscriptAnchorFencePhoneIndex = INDEX_NONE;
+    int32 TranscriptAnchorLastResolvedBoundaryWordIndex = INDEX_NONE;
 
 };
 

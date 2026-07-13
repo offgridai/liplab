@@ -180,6 +180,181 @@ def _compute_playback_health(
             speech_intervals, rendered_intervals
         ) * 1000.0,
     }
+
+
+def _compute_pause_safety(
+    strict_rows: list[dict[str, str]],
+    committed_rows: list[dict[str, str]],
+    boundary_rows: list[dict[str, str]],
+    speech_rows: list[dict[str, str]],
+) -> dict[str, Any]:
+    if not strict_rows:
+        return {"available": False}
+
+    tolerance_sec = 0.020
+    details: list[dict[str, Any]] = []
+    close_errors: list[float] = []
+    resume_errors: list[float] = []
+    post_resume_delays: list[float] = []
+    leakage_ms: list[float] = []
+    paired_count = 0
+    early_resume_count = 0
+    leakage_boundary_count = 0
+    gold_boundary_words: set[int] = set()
+    class_totals: dict[str, dict[str, int]] = {}
+    resolved_by_word: dict[int, dict[str, str]] = {}
+    for row in boundary_rows:
+        resolved_word_index = _safe_int(row, "last_resolved_boundary_word_index", -1)
+        outcome = row.get("last_resolved_boundary_outcome", "")
+        if resolved_word_index < 0 or not outcome:
+            continue
+        decay = _safe_float(row, "last_resolved_boundary_decay_sec", -1.0)
+        resume = _safe_float(row, "last_resolved_boundary_resume_onset_sec", -1.0)
+        if decay >= 0.0 or resume >= 0.0:
+            resolved_by_word[resolved_word_index] = row
+
+    for target in strict_rows:
+        word_index = _safe_int(target, "word_index", -1)
+        pause_class = target.get("pause_class", "unknown") or "unknown"
+        class_total = class_totals.setdefault(
+            pause_class,
+            {"targets": 0, "paired": 0, "early_resumes": 0, "leaking": 0},
+        )
+        class_total["targets"] += 1
+        gold_boundary_words.add(word_index)
+        gold_close = _safe_float(target, "gold_close", -1.0)
+        gold_resume = _safe_float(target, "gold_resume", -1.0)
+        resolved_row = resolved_by_word.get(word_index, {})
+        observed_close = _safe_float(
+            resolved_row, "last_resolved_boundary_decay_sec", -1.0
+        )
+        observed_resume = _safe_float(
+            resolved_row, "last_resolved_boundary_resume_onset_sec", -1.0
+        )
+        has_close = observed_close >= 0.0
+        has_resume = observed_resume >= 0.0
+        paired_count += int(has_close and has_resume and observed_resume >= observed_close)
+        class_total["paired"] += int(has_close and has_resume and observed_resume >= observed_close)
+        if has_close:
+            close_errors.append((observed_close - gold_close) * 1000.0)
+        if has_resume:
+            resume_errors.append((observed_resume - gold_resume) * 1000.0)
+            is_early_resume = observed_resume < gold_resume - tolerance_sec
+            early_resume_count += int(is_early_resume)
+            class_total["early_resumes"] += int(is_early_resume)
+
+        post_events = [
+            row for row in committed_rows
+            if _safe_int(row, "word_index", -1) > word_index
+        ]
+        leaking = [
+            row for row in post_events
+            if gold_close + tolerance_sec < _safe_float(row, "center") < gold_resume - tolerance_sec
+        ]
+        boundary_leakage_ms = 0.0
+        for event in leaking:
+            boundary_leakage_ms += max(
+                0.0,
+                min(_safe_float(event, "end"), gold_resume)
+                    - max(_safe_float(event, "start"), gold_close),
+            ) * 1000.0
+        leakage_ms.append(boundary_leakage_ms)
+        leakage_boundary_count += int(boundary_leakage_ms > 20.0)
+        class_total["leaking"] += int(boundary_leakage_ms > 20.0)
+
+        first_post_center = min(
+            [_safe_float(row, "center") for row in post_events if _safe_float(row, "center") >= gold_close]
+            or [-1.0]
+        )
+        post_resume_delay_ms = (
+            (first_post_center - gold_resume) * 1000.0 if first_post_center >= 0.0 else 0.0
+        )
+        if first_post_center >= 0.0:
+            post_resume_delays.append(post_resume_delay_ms)
+        details.append({
+            "word_index": word_index,
+            "pause_class": pause_class,
+            "gold_close": gold_close,
+            "gold_resume": gold_resume,
+            "observed_close": observed_close,
+            "observed_resume": observed_resume,
+            "paired": has_close and has_resume and observed_resume >= observed_close,
+            "post_boundary_leakage_ms": boundary_leakage_ms,
+            "post_resume_animation_delay_ms": post_resume_delay_ms,
+        })
+
+    resolved: set[tuple[int, str]] = set()
+    unsafe_timeout_count = 0
+    false_pause_resolution_count = 0
+    for row in boundary_rows:
+        word_index = _safe_int(row, "last_resolved_boundary_word_index", -1)
+        outcome = row.get("last_resolved_boundary_outcome", "")
+        if word_index < 0 or not outcome:
+            continue
+        if (word_index, outcome) in resolved:
+            continue
+        resolved.add((word_index, outcome))
+        unsafe_timeout_count += int("patience_expired" in outcome)
+        is_acoustic_pause = (
+            "resume" in outcome or "speech_region" in outcome
+        ) and "no_decay" not in outcome
+        false_pause_resolution_count += int(
+            is_acoustic_pause and word_index not in gold_boundary_words
+        )
+
+    unresolved_hold_count = 0
+    if boundary_rows:
+        unresolved_hold_count = int(
+            _safe_int(boundary_rows[-1], "b_hold_active", 0) != 0
+        )
+
+    hold_intervals: list[tuple[float, float]] = []
+    hold_start = -1.0
+    last_playback = 0.0
+    for row in boundary_rows:
+        playback = _safe_float(row, "current_playback_sec", last_playback)
+        active = _safe_int(row, "b_hold_active", 0) != 0
+        if active and hold_start < 0.0:
+            hold_start = playback
+        elif not active and hold_start >= 0.0:
+            hold_intervals.append((hold_start, playback))
+            hold_start = -1.0
+        last_playback = playback
+    if hold_start >= 0.0:
+        hold_intervals.append((hold_start, last_playback))
+    speech_intervals = _merge_intervals([
+        (_safe_float(row, "start"), _safe_float(row, "end")) for row in speech_rows
+    ])
+    false_hold_ms = _interval_overlap_seconds(
+        _merge_intervals(hold_intervals), speech_intervals
+    ) * 1000.0
+
+    return {
+        "available": True,
+        "target_count": len(strict_rows),
+        "paired_count": paired_count,
+        "unpaired_count": len(strict_rows) - paired_count,
+        "early_resume_count": early_resume_count,
+        "leakage_boundary_count": leakage_boundary_count,
+        "total_post_boundary_leakage_ms": sum(leakage_ms),
+        "mean_post_boundary_leakage_ms": _mean(leakage_ms),
+        "mean_signed_close_latency_ms": _mean(close_errors),
+        "median_signed_close_latency_ms": _median(close_errors),
+        "p90_abs_close_latency_ms": _p90([abs(value) for value in close_errors]),
+        "mean_signed_resume_latency_ms": _mean(resume_errors),
+        "median_signed_resume_latency_ms": _median(resume_errors),
+        "p90_abs_resume_latency_ms": _p90([abs(value) for value in resume_errors]),
+        "mean_post_resume_animation_delay_ms": _mean(post_resume_delays),
+        "p90_abs_post_resume_animation_delay_ms": _p90(
+            [abs(value) for value in post_resume_delays]
+        ),
+        "unsafe_timeout_release_count": unsafe_timeout_count,
+        "false_pause_resolution_count": false_pause_resolution_count,
+        "unresolved_hold_count": unresolved_hold_count,
+        "false_hold_during_gold_speech_ms": false_hold_ms,
+        "classes": class_totals,
+        "boundaries": details,
+    }
 def _nested(dct: dict[str, Any], *keys: str, default: float = 0.0) -> float:
     cur: Any = dct
     try:
@@ -489,10 +664,18 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             text_plan_grade = _read_json(case_dir / "text_plan_grade.json")
 
         commit_rows = _read_csv_rows(case_dir / "commit_decisions.csv")
+        committed_rows = _read_csv_rows(case_dir / "committed.csv")
         speech_rows = _read_csv_rows(case_dir / "speech_regions.csv")
+        boundary_rows = _read_csv_rows(case_dir / "runtime_boundary_state.csv")
+        strict_rows = _read_csv_rows(case_dir / "strict_punctuation_alignment.csv")
         playback_health = _compute_playback_health(commit_rows, speech_rows)
         if playback_health.get("available"):
             _write_json(case_dir / "playback_health.json", playback_health)
+        pause_safety = _compute_pause_safety(
+            strict_rows, committed_rows, boundary_rows, speech_rows
+        )
+        if pause_safety.get("available"):
+            _write_json(case_dir / "pause_safety.json", pause_safety)
 
         row = {
             "case": case_dir.name,
@@ -500,12 +683,15 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "text_plan_grade": text_plan_grade,
             "streaming_landmark_grade": _read_json(case_dir / "streaming_landmark_grade.json"),
             "streaming_prosodic_peak_grade": _read_json(case_dir / "streaming_prosodic_peak_grade.json"),
+            "runtime_syllable_assignment_grade": _read_json(case_dir / "runtime_syllable_assignment_grade.json"),
             "strict_punctuation_grade": _read_json(case_dir / "strict_punctuation_alignment_grade.json"),
-            "committed_rows": _read_csv_rows(case_dir / "committed.csv"),
+            "committed_rows": committed_rows,
             "commit_rows": commit_rows,
             "speech_rows": speech_rows,
             "playback_health": playback_health,
+            "pause_safety": pause_safety,
             "runtime_region_rows": _read_csv_rows(case_dir / "runtime_speech_regions.csv"),
+            "runtime_boundary_rows": boundary_rows,
             "occupancy_rows": _read_csv_rows(case_dir / "occupancy_frames.csv"),
             "gap_rows": _read_csv_rows(case_dir / "gap_candidates.csv"),
             "word_onset_rows": _read_csv_rows(case_dir / "word_onset_diagnostics.csv"),
@@ -551,7 +737,9 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
     text_available = [row for row in bulk if row["text_plan_grade"].get("available")]
     landmark_available = [row for row in bulk if row["streaming_landmark_grade"].get("available")]
     prosodic_available = [row for row in bulk if row["streaming_prosodic_peak_grade"].get("available")]
+    runtime_syllable_available = [row for row in bulk if row["runtime_syllable_assignment_grade"].get("available")]
     strict_punctuation_available = [row for row in bulk if row["strict_punctuation_grade"].get("available")]
+    pause_safety_available = [row for row in bulk if row["pause_safety"].get("available")]
     playback_health_available = [row for row in bulk if row["playback_health"].get("available")]
     text_by_type: dict[str, dict[str, float]] = {}
     text_predicted_break_count = sum(int(row["text_plan_grade"].get("predicted_region_break_count", 0)) for row in text_available)
@@ -778,11 +966,72 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
             prosodic_errors.extend([float(grade.get("mean_abs_error_ms", 0.0))] * count)
             prosodic_latencies.extend([float(grade.get("mean_decision_latency_ms", 0.0))] * count)
 
+    runtime_syllable_targets = sum(int(row["runtime_syllable_assignment_grade"].get("target_count", 0)) for row in runtime_syllable_available)
+    runtime_syllable_observations = sum(int(row["runtime_syllable_assignment_grade"].get("observation_count", 0)) for row in runtime_syllable_available)
+    runtime_syllable_matches = sum(int(row["runtime_syllable_assignment_grade"].get("matched_count", 0)) for row in runtime_syllable_available)
+    runtime_syllable_errors = []
+    for row in runtime_syllable_available:
+        grade = row["runtime_syllable_assignment_grade"]
+        count = int(grade.get("matched_count", 0))
+        if count > 0:
+            runtime_syllable_errors.extend([float(grade.get("mean_abs_error_ms", 0.0))] * count)
+    syllable_diagnostic_totals = {
+        "pulse_count": 0,
+        "assignment_count": 0,
+        "reject_low_prominence_count": 0,
+        "reject_before_section_count": 0,
+        "late_assignment_count": 0,
+        "reject_no_candidate_count": 0,
+        "ambiguous_assignment_count": 0,
+        "duplicate_pulse_count": 0,
+        "strong_phone_candidate_count": 0,
+        "strong_phone_assignment_count": 0,
+    }
+    for row in bulk:
+        boundary_rows = row.get("runtime_boundary_rows", [])
+        if not boundary_rows:
+            continue
+        final = boundary_rows[-1]
+        for output_key, csv_key in {
+            "pulse_count": "syllable_pulse_count",
+            "assignment_count": "syllable_assignment_count",
+            "reject_low_prominence_count": "syllable_reject_low_prominence_count",
+            "reject_before_section_count": "syllable_reject_before_section_count",
+            "late_assignment_count": "syllable_late_assignment_count",
+            "reject_no_candidate_count": "syllable_reject_no_candidate_count",
+            "ambiguous_assignment_count": "syllable_ambiguous_assignment_count",
+            "duplicate_pulse_count": "syllable_duplicate_pulse_count",
+            "strong_phone_candidate_count": "strong_phone_candidate_count",
+            "strong_phone_assignment_count": "strong_phone_assignment_count",
+        }.items():
+            syllable_diagnostic_totals[output_key] += _safe_int(final, csv_key, 0)
+
     strict_punctuation_targets = sum(int(row["strict_punctuation_grade"].get("target_count", 0)) for row in strict_punctuation_available)
     strict_close_observations = sum(int(row["strict_punctuation_grade"].get("close_observation_count", 0)) for row in strict_punctuation_available)
     strict_close_matches = sum(int(row["strict_punctuation_grade"].get("close_match_count", 0)) for row in strict_punctuation_available)
     strict_resume_observations = sum(int(row["strict_punctuation_grade"].get("resume_observation_count", 0)) for row in strict_punctuation_available)
     strict_resume_matches = sum(int(row["strict_punctuation_grade"].get("resume_match_count", 0)) for row in strict_punctuation_available)
+    pause_safety_targets = sum(int(row["pause_safety"].get("target_count", 0)) for row in pause_safety_available)
+    pause_safety_pairs = sum(int(row["pause_safety"].get("paired_count", 0)) for row in pause_safety_available)
+    pause_safety_unpaired = sum(int(row["pause_safety"].get("unpaired_count", 0)) for row in pause_safety_available)
+    pause_safety_early_resumes = sum(int(row["pause_safety"].get("early_resume_count", 0)) for row in pause_safety_available)
+    pause_safety_leak_boundaries = sum(int(row["pause_safety"].get("leakage_boundary_count", 0)) for row in pause_safety_available)
+    pause_safety_leak_ms = sum(float(row["pause_safety"].get("total_post_boundary_leakage_ms", 0.0)) for row in pause_safety_available)
+    pause_safety_timeouts = sum(int(row["pause_safety"].get("unsafe_timeout_release_count", 0)) for row in pause_safety_available)
+    pause_safety_false_resolutions = sum(int(row["pause_safety"].get("false_pause_resolution_count", 0)) for row in pause_safety_available)
+    pause_safety_unresolved = sum(int(row["pause_safety"].get("unresolved_hold_count", 0)) for row in pause_safety_available)
+    pause_safety_false_hold_ms = sum(float(row["pause_safety"].get("false_hold_during_gold_speech_ms", 0.0)) for row in pause_safety_available)
+    pause_close_signed = []
+    pause_resume_signed = []
+    pause_post_resume_delay = []
+    for row in pause_safety_available:
+        safety = row["pause_safety"]
+        count = int(safety.get("target_count", 0))
+        if count <= 0:
+            continue
+        pause_close_signed.extend([float(safety.get("mean_signed_close_latency_ms", 0.0))] * count)
+        pause_resume_signed.extend([float(safety.get("mean_signed_resume_latency_ms", 0.0))] * count)
+        pause_post_resume_delay.extend([float(safety.get("mean_post_resume_animation_delay_ms", 0.0))] * count)
 
     summary = {
         **playback_summary,
@@ -817,11 +1066,34 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "raw_prosodic_peak_matched_count": raw_prosodic_matches,
         "raw_prosodic_peak_precision": raw_prosodic_matches / raw_prosodic_observations if raw_prosodic_observations else 0.0,
         "raw_prosodic_peak_recall": raw_prosodic_matches / prosodic_targets if prosodic_targets else 0.0,
+        "runtime_syllable_available_cases": len(runtime_syllable_available),
+        "runtime_syllable_target_count": runtime_syllable_targets,
+        "runtime_syllable_observation_count": runtime_syllable_observations,
+        "runtime_syllable_matched_count": runtime_syllable_matches,
+        "runtime_syllable_precision": runtime_syllable_matches / runtime_syllable_observations if runtime_syllable_observations else 0.0,
+        "runtime_syllable_recall": runtime_syllable_matches / runtime_syllable_targets if runtime_syllable_targets else 0.0,
+        "runtime_syllable_error_ms": _mean(runtime_syllable_errors),
+        "runtime_syllable_count_ratio": runtime_syllable_observations / runtime_syllable_targets if runtime_syllable_targets else 0.0,
+        "runtime_syllable_diagnostics": syllable_diagnostic_totals,
         "strict_punctuation_available_cases": len(strict_punctuation_available),
         "strict_punctuation_close_precision": strict_close_matches / strict_close_observations if strict_close_observations else 0.0,
         "strict_punctuation_close_recall": strict_close_matches / strict_punctuation_targets if strict_punctuation_targets else 0.0,
         "strict_punctuation_resume_precision": strict_resume_matches / strict_resume_observations if strict_resume_observations else 0.0,
         "strict_punctuation_resume_recall": strict_resume_matches / strict_punctuation_targets if strict_punctuation_targets else 0.0,
+        "pause_safety_available_cases": len(pause_safety_available),
+        "pause_safety_target_count": pause_safety_targets,
+        "pause_safety_pair_rate": pause_safety_pairs / pause_safety_targets if pause_safety_targets else 0.0,
+        "pause_safety_unpaired_count": pause_safety_unpaired,
+        "pause_safety_early_resume_count": pause_safety_early_resumes,
+        "pause_safety_leakage_boundary_count": pause_safety_leak_boundaries,
+        "pause_safety_total_leakage_ms": pause_safety_leak_ms,
+        "pause_safety_mean_signed_close_latency_ms": _mean(pause_close_signed),
+        "pause_safety_mean_signed_resume_latency_ms": _mean(pause_resume_signed),
+        "pause_safety_mean_post_resume_animation_delay_ms": _mean(pause_post_resume_delay),
+        "pause_safety_unsafe_timeout_release_count": pause_safety_timeouts,
+        "pause_safety_false_pause_resolution_count": pause_safety_false_resolutions,
+        "pause_safety_unresolved_hold_count": pause_safety_unresolved,
+        "pause_safety_false_hold_during_gold_speech_ms": pause_safety_false_hold_ms,
         "streaming_landmark_available_cases": runtime_detector_summary["available_cases"],
         "streaming_landmark_target_count": runtime_detector_summary["planned_landmark_target_count"],
         "streaming_landmark_observation_count": runtime_detector_summary["observed_landmark_count"],

@@ -94,12 +94,48 @@ def main() -> int:
             f"Raw syllabic pulses vs MFA vowel intervals: precision={summary['raw_prosodic_peak_precision']:.3f} "
             f"recall={summary['raw_prosodic_peak_recall']:.3f}"
         )
+    if summary.get("runtime_syllable_available_cases", 0) > 0:
+        print(
+            f"Runtime syllable assignment: precision={summary['runtime_syllable_precision']:.3f} "
+            f"recall={summary['runtime_syllable_recall']:.3f} "
+            f"count_ratio={summary['runtime_syllable_count_ratio']:.3f} "
+            f"center_ms={summary['runtime_syllable_error_ms']:.1f}"
+        )
+        syllable_diag = summary.get("runtime_syllable_diagnostics", {})
+        print(
+            f"Runtime syllable flow: pulses={syllable_diag.get('pulse_count', 0)} "
+            f"assigned={syllable_diag.get('assignment_count', 0)} "
+            f"low={syllable_diag.get('reject_low_prominence_count', 0)} "
+            f"pre_section={syllable_diag.get('reject_before_section_count', 0)} "
+            f"late={syllable_diag.get('late_assignment_count', 0)} "
+            f"no_candidate={syllable_diag.get('reject_no_candidate_count', 0)} "
+            f"ambiguous={syllable_diag.get('ambiguous_assignment_count', 0)} "
+            f"duplicates={syllable_diag.get('duplicate_pulse_count', 0)}"
+        )
+        print(
+            f"Runtime strong-phone flow: candidates={syllable_diag.get('strong_phone_candidate_count', 0)} "
+            f"assigned={syllable_diag.get('strong_phone_assignment_count', 0)}"
+        )
     if summary.get("strict_punctuation_available_cases", 0) > 0:
         print(
             f"Strict punctuation mapping: close_p={summary['strict_punctuation_close_precision']:.3f} "
             f"close_r={summary['strict_punctuation_close_recall']:.3f} "
             f"resume_p={summary['strict_punctuation_resume_precision']:.3f} "
             f"resume_r={summary['strict_punctuation_resume_recall']:.3f}"
+        )
+    if summary.get("pause_safety_available_cases", 0) > 0:
+        print(
+            f"Pause safety: pair_rate={summary['pause_safety_pair_rate']:.3f} "
+            f"early_resume={summary['pause_safety_early_resume_count']} "
+            f"leaking_boundaries={summary['pause_safety_leakage_boundary_count']} "
+            f"leakage_ms={summary['pause_safety_total_leakage_ms']:.1f} "
+            f"close_signed_ms={summary['pause_safety_mean_signed_close_latency_ms']:.1f} "
+            f"resume_signed_ms={summary['pause_safety_mean_signed_resume_latency_ms']:.1f} "
+            f"post_resume_ms={summary['pause_safety_mean_post_resume_animation_delay_ms']:.1f} "
+            f"false_hold_ms={summary['pause_safety_false_hold_during_gold_speech_ms']:.1f} "
+            f"timeouts={summary['pause_safety_unsafe_timeout_release_count']} "
+            f"false_pause={summary['pause_safety_false_pause_resolution_count']} "
+            f"unresolved={summary['pause_safety_unresolved_hold_count']}"
         )
     print(f"Wrote {summary_path}")
     return 0

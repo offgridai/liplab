@@ -30,6 +30,14 @@ thresholds = {
     "max_phoneme_end_ms_increase": 0.0,
     "max_intra_word_coverage_drop": 0.0,
     "max_intra_word_center_ms_increase": 0.0,
+    "max_pause_safety_unsafe_timeout_releases": 0,
+    "max_pause_safety_unresolved_holds": 0,
+    "max_pause_safety_pair_rate_drop": 0.0,
+    "max_pause_safety_early_resume_increase": 0,
+    "max_pause_safety_leakage_boundary_increase": 0,
+    "max_pause_safety_total_leakage_ms_increase": 0.0,
+    "max_pause_safety_false_hold_ms_increase": 0.0,
+    "max_pause_safety_false_pause_resolution_increase": 0,
 }
 if thresholds_path.exists():
     thresholds.update(json.loads(thresholds_path.read_text()))
@@ -120,6 +128,26 @@ checks = [
     at_most("phoneme_end_ms", "max_phoneme_end_ms_increase"),
     at_least("intra_word_coverage_rate", "max_intra_word_coverage_drop"),
     at_most("intra_word_center_ms", "max_intra_word_center_ms_increase"),
+    (
+        summary.get("pause_safety_unsafe_timeout_release_count", 0)
+            <= thresholds["max_pause_safety_unsafe_timeout_releases"],
+        "pause_safety_unsafe_timeout_release_count",
+        summary.get("pause_safety_unsafe_timeout_release_count", 0),
+        thresholds["max_pause_safety_unsafe_timeout_releases"],
+    ),
+    (
+        summary.get("pause_safety_unresolved_hold_count", 0)
+            <= thresholds["max_pause_safety_unresolved_holds"],
+        "pause_safety_unresolved_hold_count",
+        summary.get("pause_safety_unresolved_hold_count", 0),
+        thresholds["max_pause_safety_unresolved_holds"],
+    ),
+    at_least("pause_safety_pair_rate", "max_pause_safety_pair_rate_drop"),
+    at_most("pause_safety_early_resume_count", "max_pause_safety_early_resume_increase"),
+    at_most("pause_safety_leakage_boundary_count", "max_pause_safety_leakage_boundary_increase"),
+    at_most("pause_safety_total_leakage_ms", "max_pause_safety_total_leakage_ms_increase"),
+    at_most("pause_safety_false_hold_during_gold_speech_ms", "max_pause_safety_false_hold_ms_increase"),
+    at_most("pause_safety_false_pause_resolution_count", "max_pause_safety_false_pause_resolution_increase"),
 ]
 
 for ok, name, actual, limit in checks:
