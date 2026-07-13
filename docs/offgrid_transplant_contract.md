@@ -41,6 +41,10 @@ LineCoach should not contain:
 - fallback viseme placement,
 - TTS hint interpretation.
 
+The shared source set includes `OffgridAIAcousticEvidence.*`. The former
+`OffgridAIOnlinePhoneAligner.*` files are obsolete and should not remain in an
+Offgrid transplant.
+
 LineCoach should also not:
 
 - stop calling `Update(...)` after `CloseInputStream()`,
