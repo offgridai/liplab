@@ -38,6 +38,10 @@ thresholds = {
     "max_pause_safety_total_leakage_ms_increase": 0.0,
     "max_pause_safety_false_hold_ms_increase": 0.0,
     "max_pause_safety_false_pause_resolution_increase": 0,
+    "max_pause_safety_syllable_continuous_false_pause_release_increase": 0,
+    "max_pause_safety_syllable_continuous_false_pause_leakage_ms_increase": 0.0,
+    "max_pause_safety_syllable_continuous_all_graded_false_pause_release_increase": 0,
+    "max_pause_safety_syllable_continuous_all_graded_false_pause_leakage_ms_increase": 0.0,
 }
 if thresholds_path.exists():
     thresholds.update(json.loads(thresholds_path.read_text()))
@@ -148,6 +152,22 @@ checks = [
     at_most("pause_safety_total_leakage_ms", "max_pause_safety_total_leakage_ms_increase"),
     at_most("pause_safety_false_hold_during_gold_speech_ms", "max_pause_safety_false_hold_ms_increase"),
     at_most("pause_safety_false_pause_resolution_count", "max_pause_safety_false_pause_resolution_increase"),
+    at_most(
+        "pause_safety_syllable_continuous_false_pause_release_count",
+        "max_pause_safety_syllable_continuous_false_pause_release_increase",
+    ),
+    at_most(
+        "pause_safety_syllable_continuous_false_pause_leakage_ms",
+        "max_pause_safety_syllable_continuous_false_pause_leakage_ms_increase",
+    ),
+    at_most(
+        "pause_safety_syllable_continuous_all_graded_false_pause_release_count",
+        "max_pause_safety_syllable_continuous_all_graded_false_pause_release_increase",
+    ),
+    at_most(
+        "pause_safety_syllable_continuous_all_graded_false_pause_leakage_ms",
+        "max_pause_safety_syllable_continuous_all_graded_false_pause_leakage_ms_increase",
+    ),
 ]
 
 for ok, name, actual, limit in checks:

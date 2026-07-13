@@ -105,6 +105,18 @@ struct FOffgridAIRuntimeSpeechRegionDiagnosticRow
     FName DiagnosticKind = NAME_None;
 };
 
+struct FOffgridAIRuntimeSyllableAssignmentDiagnosticRow
+{
+    FName LineID = NAME_None;
+    int32 UpdateOrdinal = 0;
+    int32 PhoneIndex = INDEX_NONE;
+    float ObservedAudioSec = 0.0f;
+    float Prominence = 0.0f;
+    float Confidence = 0.0f;
+    float Margin = 0.0f;
+    int32 SkipCount = 0;
+};
+
 struct FOffgridAIRuntimeBoundaryDiagnosticRow
 {
     FName LineID = NAME_None;
@@ -150,6 +162,7 @@ struct FOffgridAIRuntimeBoundaryDiagnosticRow
     float SyllableAnchorActiveSec = 0.0f;
     float SyllableAnchorAudioSec = 0.0f;
     float SyllableRate = 1.0f;
+    float SyllablePlaybackRate = 1.0f;
     float SyllableSectionStartAudioSec = 0.0f;
     float SyllableAssignmentConfidence = 0.0f;
     float SyllableAssignmentMargin = 0.0f;
@@ -157,6 +170,7 @@ struct FOffgridAIRuntimeBoundaryDiagnosticRow
     float SyllableObservedAudioSec = 0.0f;
     int32 SyllablePulseCount = 0;
     int32 SyllableAssignmentCount = 0;
+    int32 SyllableProgressCount = 0;
     int32 SyllableLastAssignedPhoneIndex = INDEX_NONE;
     int32 SyllableRejectLowProminenceCount = 0;
     int32 SyllableRejectBeforeSectionCount = 0;
@@ -269,6 +283,7 @@ struct FOffgridAIBoundaryPlaybackState
     float SyllableAnchorActiveSec = 0.0f;
     float SyllableAnchorAudioSec = 0.0f;
     float SyllableRate = 1.0f;
+    float SyllablePlaybackRate = 1.0f;
     float SyllableSectionStartAudioSec = 0.0f;
     float SyllableAssignmentConfidence = 0.0f;
     float SyllableAssignmentMargin = 0.0f;
@@ -276,6 +291,7 @@ struct FOffgridAIBoundaryPlaybackState
     float SyllableObservedAudioSec = 0.0f;
     int32 SyllablePulseCount = 0;
     int32 SyllableAssignmentCount = 0;
+    int32 SyllableProgressCount = 0;
     int32 SyllableLastAssignedPhoneIndex = INDEX_NONE;
     int32 SyllableRejectLowProminenceCount = 0;
     int32 SyllableRejectBeforeSectionCount = 0;
@@ -284,6 +300,8 @@ struct FOffgridAIBoundaryPlaybackState
     int32 SyllableAmbiguousAssignmentCount = 0;
     int32 SyllableDuplicatePulseCount = 0;
     float SyllableLastAssignedProminence = 0.0f;
+    TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow> PendingSyllableAssignments;
+
 
     // A strong transcript-known phone may refine timing inside the accepted
     // syllable. It shares the syllable scheduler and expires at the next
@@ -334,6 +352,7 @@ public:
     const TArray<FOffgridAIRuntimeCommitDiagnosticRow>& GetRuntimeCommitDiagnosticRows() const { return RuntimeCommitDiagnosticRows; }
     const TArray<FOffgridAIRuntimeSpeechRegionDiagnosticRow>& GetRuntimeSpeechRegionDiagnosticRows() const { return RuntimeSpeechRegionDiagnosticRows; }
     const TArray<FOffgridAIRuntimeBoundaryDiagnosticRow>& GetRuntimeBoundaryDiagnosticRows() const { return RuntimeBoundaryDiagnosticRows; }
+    const TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow>& GetRuntimeSyllableAssignmentDiagnosticRows() const { return RuntimeSyllableAssignmentDiagnosticRows; }
     const FOffgridAIStreamTailDiagnosticRow& GetStreamTailDiagnosticRow() const { return StreamTailDiagnosticRow; }
     FOffgridAICommittedVisemeTrack& GetMutableCommittedTrack() { return CommittedTrack; }
     bool IsCommittedTrackBuilt() const { return bCommittedTrackBuilt; }
@@ -363,6 +382,7 @@ private:
     TArray<FOffgridAIRuntimeCommitDiagnosticRow> RuntimeCommitDiagnosticRows;
     TArray<FOffgridAIRuntimeSpeechRegionDiagnosticRow> RuntimeSpeechRegionDiagnosticRows;
     TArray<FOffgridAIRuntimeBoundaryDiagnosticRow> RuntimeBoundaryDiagnosticRows;
+    TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow> RuntimeSyllableAssignmentDiagnosticRows;
     int32 RuntimeCommitDiagnosticUpdateOrdinal = 0;
     FOffgridAIStreamTailDiagnosticRow StreamTailDiagnosticRow;
 

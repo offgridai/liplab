@@ -2277,7 +2277,7 @@ static ProsodicPeakReport grade_prosodic_peaks(
 
 static std::vector<ProsodicPeakObservation> runtime_syllable_assignment_observations(
     const std::vector<ProsodicPeakTarget>& targets,
-    const TArray<FOffgridAIRuntimeBoundaryDiagnosticRow>& rows)
+    const TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow>& rows)
 {
     std::map<int, int> target_by_phone_index;
     for (const ProsodicPeakTarget& target : targets)
@@ -2285,11 +2285,8 @@ static std::vector<ProsodicPeakObservation> runtime_syllable_assignment_observat
         target_by_phone_index[target.expected_phone_index] = target.target_index;
     }
     std::vector<ProsodicPeakObservation> observations;
-    int32 LastAssignmentCount = 0;
-    for (const FOffgridAIRuntimeBoundaryDiagnosticRow& row : rows)
+    for (const FOffgridAIRuntimeSyllableAssignmentDiagnosticRow& row : rows)
     {
-        if (row.SyllableAssignmentCount <= LastAssignmentCount) continue;
-        LastAssignmentCount = row.SyllableAssignmentCount;
         auto Emit = [&](int32 PhoneIndex, float ObservedAudioSec)
         {
             if (PhoneIndex < 0) return;
@@ -2302,11 +2299,12 @@ static std::vector<ProsodicPeakObservation> runtime_syllable_assignment_observat
             // audible playback clock is intentionally behind buffered audio, so it
             // is not the evidence-availability timestamp.
             observation.decision_sec = ObservedAudioSec + 0.145;
-            observation.score = row.SyllableAssignmentConfidence;
-            observation.family_score = row.SyllableAssignmentMargin;
+            observation.prominence = row.Prominence;
+            observation.score = row.Confidence;
+            observation.family_score = row.Margin;
             observations.push_back(observation);
         };
-        Emit(row.SyllableLastAssignedPhoneIndex, row.SyllableObservedAudioSec);
+        Emit(row.PhoneIndex, row.ObservedAudioSec);
     }
     return observations;
 }
@@ -4393,7 +4391,7 @@ static std::string runtime_speech_regions_csv(const TArray<FOffgridAIRuntimeSpee
 static std::string runtime_boundary_state_csv(const TArray<FOffgridAIRuntimeBoundaryDiagnosticRow>& rows)
 {
     std::ostringstream out;
-    out << "line_id,update_ordinal,final_replay,current_playback_sec,b_playhead_started,b_hold_active,b_observed_pause_lull,b_saw_confirmed_out_of_speech_after_boundary,b_resume_anchor_active,b_resume_anchor_from_initial_speech,boundary_word_index,boundary_mark,pause_class,hold_start_speech_region_index,resume_anchor_event_index,playback_origin_sec,last_playback_sec,active_playhead_sec,total_paused_sec,hold_start_playback_sec,boundary_search_start_playback_sec,hold_deadline_playback_sec,hold_resume_target_active_sec,hold_resume_target_lead_sec,confirmed_quiet_start_playback_sec,quiet_rms_norm_at_decay,quiet_evidence_at_decay,quiet_raw_rms_at_decay,observed_resume_onset_playback_sec,observed_resume_energy_anchor_sec,resume_anchor_active_sec,resume_anchor_lead_sec,resume_anchor_final_center_sec,b_syllable_rebase_active,syllable_anchor_phone_index,next_expected_syllable_phone_index,syllable_anchor_active_sec,syllable_anchor_audio_sec,syllable_rate,syllable_section_start_audio_sec,syllable_assignment_confidence,syllable_assignment_margin,syllable_assignment_skip_count,syllable_observed_audio_sec,syllable_pulse_count,syllable_assignment_count,syllable_last_assigned_phone_index,syllable_reject_low_prominence_count,syllable_reject_before_section_count,syllable_late_assignment_count,syllable_reject_no_candidate_count,syllable_ambiguous_assignment_count,syllable_duplicate_pulse_count,b_strong_phone_rebase_active,strong_phone_anchor_phone_index,strong_phone_anchor_active_sec,strong_phone_anchor_audio_sec,strong_phone_anchor_confidence,strong_phone_candidate_count,strong_phone_assignment_count,transcript_anchor_cursor_phone_index,transcript_anchor_fence_word_index,transcript_anchor_fence_phone_index,transcript_anchor_last_resolved_boundary_word_index,last_fence_estimator_outcome,last_resolved_boundary_outcome,last_resolved_boundary_word_index,last_resolved_boundary_mark,last_resolved_boundary_decay_sec,last_resolved_boundary_resume_onset_sec,last_resolved_boundary_resume_energy_anchor_sec,committed_event_count,diagnostic_kind\n";
+    out << "line_id,update_ordinal,final_replay,current_playback_sec,b_playhead_started,b_hold_active,b_observed_pause_lull,b_saw_confirmed_out_of_speech_after_boundary,b_resume_anchor_active,b_resume_anchor_from_initial_speech,boundary_word_index,boundary_mark,pause_class,hold_start_speech_region_index,resume_anchor_event_index,playback_origin_sec,last_playback_sec,active_playhead_sec,total_paused_sec,hold_start_playback_sec,boundary_search_start_playback_sec,hold_deadline_playback_sec,hold_resume_target_active_sec,hold_resume_target_lead_sec,confirmed_quiet_start_playback_sec,quiet_rms_norm_at_decay,quiet_evidence_at_decay,quiet_raw_rms_at_decay,observed_resume_onset_playback_sec,observed_resume_energy_anchor_sec,resume_anchor_active_sec,resume_anchor_lead_sec,resume_anchor_final_center_sec,b_syllable_rebase_active,syllable_anchor_phone_index,next_expected_syllable_phone_index,syllable_anchor_active_sec,syllable_anchor_audio_sec,syllable_rate,syllable_playback_rate,syllable_section_start_audio_sec,syllable_assignment_confidence,syllable_assignment_margin,syllable_assignment_skip_count,syllable_observed_audio_sec,syllable_pulse_count,syllable_assignment_count,syllable_progress_count,syllable_last_assigned_phone_index,syllable_reject_low_prominence_count,syllable_reject_before_section_count,syllable_late_assignment_count,syllable_reject_no_candidate_count,syllable_ambiguous_assignment_count,syllable_duplicate_pulse_count,b_strong_phone_rebase_active,strong_phone_anchor_phone_index,strong_phone_anchor_active_sec,strong_phone_anchor_audio_sec,strong_phone_anchor_confidence,strong_phone_candidate_count,strong_phone_assignment_count,transcript_anchor_cursor_phone_index,transcript_anchor_fence_word_index,transcript_anchor_fence_phone_index,transcript_anchor_last_resolved_boundary_word_index,last_fence_estimator_outcome,last_resolved_boundary_outcome,last_resolved_boundary_word_index,last_resolved_boundary_mark,last_resolved_boundary_decay_sec,last_resolved_boundary_resume_onset_sec,last_resolved_boundary_resume_energy_anchor_sec,committed_event_count,diagnostic_kind\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& row : rows)
     {
@@ -4436,6 +4434,7 @@ static std::string runtime_boundary_state_csv(const TArray<FOffgridAIRuntimeBoun
             << row.SyllableAnchorActiveSec << ','
             << row.SyllableAnchorAudioSec << ','
             << row.SyllableRate << ','
+            << row.SyllablePlaybackRate << ','
             << row.SyllableSectionStartAudioSec << ','
             << row.SyllableAssignmentConfidence << ','
             << row.SyllableAssignmentMargin << ','
@@ -4443,6 +4442,7 @@ static std::string runtime_boundary_state_csv(const TArray<FOffgridAIRuntimeBoun
             << row.SyllableObservedAudioSec << ','
             << row.SyllablePulseCount << ','
             << row.SyllableAssignmentCount << ','
+            << row.SyllableProgressCount << ','
             << row.SyllableLastAssignedPhoneIndex << ','
             << row.SyllableRejectLowProminenceCount << ','
             << row.SyllableRejectBeforeSectionCount << ','
@@ -5783,7 +5783,7 @@ int main(int argc, char** argv)
                 std::vector<ProsodicPeakObservation> runtime_syllable_observations =
                     runtime_syllable_assignment_observations(
                         prosodic_peak_targets,
-                        session.GetRuntimeBoundaryDiagnosticRows());
+                        session.GetRuntimeSyllableAssignmentDiagnosticRows());
                 const ProsodicPeakReport runtime_syllable_report = grade_prosodic_peaks(
                     prosodic_peak_targets,
                     runtime_syllable_observations,

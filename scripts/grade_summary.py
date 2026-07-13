@@ -203,11 +203,13 @@ def _compute_pause_safety(
     gold_boundary_words: set[int] = set()
     class_totals: dict[str, dict[str, int]] = {}
     resolved_by_word: dict[int, dict[str, str]] = {}
+    all_resolved_by_word: dict[int, dict[str, str]] = {}
     for row in boundary_rows:
         resolved_word_index = _safe_int(row, "last_resolved_boundary_word_index", -1)
         outcome = row.get("last_resolved_boundary_outcome", "")
         if resolved_word_index < 0 or not outcome:
             continue
+        all_resolved_by_word[resolved_word_index] = row
         decay = _safe_float(row, "last_resolved_boundary_decay_sec", -1.0)
         resume = _safe_float(row, "last_resolved_boundary_resume_onset_sec", -1.0)
         if decay >= 0.0 or resume >= 0.0:
@@ -281,7 +283,35 @@ def _compute_pause_safety(
             "paired": has_close and has_resume and observed_resume >= observed_close,
             "post_boundary_leakage_ms": boundary_leakage_ms,
             "post_resume_animation_delay_ms": post_resume_delay_ms,
+            "resolution_outcome": all_resolved_by_word.get(word_index, {}).get(
+                "last_resolved_boundary_outcome", ""
+            ),
         })
+
+    def is_syllable_continuous_release(outcome: str) -> bool:
+        return outcome == "list_next_item_pulse_continuous" or (
+            "syllable" in outcome and "continuous" in outcome
+        )
+
+    syllable_continuous_releases = {
+        word_index: row
+        for word_index, row in all_resolved_by_word.items()
+        if is_syllable_continuous_release(
+            row.get("last_resolved_boundary_outcome", "")
+        )
+    }
+    false_syllable_continuous_words = (
+        set(syllable_continuous_releases) & gold_boundary_words
+    )
+    syllable_false_pause_leakage_ms = sum(
+        float(detail["post_boundary_leakage_ms"])
+        for detail in details
+        if int(detail["word_index"]) in false_syllable_continuous_words
+    )
+    for detail in details:
+        detail["syllable_continuous_false_pause_release"] = (
+            int(detail["word_index"]) in false_syllable_continuous_words
+        )
 
     resolved: set[tuple[int, str]] = set()
     unsafe_timeout_count = 0
@@ -352,6 +382,17 @@ def _compute_pause_safety(
         "false_pause_resolution_count": false_pause_resolution_count,
         "unresolved_hold_count": unresolved_hold_count,
         "false_hold_during_gold_speech_ms": false_hold_ms,
+        "syllable_continuous_release_count": len(syllable_continuous_releases),
+        "syllable_continuous_safe_release_count": (
+            len(syllable_continuous_releases)
+            - len(false_syllable_continuous_words)
+        ),
+        "syllable_continuous_false_pause_release_count": len(
+            false_syllable_continuous_words
+        ),
+        "syllable_continuous_false_pause_leakage_ms": (
+            syllable_false_pause_leakage_ms
+        ),
         "classes": class_totals,
         "boundaries": details,
     }
@@ -685,6 +726,7 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "streaming_prosodic_peak_grade": _read_json(case_dir / "streaming_prosodic_peak_grade.json"),
             "runtime_syllable_assignment_grade": _read_json(case_dir / "runtime_syllable_assignment_grade.json"),
             "strict_punctuation_grade": _read_json(case_dir / "strict_punctuation_alignment_grade.json"),
+            "strict_rows": strict_rows,
             "committed_rows": committed_rows,
             "commit_rows": commit_rows,
             "speech_rows": speech_rows,
@@ -695,6 +737,7 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "occupancy_rows": _read_csv_rows(case_dir / "occupancy_frames.csv"),
             "gap_rows": _read_csv_rows(case_dir / "gap_candidates.csv"),
             "word_onset_rows": _read_csv_rows(case_dir / "word_onset_diagnostics.csv"),
+            "planned_word_rows": _read_csv_rows(case_dir / "planned_words.csv"),
         }
         rows.append(row)
         if grade.get("gold_available", True):
@@ -734,12 +777,47 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
     intra_word_refs = sum(int(_nested(row["grade"], "intra_word_alignment", "reference_count")) for row in bulk)
     intra_word_matches = sum(int(_nested(row["grade"], "intra_word_alignment", "matched_count")) for row in bulk)
 
+    list_word_start_errors: list[float] = []
+    list_word_count = 0
+    for row in bulk:
+        planned_words = row.get("planned_word_rows", [])
+        sentence_words: dict[int, list[dict[str, str]]] = {}
+        for word in planned_words:
+            sentence_words.setdefault(_safe_int(word, "text_sentence_index"), []).append(word)
+        list_word_indices: set[int] = set()
+        for words in sentence_words.values():
+            words.sort(key=lambda item: _safe_int(item, "word_index"))
+            list_boundaries = [
+                _safe_int(item, "word_index")
+                for item in words
+                if item.get("pause_class", "").lower() == "soft_list_pause"
+            ]
+            if len(list_boundaries) < 2:
+                continue
+            first_item = list_boundaries[0]
+            list_word_indices.update(
+                _safe_int(item, "word_index")
+                for item in words
+                if _safe_int(item, "word_index") >= first_item
+            )
+        onset_by_index = {
+            _safe_int(item, "word_index"): item
+            for item in row.get("word_onset_rows", [])
+        }
+        for word_index in list_word_indices:
+            onset = onset_by_index.get(word_index)
+            if not onset or onset.get("missing_event", "").lower() == "true":
+                continue
+            list_word_start_errors.append(abs(_safe_float(onset, "error_ms")))
+            list_word_count += 1
+
     text_available = [row for row in bulk if row["text_plan_grade"].get("available")]
     landmark_available = [row for row in bulk if row["streaming_landmark_grade"].get("available")]
     prosodic_available = [row for row in bulk if row["streaming_prosodic_peak_grade"].get("available")]
     runtime_syllable_available = [row for row in bulk if row["runtime_syllable_assignment_grade"].get("available")]
     strict_punctuation_available = [row for row in bulk if row["strict_punctuation_grade"].get("available")]
     pause_safety_available = [row for row in bulk if row["pause_safety"].get("available")]
+    pause_safety_all_graded = [row for row in graded if row["pause_safety"].get("available")]
     playback_health_available = [row for row in bulk if row["playback_health"].get("available")]
     text_by_type: dict[str, dict[str, float]] = {}
     text_predicted_break_count = sum(int(row["text_plan_grade"].get("predicted_region_break_count", 0)) for row in text_available)
@@ -889,6 +967,9 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "word_head_start_ms": _mean(word_start_values),
         "word_head_start_median_ms": _median(word_start_median_values),
         "word_duration_ms": _mean(word_duration_values),
+        "list_word_count": list_word_count,
+        "list_word_start_ms": _mean(list_word_start_errors),
+        "list_word_start_median_ms": _median(list_word_start_errors),
         "phoneme_coverage_rate": phoneme_matches / max(phoneme_refs, 1),
         "phoneme_center_ms": _mean(phoneme_center_values),
         "phoneme_start_ms": _mean(phoneme_start_values),
@@ -978,6 +1059,7 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
     syllable_diagnostic_totals = {
         "pulse_count": 0,
         "assignment_count": 0,
+        "progress_count": 0,
         "reject_low_prominence_count": 0,
         "reject_before_section_count": 0,
         "late_assignment_count": 0,
@@ -995,6 +1077,7 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         for output_key, csv_key in {
             "pulse_count": "syllable_pulse_count",
             "assignment_count": "syllable_assignment_count",
+            "progress_count": "syllable_progress_count",
             "reject_low_prominence_count": "syllable_reject_low_prominence_count",
             "reject_before_section_count": "syllable_reject_before_section_count",
             "late_assignment_count": "syllable_late_assignment_count",
@@ -1006,11 +1089,34 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         }.items():
             syllable_diagnostic_totals[output_key] += _safe_int(final, csv_key, 0)
 
+    runtime_syllable_progress_count = sum(
+        _safe_int(row.get("runtime_boundary_rows", [])[-1], "syllable_progress_count", 0)
+        for row in runtime_syllable_available
+        if row.get("runtime_boundary_rows")
+    )
+    runtime_syllable_progress_errors = []
+    for row in runtime_syllable_available:
+        boundary_rows = row.get("runtime_boundary_rows", [])
+        if not boundary_rows:
+            continue
+        progress_count = _safe_int(boundary_rows[-1], "syllable_progress_count", 0)
+        target_count = int(row["runtime_syllable_assignment_grade"].get("target_count", 0))
+        runtime_syllable_progress_errors.append(progress_count - target_count)
     strict_punctuation_targets = sum(int(row["strict_punctuation_grade"].get("target_count", 0)) for row in strict_punctuation_available)
     strict_close_observations = sum(int(row["strict_punctuation_grade"].get("close_observation_count", 0)) for row in strict_punctuation_available)
     strict_close_matches = sum(int(row["strict_punctuation_grade"].get("close_match_count", 0)) for row in strict_punctuation_available)
     strict_resume_observations = sum(int(row["strict_punctuation_grade"].get("resume_observation_count", 0)) for row in strict_punctuation_available)
     strict_resume_matches = sum(int(row["strict_punctuation_grade"].get("resume_match_count", 0)) for row in strict_punctuation_available)
+    soft_list_rows = [
+        strict_row
+        for row in strict_punctuation_available
+        for strict_row in row.get("strict_rows", [])
+        if strict_row.get("pause_class") == "soft_list_pause"
+    ]
+    soft_list_close_observations = sum(_safe_float(row, "observed_close", -1.0) >= 0.0 for row in soft_list_rows)
+    soft_list_close_matches = sum(_safe_int(row, "close_matched", 0) != 0 for row in soft_list_rows)
+    soft_list_resume_observations = sum(_safe_float(row, "observed_resume", -1.0) >= 0.0 for row in soft_list_rows)
+    soft_list_resume_matches = sum(_safe_int(row, "resume_matched", 0) != 0 for row in soft_list_rows)
     pause_safety_targets = sum(int(row["pause_safety"].get("target_count", 0)) for row in pause_safety_available)
     pause_safety_pairs = sum(int(row["pause_safety"].get("paired_count", 0)) for row in pause_safety_available)
     pause_safety_unpaired = sum(int(row["pause_safety"].get("unpaired_count", 0)) for row in pause_safety_available)
@@ -1021,6 +1127,15 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
     pause_safety_false_resolutions = sum(int(row["pause_safety"].get("false_pause_resolution_count", 0)) for row in pause_safety_available)
     pause_safety_unresolved = sum(int(row["pause_safety"].get("unresolved_hold_count", 0)) for row in pause_safety_available)
     pause_safety_false_hold_ms = sum(float(row["pause_safety"].get("false_hold_during_gold_speech_ms", 0.0)) for row in pause_safety_available)
+    syllable_continuous_releases = sum(int(row["pause_safety"].get("syllable_continuous_release_count", 0)) for row in pause_safety_available)
+    syllable_continuous_safe_releases = sum(int(row["pause_safety"].get("syllable_continuous_safe_release_count", 0)) for row in pause_safety_available)
+    syllable_continuous_false_pause_releases = sum(int(row["pause_safety"].get("syllable_continuous_false_pause_release_count", 0)) for row in pause_safety_available)
+    syllable_continuous_false_pause_cases = sum(int(row["pause_safety"].get("syllable_continuous_false_pause_release_count", 0) > 0) for row in pause_safety_available)
+    syllable_continuous_false_pause_leakage_ms = sum(float(row["pause_safety"].get("syllable_continuous_false_pause_leakage_ms", 0.0)) for row in pause_safety_available)
+    syllable_continuous_all_releases = sum(int(row["pause_safety"].get("syllable_continuous_release_count", 0)) for row in pause_safety_all_graded)
+    syllable_continuous_all_false_pause_releases = sum(int(row["pause_safety"].get("syllable_continuous_false_pause_release_count", 0)) for row in pause_safety_all_graded)
+    syllable_continuous_all_false_pause_cases = sum(int(row["pause_safety"].get("syllable_continuous_false_pause_release_count", 0) > 0) for row in pause_safety_all_graded)
+    syllable_continuous_all_false_pause_leakage_ms = sum(float(row["pause_safety"].get("syllable_continuous_false_pause_leakage_ms", 0.0)) for row in pause_safety_all_graded)
     pause_close_signed = []
     pause_resume_signed = []
     pause_post_resume_delay = []
@@ -1074,12 +1189,30 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "runtime_syllable_recall": runtime_syllable_matches / runtime_syllable_targets if runtime_syllable_targets else 0.0,
         "runtime_syllable_error_ms": _mean(runtime_syllable_errors),
         "runtime_syllable_count_ratio": runtime_syllable_observations / runtime_syllable_targets if runtime_syllable_targets else 0.0,
+        "runtime_syllable_progress_count": runtime_syllable_progress_count,
+        "runtime_syllable_progress_ratio": runtime_syllable_progress_count / runtime_syllable_targets if runtime_syllable_targets else 0.0,
+        "runtime_syllable_progress_mean_abs_count_error": _mean([abs(value) for value in runtime_syllable_progress_errors]),
+        "runtime_syllable_progress_exact_case_rate": (
+            sum(value == 0 for value in runtime_syllable_progress_errors) / len(runtime_syllable_progress_errors)
+            if runtime_syllable_progress_errors else 0.0
+        ),
+        "runtime_syllable_progress_within_one_case_rate": (
+            sum(abs(value) <= 1 for value in runtime_syllable_progress_errors) / len(runtime_syllable_progress_errors)
+            if runtime_syllable_progress_errors else 0.0
+        ),
+        "runtime_syllable_progress_over_case_count": sum(value > 0 for value in runtime_syllable_progress_errors),
+        "runtime_syllable_progress_under_case_count": sum(value < 0 for value in runtime_syllable_progress_errors),
         "runtime_syllable_diagnostics": syllable_diagnostic_totals,
         "strict_punctuation_available_cases": len(strict_punctuation_available),
         "strict_punctuation_close_precision": strict_close_matches / strict_close_observations if strict_close_observations else 0.0,
         "strict_punctuation_close_recall": strict_close_matches / strict_punctuation_targets if strict_punctuation_targets else 0.0,
         "strict_punctuation_resume_precision": strict_resume_matches / strict_resume_observations if strict_resume_observations else 0.0,
         "strict_punctuation_resume_recall": strict_resume_matches / strict_punctuation_targets if strict_punctuation_targets else 0.0,
+        "soft_list_boundary_target_count": len(soft_list_rows),
+        "soft_list_boundary_close_precision": soft_list_close_matches / soft_list_close_observations if soft_list_close_observations else 0.0,
+        "soft_list_boundary_close_recall": soft_list_close_matches / len(soft_list_rows) if soft_list_rows else 0.0,
+        "soft_list_boundary_resume_precision": soft_list_resume_matches / soft_list_resume_observations if soft_list_resume_observations else 0.0,
+        "soft_list_boundary_resume_recall": soft_list_resume_matches / len(soft_list_rows) if soft_list_rows else 0.0,
         "pause_safety_available_cases": len(pause_safety_available),
         "pause_safety_target_count": pause_safety_targets,
         "pause_safety_pair_rate": pause_safety_pairs / pause_safety_targets if pause_safety_targets else 0.0,
@@ -1094,6 +1227,22 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "pause_safety_false_pause_resolution_count": pause_safety_false_resolutions,
         "pause_safety_unresolved_hold_count": pause_safety_unresolved,
         "pause_safety_false_hold_during_gold_speech_ms": pause_safety_false_hold_ms,
+        "pause_safety_syllable_continuous_release_count": syllable_continuous_releases,
+        "pause_safety_syllable_continuous_precision": (
+            syllable_continuous_safe_releases / syllable_continuous_releases
+            if syllable_continuous_releases else 1.0
+        ),
+        "pause_safety_syllable_continuous_false_pause_release_count": syllable_continuous_false_pause_releases,
+        "pause_safety_syllable_continuous_false_pause_case_count": syllable_continuous_false_pause_cases,
+        "pause_safety_syllable_continuous_false_pause_leakage_ms": syllable_continuous_false_pause_leakage_ms,
+        "pause_safety_syllable_continuous_pause_preservation_rate": (
+            1.0 - syllable_continuous_false_pause_releases / pause_safety_targets
+            if pause_safety_targets else 1.0
+        ),
+        "pause_safety_syllable_continuous_all_graded_release_count": syllable_continuous_all_releases,
+        "pause_safety_syllable_continuous_all_graded_false_pause_release_count": syllable_continuous_all_false_pause_releases,
+        "pause_safety_syllable_continuous_all_graded_false_pause_case_count": syllable_continuous_all_false_pause_cases,
+        "pause_safety_syllable_continuous_all_graded_false_pause_leakage_ms": syllable_continuous_all_false_pause_leakage_ms,
         "streaming_landmark_available_cases": runtime_detector_summary["available_cases"],
         "streaming_landmark_target_count": runtime_detector_summary["planned_landmark_target_count"],
         "streaming_landmark_observation_count": runtime_detector_summary["observed_landmark_count"],
