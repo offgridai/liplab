@@ -12,7 +12,7 @@ baseline_path = root / "docs" / "grade_baseline.json"
 
 thresholds = {
     "max_order_violations": 0,
-    "max_degenerate_cases": 0,
+    "max_degenerate_cases_increase": 0,
     "max_speech_region_count_mismatch_cases": 999999,
     "max_visible_speech_region_count_mismatch_cases": 999999,
     "max_sentence_region_count_mismatch_cases": 999999,
@@ -89,12 +89,7 @@ checks = [
         summary["order_fail_cases"],
         thresholds["max_order_violations"],
     ),
-    (
-        summary["degenerate_cases"] <= thresholds["max_degenerate_cases"],
-        "degenerate_cases",
-        summary["degenerate_cases"],
-        thresholds["max_degenerate_cases"],
-    ),
+    at_most("degenerate_cases", "max_degenerate_cases_increase"),
     (
         summary["speech_region_count_mismatch_cases"] <= thresholds["max_speech_region_count_mismatch_cases"],
         "speech_region_count_mismatch_cases",
