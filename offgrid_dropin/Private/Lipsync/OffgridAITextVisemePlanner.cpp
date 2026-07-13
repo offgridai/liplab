@@ -18,6 +18,126 @@ static FString NormalizeWord(const FString& In)
     return Out;
 }
 
+static bool IsAllDigits(const FString& Text)
+{
+    if (Text.IsEmpty()) return false;
+    for (TCHAR C : Text)
+    {
+        if (!FChar::IsDigit(C)) return false;
+    }
+    return true;
+}
+
+static void AddUnderOneHundredWords(int32 Value, TArray<FString>& OutWords)
+{
+    static const TCHAR* Ones[] = {
+        TEXT("zero"), TEXT("one"), TEXT("two"), TEXT("three"), TEXT("four"),
+        TEXT("five"), TEXT("six"), TEXT("seven"), TEXT("eight"), TEXT("nine"),
+        TEXT("ten"), TEXT("eleven"), TEXT("twelve"), TEXT("thirteen"), TEXT("fourteen"),
+        TEXT("fifteen"), TEXT("sixteen"), TEXT("seventeen"), TEXT("eighteen"), TEXT("nineteen")
+    };
+    static const TCHAR* Tens[] = {
+        TEXT(""), TEXT(""), TEXT("twenty"), TEXT("thirty"), TEXT("forty"),
+        TEXT("fifty"), TEXT("sixty"), TEXT("seventy"), TEXT("eighty"), TEXT("ninety")
+    };
+    if (Value < 20)
+    {
+        OutWords.Add(FString(Ones[Value]));
+        return;
+    }
+    OutWords.Add(FString(Tens[Value / 10]));
+    if ((Value % 10) != 0)
+    {
+        OutWords.Add(FString(Ones[Value % 10]));
+    }
+}
+
+static void AddUnderOneThousandWords(int32 Value, TArray<FString>& OutWords)
+{
+    if (Value >= 100)
+    {
+        AddUnderOneHundredWords(Value / 100, OutWords);
+        OutWords.Add(TEXT("hundred"));
+        Value %= 100;
+    }
+    if (Value > 0)
+    {
+        AddUnderOneHundredWords(Value, OutWords);
+    }
+}
+
+static bool ParsePositiveInt(const FString& Digits, int32& OutValue)
+{
+    if (!IsAllDigits(Digits) || Digits.Len() > 9) return false;
+    int64 Value = 0;
+    for (TCHAR C : Digits)
+    {
+        Value = Value * 10 + static_cast<int64>(C - TEXT('0'));
+        if (Value > 999999) return false;
+    }
+    OutValue = static_cast<int32>(Value);
+    return true;
+}
+
+static bool ExpandCardinalNumber(const FString& Digits, TArray<FString>& OutWords)
+{
+    int32 Value = 0;
+    if (!ParsePositiveInt(Digits, Value)) return false;
+    if (Value == 0)
+    {
+        OutWords.Add(TEXT("zero"));
+        return true;
+    }
+    if (Value >= 1000)
+    {
+        AddUnderOneThousandWords(Value / 1000, OutWords);
+        OutWords.Add(TEXT("thousand"));
+        Value %= 1000;
+    }
+    if (Value > 0)
+    {
+        AddUnderOneThousandWords(Value, OutWords);
+    }
+    return true;
+}
+
+static bool ExpandDecade(const FString& Token, TArray<FString>& OutWords)
+{
+    if (Token.Len() != 5 || Token[4] != TEXT('s')) return false;
+    const FString Digits = Token.Left(4);
+    int32 Year = 0;
+    if (!ParsePositiveInt(Digits, Year) || Year < 1000 || (Year % 10) != 0) return false;
+
+    AddUnderOneHundredWords(Year / 100, OutWords);
+    static const TCHAR* Decades[] = {
+        TEXT(""), TEXT("tens"), TEXT("twenties"), TEXT("thirties"), TEXT("forties"),
+        TEXT("fifties"), TEXT("sixties"), TEXT("seventies"), TEXT("eighties"), TEXT("nineties")
+    };
+    OutWords.Add(FString(Decades[(Year % 100) / 10]));
+    return true;
+}
+
+static void AddNormalizedToken(
+    const FString& RawToken,
+    TCHAR Boundary,
+    TArray<FString>& OutWords,
+    TArray<TCHAR>& OutBoundaries)
+{
+    const FString Token = NormalizeWord(RawToken);
+    TArray<FString> Expanded;
+    const bool bExpanded = ExpandDecade(Token, Expanded)
+        || ExpandCardinalNumber(Token, Expanded);
+    if (!bExpanded)
+    {
+        Expanded.Add(Token);
+    }
+    for (int32 Index = 0; Index < Expanded.Num(); ++Index)
+    {
+        OutWords.Add(Expanded[Index]);
+        OutBoundaries.Add(Index + 1 == Expanded.Num() ? Boundary : TCHAR(0));
+    }
+}
+
 static bool IsHardSentenceBoundary(TCHAR C)
 {
     return C == TEXT('.')
@@ -76,7 +196,13 @@ static bool IsWordTokenCharAt(const FString& Text, int32 Index)
     }
 
     const TCHAR C = Text[Index];
-    return FChar::IsAlnum(C) || C == TCHAR('\'');
+    if (FChar::IsAlnum(C) || C == TCHAR('\'')) return true;
+    // Grouping separators inside a number are lexical, not punctuation fences.
+    return (C == TEXT(',') || C == TEXT('.'))
+        && Index > 0
+        && Index + 1 < Text.Len()
+        && FChar::IsDigit(Text[Index - 1])
+        && FChar::IsDigit(Text[Index + 1]);
 }
 
 static bool IsListConjunctionWord(const FString& Word)
@@ -751,8 +877,11 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
             const bool bSpeechRegionBoundary = IsSpeechRegionBoundaryAt(Text, TextIndex);
             if (!Current.IsEmpty())
             {
-                Words.Add(NormalizeWord(Current));
-                Boundaries.Add(bSpeechRegionBoundary ? C : TCHAR(0));
+                AddNormalizedToken(
+                    Current,
+                    bSpeechRegionBoundary ? C : TCHAR(0),
+                    Words,
+                    Boundaries);
                 Current.Reset();
             }
             else if (Boundaries.Num() > 0 && bSpeechRegionBoundary)
@@ -763,8 +892,7 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
     }
     if (!Current.IsEmpty())
     {
-        Words.Add(NormalizeWord(Current));
-        Boundaries.Add(TCHAR(0));
+        AddNormalizedToken(Current, TCHAR(0), Words, Boundaries);
     }
 
     TArray<TArray<FString>> WordPhones;

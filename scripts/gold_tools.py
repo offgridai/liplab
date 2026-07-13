@@ -112,7 +112,10 @@ def stage_mfa_corpus(cases: list[str], corpus_root: pathlib.Path) -> None:
     corpus_root.mkdir(parents=True, exist_ok=True)
     for case_id in cases:
         transcript = read_text(ROOT / "inputs" / "transcripts" / f"{case_id}.txt")
-        (corpus_root / f"{case_id}.lab").write_text(transcript + "\n", encoding="utf-8")
+        (corpus_root / f"{case_id}.lab").write_text(
+            normalize_spoken_numbers(transcript) + "\n",
+            encoding="utf-8",
+        )
 
 
 def normalize_dictionary_word(word: str) -> str:
@@ -122,7 +125,68 @@ def normalize_dictionary_word(word: str) -> str:
 
 
 def transcript_word_candidates(text: str) -> list[str]:
-    return re.findall(r"[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*", text.lower())
+    return re.findall(
+        r"[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*",
+        normalize_spoken_numbers(text).lower(),
+    )
+
+
+_ONES = [
+    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+    "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen",
+    "eighteen", "nineteen",
+]
+_TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"]
+_DECADES = ["", "tens", "twenties", "thirties", "forties", "fifties", "sixties", "seventies", "eighties", "nineties"]
+
+
+def _under_one_thousand_words(value: int) -> list[str]:
+    words: list[str] = []
+    if value >= 100:
+        words.extend((_ONES[value // 100], "hundred"))
+        value %= 100
+    if value >= 20:
+        words.append(_TENS[value // 10])
+        if value % 10:
+            words.append(_ONES[value % 10])
+    elif value:
+        words.append(_ONES[value])
+    return words
+
+
+def _spoken_number_words(token: str) -> list[str] | None:
+    compact = token.replace(",", "").lower()
+    decade = re.fullmatch(r"(\d{4})s", compact)
+    if decade:
+        value = int(decade.group(1))
+        if value >= 1000 and value % 10 == 0:
+            return _under_one_thousand_words(value // 100) + [_DECADES[(value % 100) // 10]]
+    if not compact.isdigit() or len(compact) > 9:
+        return None
+    value = int(compact)
+    if value > 999_999:
+        return None
+    if value == 0:
+        return ["zero"]
+    words: list[str] = []
+    if value >= 1000:
+        words.extend(_under_one_thousand_words(value // 1000))
+        words.append("thousand")
+        value %= 1000
+    words.extend(_under_one_thousand_words(value))
+    return words
+
+
+def normalize_spoken_numbers(text: str) -> str:
+    """Expand supported numeric orthography to the words spoken by the TTS."""
+
+    pattern = re.compile(r"(?<![A-Za-z0-9])(?:\d{1,3}(?:,\d{3})+|\d+s|\d+)(?![A-Za-z0-9])", re.IGNORECASE)
+
+    def replace(match: re.Match[str]) -> str:
+        words = _spoken_number_words(match.group(0))
+        return " ".join(words) if words else match.group(0)
+
+    return pattern.sub(replace, text)
 
 
 @lru_cache(maxsize=1)
