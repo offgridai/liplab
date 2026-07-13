@@ -32,6 +32,12 @@ def main() -> int:
         f"start_ms={summary['word_head_start_ms']:.1f} "
         f"duration_ms={summary['word_duration_ms']:.1f}"
     )
+    if summary.get("list_word_count", 0):
+        print(
+            f"List words: count={summary['list_word_count']} "
+            f"start_ms={summary['list_word_start_ms']:.1f} "
+            f"median_ms={summary['list_word_start_median_ms']:.1f}"
+        )
     print(
         f"Phonemes: coverage={summary['phoneme_coverage_rate']:.3f} "
         f"center_ms={summary['phoneme_center_ms']:.1f} "
@@ -99,6 +105,7 @@ def main() -> int:
             f"Runtime syllable assignment: precision={summary['runtime_syllable_precision']:.3f} "
             f"recall={summary['runtime_syllable_recall']:.3f} "
             f"count_ratio={summary['runtime_syllable_count_ratio']:.3f} "
+            f"progress_ratio={summary.get('runtime_syllable_progress_ratio', 0.0):.3f} "
             f"center_ms={summary['runtime_syllable_error_ms']:.1f}"
         )
         syllable_diag = summary.get("runtime_syllable_diagnostics", {})
@@ -113,6 +120,14 @@ def main() -> int:
             f"duplicates={syllable_diag.get('duplicate_pulse_count', 0)}"
         )
         print(
+            f"Runtime syllable progress: count={summary.get('runtime_syllable_progress_count', 0)} "
+            f"mae={summary.get('runtime_syllable_progress_mean_abs_count_error', 0.0):.2f} "
+            f"exact={summary.get('runtime_syllable_progress_exact_case_rate', 0.0):.3f} "
+            f"within1={summary.get('runtime_syllable_progress_within_one_case_rate', 0.0):.3f} "
+            f"over={summary.get('runtime_syllable_progress_over_case_count', 0)} "
+            f"under={summary.get('runtime_syllable_progress_under_case_count', 0)}"
+        )
+        print(
             f"Runtime strong-phone flow: candidates={syllable_diag.get('strong_phone_candidate_count', 0)} "
             f"assigned={syllable_diag.get('strong_phone_assignment_count', 0)}"
         )
@@ -122,6 +137,14 @@ def main() -> int:
             f"close_r={summary['strict_punctuation_close_recall']:.3f} "
             f"resume_p={summary['strict_punctuation_resume_precision']:.3f} "
             f"resume_r={summary['strict_punctuation_resume_recall']:.3f}"
+        )
+    if summary.get("soft_list_boundary_target_count", 0) > 0:
+        print(
+            f"List boundaries: targets={summary['soft_list_boundary_target_count']} "
+            f"close_p={summary['soft_list_boundary_close_precision']:.3f} "
+            f"close_r={summary['soft_list_boundary_close_recall']:.3f} "
+            f"resume_p={summary['soft_list_boundary_resume_precision']:.3f} "
+            f"resume_r={summary['soft_list_boundary_resume_recall']:.3f}"
         )
     if summary.get("pause_safety_available_cases", 0) > 0:
         print(
@@ -136,6 +159,22 @@ def main() -> int:
             f"timeouts={summary['pause_safety_unsafe_timeout_release_count']} "
             f"false_pause={summary['pause_safety_false_pause_resolution_count']} "
             f"unresolved={summary['pause_safety_unresolved_hold_count']}"
+        )
+        print(
+            "Syllable continuation safety: "
+            f"releases={summary['pause_safety_syllable_continuous_release_count']} "
+            f"precision={summary['pause_safety_syllable_continuous_precision']:.3f} "
+            f"false_pause={summary['pause_safety_syllable_continuous_false_pause_release_count']} "
+            f"cases={summary['pause_safety_syllable_continuous_false_pause_case_count']} "
+            f"pause_preservation={summary['pause_safety_syllable_continuous_pause_preservation_rate']:.3f} "
+            f"leakage_ms={summary['pause_safety_syllable_continuous_false_pause_leakage_ms']:.1f}"
+        )
+        print(
+            "Syllable continuation safety (all graded): "
+            f"releases={summary['pause_safety_syllable_continuous_all_graded_release_count']} "
+            f"false_pause={summary['pause_safety_syllable_continuous_all_graded_false_pause_release_count']} "
+            f"cases={summary['pause_safety_syllable_continuous_all_graded_false_pause_case_count']} "
+            f"leakage_ms={summary['pause_safety_syllable_continuous_all_graded_false_pause_leakage_ms']:.1f}"
         )
     print(f"Wrote {summary_path}")
     return 0

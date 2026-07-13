@@ -1238,6 +1238,21 @@ static FCausalBoundaryFenceEstimate EvaluateCausalBoundaryFence(
             Estimate.ResumeAnchorSec = ResumeAnchorSec;
             Estimate.Outcome = FName(TEXT("confirmed_resume_anchor_pending_close"));
         }
+        else if (Input.bInputStreamClosed
+            && !Input.bPlaybackFinalized
+            && (State.ActiveBoundaryMark == TEXT(',')
+                || (IsSentenceTerminalPunctuation(State.ActiveBoundaryMark)
+                    && Estimate.CloseSec >= State.HoldDeadlinePlaybackSec + 0.300f)))
+        {
+            // With complete input, a close that has no later resume cannot own
+            // an intraline punctuation fence: there are planned phones after
+            // the fence, so this is end-of-line quiet after that suffix was
+            // already spoken.
+            Estimate.bObservedClose = false;
+            Estimate.bContinuousSpeech = true;
+            Estimate.CloseSec = -1.0f;
+            Estimate.Outcome = FName(TEXT("input_closed_trailing_quiet_continuous"));
+        }
         return Estimate;
     }
 
@@ -1272,6 +1287,20 @@ static FCausalBoundaryFenceEstimate EvaluateCausalBoundaryFence(
         {
             return Estimate;
         }
+    }
+
+    // Once ingestion is complete, this search has already inspected every
+    // remaining audio frame. If no close (or close/resume pair) was found,
+    // waiting until playback finalization cannot add evidence and only strands
+    // the uncommitted suffix behind a disproven text fence.
+    if (Input.bInputStreamClosed
+        && !Input.bPlaybackFinalized
+        && (State.ActiveBoundaryMark == TEXT(',')
+            || State.HoldDeadlinePlaybackSec > Input.ObservedAudioBufferEndSec + 0.001f))
+    {
+        Estimate.bContinuousSpeech = true;
+        Estimate.Outcome = FName(TEXT("input_closed_no_decay_continuous"));
+        return Estimate;
     }
 
     const bool bCoveredPatienceWindow =
@@ -1387,6 +1416,36 @@ static int32 FindNextVowelPhoneIndex(const FOffgridAITextVisemePlan& Plan, int32
         }
     }
     return INDEX_NONE;
+}
+
+static int32 CountVowelPhonesThrough(const FOffgridAITextVisemePlan& Plan, int32 EndPhoneIndex)
+{
+    int32 Count = 0;
+    for (int32 PhoneIndex = 0;
+        PhoneIndex < Plan.ExpectedPhones.Num() && PhoneIndex <= EndPhoneIndex;
+        ++PhoneIndex)
+    {
+        if (Plan.ExpectedPhones[PhoneIndex].bIsVowel) ++Count;
+    }
+    return Count;
+}
+
+static int32 CountVowelsAtOrBeforeActiveTime(
+    const FOffgridAITextVisemePlan& Plan,
+    const TArray<float>& PhoneCenterActiveSeconds,
+    float ActiveSec)
+{
+    int32 Count = 0;
+    for (int32 PhoneIndex = 0; PhoneIndex < Plan.ExpectedPhones.Num(); ++PhoneIndex)
+    {
+        if (PhoneCenterActiveSeconds.IsValidIndex(PhoneIndex)
+            && Plan.ExpectedPhones[PhoneIndex].bIsVowel
+            && PhoneCenterActiveSeconds[PhoneIndex] <= ActiveSec)
+        {
+            ++Count;
+        }
+    }
+    return Count;
 }
 
 static float SmoothedPulseEnvelope(
@@ -1620,6 +1679,14 @@ static void SynchronizeTranscriptAnchorCursor(
                 State.TranscriptAnchorCursorPhoneIndex,
                 Plan.WordPhoneBeginIndices[State.LastResolvedBoundary.WordIndex + 1]);
         }
+        if (Plan.WordPhoneEndIndices.IsValidIndex(State.LastResolvedBoundary.WordIndex))
+        {
+            State.SyllableProgressCount = FMath::Max(
+                State.SyllableProgressCount,
+                CountVowelPhonesThrough(
+                    Plan,
+                    Plan.WordPhoneEndIndices[State.LastResolvedBoundary.WordIndex] - 1));
+        }
     }
     RefreshTranscriptAnchorFence(Plan, State);
     int32 MutableCursor = FMath::Max(FirstMutablePhoneIndex, 0);
@@ -1675,6 +1742,7 @@ static void ResetSyllableRebaseForSection(
     State.SyllableAnchorActiveSec = 0.0f;
     State.SyllableAnchorAudioSec = 0.0f;
     State.SyllableRate = 1.0f;
+    State.SyllablePlaybackRate = 1.0f;
     State.SyllableSectionStartAudioSec = FMath::Max(SectionStartAudioSec, 0.0f);
     State.SyllableAssignmentConfidence = 0.0f;
     State.SyllableAssignmentMargin = 0.0f;
@@ -1791,6 +1859,88 @@ static void UpdateSyllableRebaseState(
             StartPhoneIndex);
     }
 
+    struct FSyllableCandidate
+    {
+        int32 PhoneIndex = INDEX_NONE;
+        int32 SkipCount = 0;
+        float ExpectedActiveSec = 0.0f;
+        float ExpectedAudioSec = 0.0f;
+        float DistanceSec = 0.0f;
+        float SequenceScore = 0.5f;
+        float Score = 0.0f;
+    };
+    auto CommitAssignment = [&](const FSyllableCandidate& Selected,
+        float SelectedMargin,
+        float ObservedAudioSec,
+        float Prominence,
+        int32 DecisionFrameIndex,
+        bool bTooLate)
+    {
+        State.SyllableAssignmentConfidence = Selected.Score;
+        State.SyllableAssignmentMargin = SelectedMargin;
+        State.SyllableAssignmentSkipCount = Selected.SkipCount;
+        State.SyllableObservedAudioSec = ObservedAudioSec;
+        State.SyllableLastAssignedProminence = Prominence;
+        ++State.SyllableAssignmentCount;
+        State.SyllableProgressCount = FMath::Max(
+            State.SyllableProgressCount,
+            CountVowelPhonesThrough(Plan, Selected.PhoneIndex));
+        State.SyllableLastAssignedPhoneIndex = Selected.PhoneIndex;
+        FOffgridAIRuntimeSyllableAssignmentDiagnosticRow AssignmentRow;
+        AssignmentRow.PhoneIndex = Selected.PhoneIndex;
+        AssignmentRow.ObservedAudioSec = ObservedAudioSec;
+        AssignmentRow.Prominence = Prominence;
+        AssignmentRow.Confidence = Selected.Score;
+        AssignmentRow.Margin = SelectedMargin;
+        AssignmentRow.SkipCount = Selected.SkipCount;
+        State.PendingSyllableAssignments.Add(AssignmentRow);
+        State.TranscriptAnchorCursorPhoneIndex = FMath::Max(
+            State.TranscriptAnchorCursorPhoneIndex,
+            Selected.PhoneIndex);
+        if (SelectedMargin < 0.055f) ++State.SyllableAmbiguousAssignmentCount;
+
+        State.NextExpectedSyllablePhoneIndex = FindNextVowelPhoneIndex(
+            Plan,
+            Selected.PhoneIndex + 1);
+        UpdateStrongPhoneRebaseForSyllable(
+            Plan,
+            PhoneCenterActiveSeconds,
+            Frames,
+            DecisionFrameIndex,
+            Selected.PhoneIndex,
+            State.NextExpectedSyllablePhoneIndex,
+            Selected.ExpectedActiveSec,
+            ObservedAudioSec,
+            State);
+        if (bTooLate || Selected.PhoneIndex < FirstMutablePhoneIndex) return;
+
+        float CorrectionStrength = FMath::Clamp((Selected.Score - 0.40f) / 0.32f, 0.0f, 1.0f);
+        if (SelectedMargin < 0.0f) CorrectionStrength *= 0.35f;
+        else if (SelectedMargin < 0.055f) CorrectionStrength *= 0.65f;
+        const float AppliedAnchorAudioSec = Selected.ExpectedAudioSec
+            + (ObservedAudioSec - Selected.ExpectedAudioSec) * CorrectionStrength;
+        if (State.bSyllableRebaseActive)
+        {
+            const float PriorDelta = Selected.ExpectedActiveSec - State.SyllableAnchorActiveSec;
+            const float AudioDelta = AppliedAnchorAudioSec - State.SyllableAnchorAudioSec;
+            if (PriorDelta > 0.080f && AudioDelta > 0.030f)
+            {
+                const float Confidence = FMath::Clamp(
+                    Selected.Score * (1.0f - Selected.DistanceSec / 0.350f), 0.0f, 1.0f);
+                const float MeasuredRate = FMath::Clamp(AudioDelta / PriorDelta, 0.85f, 1.18f);
+                State.SyllableRate = FMath::Clamp(
+                    State.SyllableRate + (MeasuredRate - State.SyllableRate) * (0.18f + Confidence * 0.22f),
+                    0.85f,
+                    1.18f);
+            }
+        }
+        State.bSyllableRebaseActive = true;
+        State.SyllableAnchorPhoneIndex = Selected.PhoneIndex;
+        State.SyllableAnchorActiveSec = Selected.ExpectedActiveSec;
+        State.SyllableAnchorAudioSec = AppliedAnchorAudioSec;
+        State.SyllableRebaseEndPhoneIndex = State.NextExpectedSyllablePhoneIndex;
+    };
+
     for (int32 FrameIndex = FMath::Max(State.LastSyllableScanFrameIndex + 1, 14);
         FrameIndex <= LastDecidableFrame && State.NextExpectedSyllablePhoneIndex != INDEX_NONE;
         ++FrameIndex)
@@ -1838,20 +1988,10 @@ static void UpdateSyllableRebaseState(
             continue;
         }
 
-        struct FSyllableCandidate
-        {
-            int32 PhoneIndex = INDEX_NONE;
-            int32 SkipCount = 0;
-            float ExpectedActiveSec = 0.0f;
-            float ExpectedAudioSec = 0.0f;
-            float DistanceSec = 0.0f;
-            float SequenceScore = 0.5f;
-            float Score = 0.0f;
-        };
         TArray<FSyllableCandidate> Candidates;
         int32 CandidatePhoneIndex = State.NextExpectedSyllablePhoneIndex;
         for (int32 SkipCount = 0;
-            SkipCount < 5 && PhoneCenterActiveSeconds.IsValidIndex(CandidatePhoneIndex);
+            SkipCount < 3 && PhoneCenterActiveSeconds.IsValidIndex(CandidatePhoneIndex);
             ++SkipCount)
         {
             if (State.TranscriptAnchorFencePhoneIndex != INDEX_NONE
@@ -1992,60 +2132,13 @@ static void UpdateSyllableRebaseState(
         const float SelectedMargin = Selected == Primary
             ? Margin
             : Selected->Score - Primary->Score;
-        State.SyllableAssignmentConfidence = Selected->Score;
-        State.SyllableAssignmentMargin = SelectedMargin;
-        State.SyllableAssignmentSkipCount = Selected->SkipCount;
-        State.SyllableObservedAudioSec = EnvelopeCenterSec;
-        State.SyllableLastAssignedProminence = Envelope.Prominence;
-        ++State.SyllableAssignmentCount;
-        State.SyllableLastAssignedPhoneIndex = Selected->PhoneIndex;
-        State.TranscriptAnchorCursorPhoneIndex = FMath::Max(
-            State.TranscriptAnchorCursorPhoneIndex,
-            Selected->PhoneIndex);
-        if (SelectedMargin < 0.055f) ++State.SyllableAmbiguousAssignmentCount;
-
-        const int32 AssignedPhoneIndex = Selected->PhoneIndex;
-        State.NextExpectedSyllablePhoneIndex = FindNextVowelPhoneIndex(Plan, AssignedPhoneIndex + 1);
-        UpdateStrongPhoneRebaseForSyllable(
-            Plan,
-            PhoneCenterActiveSeconds,
-            Frames,
-            FrameIndex,
-            AssignedPhoneIndex,
-            State.NextExpectedSyllablePhoneIndex,
-            Selected->ExpectedActiveSec,
+        CommitAssignment(
+            *Selected,
+            SelectedMargin,
             EnvelopeCenterSec,
-            State);
-        if (bPulseTooLate || AssignedPhoneIndex < FirstMutablePhoneIndex)
-        {
-            continue;
-        }
-
-        float CorrectionStrength = FMath::Clamp((Selected->Score - 0.40f) / 0.32f, 0.0f, 1.0f);
-        if (SelectedMargin < 0.0f) CorrectionStrength *= 0.35f;
-        else if (SelectedMargin < 0.055f) CorrectionStrength *= 0.65f;
-        const float AppliedAnchorAudioSec = Selected->ExpectedAudioSec
-            + (EnvelopeCenterSec - Selected->ExpectedAudioSec) * CorrectionStrength;
-        if (State.bSyllableRebaseActive)
-        {
-            const float PriorDelta = Selected->ExpectedActiveSec - State.SyllableAnchorActiveSec;
-            const float AudioDelta = AppliedAnchorAudioSec - State.SyllableAnchorAudioSec;
-            if (PriorDelta > 0.080f && AudioDelta > 0.030f)
-            {
-                const float Confidence = FMath::Clamp(
-                    Selected->Score * (1.0f - Selected->DistanceSec / 0.350f), 0.0f, 1.0f);
-                const float MeasuredRate = FMath::Clamp(AudioDelta / PriorDelta, 0.85f, 1.18f);
-                State.SyllableRate = FMath::Clamp(
-                    State.SyllableRate + (MeasuredRate - State.SyllableRate) * (0.18f + Confidence * 0.22f),
-                    0.85f,
-                    1.18f);
-            }
-        }
-        State.bSyllableRebaseActive = true;
-        State.SyllableAnchorPhoneIndex = AssignedPhoneIndex;
-        State.SyllableAnchorActiveSec = Selected->ExpectedActiveSec;
-        State.SyllableAnchorAudioSec = AppliedAnchorAudioSec;
-        State.SyllableRebaseEndPhoneIndex = State.NextExpectedSyllablePhoneIndex;
+            Envelope.Prominence,
+            FrameIndex,
+            bPulseTooLate);
     }
     State.LastSyllableScanFrameIndex = LastDecidableFrame;
 }
@@ -2340,7 +2433,7 @@ static void AdvancePlaybackHoldState(
 
     if (!InOutState.bHoldActive && !bReleasedContinuousNoDecayThisTick)
     {
-        InOutState.ActivePlayheadSec += DeltaSec;
+        InOutState.ActivePlayheadSec += DeltaSec * InOutState.SyllablePlaybackRate;
     }
 
     InOutState.LastPlaybackSec = PlaybackSec;
@@ -2588,6 +2681,7 @@ void FOffgridAILipsyncRuntimeSession::Reset()
     CommittedTrack = FOffgridAICommittedVisemeTrack();
     RuntimeCommitDiagnosticRows.Reset();
     RuntimeSpeechRegionDiagnosticRows.Reset();
+    RuntimeSyllableAssignmentDiagnosticRows.Reset();
     RuntimeCommitDiagnosticUpdateOrdinal = 0;
     StreamTailDiagnosticRow = FOffgridAIStreamTailDiagnosticRow();
 
@@ -2723,6 +2817,13 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(float CurrentPlay
 
     RuntimeCommitDiagnosticRows.Reset();
     RuntimeSpeechRegionDiagnosticRows.Reset();
+    for (FOffgridAIRuntimeSyllableAssignmentDiagnosticRow& AssignmentRow : PunctuationHoldState.PendingSyllableAssignments)
+    {
+        AssignmentRow.LineID = LineID;
+        AssignmentRow.UpdateOrdinal = RuntimeCommitDiagnosticUpdateOrdinal;
+        RuntimeSyllableAssignmentDiagnosticRows.Add(AssignmentRow);
+    }
+    PunctuationHoldState.PendingSyllableAssignments.Reset();
     // Boundary state is a timeline, not a final snapshot. Retaining one row per
     // update makes stalls and premature releases diagnosable; resetting here
     // previously erased every transition except finalization.
@@ -2837,6 +2938,7 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(float CurrentPlay
         BoundaryRow.SyllableAnchorActiveSec = PunctuationHoldState.SyllableAnchorActiveSec;
         BoundaryRow.SyllableAnchorAudioSec = PunctuationHoldState.SyllableAnchorAudioSec;
         BoundaryRow.SyllableRate = PunctuationHoldState.SyllableRate;
+        BoundaryRow.SyllablePlaybackRate = PunctuationHoldState.SyllablePlaybackRate;
         BoundaryRow.SyllableSectionStartAudioSec = PunctuationHoldState.SyllableSectionStartAudioSec;
         BoundaryRow.SyllableAssignmentConfidence = PunctuationHoldState.SyllableAssignmentConfidence;
         BoundaryRow.SyllableAssignmentMargin = PunctuationHoldState.SyllableAssignmentMargin;
@@ -2844,6 +2946,7 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(float CurrentPlay
         BoundaryRow.SyllableObservedAudioSec = PunctuationHoldState.SyllableObservedAudioSec;
         BoundaryRow.SyllablePulseCount = PunctuationHoldState.SyllablePulseCount;
         BoundaryRow.SyllableAssignmentCount = PunctuationHoldState.SyllableAssignmentCount;
+        BoundaryRow.SyllableProgressCount = PunctuationHoldState.SyllableProgressCount;
         BoundaryRow.SyllableLastAssignedPhoneIndex = PunctuationHoldState.SyllableLastAssignedPhoneIndex;
         BoundaryRow.SyllableRejectLowProminenceCount = PunctuationHoldState.SyllableRejectLowProminenceCount;
         BoundaryRow.SyllableRejectBeforeSectionCount = PunctuationHoldState.SyllableRejectBeforeSectionCount;
@@ -2963,6 +3066,36 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
         PlaybackOffsetSec,
         FirstMutablePhoneIndex,
         InOutHoldState);
+    if (InOutHoldState.SyllableAssignmentCount > 0 && !InOutHoldState.bHoldActive)
+    {
+        const int32 FenceTailPhoneIndex = InOutHoldState.TranscriptAnchorFencePhoneIndex - 1;
+        const bool bNearPunctuationFence = PhoneCenterActiveSeconds.IsValidIndex(FenceTailPhoneIndex)
+            && PhoneCenterActiveSeconds[FenceTailPhoneIndex]
+                - InOutHoldState.ActivePlayheadSec <= 0.600f;
+        if (bNearPunctuationFence)
+        {
+            InOutHoldState.SyllablePlaybackRate = 1.0f;
+        }
+        else
+        {
+            const int32 PlaybackSyllableCount = CountVowelsAtOrBeforeActiveTime(
+                Plan,
+                PhoneCenterActiveSeconds,
+                InOutHoldState.ActivePlayheadSec);
+            const int32 ProgressError = InOutHoldState.SyllableProgressCount
+                - PlaybackSyllableCount;
+            const float TargetRate = ProgressError >= 2 ? 1.04f
+                : ProgressError == 1 ? 1.02f
+                : ProgressError <= -2 ? 0.96f
+                : ProgressError == -1 ? 0.98f
+                : 1.0f;
+            InOutHoldState.SyllablePlaybackRate = FMath::Clamp(
+                InOutHoldState.SyllablePlaybackRate
+                    + (TargetRate - InOutHoldState.SyllablePlaybackRate) * 0.20f,
+                0.96f,
+                1.04f);
+        }
+    }
 
     float CommitSafeActiveSec = FMath::Max(InOutHoldState.ActivePlayheadSec - CommitLagSec, 0.0f);
 
@@ -3276,6 +3409,7 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
                 Center = MinSpacingCenter;
             }
         }
+        bool bLateSuffixRebase = false;
         if (!bPlaybackFinal)
         {
             const float CommitLeadSec = Center - Input.CurrentPlaybackSec;
@@ -3284,18 +3418,33 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
                 break;
             }
 
-            // Very late live commits are not useful: by the time the event is
-            // materialized, the renderer has already passed its visible window.
-            // Breaking instead of dumping preserves the existing live cadence and
-            // lets the next tick/final drain make an explicit decision.
+            // A stale event must not permanently block the entire suffix. Rebase
+            // the mutable suffix just ahead of playback, preserving order and
+            // allowing every later phone to inherit the same bounded correction.
             if (CommitLeadSec < -MaxLiveCommitBehindSec)
             {
-                break;
+                const float RecoveryCenterSec = Input.CurrentPlaybackSec + MinLiveLeadSec;
+                const float RecoveryShiftSec = RecoveryCenterSec - Center;
+                BaseStart += RecoveryShiftSec;
+                Center = RecoveryCenterSec;
+                BaseEnd += RecoveryShiftSec;
+                InOutHoldState.bSyllableRebaseActive = true;
+                InOutHoldState.SyllableAnchorPhoneIndex = SourcePhoneGlobalIndex;
+                InOutHoldState.SyllableAnchorActiveSec = RequiredActiveSec;
+                InOutHoldState.SyllableAnchorAudioSec = RecoveryCenterSec + PoseLeadSec;
+                InOutHoldState.SyllableRebaseEndPhoneIndex =
+                    InOutHoldState.TranscriptAnchorFencePhoneIndex;
+                ClearStrongPhoneRebase(InOutHoldState);
+                bLateSuffixRebase = true;
             }
         }
 
         FName EffectiveCommitReason = TextPriorMonotonicCommitReason;
-        if (bExactAcousticAnchorEvent)
+        if (bLateSuffixRebase)
+        {
+            EffectiveCommitReason = FName(TEXT("late_suffix_rebase_commit"));
+        }
+        else if (bExactAcousticAnchorEvent)
         {
             EffectiveCommitReason = InOutHoldState.bResumeAnchorFromInitialSpeech
                 ? FName(TEXT("initial_anchor_commit"))
