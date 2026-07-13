@@ -15,7 +15,7 @@ Regression gating is now hierarchical and follows the review priorities for this
 2. `word_*`: overlap and timing of predicted word windows against approved gold word windows.
 3. `phoneme_*` and `intra_word_*`: phoneme coverage and timing once speech and words are already owned correctly.
 
-The older blended summary metrics are still printed for continuity and debugging, but they are no longer the primary pass/fail contract.
+Non-gating detector and cursor metrics are retained only when they explain the active runtime path. They must be labeled diagnostic and must not be mistaken for the regression contract.
 
 Current threshold values live in `docs/grade_thresholds.json` and are enforced by `scripts/check_grades.py`.
 

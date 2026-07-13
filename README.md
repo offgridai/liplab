@@ -10,18 +10,17 @@ Standalone lipsync lab for iterating on the OffgridAI lipsync core outside Unrea
 - Drive the lipsync core from `inputs/transcripts`, `inputs/wav`, and approved `inputs/gold`.
 - Emit inspectable logs for every case.
 - Grade committed visemes against approved MFA-backed gold answers.
-- Keep the iterated lipsync logic compatible with Offgrid LineCoach while avoiding LineCoach edits.
+- Keep the iterated lipsync logic compatible with a thin Offgrid LineCoach adapter.
 - Use transcript + PCM audio only; do not consume TTS hint streams, text-progress estimates, token indices, or predicted word schedules.
 
 ## Current Runtime Shape
 
 The active shared runtime is intentionally simple:
 
-- transcript plans a dense phone/viseme chain
-- streaming speech occupancy opens and closes speech regions
-- punctuation may open a bounded audio-aware hold
-- resumed speech after a real lull re-anchors the paused clock
-- otherwise playback continues monotonically on the duration prior
+- transcript plans one ordered phone/viseme chain with duration priors, syllables, strong-phone landmarks, and punctuation fences
+- streamed PCM produces causal speech occupancy, quiet/resume evidence, syllable envelopes, and broad acoustic-class evidence
+- one monotonic runtime cursor resolves strict punctuation pause/resume boundaries and soft syllable/strong-phone timing anchors
+- accepted anchors rebase only the uncommitted suffix; committed events remain immutable
 
 See [lipsync.md](C:\git\liplab\lipsync.md) for the current runtime contract.
 
@@ -52,10 +51,10 @@ With Ninja or Makefile generators, the executable may instead be `build\liplab_r
 Optional streaming knobs:
 
 ```bash
-build\Release\liplab_runner.exe . --buffer-ms 350 --chunk-ms 40
+build\Release\liplab_runner.exe . --preroll-ms 350 --chunk-ms 40
 ```
 
-`--buffer-ms` controls how far playback trails observed audio in the standalone stream simulation and defaults to `350`. The same value is passed into the shared lipsync runtime as `PrerollSec`.
+`--preroll-ms` controls the streamed audio lookahead and defaults to `350`. The same value is passed into the shared runtime as `PrerollSec`. `--chunk-ms` controls only how the harness feeds PCM; it does not define the detector's analysis window.
 
 
 ## One-command verification
@@ -133,7 +132,7 @@ python scripts/check_grades.py
 This is the intended evaluation split:
 
 - offline MFA batch creates the accepted gold answer
-- streamed harness runs with `--buffer-ms 350 --chunk-ms 40`
+- streamed harness runs with `--preroll-ms 350 --chunk-ms 40`
 - grading measures runtime error against offline gold
 
 ### Important constraint
@@ -142,7 +141,7 @@ MFA is offline-only. It must not be added to `offgrid_dropin` runtime scheduling
 
 ## Agent rules
 
-1. Do not modify Offgrid LineCoach.
+1. Keep Offgrid LineCoach thin; scheduling logic belongs in `offgrid_dropin`.
 2. Iterate lipsync logic in `offgrid_dropin`.
 3. Preserve monotonic committed event order.
 4. Transcript owns viseme identity; PCM audio only affects timing.
@@ -159,11 +158,20 @@ See `AGENTS.md`, `docs/regression_policy.md`, `docs/offgrid_transplant_contract.
 
 ## Outputs
 
-Each case emits:
+Each case emits a generated diagnostic package under `outputs/runs/latest`. The primary artifacts are:
 
 ```text
 planned.csv
+planned_boundaries.csv
+planned_words.csv
 speech_regions.csv
 committed.csv
+commit_decisions.csv
+runtime_boundary_state.csv
+runtime_syllable_assignments.csv
 grade.json
+pause_safety.json
+playback_health.json
 ```
+
+Additional acoustic-evidence CSVs exist to explain detector and cursor decisions. They are diagnostics, not a second scheduler or a runtime dependency.

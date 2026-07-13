@@ -17,11 +17,6 @@ RISK_WEIGHTS = {
 }
 
 
-def phrase_count(words: list[dict]) -> int:
-    indices = {int(word.get("phrase_index", -1)) for word in words if int(word.get("phrase_index", -1)) >= 0}
-    return len(indices)
-
-
 def sentence_count(words: list[dict]) -> int:
     indices = {int(word.get("sentence_index", -1)) for word in words if int(word.get("sentence_index", -1)) >= 0}
     return len(indices)
@@ -89,7 +84,6 @@ def build_case_row(case_id: str, payload: dict) -> dict[str, object]:
         "word_count": len(words),
         "word_head_count": len(word_heads),
         "viseme_count": len(visemes),
-        "phrase_count": phrase_count(words),
         "sentence_count": sentence_count(words),
         "fallback_count": counts.get("offline_committed_fallback", 0),
         "unmapped_viseme_count": counts.get("unmapped_viseme", 0),
@@ -120,7 +114,6 @@ def write_csv(rows: list[dict[str, object]], path) -> None:
         "word_count",
         "word_head_count",
         "viseme_count",
-        "phrase_count",
         "sentence_count",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)

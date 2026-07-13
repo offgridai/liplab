@@ -14,7 +14,7 @@ The gold corpus is rebuilt around one rule:
 The old `inputs/handmade*` corpus was not trustworthy:
 
 - viseme timings were often copied from runtime fallback output
-- speech regions were copied from streaming speech-island logs
+- speech regions were copied from older streaming occupancy logs
 - drafts could be exported with `--allow-draft`
 - the grader could not distinguish reviewed truth from provisional guesses
 
@@ -42,7 +42,7 @@ Draft authoring outputs:
 
 ## Review Layers
 
-Each draft case contains three review layers:
+Each draft case contains four review layers:
 
 1. `speech_regions`
    Derived from offline MFA word timing plus acoustic lull evidence. Region starts align to MFA word starts, region ends align to MFA word ends, and this is the primary pause/resume truth.
@@ -74,7 +74,7 @@ The export gate requires:
    - run MFA over the full corpus
 2. Build draft gold packages
    - map transcript-owned planned visemes onto MFA phone timing
-   - derive gold words from MFA word intervals plus transcript phrase/sentence ownership
+   - derive gold words from MFA word intervals plus transcript sentence ownership
    - derive speech regions from MFA word timing plus punctuation/acoustic lull evidence
    - derive explicit pause-boundary metadata for each inter-word punctuation boundary
 3. Review drafts
@@ -94,7 +94,7 @@ Phase 1 is intentionally deterministic:
 - MFA is the offline timing authority
 - `offgrid_dropin` planned viseme identity remains authoritative
 - no acoustic model invents viseme identity
-- speech regions come from offline word timing plus acoustic lull evidence rather than runtime islands
+- speech regions come from offline word timing plus acoustic lull evidence rather than runtime segmentation
 - missing phone evidence falls back to offline committed timings and is flagged for review
 
 ## Expected Commands

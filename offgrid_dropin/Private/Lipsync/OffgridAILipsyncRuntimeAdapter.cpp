@@ -1,5 +1,5 @@
 #include "Lipsync/OffgridAILipsyncRuntimeAdapter.h"
-#include "Lipsync/OffgridAIOnlinePhoneAligner.h"
+#include "Lipsync/OffgridAIAcousticEvidence.h"
 
 namespace
 {
@@ -308,7 +308,7 @@ static bool IsRawQuietPunctuationDecayFrame(const FOffgridAIStreamingAudioFeatur
 {
     // Boundary decay must be grounded in the actual PCM floor. The adaptive
     // detector can briefly report low evidence / strong quiet inside a weak
-    // consonant or phrase tail; accepting that as punctuation decay lets the
+    // consonant or speech-section tail; accepting that as punctuation decay lets the
     // next word resume immediately inside the same utterance.
     constexpr float MaxQuietRawRMS = 0.0035f;
     if (Frame.RMS > MaxQuietRawRMS)
@@ -1485,7 +1485,7 @@ static float SyllableVowelFamilyScore(
     const FOffgridAIStreamingAudioFeatureFrame& Frame)
 {
     const FOffgridAIArticulatoryProbabilityField Field =
-        FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(Frame);
+        FOffgridAIAcousticEvidence::BuildArticulatoryProbabilityField(Frame);
     const bool bRound = PhoneBase == TEXT("UW") || PhoneBase == TEXT("UH")
         || PhoneBase == TEXT("OW") || PhoneBase == TEXT("OY") || PhoneBase == TEXT("AO");
     const bool bFront = PhoneBase == TEXT("IY") || PhoneBase == TEXT("IH")
@@ -1538,7 +1538,7 @@ static float StrongPhoneSupportAtFrame(
     const FOffgridAIStreamingAudioFeatureFrame& Frame)
 {
     const FOffgridAIArticulatoryProbabilityField Field =
-        FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(Frame);
+        FOffgridAIAcousticEvidence::BuildArticulatoryProbabilityField(Frame);
     if (PhoneBase == TEXT("M") || PhoneBase == TEXT("B") || PhoneBase == TEXT("P"))
     {
         return FMath::Max(Field.PhoneScores.Bilabial, FMath::Max(Field.Closure, Field.Release));
@@ -1903,7 +1903,7 @@ static void UpdateSyllableRebaseState(
                 }
             }
             const FOffgridAIArticulatoryProbabilityField EnvelopeField =
-                FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(Frames[FrameIndex]);
+                FOffgridAIAcousticEvidence::BuildArticulatoryProbabilityField(Frames[FrameIndex]);
             const float NonNucleusEvidence = FMath::Max(
                 EnvelopeField.Fricative,
                 FMath::Max(EnvelopeField.Closure, EnvelopeField.Release));
