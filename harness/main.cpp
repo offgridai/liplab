@@ -90,6 +90,9 @@ struct HandmadeLabel
     int word_index = -1;
     int speech_region_index = -1;
     int sentence_index = -1;
+    int source_phone_global_index = -1;
+    int source_phone_word_index = -1;
+    std::string source_phone_base;
 };
 
 struct GoldWordTiming
@@ -967,6 +970,22 @@ static std::string pause_class_name(EOffgridAIBoundaryPauseClass pause_class)
     case EOffgridAIBoundaryPauseClass::None:
     default:
         return "none";
+    }
+}
+
+static std::string visual_phone_role_name(EOffgridAIVisualPhoneRole role)
+{
+    switch (role)
+    {
+    case EOffgridAIVisualPhoneRole::PrimaryPose:
+        return "primary_pose";
+    case EOffgridAIVisualPhoneRole::SupportingPose:
+        return "supporting_pose";
+    case EOffgridAIVisualPhoneRole::Coarticulated:
+        return "coarticulated";
+    case EOffgridAIVisualPhoneRole::TimingOnly:
+    default:
+        return "timing_only";
     }
 }
 
@@ -3744,7 +3763,7 @@ static OraclePhoneDurationReport apply_gold_phone_durations_to_plan(
 static std::string gold_visible_visemes_csv(const std::vector<HandmadeLabel>& labels)
 {
     std::ostringstream out;
-    out << "start,end,pose,word,confidence,word_index,speech_region_index,text_sentence_index\n";
+    out << "start,end,pose,word,confidence,word_index,speech_region_index,text_sentence_index,source_phone_global_index,source_phone_word_index,source_phone_base\n";
     out << std::fixed << std::setprecision(6);
     for (const HandmadeLabel& label : labels)
     {
@@ -3755,7 +3774,10 @@ static std::string gold_visible_visemes_csv(const std::vector<HandmadeLabel>& la
             << label.confidence << ','
             << label.word_index << ','
             << label.speech_region_index << ','
-            << label.sentence_index << '\n';
+            << label.sentence_index << ','
+            << label.source_phone_global_index << ','
+            << label.source_phone_word_index << ','
+            << label.source_phone_base << '\n';
     }
     return out.str();
 }
@@ -3770,33 +3792,99 @@ static std::vector<HandmadeLabel> build_gold_visible_labels(
         return out;
     }
 
-    std::vector<const GoldPhoneTiming*> by_global_index(gold_phones.size(), nullptr);
-    for (const GoldPhoneTiming& phone : gold_phones)
+    std::vector<const GoldPhoneTiming*> gold_by_plan_phone(
+        static_cast<size_t>(plan.ExpectedPhones.Num()),
+        nullptr);
+
+    // Align each word's phone sequences independently. MFA pronunciations can
+    // contain an insertion or deletion (for example an onset /HH/ before
+    // "what"), so neither corpus-global nor word-local ordinal indices are a
+    // safe identity contract after the first difference.
+    for (int32 word_index = 0; word_index < plan.WordPhoneBeginIndices.Num(); ++word_index)
     {
-        if (phone.global_phone_index >= 0 && static_cast<size_t>(phone.global_phone_index) < by_global_index.size())
+        const int32 plan_begin = plan.WordPhoneBeginIndices[word_index];
+        const int32 plan_end = plan.WordPhoneEndIndices.IsValidIndex(word_index)
+            ? plan.WordPhoneEndIndices[word_index]
+            : plan_begin;
+        std::vector<const GoldPhoneTiming*> word_gold;
+        for (const GoldPhoneTiming& phone : gold_phones)
         {
-            by_global_index[static_cast<size_t>(phone.global_phone_index)] = &phone;
+            if (phone.word_index == word_index) word_gold.push_back(&phone);
+        }
+        std::stable_sort(
+            word_gold.begin(),
+            word_gold.end(),
+            [](const GoldPhoneTiming* a, const GoldPhoneTiming* b)
+            {
+                return a->word_phone_index < b->word_phone_index;
+            });
+
+        const int n = std::max(0, plan_end - plan_begin);
+        const int m = static_cast<int>(word_gold.size());
+        std::vector<int> dp(static_cast<size_t>((n + 1) * (m + 1)), 0);
+        std::vector<uint8_t> parent(static_cast<size_t>((n + 1) * (m + 1)), 0);
+        auto at = [&](int i, int j) -> int&
+        {
+            return dp[static_cast<size_t>(i) * static_cast<size_t>(m + 1) + static_cast<size_t>(j)];
+        };
+        auto parent_at = [&](int i, int j) -> uint8_t&
+        {
+            return parent[static_cast<size_t>(i) * static_cast<size_t>(m + 1) + static_cast<size_t>(j)];
+        };
+
+        for (int i = 1; i <= n; ++i)
+        {
+            for (int j = 1; j <= m; ++j)
+            {
+                const std::string expected_base = to_std(plan.ExpectedPhones[plan_begin + i - 1].BasePhone);
+                if (expected_base == word_gold[static_cast<size_t>(j - 1)]->phone_base)
+                {
+                    at(i, j) = at(i - 1, j - 1) + 1;
+                    parent_at(i, j) = 3;
+                }
+                else if (at(i - 1, j) >= at(i, j - 1))
+                {
+                    at(i, j) = at(i - 1, j);
+                    parent_at(i, j) = 1;
+                }
+                else
+                {
+                    at(i, j) = at(i, j - 1);
+                    parent_at(i, j) = 2;
+                }
+            }
+        }
+
+        int i = n;
+        int j = m;
+        while (i > 0 && j > 0)
+        {
+            const uint8_t step = parent_at(i, j);
+            if (step == 3)
+            {
+                gold_by_plan_phone[static_cast<size_t>(plan_begin + i - 1)] = word_gold[static_cast<size_t>(j - 1)];
+                --i;
+                --j;
+            }
+            else if (step == 1)
+            {
+                --i;
+            }
+            else
+            {
+                --j;
+            }
         }
     }
 
     for (const FOffgridAITextVisemeEvent& event : plan.Events)
     {
+        if (!event.bIsRenderable) continue;
         const GoldPhoneTiming* matched_phone = nullptr;
         if (event.SourcePhoneGlobalIndex >= 0
-            && static_cast<size_t>(event.SourcePhoneGlobalIndex) < by_global_index.size())
+            && static_cast<size_t>(event.SourcePhoneGlobalIndex) < gold_by_plan_phone.size())
         {
-            matched_phone = by_global_index[static_cast<size_t>(event.SourcePhoneGlobalIndex)];
-        }
-
-        if (!matched_phone)
-        {
-            for (const GoldPhoneTiming& phone : gold_phones)
-            {
-                if (phone.word_index != event.WordIndex) continue;
-                if (phone.word_phone_index != event.SourcePhoneIndex) continue;
-                matched_phone = &phone;
-                break;
-            }
+            matched_phone = gold_by_plan_phone[static_cast<size_t>(event.SourcePhoneGlobalIndex)];
         }
 
         if (!matched_phone)
@@ -3813,6 +3901,9 @@ static std::vector<HandmadeLabel> build_gold_visible_labels(
         label.word_index = matched_phone->word_index;
         label.speech_region_index = matched_phone->speech_region_index;
         label.sentence_index = matched_phone->sentence_index;
+        label.source_phone_global_index = event.SourcePhoneGlobalIndex;
+        label.source_phone_word_index = event.SourcePhoneIndex;
+        label.source_phone_base = to_std(event.SourcePhoneBase);
         out.push_back(label);
     }
 
@@ -3831,7 +3922,7 @@ static std::vector<HandmadeLabel> build_gold_visible_labels(
 static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
 {
     std::ostringstream out;
-    out << "index,pose,word,word_index,text_sentence_index,text_center_norm,strength,source_phone,source_phone_index,generator\n";
+    out << "index,pose,word,word_index,text_sentence_index,text_center_norm,strength,source_phone,source_phone_index,visual_role,renderable,generator\n";
     out << std::fixed << std::setprecision(6);
     for (int32 i = 0; i < plan.Events.Num(); ++i)
     {
@@ -3846,6 +3937,8 @@ static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
             << event.Strength << ','
             << to_std(event.SourcePhoneBase) << ','
             << event.SourcePhoneIndex << ','
+            << visual_phone_role_name(event.VisualRole) << ','
+            << (event.bIsRenderable ? 1 : 0) << ','
             << to_std(event.Generator) << '\n';
     }
     return out.str();
@@ -3927,7 +4020,7 @@ static std::string planned_boundaries_csv(const FOffgridAITextVisemePlan& plan, 
 static std::string expected_phones_csv(const FOffgridAITextVisemePlan& plan)
 {
     std::ostringstream out;
-    out << "phone_index,word_phone_index,phone,base_phone,word,word_index,speech_region_index,text_sentence_index,is_vowel,is_visible_viseme,first_visible_event_index,boundary_after_word,pause_class_after_word,pause_seconds_after_word,weight_seconds\n";
+    out << "phone_index,word_phone_index,phone,base_phone,word,word_index,speech_region_index,text_sentence_index,is_vowel,is_visible_viseme,visual_role,first_visible_event_index,pronunciation_variant_index,pronunciation_variant_count,boundary_after_word,pause_class_after_word,pause_seconds_after_word,weight_seconds\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& phone : plan.ExpectedPhones)
     {
@@ -3941,7 +4034,10 @@ static std::string expected_phones_csv(const FOffgridAITextVisemePlan& plan)
             << phone.SentenceIndex << ','
             << (phone.bIsVowel ? 1 : 0) << ','
             << (phone.bIsVisibleViseme ? 1 : 0) << ','
+            << visual_phone_role_name(phone.VisualRole) << ','
             << phone.FirstVisibleEventIndex << ','
+            << phone.PronunciationVariantIndex << ','
+            << phone.PronunciationVariantCount << ','
             << static_cast<int>(phone.BoundaryAfterWord) << ','
             << pause_class_name(
                 plan.WordBoundaryPauseClassAfter.IsValidIndex(phone.WordIndex)
@@ -4167,7 +4263,7 @@ static std::string soft_lull_candidates_csv(const TArray<FOffgridAIStreamingSoft
 static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "index,start,center,end,pose,word,word_index,speech_region_index,text_sentence_index,strength,reason,source_phone_index,source_phone_base,source_phone_class,text_center_norm,text_diagnostic_center,prior_start,prior_center,prior_end,lead_adjusted_center,playback_offset,total_paused_at_commit,min_live_lead_delay,inter_event_floor_delay,total_center_delay,commit_playback,commit_lead,mapped_to_observed_speech,used_initial_speech_anchor,used_resume_anchor,acoustic_anchor_kind,acoustic_anchor_seconds,acoustic_anchor_error_seconds,observed_pause_decay_seconds,observed_resume_onset_seconds,observed_resume_energy_anchor_seconds,boundary_word_index,boundary_mark,boundary_outcome\n";
+    out << "index,start,center,end,pose,word,word_index,speech_region_index,text_sentence_index,strength,renderable,reason,source_phone_index,source_phone_base,source_phone_class,text_center_norm,text_diagnostic_center,prior_start,prior_center,prior_end,lead_adjusted_center,playback_offset,total_paused_at_commit,min_live_lead_delay,inter_event_floor_delay,total_center_delay,commit_playback,commit_lead,mapped_to_observed_speech,used_initial_speech_anchor,used_resume_anchor,acoustic_anchor_kind,acoustic_anchor_seconds,acoustic_anchor_error_seconds,observed_pause_decay_seconds,observed_resume_onset_seconds,observed_resume_energy_anchor_seconds,boundary_word_index,boundary_mark,boundary_outcome\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.Events)
     {
@@ -4181,6 +4277,7 @@ static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
             << event.SpeechRegionIndex << ','
             << event.SentenceIndex << ','
             << event.Strength << ','
+            << (event.bIsRenderable ? 1 : 0) << ','
             << to_std(event.CommitReason) << ','
             << event.SourcePhoneIndex << ','
             << to_std(event.SourcePhoneBase) << ','
@@ -4233,6 +4330,7 @@ static std::string region_drop_diagnostics_csv(
     int32 max_region_index = speech_regions.Num() - 1;
     for (const auto& event : track.Events)
     {
+        if (!event.bIsRenderable) continue;
         max_region_index = std::max(max_region_index, event.SpeechRegionIndex);
     }
 
@@ -4253,6 +4351,7 @@ static std::string region_drop_diagnostics_csv(
 
         for (const auto& event : track.Events)
         {
+            if (!event.bIsRenderable) continue;
             if (event.SpeechRegionIndex != region_index) continue;
             ++committed_event_count;
             const double center = static_cast<double>(event.FinalRenderCenterSeconds);
@@ -4295,7 +4394,7 @@ static std::string region_drop_diagnostics_csv(
 static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "event_index,pose,word,word_index,source_phone_index,source_phone_base,source_phone_class,commit_reason,render_start,render_center,render_end,prior_start,prior_center,prior_end,lead_adjusted_center,playback_offset,total_paused_at_commit,min_live_lead_delay,inter_event_floor_delay,total_center_delay,commit_playback,commit_lead,mapped_to_observed_speech,used_initial_speech_anchor,used_resume_anchor,acoustic_anchor_kind,acoustic_anchor_seconds,acoustic_anchor_error_seconds,observed_pause_decay_seconds,observed_resume_onset_seconds,observed_resume_energy_anchor_seconds,boundary_word_index,boundary_mark,boundary_outcome\n";
+    out << "event_index,pose,word,word_index,source_phone_index,source_phone_base,source_phone_class,renderable,commit_reason,render_start,render_center,render_end,prior_start,prior_center,prior_end,lead_adjusted_center,playback_offset,total_paused_at_commit,min_live_lead_delay,inter_event_floor_delay,total_center_delay,commit_playback,commit_lead,mapped_to_observed_speech,used_initial_speech_anchor,used_resume_anchor,acoustic_anchor_kind,acoustic_anchor_seconds,acoustic_anchor_error_seconds,observed_pause_decay_seconds,observed_resume_onset_seconds,observed_resume_energy_anchor_seconds,boundary_word_index,boundary_mark,boundary_outcome\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.Events)
     {
@@ -4306,6 +4405,7 @@ static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& trac
             << event.SourcePhoneIndex << ','
             << to_std(event.SourcePhoneBase) << ','
             << to_std(event.SourcePhoneClass) << ','
+            << (event.bIsRenderable ? 1 : 0) << ','
             << to_std(event.CommitReason) << ','
             << event.RenderStartSeconds << ','
             << event.FinalRenderCenterSeconds << ','
@@ -4539,7 +4639,9 @@ static std::vector<GradeMatch> compute_monotonic_matches_subset(
             {
                 const HandmadeLabel& label = handmade[static_cast<size_t>(label_indices[static_cast<size_t>(i)])];
                 const auto& event = track.Events[event_indices[static_cast<size_t>(j)]];
-                if (to_std(event.PoseID) == label.pose)
+                const bool source_phone_matches = label.source_phone_global_index < 0
+                    || event.SourcePhoneIndex == label.source_phone_global_index;
+                if (source_phone_matches && to_std(event.PoseID) == label.pose)
                 {
                     const double center = (label.start + label.end) * 0.5;
                     const double err_ms = std::abs(static_cast<double>(event.FinalRenderCenterSeconds) - center) * 1000.0;
@@ -4608,8 +4710,11 @@ static std::vector<GradeMatch> compute_monotonic_matches(const FOffgridAIAligned
 {
     std::vector<int> label_indices(handmade.size());
     std::iota(label_indices.begin(), label_indices.end(), 0);
-    std::vector<int> event_indices(track.Events.Num());
-    std::iota(event_indices.begin(), event_indices.end(), 0);
+    std::vector<int> event_indices;
+    for (int32 i = 0; i < track.Events.Num(); ++i)
+    {
+        if (track.Events[i].bIsRenderable) event_indices.push_back(i);
+    }
     return compute_monotonic_matches_subset(track, handmade, label_indices, event_indices);
 }
 
@@ -4892,6 +4997,7 @@ static std::vector<TimeSpan> build_predicted_sentence_regions(const FOffgridAIAl
     std::vector<TimeSpan> spans;
     for (const auto& event : track.Events)
     {
+        if (!event.bIsRenderable) continue;
         if (event.SentenceIndex < 0) continue;
         const double start = static_cast<double>(event.RenderStartSeconds);
         const double end = static_cast<double>(event.RenderEndSeconds);
@@ -4915,6 +5021,7 @@ static std::vector<TimeSpan> build_predicted_clause_regions(const FOffgridAIAlig
     int synthetic_key = -1;
     for (const auto& event : track.Events)
     {
+        if (!event.bIsRenderable) continue;
         if (event.SpeechRegionIndex < 0) continue;
         const double start = static_cast<double>(event.RenderStartSeconds);
         const double end = static_cast<double>(event.RenderEndSeconds);
@@ -5007,7 +5114,7 @@ static WordOnsetAlignmentReport grade_word_onsets(
         }
 
         const auto event_it = std::find_if(track.Events.begin(), track.Events.end(), [&](const FOffgridAIAlignedVisemeEvent& event) {
-            return event.WordIndex == word_index;
+            return event.bIsRenderable && event.WordIndex == word_index;
         });
         if (event_it == track.Events.end())
         {
@@ -5068,7 +5175,7 @@ static IntraWordAlignmentReport grade_intra_word_alignment(
         std::vector<int> event_indices;
         for (int32 i = 0; i < track.Events.Num(); ++i)
         {
-            if (track.Events[i].WordIndex == word_index)
+            if (track.Events[i].bIsRenderable && track.Events[i].WordIndex == word_index)
             {
                 event_indices.push_back(i);
             }
@@ -5119,12 +5226,14 @@ static SpeechRegionContainmentReport grade_speech_region_containment(
 {
     SpeechRegionContainmentReport report;
     report.predicted_region_count = speech_regions.Num();
-    report.event_count = track.Events.Num();
+    report.event_count = 0;
 
     std::vector<double> early_leaks_ms;
     std::vector<double> late_leaks_ms;
     for (const auto& event : track.Events)
     {
+        if (!event.bIsRenderable) continue;
+        ++report.event_count;
         if (!speech_regions.IsValidIndex(event.SpeechRegionIndex))
         {
             ++report.events_with_invalid_region;
@@ -5170,7 +5279,11 @@ static GradeReport grade(
 {
     GradeReport report;
     report.reference_count = static_cast<int>(handmade.size());
-    report.committed_count = track.Events.Num();
+    report.committed_count = 0;
+    for (const auto& event : track.Events)
+    {
+        if (event.bIsRenderable) ++report.committed_count;
+    }
     report.dropped_visemes.dropped_count = 0;
     report.dropped_visemes.dropped_region_closed_count = 0;
     report.dropped_visemes.dropped_missing_region_count = 0;
@@ -5255,7 +5368,7 @@ static std::string word_onset_diagnostics_csv(
             return word.word_index == label.word_index;
         });
         const auto event_it = std::find_if(track.Events.begin(), track.Events.end(), [&](const FOffgridAIAlignedVisemeEvent& event) {
-            return event.WordIndex == label.word_index;
+            return event.bIsRenderable && event.WordIndex == label.word_index;
         });
 
         const double gold_start = gold_it != gold_words.end() ? gold_it->start : label.start;

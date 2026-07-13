@@ -2642,6 +2642,7 @@ static void FillEventFromText(
     Out.SentenceIndex = T.SentenceIndex;
     Out.SpeechRegionIndex = T.SpeechRegionIndex;
     Out.bIsStrongVisibleEvent = T.bIsStrongVisibleEvent;
+    Out.bIsRenderable = T.bIsRenderable;
 
     Out.TextCenterNorm = OrderNorm;
     Out.TextDiagnosticCenterSeconds = OrderNorm * FMath::Max(Plan.EstimatedDurationSeconds, 0.001f);

@@ -15,6 +15,7 @@ struct FOffgridAICommittedVisemeEvent
     int32 SentenceIndex = INDEX_NONE;
     // Strong visible event metadata for diagnostics/render emphasis only. It is not a scheduling landmark.
     bool bIsStrongVisibleEvent = false;
+    bool bIsRenderable = true;
 
     float TextCenterNorm = 0.0f;
     float TextDiagnosticCenterSeconds = 0.0f;

@@ -21,6 +21,17 @@ enum class EOffgridAIBoundaryPauseClass : uint8
     HardBreakPause,
 };
 
+// A CMU phone always remains in ExpectedPhones for MFA correspondence, timing,
+// syllable structure, and acoustic evidence. This role only controls whether
+// the phone owns an independent visible articulation target.
+enum class EOffgridAIVisualPhoneRole : uint8
+{
+    TimingOnly,
+    Coarticulated,
+    SupportingPose,
+    PrimaryPose,
+};
+
 struct FOffgridAITextVisemeEvent
 {
     float StartNorm = 0.0f;
@@ -46,6 +57,10 @@ struct FOffgridAITextVisemeEvent
     FString SourcePhone;
     FString SourcePhoneBase;
     float PhoneLocalNorm = 0.5f;
+    EOffgridAIVisualPhoneRole VisualRole = EOffgridAIVisualPhoneRole::PrimaryPose;
+    // False for legacy scheduler waypoints that preserve phone-chain timing but
+    // must never reach facial playback or visual grading.
+    bool bIsRenderable = true;
     bool bIsStrongVisibleEvent = false;
     FName Generator = NAME_None;
 };
@@ -63,7 +78,10 @@ struct FOffgridAIExpectedPhone
     int32 SentenceIndex = 0;
     bool bIsVowel = false;
     bool bIsVisibleViseme = false;
+    EOffgridAIVisualPhoneRole VisualRole = EOffgridAIVisualPhoneRole::TimingOnly;
     int32 FirstVisibleEventIndex = INDEX_NONE;
+    int32 PronunciationVariantIndex = 0;
+    int32 PronunciationVariantCount = 1;
     TCHAR BoundaryAfterWord = TCHAR(0);
     float WeightSeconds = 0.075f;
 };

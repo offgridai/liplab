@@ -39,15 +39,34 @@ def main() -> int:
             f"median_ms={summary['list_word_start_median_ms']:.1f}"
         )
     print(
-        f"Phonemes: coverage={summary['phoneme_coverage_rate']:.3f} "
-        f"center_ms={summary['phoneme_center_ms']:.1f} "
-        f"start_ms={summary['phoneme_start_ms']:.1f} "
-        f"end_ms={summary['phoneme_end_ms']:.1f}"
+        f"Visible timing: coverage={summary['visible_articulation_coverage_rate']:.3f} "
+        f"center_ms={summary['visible_articulation_center_ms']:.1f} "
+        f"start_ms={summary['visible_articulation_start_ms']:.1f} "
+        f"end_ms={summary['visible_articulation_end_ms']:.1f}"
     )
     print(
         f"Intra-word: coverage={summary['intra_word_coverage_rate']:.3f} "
         f"center_ms={summary['intra_word_center_ms']:.1f}"
     )
+    if summary.get("text_phone_plan_count", 0):
+        roles = summary.get("visual_role_counts", {})
+        print(
+            f"Visual projection: phones={summary['text_phone_plan_count']} "
+            f"events={summary['visible_articulation_count']} "
+            f"rate={summary['visible_articulation_rate']:.3f} "
+            f"primary={roles.get('primary_pose', 0)} "
+            f"supporting={roles.get('supporting_pose', 0)} "
+            f"coarticulated={roles.get('coarticulated', 0)} "
+            f"timing_only={roles.get('timing_only', 0)} "
+            f"gold_correspondence={summary.get('visual_gold_correspondence_rate', 0.0):.3f} "
+            f"unmatched={summary.get('unmatched_articulation_event_count', 0)}"
+        )
+    if summary.get("pronunciation_word_count", 0):
+        print(
+            f"Pronunciations: words={summary['pronunciation_word_count']} "
+            f"alternates_available={summary['pronunciation_alternate_available_word_count']} "
+            f"alternates_selected={summary['pronunciation_alternate_selected_word_count']}"
+        )
     print(
         f"Playback health: renderable={summary['renderable_event_rate']:.3f} "
         f"speech_coverage={summary['speech_animation_coverage_rate']:.3f} "

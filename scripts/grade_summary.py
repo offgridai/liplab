@@ -50,6 +50,11 @@ def _read_csv_rows(path: pathlib.Path) -> list[dict[str, str]]:
         return []
 
 
+def _renderable_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    # Legacy logs have no renderable column and all of their rows are visible.
+    return [row for row in rows if row.get("renderable", "1") != "0"]
+
+
 def _merge_intervals(intervals: list[tuple[float, float]]) -> list[tuple[float, float]]:
     merged: list[list[float]] = []
     for start, end in sorted(intervals):
@@ -578,16 +583,57 @@ def _compute_text_plan_grade(case_dir: pathlib.Path, gold_case_dir: pathlib.Path
         for pred, ref in zip(pred_words, ref_words)
         if _normalize_word(pred.get("word", "")) == _normalize_word(ref.get("word", ""))
     )
-    phone_exact_matches = sum(
-        1
-        for pred, ref in zip(pred_phones, ref_phones)
-        if (pred.get("phone", "") == ref.get("phone", ""))
-    )
-    phone_base_matches = sum(
-        1
-        for pred, ref in zip(pred_phones, ref_phones)
-        if (pred.get("base_phone", "") == "".join(ch for ch in (ref.get("phone", "") or "") if not ch.isdigit()))
-    )
+    def monotonic_phone_pairs(exact: bool) -> list[tuple[int, int]]:
+        pairs: list[tuple[int, int]] = []
+        word_indices = sorted(
+            {_safe_int(row, "word_index") for row in pred_phones}
+            | {_safe_int(row, "word_index") for row in ref_phones}
+        )
+        for word_index in word_indices:
+            pred_indices = [
+                index for index, row in enumerate(pred_phones)
+                if _safe_int(row, "word_index") == word_index
+            ]
+            ref_indices = [
+                index for index, row in enumerate(ref_phones)
+                if _safe_int(row, "word_index") == word_index
+            ]
+            n = len(pred_indices)
+            m = len(ref_indices)
+            dp = [[0] * (m + 1) for _ in range(n + 1)]
+            for i in range(1, n + 1):
+                pred = pred_phones[pred_indices[i - 1]]
+                pred_value = pred.get("phone" if exact else "base_phone", "")
+                for j in range(1, m + 1):
+                    ref_phone = ref_phones[ref_indices[j - 1]].get("phone", "") or ""
+                    ref_value = ref_phone if exact else "".join(ch for ch in ref_phone if not ch.isdigit())
+                    if pred_value == ref_value:
+                        dp[i][j] = dp[i - 1][j - 1] + 1
+                    else:
+                        dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+            i = n
+            j = m
+            word_pairs: list[tuple[int, int]] = []
+            while i > 0 and j > 0:
+                pred = pred_phones[pred_indices[i - 1]]
+                pred_value = pred.get("phone" if exact else "base_phone", "")
+                ref_phone = ref_phones[ref_indices[j - 1]].get("phone", "") or ""
+                ref_value = ref_phone if exact else "".join(ch for ch in ref_phone if not ch.isdigit())
+                if pred_value == ref_value and dp[i][j] == dp[i - 1][j - 1] + 1:
+                    word_pairs.append((pred_indices[i - 1], ref_indices[j - 1]))
+                    i -= 1
+                    j -= 1
+                elif dp[i - 1][j] >= dp[i][j - 1]:
+                    i -= 1
+                else:
+                    j -= 1
+            pairs.extend(reversed(word_pairs))
+        return pairs
+
+    exact_phone_pairs = monotonic_phone_pairs(exact=True)
+    base_phone_pairs = monotonic_phone_pairs(exact=False)
+    phone_exact_matches = len(exact_phone_pairs)
+    phone_base_matches = len(base_phone_pairs)
 
     boundary_mark_matches = 0
     pause_class_matches = 0
@@ -610,8 +656,11 @@ def _compute_text_plan_grade(case_dir: pathlib.Path, gold_case_dir: pathlib.Path
         matched_break_count += int(pred_break and gold_break)
 
     phone_prior_center_errors_ms = [
-        abs(pred_center - 0.5 * (_safe_float(ref, "start") + _safe_float(ref, "end"))) * 1000.0
-        for pred_center, ref in zip(phone_prior_centers, ref_phones)
+        abs(phone_prior_centers[pred_index] - 0.5 * (
+            _safe_float(ref_phones[ref_index], "start")
+            + _safe_float(ref_phones[ref_index], "end")
+        )) * 1000.0
+        for pred_index, ref_index in base_phone_pairs
     ]
     word_prior_start_errors_ms = [
         abs(word_prior_starts.get(_safe_int(ref, "word_index"), 0.0) - _safe_float(ref, "start")) * 1000.0
@@ -704,8 +753,8 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
         if not text_plan_grade:
             text_plan_grade = _read_json(case_dir / "text_plan_grade.json")
 
-        commit_rows = _read_csv_rows(case_dir / "commit_decisions.csv")
-        committed_rows = _read_csv_rows(case_dir / "committed.csv")
+        commit_rows = _renderable_rows(_read_csv_rows(case_dir / "commit_decisions.csv"))
+        committed_rows = _renderable_rows(_read_csv_rows(case_dir / "committed.csv"))
         speech_rows = _read_csv_rows(case_dir / "speech_regions.csv")
         boundary_rows = _read_csv_rows(case_dir / "runtime_boundary_state.csv")
         strict_rows = _read_csv_rows(case_dir / "strict_punctuation_alignment.csv")
@@ -738,6 +787,9 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "gap_rows": _read_csv_rows(case_dir / "gap_candidates.csv"),
             "word_onset_rows": _read_csv_rows(case_dir / "word_onset_diagnostics.csv"),
             "planned_word_rows": _read_csv_rows(case_dir / "planned_words.csv"),
+            "expected_phone_rows": _read_csv_rows(case_dir / "expected_phones.csv"),
+            "planned_event_rows": _read_csv_rows(case_dir / "planned.csv"),
+            "gold_visible_rows": _read_csv_rows(case_dir / "gold_visible_visemes.csv"),
         }
         rows.append(row)
         if grade.get("gold_available", True):
@@ -776,6 +828,68 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
     phoneme_matches = sum(int(row["grade"].get("matched_count", 0)) for row in bulk)
     intra_word_refs = sum(int(_nested(row["grade"], "intra_word_alignment", "reference_count")) for row in bulk)
     intra_word_matches = sum(int(_nested(row["grade"], "intra_word_alignment", "matched_count")) for row in bulk)
+
+    visual_role_counts: dict[str, int] = {}
+    source_phone_counts: dict[str, dict[str, int]] = {}
+    pronunciation_words: set[tuple[str, int]] = set()
+    pronunciation_alternate_words: set[tuple[str, int]] = set()
+    pronunciation_selected_words: set[tuple[str, int]] = set()
+    pronunciation_selected_by_word: dict[str, int] = {}
+    for row in rows:
+        for phone in row.get("expected_phone_rows", []):
+            role = phone.get("visual_role", "legacy_unspecified")
+            base = phone.get("base_phone", "")
+            visual_role_counts[role] = visual_role_counts.get(role, 0) + 1
+            stats = source_phone_counts.setdefault(base, {"phone_count": 0, "visible_count": 0})
+            stats["phone_count"] += 1
+            stats["visible_count"] += int(phone.get("is_visible_viseme", "0") == "1")
+            word_key = (row["case"], _safe_int(phone, "word_index"))
+            if word_key not in pronunciation_words:
+                pronunciation_words.add(word_key)
+                variant_count = _safe_int(phone, "pronunciation_variant_count", 1)
+                variant_index = _safe_int(phone, "pronunciation_variant_index", 0)
+                if variant_count > 1:
+                    pronunciation_alternate_words.add(word_key)
+                if variant_index > 0:
+                    pronunciation_selected_words.add(word_key)
+                    word = _normalize_word(phone.get("word", ""))
+                    pronunciation_selected_by_word[word] = pronunciation_selected_by_word.get(word, 0) + 1
+    total_phone_plan_count = sum(visual_role_counts.values())
+    total_visible_plan_count = sum(
+        count for role, count in visual_role_counts.items()
+        if role in {"primary_pose", "supporting_pose", "legacy_unspecified"}
+    )
+    total_renderable_event_count = sum(
+        1
+        for row in graded
+        for event in row.get("planned_event_rows", [])
+        if event.get("renderable", "1") == "1"
+    )
+    total_gold_corresponded_event_count = sum(
+        len(row.get("gold_visible_rows", []))
+        for row in graded
+    )
+    correspondence_by_phone: dict[str, dict[str, float]] = {}
+    for row in graded:
+        for event in row.get("planned_event_rows", []):
+            if event.get("renderable", "1") != "1":
+                continue
+            base = event.get("source_phone", "")
+            stats = correspondence_by_phone.setdefault(
+                base, {"planned_visible_count": 0, "gold_corresponded_visible_count": 0}
+            )
+            stats["planned_visible_count"] += 1
+        for label in row.get("gold_visible_rows", []):
+            base = label.get("source_phone_base", "")
+            stats = correspondence_by_phone.setdefault(
+                base, {"planned_visible_count": 0, "gold_corresponded_visible_count": 0}
+            )
+            stats["gold_corresponded_visible_count"] += 1
+    for stats in correspondence_by_phone.values():
+        stats["correspondence_rate"] = (
+            stats["gold_corresponded_visible_count"]
+            / max(stats["planned_visible_count"], 1)
+        )
 
     list_word_start_errors: list[float] = []
     list_word_count = 0
@@ -974,8 +1088,33 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "phoneme_center_ms": _mean(phoneme_center_values),
         "phoneme_start_ms": _mean(phoneme_start_values),
         "phoneme_end_ms": _mean(phoneme_end_values),
+        # These are projected visible-event metrics, not complete-phone
+        # recognition metrics. Keep the old keys temporarily for baseline
+        # compatibility while exposing the accurate names to new consumers.
+        "visible_articulation_coverage_rate": phoneme_matches / max(phoneme_refs, 1),
+        "visible_articulation_center_ms": _mean(phoneme_center_values),
+        "visible_articulation_start_ms": _mean(phoneme_start_values),
+        "visible_articulation_end_ms": _mean(phoneme_end_values),
         "intra_word_coverage_rate": intra_word_matches / max(intra_word_refs, 1),
         "intra_word_center_ms": _mean(intra_word_center_values),
+        "text_phone_plan_count": total_phone_plan_count,
+        "visible_articulation_count": total_visible_plan_count,
+        "visible_articulation_rate": total_visible_plan_count / max(total_phone_plan_count, 1),
+        "renderable_articulation_event_count": total_renderable_event_count,
+        "gold_corresponded_articulation_event_count": total_gold_corresponded_event_count,
+        "unmatched_articulation_event_count": max(
+            0, total_renderable_event_count - total_gold_corresponded_event_count
+        ),
+        "visual_gold_correspondence_rate": (
+            total_gold_corresponded_event_count / max(total_renderable_event_count, 1)
+        ),
+        "visual_gold_correspondence_by_phone": correspondence_by_phone,
+        "visual_role_counts": visual_role_counts,
+        "visual_projection_by_phone": source_phone_counts,
+        "pronunciation_word_count": len(pronunciation_words),
+        "pronunciation_alternate_available_word_count": len(pronunciation_alternate_words),
+        "pronunciation_alternate_selected_word_count": len(pronunciation_selected_words),
+        "pronunciation_alternate_selected_by_word": pronunciation_selected_by_word,
         "region_overrun_ms": _mean(underrun_tail_values),
         "region_early_leak_ms": _mean(overrun_lead_values),
         "direct_aligner_available": False,
