@@ -54,7 +54,6 @@ def export_visemes(case_dir, payload: dict) -> None:
         "confidence",
         "word_index",
         "speech_region_index",
-        "phrase_index",
         "sentence_index",
         "source_phone",
         "source_phone_index",
@@ -74,8 +73,7 @@ def export_visemes(case_dir, payload: dict) -> None:
                     row.get("word", ""),
                     "1.0",
                     int(row.get("word_index", -1)),
-                    int(row.get("speech_region_index", row.get("phrase_index", -1))),
-                    int(row.get("phrase_index", -1)),
+                    int(row.get("speech_region_index", -1)),
                     int(row.get("sentence_index", -1)),
                     phone,
                     int(row.get("source_phone_index", -1)),
@@ -96,7 +94,6 @@ def export_phones(case_dir, payload: dict) -> None:
         "word_index",
         "speech_region_index",
         "phone_index",
-        "phrase_index",
         "sentence_index",
         "alignment_reason",
     ]
@@ -113,9 +110,8 @@ def export_phones(case_dir, payload: dict) -> None:
                     row.get("word", ""),
                     "1.0",
                     int(row.get("word_index", -1)),
-                    int(row.get("speech_region_index", row.get("phrase_index", -1))),
+                    int(row.get("speech_region_index", -1)),
                     int(row.get("source_phone_index", -1)),
-                    int(row.get("phrase_index", -1)),
                     int(row.get("sentence_index", -1)),
                     row.get("alignment_reason", "mfa_textgrid_phone"),
                 ]
@@ -126,7 +122,7 @@ def export_words(case_dir, payload: dict) -> None:
     dest = case_dir / "words.csv"
     with dest.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["word_index", "word", "start", "end", "speech_region_index", "phrase_index", "sentence_index"])
+        writer.writerow(["word_index", "word", "start", "end", "speech_region_index", "sentence_index"])
         for word in payload.get("gold_words", []):
             writer.writerow(
                 [
@@ -134,8 +130,7 @@ def export_words(case_dir, payload: dict) -> None:
                     word.get("word", ""),
                     f"{float(word.get('start', 0.0)):.6f}",
                     f"{float(word.get('end', 0.0)):.6f}",
-                    int(word.get("speech_region_index", word.get("phrase_index", -1))),
-                    int(word.get("phrase_index", -1)),
+                    int(word.get("speech_region_index", -1)),
                     int(word.get("sentence_index", -1)),
                 ]
             )

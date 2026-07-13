@@ -124,7 +124,6 @@ def word_metadata_by_index(planned_rows: list[dict[str, str]]) -> list[dict[str,
         metadata[word_index] = {
             "word_index": word_index,
             "word": row.get("word", ""),
-            "phrase_index": parse_int(row.get("phrase_index"), -1),
             "sentence_index": parse_int(row.get("sentence_index"), -1),
         }
     return [metadata[key] for key in sorted(metadata)]
@@ -235,7 +234,6 @@ def build_gold_words(
                 "mfa_word": mfa_word,
                 "start": float(interval["start"]),
                 "end": float(interval["end"]),
-                "phrase_index": parse_int(extra.get("phrase_index"), -1),
                 "sentence_index": parse_int(extra.get("sentence_index"), -1),
                 "source": "mfa_word_interval",
                 "approval": {
@@ -519,7 +517,6 @@ def build_visemes(
             "end": end,
             "word": row.get("word", ""),
             "word_index": word_index,
-            "phrase_index": parse_int(row.get("phrase_index"), -1),
             "sentence_index": parse_int(row.get("sentence_index"), -1),
             "strength": parse_float(row.get("strength")),
             "commit_reason": "mfa_phone_alignment" if not used_fallback else "offline_committed_fallback",
@@ -605,7 +602,6 @@ def build_mfa_phone_events(
                     "word": word.get("word", phone.get("word", "")),
                     "mfa_word": word.get("mfa_word", phone.get("word", "")),
                     "word_index": word_index,
-                    "phrase_index": parse_int(word.get("phrase_index"), -1),
                     "sentence_index": parse_int(word.get("sentence_index"), -1),
                     "strength": 1.0,
                     "commit_reason": "mfa_phone_interval",
@@ -635,7 +631,6 @@ def build_planned_visemes(planned_rows: list[dict[str, str]]) -> list[dict[str, 
                 "pose": row.get("pose", ""),
                 "word": row.get("word", ""),
                 "word_index": parse_int(row.get("word_index"), -1),
-                "phrase_index": parse_int(row.get("phrase_index"), -1),
                 "sentence_index": parse_int(row.get("sentence_index"), -1),
                 "text_center_norm": parse_float(row.get("text_center_norm")),
                 "strength": parse_float(row.get("strength")),
@@ -1030,9 +1025,6 @@ def assign_speech_region_indices(
         end = float(phone.get("end", start))
         region_index = _best_region_index_for_span(start, end, regions)
         phone["speech_region_index"] = region_index
-        # Keep phrase_index backward-compatible for older review/grading paths that
-        # used phrase_index as the only visible grouping column.
-        phone["phrase_index"] = region_index
 
 
 def annotate_pause_boundaries_with_regions(
@@ -1062,7 +1054,7 @@ def build_word_heads(visemes: list[dict[str, object]]) -> list[dict[str, object]
                 "start": float(viseme.get("start", 0.0)),
                 "end": float(viseme.get("end", 0.0)),
                 "pose": viseme.get("pose", ""),
-                "phrase_index": parse_int(viseme.get("phrase_index"), -1),
+                "speech_region_index": parse_int(viseme.get("speech_region_index"), -1),
                 "sentence_index": parse_int(viseme.get("sentence_index"), -1),
                 "source_phone": viseme.get("source_phone", ""),
                 "source_phone_index": parse_int(viseme.get("source_phone_index"), -1),

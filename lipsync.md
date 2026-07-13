@@ -21,6 +21,7 @@ Transcript
   -> Planned phone + viseme chain
   -> RuntimeSession
        -> StreamingSpeechDetector
+       -> AcousticEvidence
        -> RuntimeAdapter
   -> Committed viseme track
   -> VisemePerformer
@@ -36,19 +37,25 @@ The planner converts transcript text into:
 - a dense expected phone chain
 - ordered visible viseme events
 - per-word boundary punctuation metadata
-- per-word speech-region ownership metadata
+- syllable membership and strong-phone landmarks
+- punctuation fences that may require pause/resume resolution
 
 The planner provides a duration prior only. It does not own final timestamps.
 
 ### StreamingSpeechDetector
 
-The detector consumes streamed PCM and produces:
+The detector consumes streamed PCM and produces causal evidence:
 
 - observed speech-region opens
 - observed speech-region closes
-- audio feature frames used for occupancy and punctuation-hold decisions
+- quiet/resume evidence
+- syllabic envelopes and feature frames
 
-The detector is the timing authority for coarse speech activity.
+The detector does not choose phone or viseme identity.
+
+### AcousticEvidence
+
+The acoustic evidence classifier maps streamed feature frames to broad articulatory probabilities used by the runtime cursor. It is deliberately small and deterministic. It is not a forced aligner, beam search, or alternate transcript.
 
 ### RuntimeAdapter
 
@@ -56,13 +63,12 @@ The adapter maps planned phones onto observed active speech time and commits vis
 
 Current behavior:
 
-1. Wait for the first observed speech-region open.
-2. Start a monotonic active-speech playhead from that observed start.
-3. Advance through the planned phone chain using duration priors.
-4. Before selected punctuation boundaries, open a bounded hold.
-5. During the hold, watch the live audio frames for a real lull and resumed speech.
-6. If a resumed speech cue is observed, re-anchor the paused clock to that observed resume point.
-7. If no useful cue arrives before the deadline, release the hold and continue monotonically.
+1. Wait for observed speech onset and anchor the first uncommitted event to it.
+2. Advance one transcript cursor through the planned chain using relative duration priors.
+3. At punctuation fences, require matching quiet/resume evidence before crossing the boundary.
+4. Within active speech, match syllable envelopes and strong-phone evidence as soft timing anchors.
+5. Rebase the uncommitted suffix when an anchor is accepted.
+6. Commit events monotonically once their placement is no longer revisable.
 
 The adapter never rewrites committed events.
 
@@ -74,21 +80,9 @@ It does not schedule events.
 
 ## Current Pause / Resume Model
 
-Pause and resume are handled only in the runtime adapter.
+Pause and resume are resolved by the same transcript cursor that handles syllable timing. Punctuation supplies a strict fence; streamed audio determines whether a lull occurred and where speech resumed. A fence does not silently time out and let downstream visemes cross unresolved silence.
 
-There is one active mechanism:
-
-- punctuation may open a bounded audio-aware hold
-- the hold watches occupancy / low-energy evidence
-- if speech resumes after a real lull, the playhead is re-anchored to that resume instant
-- otherwise the hold expires and playback continues
-
-Current hold classes:
-
-- `SoftListPause`: used for list-like commas, up to `450ms`
-- `HardBreakPause`: used for hard punctuation and clause-break commas, up to `1200ms`
-
-There is no separate older state machine that waits for a text-owned future region. Playback is driven by the observed stream plus the bounded hold.
+Speech occupancy remains the coarse safety boundary. Punctuation evidence explains where a transcript boundary maps into that observed stream; it does not pre-create an independent text-owned speech-region schedule.
 
 ## Timing Prior
 
@@ -97,7 +91,7 @@ The planner supplies relative durations, not absolute timestamps.
 Current prior details:
 
 - phone weights come from the text plan
-- runtime scales those weights into active-speech seconds
+- runtime advances through those relative durations and may rebase the uncommitted suffix from accepted audio anchors
 - adjacent words get a small `20ms` spacer in prior space
 - committed centers are lead-adjusted per pose so strongly visible mouth shapes can land slightly ahead of their nominal center
 
@@ -108,7 +102,7 @@ Current prior details:
 - committed playback is monotonic
 - committed events are append-only
 - planned visible visemes are not permanently suppressed as a timing shortcut
-- no overlapping fallback scheduler owns the same decision
+- one monotonic cursor owns punctuation, syllable, and strong-phone timing decisions
 
 ## Harness Relationship
 

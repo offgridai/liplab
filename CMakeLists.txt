@@ -15,7 +15,7 @@ add_library(liplab_core
     offgrid_dropin/Private/Lipsync/OffgridAITextVisemePlanner.cpp
     offgrid_dropin/Private/Lipsync/OffgridAIVisemePerformer.cpp
     offgrid_dropin/Private/Lipsync/OffgridAILipsyncRuntimeAdapter.cpp
-    offgrid_dropin/Private/Lipsync/OffgridAIOnlinePhoneAligner.cpp
+    offgrid_dropin/Private/Lipsync/OffgridAIAcousticEvidence.cpp
 )
 
 target_include_directories(liplab_core

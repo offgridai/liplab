@@ -1,5 +1,5 @@
 #include "Lipsync/OffgridAILipsyncRuntimeAdapter.h"
-#include "Lipsync/OffgridAIOnlinePhoneAligner.h"
+#include "Lipsync/OffgridAIAcousticEvidence.h"
 #include "Lipsync/OffgridAIVisemePerformer.h"
 
 #include <cstring>
@@ -781,11 +781,7 @@ static std::vector<GoldPhoneTiming> read_gold_phones_csv(const fs::path& path)
     {
         word_phone_index_col = has_header ? header_index(header, "word_phone_index") : 7;
     }
-    int speech_region_index_col = has_header ? header_index(header, "speech_region_index") : 8;
-    if (speech_region_index_col < 0 && has_header)
-    {
-        speech_region_index_col = header_index(header, "phrase_index");
-    }
+    const int speech_region_index_col = has_header ? header_index(header, "speech_region_index") : 8;
     int sentence_index_col = has_header ? header_index(header, "text_sentence_index") : 9;
     if (sentence_index_col < 0 && has_header)
     {
@@ -844,12 +840,8 @@ static std::vector<GoldWordTiming> read_gold_words_csv(const fs::path& path)
     const int word_col = has_header ? header_index(header, "word") : 1;
     const int start_col = has_header ? header_index(header, "start") : 2;
     const int end_col = has_header ? header_index(header, "end") : 3;
-    int speech_region_index_col = has_header ? header_index(header, "speech_region_index") : 4;
+    const int speech_region_index_col = has_header ? header_index(header, "speech_region_index") : 4;
     int sentence_index_col = has_header ? header_index(header, "text_sentence_index") : 5;
-    if (speech_region_index_col < 0 && has_header)
-    {
-        speech_region_index_col = header_index(header, "phrase_index");
-    }
     if (sentence_index_col < 0 && has_header)
     {
         sentence_index_col = header_index(header, "sentence_index");
@@ -1137,7 +1129,7 @@ static double landmark_score_for_frame(
     {
         return comma_lull_score_for_frame(frame);
     }
-    return landmark_score_for_type(type, FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(frame));
+    return landmark_score_for_type(type, FOffgridAIAcousticEvidence::BuildArticulatoryProbabilityField(frame));
 }
 
 static double conditioned_landmark_template_score(
@@ -1205,7 +1197,7 @@ static double conditioned_landmark_template_score(
 
     const auto& center_frame = frames[index];
     const FOffgridAIArticulatoryProbabilityField center_field =
-        FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(center_frame);
+        FOffgridAIAcousticEvidence::BuildArticulatoryProbabilityField(center_frame);
     const double center_score = frame_score(index);
 
     if (type == "mbp")
@@ -1319,7 +1311,7 @@ static double conditioned_landmark_target_score(
 
     const auto& frame = frames[index];
     const FOffgridAIArticulatoryProbabilityField field =
-        FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(frame);
+        FOffgridAIAcousticEvidence::BuildArticulatoryProbabilityField(frame);
     const std::string phone_base = target.phone_base;
     auto local_mean = [&](int32 lo, int32 hi, const auto& getter) -> double {
         double sum = 0.0;
@@ -1965,7 +1957,7 @@ static std::vector<ProsodicPeakObservation> detect_prosodic_peak_observations(
         const double prominence = std::max(medium_prominence, slow_prominence * 1.05);
         const bool local_peak = prominence > 0.0;
         const FOffgridAIArticulatoryProbabilityField peak_field =
-            FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(frames[i]);
+            FOffgridAIAcousticEvidence::BuildArticulatoryProbabilityField(frames[i]);
         const double vowel_support = clamp01(
             static_cast<double>(peak_field.Vowel) * 0.60 +
             static_cast<double>(frames[i].Periodicity) * 0.40);
@@ -2053,7 +2045,7 @@ static std::vector<ProsodicPeakObservation> detect_prosodic_peak_observations(
                 continue;
             }
             const FOffgridAIArticulatoryProbabilityField field =
-                FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(frames[peak.frame_index]);
+                FOffgridAIAcousticEvidence::BuildArticulatoryProbabilityField(frames[peak.frame_index]);
             const double family_score = target.vowel_family == "round"
                 ? conditioned_landmark_template_score("round", frames, peak.frame_index)
                 : clamp01(static_cast<double>(field.Vowel) * 0.65 +
@@ -2509,7 +2501,7 @@ static std::string audio_landmark_frames_csv(const TArray<FOffgridAIStreamingAud
     for (int32 i = 0; i < frames.Num(); ++i)
     {
         const auto& frame = frames[i];
-        const FOffgridAIArticulatoryProbabilityField field = FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(frame);
+        const FOffgridAIArticulatoryProbabilityField field = FOffgridAIAcousticEvidence::BuildArticulatoryProbabilityField(frame);
         const double mbp = landmark_score_for_type("mbp", field);
         const double fv = landmark_score_for_type("fv", field);
         const double w = landmark_score_for_type("w", field);
@@ -3296,7 +3288,7 @@ static LandmarkAuditReport grade_landmark_audit(
                 ? comma_lull_score_for_frame(frame)
                 : landmark_score_for_type(
                     target.type,
-                    FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(frame));
+                    FOffgridAIAcousticEvidence::BuildArticulatoryProbabilityField(frame));
             best_score = std::max(best_score, score);
         }
         target_window_scores[target.type].push_back(best_score);
@@ -4054,7 +4046,7 @@ static std::string phone_class_frames_csv(const TArray<FOffgridAIStreamingAudioF
         for (int32 ClassIndex = 0; ClassIndex <= static_cast<int32>(EOffgridAIPhoneClass::Unknown); ++ClassIndex)
         {
             const EOffgridAIPhoneClass PhoneClass = static_cast<EOffgridAIPhoneClass>(ClassIndex);
-            const float Score = FOffgridAIOnlinePhoneAligner::ScoreForClass(Scores, PhoneClass);
+            const float Score = FOffgridAIAcousticEvidence::ScoreForClass(Scores, PhoneClass);
             if (ClassIndex == 0 || Score > Best.Score)
             {
                 Best.Class = PhoneClass;
@@ -4063,13 +4055,13 @@ static std::string phone_class_frames_csv(const TArray<FOffgridAIStreamingAudioF
         }
 
         OutScore = Best.Score;
-        return to_std(FOffgridAIOnlinePhoneAligner::PhoneClassToString(Best.Class));
+        return to_std(FOffgridAIAcousticEvidence::PhoneClassToString(Best.Class));
     };
 
     for (int32 i = 0; i < frames.Num(); ++i)
     {
         const auto& f = frames[i];
-        const FOffgridAIArticulatoryProbabilityField field = FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(f);
+        const FOffgridAIArticulatoryProbabilityField field = FOffgridAIAcousticEvidence::BuildArticulatoryProbabilityField(f);
         float top_score = 0.0f;
         const std::string top_class = top_class_name(field.PhoneScores, top_score);
 
