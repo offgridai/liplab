@@ -1,13 +1,12 @@
 #include "Lipsync/OffgridAILipsyncRuntimeAdapter.h"
+#include "Lipsync/OffgridAIOnlinePhoneAligner.h"
 
 namespace
 {
 static const FName TextPriorMonotonicCommitReason(TEXT("text_prior_monotonic_commit"));
 
-// Advisory landmark extraction/logging now lives in LineCoach's consolidated
-// debug landmark system. The runtime adapter must not use landmarks/prosody
-// to move the text playhead; start/resume acoustic anchors are the only audio
-// timing authority.
+// Phone identity remains transcript-owned. Acoustic evidence may only choose
+// timing for the next monotonic transcript syllable candidates.
 static constexpr float MaxLiveCommitLeadSec = 0.320f;
 static constexpr float MaxLiveCommitBehindSec = 0.180f;
 
@@ -141,6 +140,21 @@ static FString BoundaryPauseClassToString(EOffgridAIBoundaryPauseClass PauseClas
 static bool IsSoftListBoundaryClass(TCHAR C, EOffgridAIBoundaryPauseClass PauseClass)
 {
     return C == TEXT(',') && PauseClass == EOffgridAIBoundaryPauseClass::SoftListPause;
+}
+
+static bool IsOxfordConjunctionBoundary(
+    const FOffgridAITextVisemePlan* Plan,
+    int32 BoundaryWordIndex)
+{
+    if (!Plan || !Plan->WordPhoneBeginIndices.IsValidIndex(BoundaryWordIndex + 1))
+    {
+        return false;
+    }
+    const int32 NextPhoneIndex = Plan->WordPhoneBeginIndices[BoundaryWordIndex + 1];
+    if (!Plan->ExpectedPhones.IsValidIndex(NextPhoneIndex)) return false;
+    const FString& NextWord = Plan->ExpectedPhones[NextPhoneIndex].SourceWord;
+    // Planner source words are normalized to lowercase.
+    return NextWord == TEXT("and") || NextWord == TEXT("or");
 }
 
 static float HoldSecondsForBoundaryClass(TCHAR C, EOffgridAIBoundaryPauseClass PauseClass)
@@ -1224,19 +1238,6 @@ static FCausalBoundaryFenceEstimate EvaluateCausalBoundaryFence(
             Estimate.ResumeAnchorSec = ResumeAnchorSec;
             Estimate.Outcome = FName(TEXT("confirmed_resume_anchor_pending_close"));
         }
-        else
-        {
-            const float MaxPendingHoldSec = HoldWindowSec + 0.250f;
-            const bool bPendingHoldExpired = HoldWindowSec > 0.0f
-                && PlaybackSec >= State.HoldStartPlaybackSec + MaxPendingHoldSec
-                && Input.ObservedAudioBufferEndSec + 0.001f >= PlaybackSec;
-            if (bPendingHoldExpired)
-            {
-                Estimate.bObservedClose = false;
-                Estimate.bContinuousSpeech = true;
-                Estimate.Outcome = FName(TEXT("pending_close_expired_continuous"));
-            }
-        }
         return Estimate;
     }
 
@@ -1261,8 +1262,13 @@ static FCausalBoundaryFenceEstimate EvaluateCausalBoundaryFence(
             Estimate.Outcome = FName(TEXT("list_next_item_pulse_continuous"));
             return Estimate;
         }
+        const float SoftDecisionWindowSec = IsOxfordConjunctionBoundary(
+            Input.TextPlan,
+            State.BoundaryWordIndex)
+                ? HoldWindowSec
+                : 0.750f;
         if (!Input.bPlaybackFinalized
-            && PlaybackSec < State.HoldStartPlaybackSec + 0.750f)
+            && PlaybackSec < State.HoldStartPlaybackSec + SoftDecisionWindowSec)
         {
             return Estimate;
         }
@@ -1474,6 +1480,188 @@ static bool IsCausalSyllablePulse(
     return true;
 }
 
+static float SyllableVowelFamilyScore(
+    const FString& PhoneBase,
+    const FOffgridAIStreamingAudioFeatureFrame& Frame)
+{
+    const FOffgridAIArticulatoryProbabilityField Field =
+        FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(Frame);
+    const bool bRound = PhoneBase == TEXT("UW") || PhoneBase == TEXT("UH")
+        || PhoneBase == TEXT("OW") || PhoneBase == TEXT("OY") || PhoneBase == TEXT("AO");
+    const bool bFront = PhoneBase == TEXT("IY") || PhoneBase == TEXT("IH")
+        || PhoneBase == TEXT("EY") || PhoneBase == TEXT("EH") || PhoneBase == TEXT("AE");
+    if (bRound)
+    {
+        return FMath::Clamp(
+            Field.PhoneScores.VowelRound * 0.55f + Field.Vowel * 0.25f
+                + Frame.Periodicity * 0.20f,
+            0.0f,
+            1.0f);
+    }
+    if (bFront)
+    {
+        return FMath::Clamp(
+            Field.Vowel * 0.48f + Field.Voiced * 0.18f + Frame.Periodicity * 0.22f
+                + (1.0f - Field.PhoneScores.VowelRound) * 0.12f,
+            0.0f,
+            1.0f);
+    }
+    return FMath::Clamp(
+        Field.Vowel * 0.52f + Field.Voiced * 0.18f + Frame.Periodicity * 0.20f
+            + Frame.LowBandNorm * 0.10f,
+        0.0f,
+        1.0f);
+}
+
+static int32 PhoneStress(const FString& Phone)
+{
+    if (Phone.Len() <= 0) return 0;
+    const TCHAR Last = Phone[Phone.Len() - 1];
+    return Last >= TCHAR('0') && Last <= TCHAR('2') ? Last - TCHAR('0') : 0;
+}
+
+static float CorpusSyllableIntervalScale(int32 PreviousStress, int32 CurrentStress)
+{
+    // Medians fitted on the first 80% of the checked-in corpus. They affect
+    // assignment likelihood only; accepted anchors still derive timing from
+    // streamed audio.
+    static const float Scale[3][3] = {
+        {0.917f, 1.123f, 0.944f},
+        {1.035f, 1.067f, 1.111f},
+        {1.041f, 1.257f, 1.000f},
+    };
+    return Scale[FMath::Clamp(PreviousStress, 0, 2)][FMath::Clamp(CurrentStress, 0, 2)];
+}
+
+static float StrongPhoneSupportAtFrame(
+    const FString& PhoneBase,
+    const FOffgridAIStreamingAudioFeatureFrame& Frame)
+{
+    const FOffgridAIArticulatoryProbabilityField Field =
+        FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(Frame);
+    if (PhoneBase == TEXT("M") || PhoneBase == TEXT("B") || PhoneBase == TEXT("P"))
+    {
+        return FMath::Max(Field.PhoneScores.Bilabial, FMath::Max(Field.Closure, Field.Release));
+    }
+    if (PhoneBase == TEXT("F") || PhoneBase == TEXT("V"))
+    {
+        return FMath::Max(Field.PhoneScores.Labiodental, Field.Fricative);
+    }
+    if (PhoneBase == TEXT("W"))
+    {
+        return FMath::Max(Field.PhoneScores.Glide, Field.PhoneScores.VowelRound);
+    }
+    if (PhoneBase == TEXT("CH") || PhoneBase == TEXT("JH")
+        || PhoneBase == TEXT("SH") || PhoneBase == TEXT("ZH"))
+    {
+        return FMath::Max(Field.PhoneScores.Sibilant, Field.PhoneScores.StopBurst);
+    }
+    if (PhoneBase == TEXT("UW") || PhoneBase == TEXT("UH") || PhoneBase == TEXT("OW")
+        || PhoneBase == TEXT("OY") || PhoneBase == TEXT("AO"))
+    {
+        return FMath::Clamp(
+            Field.PhoneScores.VowelRound * 0.60f + Field.Vowel * 0.20f
+                + Frame.Periodicity * 0.20f,
+            0.0f,
+            1.0f);
+    }
+    return 0.0f;
+}
+
+static void ClearStrongPhoneRebase(FOffgridAIBoundaryPlaybackState& State)
+{
+    State.bStrongPhoneRebaseActive = false;
+    State.StrongPhoneAnchorPhoneIndex = INDEX_NONE;
+    State.StrongPhoneAnchorActiveSec = 0.0f;
+    State.StrongPhoneAnchorAudioSec = 0.0f;
+    State.StrongPhoneAnchorConfidence = 0.0f;
+}
+
+static void RefreshTranscriptAnchorFence(
+    const FOffgridAITextVisemePlan& Plan,
+    FOffgridAIBoundaryPlaybackState& State)
+{
+    State.TranscriptAnchorFenceWordIndex = INDEX_NONE;
+    State.TranscriptAnchorFencePhoneIndex = INDEX_NONE;
+    const int32 BoundaryCount = FMath::Min(
+        Plan.WordBoundaryPunctuationAfter.Num(),
+        Plan.WordPhoneEndIndices.Num());
+    for (int32 WordIndex = 0; WordIndex < BoundaryCount; ++WordIndex)
+    {
+        if (WordIndex <= State.TranscriptAnchorLastResolvedBoundaryWordIndex) continue;
+        const int32 FencePhoneIndex = Plan.WordPhoneEndIndices[WordIndex];
+        if (FencePhoneIndex <= State.TranscriptAnchorCursorPhoneIndex) continue;
+        const TCHAR Mark = Plan.WordBoundaryPunctuationAfter[WordIndex];
+        const EOffgridAIBoundaryPauseClass PauseClass =
+            Plan.WordBoundaryPauseClassAfter.IsValidIndex(WordIndex)
+                ? Plan.WordBoundaryPauseClassAfter[WordIndex]
+                : EOffgridAIBoundaryPauseClass::None;
+        if (HoldSecondsForBoundaryClass(Mark, PauseClass) <= 0.0f) continue;
+        State.TranscriptAnchorFenceWordIndex = WordIndex;
+        State.TranscriptAnchorFencePhoneIndex = FencePhoneIndex;
+        return;
+    }
+}
+
+static void SynchronizeTranscriptAnchorCursor(
+    const FOffgridAITextVisemePlan& Plan,
+    int32 FirstMutablePhoneIndex,
+    FOffgridAIBoundaryPlaybackState& State)
+{
+    if (State.LastResolvedBoundary.WordIndex != INDEX_NONE
+        && State.LastResolvedBoundary.WordIndex
+            > State.TranscriptAnchorLastResolvedBoundaryWordIndex)
+    {
+        State.TranscriptAnchorLastResolvedBoundaryWordIndex =
+            State.LastResolvedBoundary.WordIndex;
+        if (Plan.WordPhoneBeginIndices.IsValidIndex(State.LastResolvedBoundary.WordIndex + 1))
+        {
+            State.TranscriptAnchorCursorPhoneIndex = FMath::Max(
+                State.TranscriptAnchorCursorPhoneIndex,
+                Plan.WordPhoneBeginIndices[State.LastResolvedBoundary.WordIndex + 1]);
+        }
+    }
+    RefreshTranscriptAnchorFence(Plan, State);
+    int32 MutableCursor = FMath::Max(FirstMutablePhoneIndex, 0);
+    if (State.TranscriptAnchorFencePhoneIndex != INDEX_NONE)
+    {
+        MutableCursor = FMath::Min(
+            MutableCursor,
+            FMath::Max(State.TranscriptAnchorFencePhoneIndex - 1, 0));
+    }
+    State.TranscriptAnchorCursorPhoneIndex = FMath::Max(
+        State.TranscriptAnchorCursorPhoneIndex,
+        MutableCursor);
+}
+
+static float SyllableStrongPhoneSupport(
+    const FOffgridAITextVisemePlan& Plan,
+    const TArray<float>& PhoneCenterActiveSeconds,
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& Frames,
+    int32 EnvelopeFrameIndex,
+    int32 VowelPhoneIndex)
+{
+    if (!PhoneCenterActiveSeconds.IsValidIndex(VowelPhoneIndex)) return 0.0f;
+    const float VowelActiveSec = PhoneCenterActiveSeconds[VowelPhoneIndex];
+    float BestSupport = 0.0f;
+    for (int32 PhoneIndex = FMath::Max(VowelPhoneIndex - 3, 0);
+        PhoneIndex <= FMath::Min(VowelPhoneIndex + 3, Plan.ExpectedPhones.Num() - 1);
+        ++PhoneIndex)
+    {
+        const FString& PhoneBase = Plan.ExpectedPhones[PhoneIndex].BasePhone;
+        const float DirectSupport = StrongPhoneSupportAtFrame(PhoneBase, Frames[EnvelopeFrameIndex]);
+        if (DirectSupport <= 0.0f) continue;
+        const float OffsetSec = PhoneCenterActiveSeconds[PhoneIndex] - VowelActiveSec;
+        const int32 ExpectedFrameIndex = EnvelopeFrameIndex + FMath::RoundToInt(OffsetSec / 0.010f);
+        for (int32 FrameIndex = ExpectedFrameIndex - 4; FrameIndex <= ExpectedFrameIndex + 4; ++FrameIndex)
+        {
+            if (!Frames.IsValidIndex(FrameIndex)) continue;
+            BestSupport = FMath::Max(BestSupport, StrongPhoneSupportAtFrame(PhoneBase, Frames[FrameIndex]));
+        }
+    }
+    return BestSupport;
+}
+
 static void ResetSyllableRebaseForSection(
     FOffgridAIBoundaryPlaybackState& State,
     float SectionStartAudioSec,
@@ -1488,6 +1676,11 @@ static void ResetSyllableRebaseForSection(
     State.SyllableAnchorAudioSec = 0.0f;
     State.SyllableRate = 1.0f;
     State.SyllableSectionStartAudioSec = FMath::Max(SectionStartAudioSec, 0.0f);
+    State.SyllableAssignmentConfidence = 0.0f;
+    State.SyllableAssignmentMargin = 0.0f;
+    State.SyllableAssignmentSkipCount = 0;
+    State.SyllableLastAssignedProminence = 0.0f;
+    ClearStrongPhoneRebase(State);
 }
 
 static void ClearLocalSyllableRebase(FOffgridAIBoundaryPlaybackState& State)
@@ -1498,6 +1691,71 @@ static void ClearLocalSyllableRebase(FOffgridAIBoundaryPlaybackState& State)
     State.SyllableAnchorActiveSec = 0.0f;
     State.SyllableAnchorAudioSec = 0.0f;
     State.SyllableRate = 1.0f;
+    State.SyllableAssignmentConfidence = 0.0f;
+    State.SyllableAssignmentMargin = 0.0f;
+    State.SyllableAssignmentSkipCount = 0;
+    ClearStrongPhoneRebase(State);
+}
+
+static void UpdateStrongPhoneRebaseForSyllable(
+    const FOffgridAITextVisemePlan& Plan,
+    const TArray<float>& PhoneCenterActiveSeconds,
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& Frames,
+    int32 DecisionFrameIndex,
+    int32 SyllablePhoneIndex,
+    int32 NextSyllablePhoneIndex,
+    float SyllableExpectedActiveSec,
+    float SyllableObservedAudioSec,
+    FOffgridAIBoundaryPlaybackState& State)
+{
+    ClearStrongPhoneRebase(State);
+    const int32 SpanEnd = NextSyllablePhoneIndex == INDEX_NONE
+        ? Plan.ExpectedPhones.Num()
+        : NextSyllablePhoneIndex;
+    const int32 SpanStart = FMath::Max(0, SyllablePhoneIndex - 3);
+    float BestScore = 0.0f;
+    float BestAudioSec = 0.0f;
+    int32 BestPhoneIndex = INDEX_NONE;
+
+    for (int32 PhoneIndex = SpanStart;
+        PhoneIndex < SpanEnd && PhoneIndex <= SyllablePhoneIndex + 3;
+        ++PhoneIndex)
+    {
+        if (!PhoneCenterActiveSeconds.IsValidIndex(PhoneIndex)) continue;
+        const FString& PhoneBase = Plan.ExpectedPhones[PhoneIndex].BasePhone;
+        if (StrongPhoneSupportAtFrame(PhoneBase, Frames[DecisionFrameIndex]) <= 0.0f) continue;
+        ++State.StrongPhoneCandidateCount;
+        const float ExpectedAudioSec = SyllableObservedAudioSec
+            + (PhoneCenterActiveSeconds[PhoneIndex] - SyllableExpectedActiveSec);
+        const float SearchHalfWidthSec =
+            (PhoneBase == TEXT("M") || PhoneBase == TEXT("B") || PhoneBase == TEXT("P"))
+                ? 0.090f : 0.075f;
+        for (int32 FrameIndex = 0; FrameIndex <= DecisionFrameIndex; ++FrameIndex)
+        {
+            const float FrameSec = Frames[FrameIndex].AudioBufferCenterSec;
+            const float DistanceSec = FMath::Abs(FrameSec - ExpectedAudioSec);
+            if (DistanceSec > SearchHalfWidthSec) continue;
+            const float Evidence = StrongPhoneSupportAtFrame(PhoneBase, Frames[FrameIndex]);
+            const float Proximity = 1.0f - DistanceSec / SearchHalfWidthSec;
+            const float Score = Evidence * 0.82f + Proximity * 0.18f;
+            if (Score > BestScore)
+            {
+                BestScore = Score;
+                BestAudioSec = FrameSec;
+                BestPhoneIndex = PhoneIndex;
+            }
+        }
+    }
+
+    // The advisory experiment was useful but not precise enough to justify
+    // broad corrections. Runtime accepts only its strongest subset.
+    if (BestPhoneIndex == INDEX_NONE || BestScore < 0.90f) return;
+    State.bStrongPhoneRebaseActive = true;
+    State.StrongPhoneAnchorPhoneIndex = BestPhoneIndex;
+    State.StrongPhoneAnchorActiveSec = PhoneCenterActiveSeconds[BestPhoneIndex];
+    State.StrongPhoneAnchorAudioSec = BestAudioSec;
+    State.StrongPhoneAnchorConfidence = BestScore;
+    ++State.StrongPhoneAssignmentCount;
 }
 
 static void UpdateSyllableRebaseState(
@@ -1530,11 +1788,7 @@ static void UpdateSyllableRebaseState(
         }
         State.NextExpectedSyllablePhoneIndex = FindNextVowelPhoneIndex(
             Plan,
-            FMath::Max(StartPhoneIndex, FirstMutablePhoneIndex));
-    }
-    else if (State.NextExpectedSyllablePhoneIndex < FirstMutablePhoneIndex)
-    {
-        State.NextExpectedSyllablePhoneIndex = FindNextVowelPhoneIndex(Plan, FirstMutablePhoneIndex);
+            StartPhoneIndex);
     }
 
     for (int32 FrameIndex = FMath::Max(State.LastSyllableScanFrameIndex + 1, 14);
@@ -1543,21 +1797,69 @@ static void UpdateSyllableRebaseState(
     {
         FCausalSyllableEnvelope Envelope;
         if (!TryGetCausalSyllableEnvelope(Frames, FrameIndex, Envelope)) continue;
+        ++State.SyllablePulseCount;
         // Pulse detection itself is intentionally broad for diagnostics. Runtime
         // rebasing accepts a broader subset than strict landmarking because the
         // fit is local to a single syllable span and resets immediately after it.
-        if (Envelope.Prominence < 0.34f) continue;
+        if (Envelope.Prominence < 0.20f)
+        {
+            ++State.SyllableRejectLowProminenceCount;
+            continue;
+        }
         const float EnvelopeCenterSec = Envelope.CenterSec;
-        if (EnvelopeCenterSec + 0.001f < State.SyllableSectionStartAudioSec) continue;
+        if (EnvelopeCenterSec + 0.001f < State.SyllableSectionStartAudioSec)
+        {
+            ++State.SyllableRejectBeforeSectionCount;
+            continue;
+        }
         // Historical evidence remains useful diagnostically, but it cannot
         // safely rebase live animation once its visible center is behind the
         // renderer's minimum lead window.
-        if (!Input.bPlaybackFinalized && EnvelopeCenterSec < Input.CurrentPlaybackSec + 0.040f) continue;
-
-        int32 ExpectedPhoneIndex = State.NextExpectedSyllablePhoneIndex;
-        while (PhoneCenterActiveSeconds.IsValidIndex(ExpectedPhoneIndex))
+        const bool bPulseTooLate = !Input.bPlaybackFinalized
+            && EnvelopeCenterSec < Input.CurrentPlaybackSec + 0.040f;
+        if (bPulseTooLate)
         {
-            const float ExpectedActiveSec = PhoneCenterActiveSeconds[ExpectedPhoneIndex];
+            ++State.SyllableLateAssignmentCount;
+        }
+        const int32 DuplicateGuardNextVowel = FindNextVowelPhoneIndex(
+            Plan,
+            State.NextExpectedSyllablePhoneIndex + 1);
+        const bool bTranscriptAllowsRapidSyllable =
+            PhoneCenterActiveSeconds.IsValidIndex(State.NextExpectedSyllablePhoneIndex)
+            && PhoneCenterActiveSeconds.IsValidIndex(DuplicateGuardNextVowel)
+            && PhoneCenterActiveSeconds[DuplicateGuardNextVowel]
+                - PhoneCenterActiveSeconds[State.NextExpectedSyllablePhoneIndex] < 0.110f;
+        if (State.SyllableAssignmentCount > 0
+            && EnvelopeCenterSec - State.SyllableObservedAudioSec < 0.080f
+            && Envelope.Prominence <= State.SyllableLastAssignedProminence * 1.50f
+            && !bTranscriptAllowsRapidSyllable)
+        {
+            ++State.SyllableDuplicatePulseCount;
+            continue;
+        }
+
+        struct FSyllableCandidate
+        {
+            int32 PhoneIndex = INDEX_NONE;
+            int32 SkipCount = 0;
+            float ExpectedActiveSec = 0.0f;
+            float ExpectedAudioSec = 0.0f;
+            float DistanceSec = 0.0f;
+            float SequenceScore = 0.5f;
+            float Score = 0.0f;
+        };
+        TArray<FSyllableCandidate> Candidates;
+        int32 CandidatePhoneIndex = State.NextExpectedSyllablePhoneIndex;
+        for (int32 SkipCount = 0;
+            SkipCount < 5 && PhoneCenterActiveSeconds.IsValidIndex(CandidatePhoneIndex);
+            ++SkipCount)
+        {
+            if (State.TranscriptAnchorFencePhoneIndex != INDEX_NONE
+                && CandidatePhoneIndex >= State.TranscriptAnchorFencePhoneIndex)
+            {
+                break;
+            }
+            const float ExpectedActiveSec = PhoneCenterActiveSeconds[CandidatePhoneIndex];
             float ExpectedAudioSec = PlaybackOffsetSec + ExpectedActiveSec;
             if (State.bResumeAnchorActive)
             {
@@ -1569,40 +1871,181 @@ static void UpdateSyllableRebaseState(
                 ExpectedAudioSec = State.SyllableAnchorAudioSec
                     + State.SyllableRate * (ExpectedActiveSec - State.SyllableAnchorActiveSec);
             }
-            if (EnvelopeCenterSec <= ExpectedAudioSec + 0.120f)
+            const float DistanceSec = FMath::Abs(EnvelopeCenterSec - ExpectedAudioSec);
+            const float TimingScore = FMath::Clamp(1.0f - DistanceSec / 0.350f, 0.0f, 1.0f);
+            const float VowelScore = SyllableVowelFamilyScore(
+                Plan.ExpectedPhones[CandidatePhoneIndex].BasePhone,
+                Frames[FrameIndex]);
+            float SequenceScore = 0.5f;
+            if (State.SyllableAssignmentCount > 0
+                && PhoneCenterActiveSeconds.IsValidIndex(State.SyllableLastAssignedPhoneIndex))
             {
-                const float DistanceSec = FMath::Abs(EnvelopeCenterSec - ExpectedAudioSec);
-                if (DistanceSec <= 0.120f)
+                const float ExpectedIntervalSec = ExpectedActiveSec
+                    - PhoneCenterActiveSeconds[State.SyllableLastAssignedPhoneIndex];
+                const float ObservedIntervalSec = EnvelopeCenterSec - State.SyllableObservedAudioSec;
+                if (ExpectedIntervalSec > 0.025f && ObservedIntervalSec > 0.0f)
                 {
-                    if (State.bSyllableRebaseActive)
-                    {
-                        const float PriorDelta = ExpectedActiveSec - State.SyllableAnchorActiveSec;
-                        const float AudioDelta = EnvelopeCenterSec - State.SyllableAnchorAudioSec;
-                        if (PriorDelta > 0.080f && AudioDelta > 0.030f)
-                        {
-                            const float Confidence = FMath::Clamp(
-                                Envelope.Prominence * (1.0f - DistanceSec / 0.120f),
-                                0.0f,
-                                1.0f);
-                            const float MeasuredRate = FMath::Clamp(AudioDelta / PriorDelta, 0.85f, 1.18f);
-                            State.SyllableRate = FMath::Clamp(
-                                State.SyllableRate + (MeasuredRate - State.SyllableRate) * (0.18f + Confidence * 0.22f),
-                                0.85f,
-                                1.18f);
-                        }
-                    }
-                    State.bSyllableRebaseActive = true;
-                    State.SyllableAnchorPhoneIndex = ExpectedPhoneIndex;
-                    State.SyllableAnchorActiveSec = ExpectedActiveSec;
-                    State.SyllableAnchorAudioSec = EnvelopeCenterSec;
-                    State.NextExpectedSyllablePhoneIndex = FindNextVowelPhoneIndex(Plan, ExpectedPhoneIndex + 1);
-                    State.SyllableRebaseEndPhoneIndex = State.NextExpectedSyllablePhoneIndex;
+                    const int32 PreviousStress = PhoneStress(
+                        Plan.ExpectedPhones[State.SyllableLastAssignedPhoneIndex].Phone);
+                    const int32 CurrentStress = PhoneStress(
+                        Plan.ExpectedPhones[CandidatePhoneIndex].Phone);
+                    const float ExpectedScaledSec = ExpectedIntervalSec * State.SyllableRate
+                        * CorpusSyllableIntervalScale(PreviousStress, CurrentStress);
+                    const float IntervalToleranceSec = FMath::Clamp(
+                        ExpectedScaledSec * 0.55f + 0.045f,
+                        0.075f,
+                        0.220f);
+                    SequenceScore = FMath::Clamp(
+                        1.0f - FMath::Abs(ObservedIntervalSec - ExpectedScaledSec)
+                            / IntervalToleranceSec,
+                        0.0f,
+                        1.0f);
                 }
+            }
+            const FOffgridAIArticulatoryProbabilityField EnvelopeField =
+                FOffgridAIOnlinePhoneAligner::BuildArticulatoryProbabilityField(Frames[FrameIndex]);
+            const float NonNucleusEvidence = FMath::Max(
+                EnvelopeField.Fricative,
+                FMath::Max(EnvelopeField.Closure, EnvelopeField.Release));
+            const float ContradictionScore = FMath::Clamp(
+                NonNucleusEvidence - EnvelopeField.Vowel * 0.75f,
+                0.0f,
+                1.0f);
+            const float StrongPhoneScore = SyllableStrongPhoneSupport(
+                Plan,
+                PhoneCenterActiveSeconds,
+                Frames,
+                FrameIndex,
+                CandidatePhoneIndex);
+            const FString& Phone = Plan.ExpectedPhones[CandidatePhoneIndex].Phone;
+            const bool bPrimaryStress = Phone.Len() > 0 && Phone[Phone.Len() - 1] == TCHAR('1');
+            const float StressScore = bPrimaryStress
+                ? FMath::Clamp(Envelope.Prominence / 0.55f, 0.0f, 1.0f)
+                : FMath::Clamp(1.0f - FMath::Abs(Envelope.Prominence - 0.42f), 0.0f, 1.0f);
+            FSyllableCandidate Candidate;
+            Candidate.PhoneIndex = CandidatePhoneIndex;
+            Candidate.SkipCount = SkipCount;
+            Candidate.ExpectedActiveSec = ExpectedActiveSec;
+            Candidate.ExpectedAudioSec = ExpectedAudioSec;
+            Candidate.DistanceSec = DistanceSec;
+            Candidate.SequenceScore = SequenceScore;
+            Candidate.Score = TimingScore * 0.40f + VowelScore * 0.23f
+                + StrongPhoneScore * 0.15f + StressScore * 0.08f
+                + SequenceScore * 0.14f - ContradictionScore * 0.10f
+                - SkipCount * 0.08f;
+            Candidates.Add(Candidate);
+            CandidatePhoneIndex = FindNextVowelPhoneIndex(Plan, CandidatePhoneIndex + 1);
+        }
+        if (Candidates.Num() <= 0)
+        {
+            ++State.SyllableRejectNoCandidateCount;
+            continue;
+        }
+        Candidates.Sort([](const FSyllableCandidate& A, const FSyllableCandidate& B)
+        {
+            return A.Score > B.Score;
+        });
+        const FSyllableCandidate* Primary = nullptr;
+        const FSyllableCandidate* NextCandidate = nullptr;
+        const FSyllableCandidate* ThirdCandidate = nullptr;
+        for (const FSyllableCandidate& Candidate : Candidates)
+        {
+            if (Candidate.SkipCount == 0)
+            {
+                Primary = &Candidate;
+            }
+            else if (Candidate.SkipCount == 1)
+            {
+                NextCandidate = &Candidate;
+            }
+            else if (Candidate.SkipCount == 2)
+            {
+                ThirdCandidate = &Candidate;
+            }
+        }
+        if (!Primary)
+        {
+            ++State.SyllableRejectNoCandidateCount;
+            continue;
+        }
+        const float CompetitorScore = FMath::Max(
+            NextCandidate ? NextCandidate->Score : 0.0f,
+            ThirdCandidate ? ThirdCandidate->Score : 0.0f);
+        const float Margin = Primary->Score - CompetitorScore;
+        const FSyllableCandidate* Selected = Primary;
+        for (const FSyllableCandidate& Candidate : Candidates)
+        {
+            if (Candidate.SkipCount <= 0) continue;
+            const bool bStrongRecovery = Candidate.Score >= Primary->Score + 0.08f
+                && Candidate.DistanceSec + 0.030f < Primary->DistanceSec;
+            const bool bSequenceRecovery = Candidate.Score >= Primary->Score + 0.06f
+                && Candidate.SequenceScore >= 0.65f;
+            const bool bTimingRecovery = Candidate.SkipCount == 1
+                && EnvelopeCenterSec - Primary->ExpectedAudioSec > 0.160f
+                && Candidate.DistanceSec + 0.030f < Primary->DistanceSec;
+            if (bStrongRecovery || bSequenceRecovery || bTimingRecovery)
+            {
+                Selected = &Candidate;
                 break;
             }
-            ExpectedPhoneIndex = FindNextVowelPhoneIndex(Plan, ExpectedPhoneIndex + 1);
-            State.NextExpectedSyllablePhoneIndex = ExpectedPhoneIndex;
         }
+        const float SelectedMargin = Selected == Primary
+            ? Margin
+            : Selected->Score - Primary->Score;
+        State.SyllableAssignmentConfidence = Selected->Score;
+        State.SyllableAssignmentMargin = SelectedMargin;
+        State.SyllableAssignmentSkipCount = Selected->SkipCount;
+        State.SyllableObservedAudioSec = EnvelopeCenterSec;
+        State.SyllableLastAssignedProminence = Envelope.Prominence;
+        ++State.SyllableAssignmentCount;
+        State.SyllableLastAssignedPhoneIndex = Selected->PhoneIndex;
+        State.TranscriptAnchorCursorPhoneIndex = FMath::Max(
+            State.TranscriptAnchorCursorPhoneIndex,
+            Selected->PhoneIndex);
+        if (SelectedMargin < 0.055f) ++State.SyllableAmbiguousAssignmentCount;
+
+        const int32 AssignedPhoneIndex = Selected->PhoneIndex;
+        State.NextExpectedSyllablePhoneIndex = FindNextVowelPhoneIndex(Plan, AssignedPhoneIndex + 1);
+        UpdateStrongPhoneRebaseForSyllable(
+            Plan,
+            PhoneCenterActiveSeconds,
+            Frames,
+            FrameIndex,
+            AssignedPhoneIndex,
+            State.NextExpectedSyllablePhoneIndex,
+            Selected->ExpectedActiveSec,
+            EnvelopeCenterSec,
+            State);
+        if (bPulseTooLate || AssignedPhoneIndex < FirstMutablePhoneIndex)
+        {
+            continue;
+        }
+
+        float CorrectionStrength = FMath::Clamp((Selected->Score - 0.40f) / 0.32f, 0.0f, 1.0f);
+        if (SelectedMargin < 0.0f) CorrectionStrength *= 0.35f;
+        else if (SelectedMargin < 0.055f) CorrectionStrength *= 0.65f;
+        const float AppliedAnchorAudioSec = Selected->ExpectedAudioSec
+            + (EnvelopeCenterSec - Selected->ExpectedAudioSec) * CorrectionStrength;
+        if (State.bSyllableRebaseActive)
+        {
+            const float PriorDelta = Selected->ExpectedActiveSec - State.SyllableAnchorActiveSec;
+            const float AudioDelta = AppliedAnchorAudioSec - State.SyllableAnchorAudioSec;
+            if (PriorDelta > 0.080f && AudioDelta > 0.030f)
+            {
+                const float Confidence = FMath::Clamp(
+                    Selected->Score * (1.0f - Selected->DistanceSec / 0.350f), 0.0f, 1.0f);
+                const float MeasuredRate = FMath::Clamp(AudioDelta / PriorDelta, 0.85f, 1.18f);
+                State.SyllableRate = FMath::Clamp(
+                    State.SyllableRate + (MeasuredRate - State.SyllableRate) * (0.18f + Confidence * 0.22f),
+                    0.85f,
+                    1.18f);
+            }
+        }
+        State.bSyllableRebaseActive = true;
+        State.SyllableAnchorPhoneIndex = AssignedPhoneIndex;
+        State.SyllableAnchorActiveSec = Selected->ExpectedActiveSec;
+        State.SyllableAnchorAudioSec = AppliedAnchorAudioSec;
+        State.SyllableRebaseEndPhoneIndex = State.NextExpectedSyllablePhoneIndex;
     }
     State.LastSyllableScanFrameIndex = LastDecidableFrame;
 }
@@ -1639,7 +2082,16 @@ static void AdvancePlaybackHoldState(
         const float AcousticBaseSec = InOutState.ObservedResumeOnsetPlaybackSec >= 0.0f
             ? InOutState.ObservedResumeOnsetPlaybackSec
             : AcousticAnchorSec;
-        float DesiredCenterSec = FMath::Max(AcousticBaseSec, 0.0f);
+        const float ObservedCenterSec = FMath::Max(AcousticBaseSec, 0.0f);
+        // A resume can only be confirmed after its onset has streamed past. If
+        // that decision arrives behind the live playback clock, scheduling the
+        // suffix at the historical timestamp makes Unreal receive expired
+        // events. Preserve the observed timestamp below for diagnostics, but
+        // place the first newly committable center just ahead of playback.
+        constexpr float MinLiveResumeLeadSec = 0.040f;
+        const float DesiredCenterSec = FMath::Max(
+            ObservedCenterSec,
+            PlaybackSec + MinLiveResumeLeadSec);
 
         const float DesiredPausedSec =
             DesiredCenterSec + InOutState.HoldResumeTargetLeadSec
@@ -1661,14 +2113,14 @@ static void AdvancePlaybackHoldState(
         InOutState.ResumeAnchorActiveSec = InOutState.HoldResumeTargetActiveSec;
         InOutState.ResumeAnchorLeadSec = InOutState.HoldResumeTargetLeadSec;
         InOutState.ResumeAnchorFinalCenterSec = DesiredCenterSec;
-        InOutState.ObservedResumeEnergyAnchorSec = DesiredCenterSec;
+        InOutState.ObservedResumeEnergyAnchorSec = AcousticAnchorSec;
         const int32 LastDecidableFrameIndex = Input.AudioFeatureFrames
             ? Input.AudioFeatureFrames->Num() - 15
             : INDEX_NONE;
         ResetSyllableRebaseForSection(InOutState, DesiredCenterSec, LastDecidableFrameIndex);
         InOutState.LastResolvedBoundary.DecaySec = InOutState.ConfirmedQuietStartPlaybackSec;
         InOutState.LastResolvedBoundary.ResumeOnsetSec = InOutState.ObservedResumeOnsetPlaybackSec;
-        InOutState.LastResolvedBoundary.ResumeEnergyAnchorSec = DesiredCenterSec;
+        InOutState.LastResolvedBoundary.ResumeEnergyAnchorSec = AcousticAnchorSec;
     };
 
     bool bReleasedContinuousNoDecayThisTick = false;
@@ -1677,30 +2129,11 @@ static void AdvancePlaybackHoldState(
     {
         UpdateProvisionalListPause(Input, PlaybackSec, InOutState);
         FCausalBoundaryFenceEstimate Fence;
-        // Text can misclassify appositive/list commas as hard clause breaks.
-        // Audio may confirm a nearby comma pause, but no comma is allowed to
-        // own the scheduler indefinitely or attach to a later sentence gap.
-        if (InOutState.ActiveBoundaryMark == TEXT(',')
-            && PlaybackSec >= InOutState.HoldStartPlaybackSec + 0.750f)
-        {
-            Fence.bContinuousSpeech = true;
-            Fence.Outcome = FName(TEXT("comma_patience_expired_continuous"));
-        }
-        else if (IsSentenceTerminalPunctuation(InOutState.ActiveBoundaryMark)
-            && InOutState.HoldStartPlaybackSec - InOutState.BoundarySearchStartPlaybackSec <= 0.120f
-            && PlaybackSec >= InOutState.HoldStartPlaybackSec + 0.260f)
-        {
-            // A hard fence immediately after a previously consumed boundary
-            // can be reached before the short intervening word has played. If
-            // no new close appears, do not let that chained fence starve the
-            // rest of the line.
-            Fence.bContinuousSpeech = true;
-            Fence.Outcome = FName(TEXT("chained_hard_patience_expired_continuous"));
-        }
-        else
-        {
-            Fence = EvaluateCausalBoundaryFence(Input, InOutState, PlaybackSec);
-        }
+        // Every live release must be justified by acoustic evidence. Elapsed
+        // patience alone may not release either a hard or soft punctuation
+        // fence; the estimator must confirm a close/resume pair or sustained
+        // continuous speech.
+        Fence = EvaluateCausalBoundaryFence(Input, InOutState, PlaybackSec);
         if (!Fence.bObservedResume && IsSentenceTerminalPunctuation(InOutState.ActiveBoundaryMark))
         {
             float RegionQuietSec = -1.0f;
@@ -1859,8 +2292,12 @@ static void AdvancePlaybackHoldState(
             // guard would compress the suffix into 50 ms steps. Translate the
             // uncommitted schedule to resume just ahead of playback and preserve
             // every text-prior interval from that point onward.
-            if (Fence.Outcome == FName(TEXT("comma_patience_expired_continuous"))
-                || Fence.Outcome == FName(TEXT("chained_hard_patience_expired_continuous")))
+            // Audio rejected the speculative punctuation pause. Translate the
+            // uncommitted suffix just ahead of playback while preserving its
+            // text-prior intervals. Releasing accumulated active-playhead debt
+            // would force the backlog through the 50 ms monotonic floor and
+            // create a visible burst after commas.
+            if (InOutState.ActiveBoundaryMark == TEXT(','))
             {
                 const float ResumeCenterSec = PlaybackSec + 0.040f;
                 const float DesiredPausedSec =
@@ -1989,6 +2426,24 @@ static FRuntimePhoneSchedule BuildRuntimePhoneSchedule(
         Schedule.BaseEnd = HoldState.SyllableAnchorAudioSec
             + HoldState.SyllableRate
                 * (RequiredPhoneEndActiveSec - HoldState.SyllableAnchorActiveSec);
+    }
+
+    const bool bUseStrongPhoneRebase = HoldState.bStrongPhoneRebaseActive
+        && bWithinLocalSyllableRebaseSpan
+        && SourcePhoneGlobalIndex >= HoldState.StrongPhoneAnchorPhoneIndex
+        && RequiredActiveSec >= HoldState.StrongPhoneAnchorActiveSec
+        && !Schedule.bExactAcousticAnchorEvent;
+    if (bUseStrongPhoneRebase)
+    {
+        Schedule.BaseStart = HoldState.StrongPhoneAnchorAudioSec
+            + HoldState.SyllableRate
+                * (RequiredPhoneStartActiveSec - HoldState.StrongPhoneAnchorActiveSec);
+        Schedule.Center = HoldState.StrongPhoneAnchorAudioSec
+            + HoldState.SyllableRate
+                * (RequiredActiveSec - HoldState.StrongPhoneAnchorActiveSec);
+        Schedule.BaseEnd = HoldState.StrongPhoneAnchorAudioSec
+            + HoldState.SyllableRate
+                * (RequiredPhoneEndActiveSec - HoldState.StrongPhoneAnchorActiveSec);
     }
 
     return Schedule;
@@ -2383,6 +2838,31 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(float CurrentPlay
         BoundaryRow.SyllableAnchorAudioSec = PunctuationHoldState.SyllableAnchorAudioSec;
         BoundaryRow.SyllableRate = PunctuationHoldState.SyllableRate;
         BoundaryRow.SyllableSectionStartAudioSec = PunctuationHoldState.SyllableSectionStartAudioSec;
+        BoundaryRow.SyllableAssignmentConfidence = PunctuationHoldState.SyllableAssignmentConfidence;
+        BoundaryRow.SyllableAssignmentMargin = PunctuationHoldState.SyllableAssignmentMargin;
+        BoundaryRow.SyllableAssignmentSkipCount = PunctuationHoldState.SyllableAssignmentSkipCount;
+        BoundaryRow.SyllableObservedAudioSec = PunctuationHoldState.SyllableObservedAudioSec;
+        BoundaryRow.SyllablePulseCount = PunctuationHoldState.SyllablePulseCount;
+        BoundaryRow.SyllableAssignmentCount = PunctuationHoldState.SyllableAssignmentCount;
+        BoundaryRow.SyllableLastAssignedPhoneIndex = PunctuationHoldState.SyllableLastAssignedPhoneIndex;
+        BoundaryRow.SyllableRejectLowProminenceCount = PunctuationHoldState.SyllableRejectLowProminenceCount;
+        BoundaryRow.SyllableRejectBeforeSectionCount = PunctuationHoldState.SyllableRejectBeforeSectionCount;
+        BoundaryRow.SyllableLateAssignmentCount = PunctuationHoldState.SyllableLateAssignmentCount;
+        BoundaryRow.SyllableRejectNoCandidateCount = PunctuationHoldState.SyllableRejectNoCandidateCount;
+        BoundaryRow.SyllableAmbiguousAssignmentCount = PunctuationHoldState.SyllableAmbiguousAssignmentCount;
+        BoundaryRow.SyllableDuplicatePulseCount = PunctuationHoldState.SyllableDuplicatePulseCount;
+        BoundaryRow.bStrongPhoneRebaseActive = PunctuationHoldState.bStrongPhoneRebaseActive;
+        BoundaryRow.StrongPhoneAnchorPhoneIndex = PunctuationHoldState.StrongPhoneAnchorPhoneIndex;
+        BoundaryRow.StrongPhoneAnchorActiveSec = PunctuationHoldState.StrongPhoneAnchorActiveSec;
+        BoundaryRow.StrongPhoneAnchorAudioSec = PunctuationHoldState.StrongPhoneAnchorAudioSec;
+        BoundaryRow.StrongPhoneAnchorConfidence = PunctuationHoldState.StrongPhoneAnchorConfidence;
+        BoundaryRow.StrongPhoneCandidateCount = PunctuationHoldState.StrongPhoneCandidateCount;
+        BoundaryRow.StrongPhoneAssignmentCount = PunctuationHoldState.StrongPhoneAssignmentCount;
+        BoundaryRow.TranscriptAnchorCursorPhoneIndex = PunctuationHoldState.TranscriptAnchorCursorPhoneIndex;
+        BoundaryRow.TranscriptAnchorFenceWordIndex = PunctuationHoldState.TranscriptAnchorFenceWordIndex;
+        BoundaryRow.TranscriptAnchorFencePhoneIndex = PunctuationHoldState.TranscriptAnchorFencePhoneIndex;
+        BoundaryRow.TranscriptAnchorLastResolvedBoundaryWordIndex =
+            PunctuationHoldState.TranscriptAnchorLastResolvedBoundaryWordIndex;
         BoundaryRow.LastFenceEstimatorOutcome = PunctuationHoldState.LastFenceEstimatorOutcome.ToString();
         BoundaryRow.LastResolvedBoundaryOutcome = PunctuationHoldState.LastResolvedBoundary.Outcome.ToString();
         BoundaryRow.LastResolvedBoundaryWordIndex = PunctuationHoldState.LastResolvedBoundary.WordIndex;
@@ -2452,10 +2932,11 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
     const float PlaybackOffsetSec =
         InOutHoldState.PlaybackOriginSec + InOutHoldState.TotalPausedSec;
 
-    // Runtime scheduling:
+    // Runtime scheduling uses one monotonic transcript-anchor cursor:
     // 1. transcript owns viseme identity and order,
     // 2. punctuation close/resume owns strict section boundaries,
-    // 3. accepted syllable pulses may rebase only the uncommitted suffix,
+    // 3. accepted syllable/phone anchors may rebase only the uncommitted suffix
+    //    and may not cross the cursor's unresolved punctuation fence,
     // 4. text/CMU priors supply duration and pacing between acoustic anchors,
     // 5. punctuation pauses future commits only: finish the pre-boundary prefix,
     //    wait for decay/resume, then start the next text segment from the acoustic
@@ -2474,6 +2955,7 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
     const int32 FirstMutablePhoneIndex = Plan.Events.IsValidIndex(NextEventIndex)
         ? Plan.Events[NextEventIndex].SourcePhoneGlobalIndex
         : Plan.ExpectedPhones.Num();
+    SynchronizeTranscriptAnchorCursor(Plan, FirstMutablePhoneIndex, InOutHoldState);
     UpdateSyllableRebaseState(
         Input,
         Plan,
@@ -2726,6 +3208,30 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             RequiredActiveSec,
             RequiredPhoneEndActiveSec,
             PoseLeadSec);
+        const int32 PreviousWordIndex = NextEventIndex > 0
+            ? Plan.Events[NextEventIndex - 1].WordIndex
+            : INDEX_NONE;
+        if (LastCenter >= 0.0f && PreviousWordIndex == T.WordIndex
+            && Schedule.Center > LastCenter + 0.220f)
+        {
+            FOffgridAIBoundaryPlaybackState PriorOnlyState = InOutHoldState;
+            PriorOnlyState.bSyllableRebaseActive = false;
+            PriorOnlyState.bStrongPhoneRebaseActive = false;
+            const FRuntimePhoneSchedule PriorOnlySchedule = BuildRuntimePhoneSchedule(
+                PriorOnlyState,
+                NextEventIndex,
+                SourcePhoneGlobalIndex,
+                PlaybackOffsetSec,
+                RequiredPhoneStartActiveSec,
+                RequiredActiveSec,
+                RequiredPhoneEndActiveSec,
+                PoseLeadSec);
+            if (PriorOnlySchedule.Center >= LastCenter + 0.001f
+                && PriorOnlySchedule.Center < Schedule.Center)
+            {
+                Schedule = PriorOnlySchedule;
+            }
+        }
         float BaseStart = Schedule.BaseStart;
         float Center = Schedule.Center;
         float BaseEnd = Schedule.BaseEnd;
@@ -2844,6 +3350,19 @@ void FOffgridAILipsyncRuntimeAdapter::UpdateCommittedTrack(const FOffgridAILipsy
             E.BoundaryMark = FString::Chr(EventBoundaryMark);
         }
         E.BoundaryOutcome = EventBoundaryOutcome;
+
+        // Preserve a perceptible neutral interval across confirmed punctuation
+        // pauses. The ordinary half-span anticipation is useful inside speech,
+        // but on the first resumed event it can consume most of a short lull.
+        // Keep a small coarticulation lead without beginning the pose well before
+        // the detected resume onset.
+        if (E.bUsedResumeAnchor && E.ObservedResumeOnsetSeconds >= 0.0f)
+        {
+            constexpr float ResumeRenderLeadSec = 0.020f;
+            E.RenderStartSeconds = FMath::Max(
+                E.RenderStartSeconds,
+                E.ObservedResumeOnsetSeconds - ResumeRenderLeadSec);
+        }
 
         auto ShiftEventForwardToCenter = [](FOffgridAICommittedVisemeEvent& Event, float ForcedCenter)
         {

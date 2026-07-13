@@ -1,0 +1,21 @@
+case: case_0264_20260712_162929_613_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000000_00
+transcript: ﻿Hello there, what can I get for you today?
+audio: 2.297s @ 24000 Hz
+speech regions: 2
+pause boundaries: 8
+pause-driven region breaks: 1
+word heads: 9
+dense visemes: 23
+draft flags: 1
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading
