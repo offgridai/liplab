@@ -14,6 +14,11 @@ static constexpr float FocusedPriorPlaybackRate = 1.20f;
 static constexpr float MinAnchorMatchScore = 0.75f;
 static constexpr float MaxSyllableRebaseSec = 0.120f;
 static constexpr float TextRegionMergeEvidenceSec = 0.300f;
+static constexpr float ListRestartMinimumValleySec = 0.020f;
+static constexpr float ListRestartMaximumValleySec = 0.180f;
+static constexpr float ListRestartMaximumValleyRMSNorm = 0.020f;
+static constexpr float ListRestartMinimumReboundRatio = 3.0f;
+static constexpr float ListRestartMinimumFlux = 0.060f;
 
 static float SpanForPose(const FName& PoseID)
 {
@@ -177,6 +182,59 @@ static bool IsListGapSensitiveAtCursor(
     return FirstListBoundary != INDEX_NONE
         && WordIndex >= FirstListBoundary
         && WordIndex <= SentenceEnd;
+}
+
+static bool FindListProsodicRestart(
+    const FOffgridAILipsyncRuntimeUpdateInput& Input,
+    float SearchStartSec,
+    float LastConsumedSec,
+    float& OutRestartSec)
+{
+    if (!Input.AudioFeatureFrames || Input.AudioFeatureFrames->Num() < 5)
+        return false;
+
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& Frames =
+        *Input.AudioFeatureFrames;
+    for (int32 ValleyIndex = 0; ValleyIndex < Frames.Num(); ++ValleyIndex)
+    {
+        const auto& Valley = Frames[ValleyIndex];
+        if (!Valley.bLocalRMSValley
+            || Valley.AudioBufferCenterSec < SearchStartSec - 0.001f
+            || Valley.AudioBufferCenterSec <= LastConsumedSec + 0.001f
+            || Valley.RMSNorm > ListRestartMaximumValleyRMSNorm)
+            continue;
+
+        const float ValleyRMS = FMath::Max(Valley.RMS, 0.0000001f);
+        float PeakFlux = 0.0f;
+        int32 FirstRestartIndex = INDEX_NONE;
+        for (int32 FrameIndex = ValleyIndex + 1; FrameIndex < Frames.Num(); ++FrameIndex)
+        {
+            const auto& Frame = Frames[FrameIndex];
+            const float DelaySec = Frame.AudioBufferCenterSec - Valley.AudioBufferCenterSec;
+            if (DelaySec > ListRestartMaximumValleySec + 0.001f)
+                break;
+            PeakFlux = FMath::Max(PeakFlux, Frame.Flux);
+            if (FirstRestartIndex == INDEX_NONE
+                && DelaySec >= ListRestartMinimumValleySec - 0.001f
+                && Frame.RMS >= ValleyRMS * ListRestartMinimumReboundRatio
+                && (Frame.bStrongOnsetAnchor || Frame.SpeechEvidence >= 0.230f
+                    || Frame.Flux >= 0.040f))
+            {
+                FirstRestartIndex = FrameIndex;
+            }
+        }
+        if (FirstRestartIndex != INDEX_NONE
+            && PeakFlux >= ListRestartMinimumFlux)
+        {
+            const auto& Restart = Frames[FirstRestartIndex];
+            if (Restart.AudioBufferCenterSec <= Input.ObservedAudioBufferEndSec + 0.001f)
+            {
+                OutRestartSec = Restart.AudioBufferCenterSec;
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 static void UpdateSyllableAnchor(
@@ -777,6 +835,33 @@ static void UpdateSimpleCommittedTrack(
                 : 0.0f;
             const bool bDeclaredPauseBoundary = bFirstEventInWord
                 && DeclaredPauseSec > 0.001f;
+            const bool bSoftListBoundary = bFirstEventInWord
+                && Plan.WordBoundaryPauseClassAfter.IsValidIndex(PreviousWordIndex)
+                && Plan.WordBoundaryPauseClassAfter[PreviousWordIndex]
+                    == EOffgridAIBoundaryPauseClass::SoftListPause;
+
+            if (Input.bEnableFocusedWordStartAlignment
+                && bSoftListBoundary
+                && State.LastListRestartWordIndex != EventWordIndex)
+            {
+                const float SearchStartSec = InOutTrack.Events.Num() > 0
+                    ? InOutTrack.Events.Last().RenderEndSeconds - 0.010f
+                    : Region.AudioBufferStartSec;
+                float RestartSec = -1.0f;
+                if (FindListProsodicRestart(
+                        Input,
+                        SearchStartSec,
+                        State.LastConsumedListRestartSec,
+                        RestartSec))
+                {
+                    State.TimelinePriorAnchorSec = Prior.EventCenters.IsValidIndex(EventIndex)
+                        ? Prior.EventCenters[EventIndex]
+                        : Prior.TotalSec;
+                    State.TimelineAudioAnchorSec = RestartSec;
+                    State.LastConsumedListRestartSec = RestartSec;
+                    State.LastListRestartWordIndex = EventWordIndex;
+                }
+            }
 
             // Transcript identity and punctuation identify places where an
             // acoustic pause may occur; only observed audio decides whether
@@ -894,7 +979,10 @@ static void UpdateSimpleCommittedTrack(
             }
 
             FName Reason = FName(TEXT("duration_prior_commit"));
-            if (EventIndex == 0)
+            if (bSoftListBoundary
+                && State.LastListRestartWordIndex == EventWordIndex)
+                Reason = FName(TEXT("list_prosodic_restart_commit"));
+            else if (EventIndex == 0)
                 Reason = FName(TEXT("initial_region_anchor_commit"));
             else if (FMath::Abs(Candidate - Region.AudioBufferStartSec) < 0.050f)
                 Reason = FName(TEXT("resume_region_anchor_commit"));
