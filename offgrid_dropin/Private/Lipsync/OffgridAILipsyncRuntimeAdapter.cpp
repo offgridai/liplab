@@ -186,10 +186,12 @@ static bool IsListGapSensitiveAtCursor(
         && WordIndex <= SentenceEnd;
 }
 
-static bool FindListProsodicRestart(
+static bool FindProsodicRestart(
     const FOffgridAILipsyncRuntimeUpdateInput& Input,
     float SearchStartSec,
     float LastConsumedSec,
+    float MaximumValleyRMSNorm,
+    float MinimumReboundRatio,
     float& OutRestartSec)
 {
     if (!Input.AudioFeatureFrames || Input.AudioFeatureFrames->Num() < 5)
@@ -203,7 +205,7 @@ static bool FindListProsodicRestart(
         if (!Valley.bLocalRMSValley
             || Valley.AudioBufferCenterSec < SearchStartSec - 0.001f
             || Valley.AudioBufferCenterSec <= LastConsumedSec + 0.001f
-            || Valley.RMSNorm > ListRestartMaximumValleyRMSNorm)
+            || Valley.RMSNorm > MaximumValleyRMSNorm)
             continue;
 
         const float ValleyRMS = FMath::Max(Valley.RMS, 0.0000001f);
@@ -218,7 +220,7 @@ static bool FindListProsodicRestart(
             PeakFlux = FMath::Max(PeakFlux, Frame.Flux);
             if (FirstRestartIndex == INDEX_NONE
                 && DelaySec >= ListRestartMinimumValleySec - 0.001f
-                && Frame.RMS >= ValleyRMS * ListRestartMinimumReboundRatio
+                && Frame.RMS >= ValleyRMS * MinimumReboundRatio
                 && (Frame.bStrongOnsetAnchor || Frame.SpeechEvidence >= 0.230f
                     || Frame.Flux >= 0.040f))
             {
@@ -843,6 +845,16 @@ static void UpdateSimpleCommittedTrack(
                 && Plan.WordBoundaryPauseClassAfter.IsValidIndex(PreviousWordIndex)
                 && Plan.WordBoundaryPauseClassAfter[PreviousWordIndex]
                     == EOffgridAIBoundaryPauseClass::SoftListPause;
+            const bool bHardBreakBoundary = bFirstEventInWord
+                && Plan.WordBoundaryPauseClassAfter.IsValidIndex(PreviousWordIndex)
+                && Plan.WordBoundaryPauseClassAfter[PreviousWordIndex]
+                    == EOffgridAIBoundaryPauseClass::HardBreakPause
+                // A comma may carry a strong pause class but still remain
+                // inside one spoken phrase. Reserve mandatory acoustic
+                // restart handling for sentence punctuation; comma timing is
+                // handled by the prosodic/list path above.
+                && Plan.WordBoundaryPunctuationAfter.IsValidIndex(PreviousWordIndex)
+                && Plan.WordBoundaryPunctuationAfter[PreviousWordIndex] != TEXT(',');
 
             if (Input.bEnableFocusedWordStartAlignment
                 && bSoftListBoundary
@@ -852,17 +864,26 @@ static void UpdateSimpleCommittedTrack(
                     ? InOutTrack.Events.Last().RenderEndSeconds - 0.010f
                     : Region.AudioBufferStartSec;
                 float RestartSec = -1.0f;
-                if (FindListProsodicRestart(
+                const bool bFoundRestart = FindProsodicRestart(
                         Input,
                         SearchStartSec,
-                        State.LastConsumedListRestartSec,
-                        RestartSec))
+                        State.LastConsumedProsodicRestartSec,
+                        ListRestartMaximumValleyRMSNorm,
+                        ListRestartMinimumReboundRatio,
+                        RestartSec);
+                if (bFoundRestart
+                    // Once the active decoded region has ended, a restart
+                    // beyond its endpoint belongs to a later region.  Let the
+                    // ordinary region handoff own that onset instead of
+                    // allowing a comma boundary to steal it.
+                    && (!Region.bEnded
+                        || RestartSec <= CausalRegionEnd(Region) + 0.001f))
                 {
                     State.TimelinePriorAnchorSec = Prior.EventCenters.IsValidIndex(EventIndex)
                         ? Prior.EventCenters[EventIndex]
                         : Prior.TotalSec;
                     State.TimelineAudioAnchorSec = RestartSec;
-                    State.LastConsumedListRestartSec = RestartSec;
+                    State.LastConsumedProsodicRestartSec = RestartSec;
                     State.LastListRestartWordIndex = EventWordIndex;
                 }
             }
@@ -874,41 +895,103 @@ static void UpdateSimpleCommittedTrack(
                 && (EventTextRegionIndex > State.ActiveTextSpeechRegionIndex
                     || bPauseBoundaryNeedsResolution))
             {
-                const float BoundaryCandidate =
-                    PriorToAudio(State, Prior.EventCenters[EventIndex]);
-                const float ContinuityProbeSec = BoundaryCandidate
-                    + FMath::Max(DeclaredPauseSec, TextRegionMergeEvidenceSec);
-                bool bObservedQuietAfterProbe = false;
-                bool bObservedSpeechAfterProbe = false;
-                float ObservedResumeSec = -1.0f;
-                if (Input.AudioFeatureFrames)
+                // A sentence or short final tag can share one decoded speech
+                // region with the preceding phrase. A valley and acoustic
+                // reattack after the last rendered event can resolve that
+                // punctuation boundary without inventing another scheduler
+                // or a text-owned time. A decoded successor still takes
+                // precedence once the current region has ended.
+                bool bResolvedWithinFinalRegion = false;
+                const int32 NextRegionIndex = State.ActiveSpeechRegionIndex + 1;
+                if (Region.bEnded
+                    && Input.bInputStreamClosed
+                    && !Regions.IsValidIndex(NextRegionIndex))
                 {
-                    for (const auto& Frame : *Input.AudioFeatureFrames)
+                    const float SearchStartSec = InOutTrack.Events.Num() > 0
+                        ? InOutTrack.Events.Last().RenderEndSeconds - 0.010f
+                        : Region.AudioBufferStartSec;
+                    float RestartSec = -1.0f;
+                    if (FindProsodicRestart(
+                            Input,
+                            SearchStartSec,
+                            State.LastConsumedProsodicRestartSec,
+                            0.200f,
+                            2.0f,
+                            RestartSec))
                     {
-                        if (Frame.AudioBufferCenterSec + 0.001f < ContinuityProbeSec)
-                            continue;
-                        if (Frame.AudioBufferCenterSec > Input.ObservedAudioBufferEndSec + 0.001f)
-                            break;
-                        if (!Frame.bLearnedSpeech)
-                        {
-                            bObservedQuietAfterProbe = true;
-                            continue;
-                        }
-                        const bool bStrongVirtualResume =
-                            (Frame.Flux >= 0.060f && Frame.RMSNorm >= 0.020f)
-                            || (Frame.RMSNorm >= 0.150f
-                                && Frame.SpeechEvidence >= 0.200f);
-                        if (bObservedQuietAfterProbe && !bStrongVirtualResume)
-                            continue;
-                        bObservedSpeechAfterProbe = true;
-                        if (bObservedQuietAfterProbe)
-                            ObservedResumeSec = Frame.AudioBufferCenterSec;
-                        break;
+                        State.ActiveTextSpeechRegionIndex = EventTextRegionIndex;
+                        State.LastResolvedPauseBoundaryWordIndex = PreviousWordIndex;
+                        State.ActiveTextRegionAudioStartSec = RestartSec;
+                        State.TimelinePriorAnchorSec = Prior.EventCenters.IsValidIndex(EventIndex)
+                            ? Prior.EventCenters[EventIndex]
+                            : Prior.TotalSec;
+                        State.TimelineAudioAnchorSec = RestartSec;
+                        State.LastConsumedProsodicRestartSec = RestartSec;
+                        bResolvedWithinFinalRegion = true;
+                    }
+                    else
+                    {
+                        // With the complete stream available, absence of both
+                        // a decoded successor and a qualifying reattack means
+                        // the punctuation remained inside this final acoustic
+                        // region. Preserve identity and finish monotonically;
+                        // the final-tail path below supplies only bounded
+                        // placement, never a second timing scheduler.
+                        State.ActiveTextSpeechRegionIndex = EventTextRegionIndex;
+                        State.LastResolvedPauseBoundaryWordIndex = PreviousWordIndex;
+                        bResolvedWithinFinalRegion = true;
                     }
                 }
-                if (!Region.bEnded
-                    && bObservedSpeechAfterProbe)
+
+                if (bResolvedWithinFinalRegion)
                 {
+                    // Continue below and let the ordinary audio frontier gate
+                    // commit the reanchored suffix.
+                }
+                else
+                {
+                    const float BoundaryCandidate =
+                        PriorToAudio(State, Prior.EventCenters[EventIndex]);
+                    const float ContinuityProbeSec = BoundaryCandidate
+                        + FMath::Max(DeclaredPauseSec, TextRegionMergeEvidenceSec);
+                    bool bObservedQuietAfterProbe = false;
+                    bool bObservedSpeechAfterProbe = false;
+                    float ObservedResumeSec = -1.0f;
+                    if (Input.AudioFeatureFrames)
+                    {
+                        for (const auto& Frame : *Input.AudioFeatureFrames)
+                        {
+                            if (Frame.AudioBufferCenterSec + 0.001f < ContinuityProbeSec)
+                                continue;
+                            if (Frame.AudioBufferCenterSec > Input.ObservedAudioBufferEndSec + 0.001f)
+                                break;
+                            if (!Frame.bLearnedSpeech || Frame.RMSNorm <= 0.030f)
+                            {
+                                bObservedQuietAfterProbe = true;
+                                continue;
+                            }
+                            const bool bStrongVirtualResume =
+                                (Frame.Flux >= 0.060f && Frame.RMSNorm >= 0.020f)
+                                || (Frame.RMSNorm >= 0.150f
+                                    && Frame.SpeechEvidence >= 0.200f);
+                            if (bObservedQuietAfterProbe && !bStrongVirtualResume)
+                                continue;
+                            bObservedSpeechAfterProbe = true;
+                            if (bObservedQuietAfterProbe)
+                                ObservedResumeSec = Frame.AudioBufferCenterSec;
+                            break;
+                        }
+                    }
+                    if (!Region.bEnded
+                        && bObservedSpeechAfterProbe
+                        // Continuous speech shortly after a duration-prior
+                        // probe is not sufficient to erase a sentence
+                        // boundary: a short prior can otherwise commit the
+                        // next sentence into the current phrase. Hard breaks
+                        // require an observed quiet-to-speech restart (or a
+                        // decoded region handoff).
+                        && (!bHardBreakBoundary || ObservedResumeSec >= 0.0f))
+                    {
                     // Punctuation may propose a text region without an
                     // independently decoded region. Continuous evidence keeps
                     // the existing timing map; quiet followed by learned speech
@@ -924,19 +1007,19 @@ static void UpdateSimpleCommittedTrack(
                             : Prior.TotalSec;
                         State.TimelineAudioAnchorSec = ObservedResumeSec;
                     }
-                }
-                else
-                {
-                    const int32 NextRegionIndex = State.ActiveSpeechRegionIndex + 1;
-                    if (Regions.IsValidIndex(NextRegionIndex))
-                    {
-                        State.LastResolvedPauseBoundaryWordIndex = PreviousWordIndex;
-                        AnchorSimpleCursorToRegion(
-                            Input, Plan, Prior, EventIndex, NextRegionIndex, Regions[NextRegionIndex], State);
-                        continue;
                     }
-                    State.SchedulerBlockReason = FName(TEXT("waiting_for_speech_resume"));
-                    break;
+                    else
+                    {
+                        if (Regions.IsValidIndex(NextRegionIndex))
+                        {
+                            State.LastResolvedPauseBoundaryWordIndex = PreviousWordIndex;
+                            AnchorSimpleCursorToRegion(
+                                Input, Plan, Prior, EventIndex, NextRegionIndex, Regions[NextRegionIndex], State);
+                            continue;
+                        }
+                        State.SchedulerBlockReason = FName(TEXT("waiting_for_speech_resume"));
+                        break;
+                    }
                 }
             }
             const int32 NextPhoneIndex = Plan.Events[EventIndex].SourcePhoneGlobalIndex;
@@ -971,22 +1054,35 @@ static void UpdateSimpleCommittedTrack(
                 && Region.bEnded
                 && Candidate > RegionEnd - 0.010f)
             {
-                int32 RemainingTextRegionEventCount = 0;
+                const bool bFinalClosedRegion = Input.bInputStreamClosed
+                    && State.ActiveSpeechRegionIndex == Regions.Num() - 1;
+                int32 RemainingCompactionEventCount = 0;
                 for (int32 TailIndex = EventIndex; TailIndex < Plan.Events.Num(); ++TailIndex)
                 {
-                    if (Plan.Events[TailIndex].SpeechRegionIndex != EventTextRegionIndex)
+                    if (!bFinalClosedRegion
+                        && Plan.Events[TailIndex].WordIndex != EventWordIndex)
                         break;
-                    ++RemainingTextRegionEventCount;
+                    ++RemainingCompactionEventCount;
                 }
-                const float CompactedCandidate = RegionEnd + MaxRegionTailCompactionOverrunSec
+                float CompactedCandidate = RegionEnd + MaxRegionTailCompactionOverrunSec
                     - MinRegionTailCompactionSpacingSec
-                        * static_cast<float>(FMath::Max(RemainingTextRegionEventCount - 1, 0));
+                        * static_cast<float>(FMath::Max(RemainingCompactionEventCount - 1, 0));
                 const float EarliestCandidate = LastCenter >= 0.0f
                     ? LastCenter + MinRegionTailCompactionSpacingSec
                     : Region.AudioBufferStartSec;
-                if (RemainingTextRegionEventCount > 0
+                if (bFinalClosedRegion)
+                    CompactedCandidate = FMath::Max(CompactedCandidate, EarliestCandidate);
+                // Before the final closed region, tail compaction is only a
+                // recovery for one stranded terminal pose in the current
+                // word. Compressing a larger live suffix can consume a later
+                // word that belongs to the next acoustic region. Once the
+                // complete stream proves there is no successor, the same
+                // bounded monotonic path may finish the final suffix.
+                if ((RemainingCompactionEventCount == 1 || bFinalClosedRegion)
                     && CompactedCandidate >= EarliestCandidate - 0.001f
-                    && CompactedCandidate >= Region.AudioBufferStartSec - 0.001f)
+                    && CompactedCandidate >= Region.AudioBufferStartSec - 0.001f
+                    && (!bFinalClosedRegion
+                        || CompactedCandidate <= Input.ObservedAudioBufferEndSec + 0.001f))
                 {
                     Candidate = FMath::Max(CompactedCandidate, EarliestCandidate);
                     bUsedRegionTailCompaction = true;
