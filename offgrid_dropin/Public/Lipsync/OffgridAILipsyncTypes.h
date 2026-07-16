@@ -6,6 +6,9 @@ struct FOffgridAICommittedVisemeEvent
 {
     int32 EventIndex = INDEX_NONE;
     FName PoseID = NAME_None;
+    // Authoritative presentation peak chosen by the text/phoneme plan.
+    // Downstream rendering may shape or duck it, but must not reinterpret it
+    // with another phoneme- or pose-specific magnitude policy.
     float Strength = 0.0f;
     FString SourceWord;
     int32 WordIndex = INDEX_NONE;

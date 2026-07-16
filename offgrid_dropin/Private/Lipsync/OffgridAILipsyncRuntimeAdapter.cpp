@@ -12,7 +12,12 @@ static constexpr float MinEventSpacingSec = 0.035f;
 static constexpr float MinRegionTailCompactionSpacingSec = 0.001f;
 static constexpr float MaxRegionTailCompactionOverrunSec = 0.020f;
 static constexpr float NominalPriorPlaybackRate = 0.90f;
-static constexpr float FocusedPriorPlaybackRate = 1.20f;
+static constexpr float FocusedPriorPlaybackRate = 1.05f;
+static constexpr float FocusedMinimumAdaptiveRate = FocusedPriorPlaybackRate;
+static constexpr float FocusedMaximumAdaptiveRate = 1.20f;
+static constexpr float FocusedAdaptiveRateBlend = 0.50f;
+static constexpr float FocusedMinimumRateSpanSec = 0.180f;
+static constexpr float HardVirtualResumeMinimumQuietSec = 0.080f;
 static constexpr float MinAnchorMatchScore = 0.75f;
 static constexpr float MaxSyllableRebaseSec = 0.120f;
 static constexpr float TextRegionMergeEvidenceSec = 0.300f;
@@ -469,9 +474,41 @@ static void UpdateSyllableAnchor(
         SelectedAnchor.AudioCenterSec - PredictedAudioCenter,
         -MaxSyllableRebaseSec,
         MaxSyllableRebaseSec);
+    float UpdatedRate = State.TimelineRate;
+    const int32 NextWordIndex = Input.TextPlan->ExpectedPhones.IsValidIndex(NextPhoneIndex)
+        ? Input.TextPlan->ExpectedPhones[NextPhoneIndex].WordIndex
+        : INDEX_NONE;
+    const bool bDenseListSentence =
+        ListBoundaryCountInSentence(*Input.TextPlan, NextWordIndex)
+            >= DenseListMinimumBoundaryCount;
+    if (!bDenseListSentence
+        && Prior.PhoneCenters.IsValidIndex(State.LastMatchedSyllablePhoneIndex)
+        && State.LastMatchedSyllableAudioSec
+            >= ActiveAudioRegion.AudioBufferStartSec - 0.001f)
+    {
+        const float PriorSpanSec = PriorCenter
+            - Prior.PhoneCenters[State.LastMatchedSyllablePhoneIndex];
+        const float AudioSpanSec = SelectedAnchor.AudioCenterSec
+            - State.LastMatchedSyllableAudioSec;
+        if (PriorSpanSec >= FocusedMinimumRateSpanSec
+            && AudioSpanSec >= FocusedMinimumRateSpanSec)
+        {
+            const float MeasuredRate = FMath::Clamp(
+                PriorSpanSec / AudioSpanSec,
+                FocusedMinimumAdaptiveRate,
+                FocusedMaximumAdaptiveRate);
+            UpdatedRate = FMath::Clamp(
+                State.TimelineRate
+                    + (MeasuredRate - State.TimelineRate)
+                        * FocusedAdaptiveRateBlend,
+                FocusedMinimumAdaptiveRate,
+                FocusedMaximumAdaptiveRate);
+        }
+    }
 
     State.TimelinePriorAnchorSec = PriorCenter;
     State.TimelineAudioAnchorSec = PredictedAudioCenter + CorrectionSec;
+    State.TimelineRate = UpdatedRate;
     State.LastMatchedSyllableIndex = SelectedAnchor.SyllableIndex;
     State.LastMatchedSyllablePhoneIndex = SelectedAnchor.NucleusPhoneIndex;
     State.LastMatchedSyllableAudioSec = SelectedAnchor.AudioCenterSec;
@@ -952,18 +989,11 @@ static void UpdateSimpleCommittedTrack(
             const bool bHardBreakBoundary = bFirstEventInWord
                 && Plan.WordBoundaryPauseClassAfter.IsValidIndex(PreviousWordIndex)
                 && Plan.WordBoundaryPauseClassAfter[PreviousWordIndex]
-                    == EOffgridAIBoundaryPauseClass::HardBreakPause
-                // A comma may carry a strong pause class but still remain
-                // inside one spoken phrase. Reserve mandatory acoustic
-                // restart handling for sentence punctuation; comma timing is
-                // handled by the prosodic/list path above.
-                && Plan.WordBoundaryPunctuationAfter.IsValidIndex(PreviousWordIndex)
-                && Plan.WordBoundaryPunctuationAfter[PreviousWordIndex] != TEXT(',');
+                    == EOffgridAIBoundaryPauseClass::HardBreakPause;
             const bool bDenseListEntryBoundary = bSoftListBoundary
                 && ListBoundaryCountInSentence(Plan, EventWordIndex)
                     >= DenseListMinimumBoundaryCount
                 && IsFirstListBoundaryInSentence(Plan, PreviousWordIndex);
-
             if (Input.bEnableFocusedWordStartAlignment
                 && bSoftListBoundary
                 && State.LastResolvedListBoundaryWordIndex != EventWordIndex)
@@ -1107,6 +1137,13 @@ static void UpdateSimpleCommittedTrack(
                 }
                 else
                 {
+                    if (bHardBreakBoundary)
+                    {
+                        // A locally learned speaking rate belongs only to the
+                        // phrase that produced its anchors. Do not extrapolate
+                        // it across unresolved sentence punctuation.
+                        State.TimelineRate = FocusedPriorPlaybackRate;
+                    }
                     const float BoundaryCandidate =
                         PriorToAudio(State, Prior.EventCenters[EventIndex]);
                     const float ContinuityProbeSec = BoundaryCandidate
@@ -1114,6 +1151,7 @@ static void UpdateSimpleCommittedTrack(
                     bool bObservedQuietAfterProbe = false;
                     bool bObservedSpeechAfterProbe = false;
                     float ObservedResumeSec = -1.0f;
+                    float ObservedQuietStartSec = -1.0f;
                     if (Input.AudioFeatureFrames)
                     {
                         for (const auto& Frame : *Input.AudioFeatureFrames)
@@ -1125,16 +1163,37 @@ static void UpdateSimpleCommittedTrack(
                             if (!Frame.bLearnedSpeech || Frame.RMSNorm <= 0.030f)
                             {
                                 bObservedQuietAfterProbe = true;
+                                if (ObservedQuietStartSec < 0.0f)
+                                    ObservedQuietStartSec = Frame.AudioBufferCenterSec;
                                 continue;
                             }
                             const bool bStrongVirtualResume =
                                 (Frame.Flux >= 0.060f && Frame.RMSNorm >= 0.020f)
                                 || (Frame.RMSNorm >= 0.150f
                                     && Frame.SpeechEvidence >= 0.200f);
-                            if (bObservedQuietAfterProbe && !bStrongVirtualResume)
+                            const float ContiguousQuietSec = ObservedQuietStartSec >= 0.0f
+                                ? Frame.AudioBufferCenterSec - ObservedQuietStartSec
+                                : 0.0f;
+                            const bool bQualifiedVirtualResume =
+                                bObservedQuietAfterProbe
+                                && bStrongVirtualResume
+                                && (!bHardBreakBoundary
+                                    || ContiguousQuietSec
+                                        >= HardVirtualResumeMinimumQuietSec);
+                            if (bObservedQuietAfterProbe && !bQualifiedVirtualResume)
+                            {
+                                // A weak or too-short reattack ends this quiet
+                                // run. It must not remain armed and steal a
+                                // later onset from the preceding speech.
+                                bObservedQuietAfterProbe = false;
+                                ObservedQuietStartSec = -1.0f;
+                                if (bHardBreakBoundary)
+                                    continue;
+                            }
+                            if (bHardBreakBoundary && !bQualifiedVirtualResume)
                                 continue;
                             bObservedSpeechAfterProbe = true;
-                            if (bObservedQuietAfterProbe)
+                            if (bQualifiedVirtualResume)
                                 ObservedResumeSec = Frame.AudioBufferCenterSec;
                             break;
                         }
@@ -1221,7 +1280,8 @@ static void UpdateSimpleCommittedTrack(
                         break;
                     ++RemainingCompactionEventCount;
                 }
-                float CompactedCandidate = RegionEnd + MaxRegionTailCompactionOverrunSec
+                float CompactedCandidate = RegionEnd
+                    + (bFinalClosedRegion ? 0.0f : MaxRegionTailCompactionOverrunSec)
                     - MinRegionTailCompactionSpacingSec
                         * static_cast<float>(FMath::Max(RemainingCompactionEventCount - 1, 0));
                 const float EarliestCandidate = LastCenter >= 0.0f

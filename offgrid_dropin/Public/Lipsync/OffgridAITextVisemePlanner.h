@@ -41,6 +41,7 @@ struct FOffgridAITextVisemeEvent
     // Direct MetaHuman viseme pose id from MetaHumanVisemeLibrary.json.
     FName PoseID = NAME_None;
 
+    // Final presentation peak for this transcript-derived pose.
     float Strength = 0.0f;
     FString SourceText;
     int32 WordIndex = INDEX_NONE;

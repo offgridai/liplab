@@ -1,5 +1,6 @@
 import json
 import pathlib
+import subprocess
 import sys
 
 from grade_summary import compute_summary, load_case_grades
@@ -8,6 +9,9 @@ from grade_summary import compute_summary, load_case_grades
 def main() -> int:
     root = pathlib.Path(__file__).resolve().parents[1]
     latest = root / "outputs" / "runs" / "latest"
+    region_summary_script = root / "scripts" / "summarize_region_ownership.py"
+    if subprocess.call([sys.executable, str(region_summary_script)]) != 0:
+        return 2
     rows, graded, ungraded = load_case_grades(latest, root / "inputs" / "gold")
     if not rows:
         print("No grade outputs found. Run the corpus first.", file=sys.stderr)
@@ -41,6 +45,11 @@ def main() -> int:
     focus_path = latest / "focus_alignment_summary.json"
     if focus_path.exists():
         summary["focused_alignment"] = json.loads(focus_path.read_text(encoding="utf-8"))
+    region_ownership_path = latest / "region_ownership_summary.json"
+    if region_ownership_path.exists():
+        summary["region_ownership"] = json.loads(
+            region_ownership_path.read_text(encoding="utf-8")
+        )
 
     summary_path = latest / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
@@ -65,11 +74,25 @@ def main() -> int:
             f"region_mae={focus['region_head_mae_ms']:.1f}ms "
             f"region_p90={focus['region_head_p90_abs_ms']:.1f}ms "
             f"region_coverage={focus['region_head_coverage_rate']:.3f} "
+            f"resume_in_pause={focus['region_resume_in_pause_rate']:.3f} "
+            f"resume_affected_cases={focus['region_resume_in_pause_case_rate']:.3f} "
+            f"resume_violation_p90={focus['region_resume_in_pause_violation_p90_ms']:.1f}ms "
+            f"within_region_early_drift_p90={focus['within_region_early_drift_p90_ms']:.1f}ms "
             f"pause_clean={focus['pause_clean_rate']:.3f} "
             f"word_mae={focus['word_head_mae_ms']:.1f}ms "
             f"word_p90={focus['word_head_p90_abs_ms']:.1f}ms "
             f"word_coverage={focus['word_head_coverage_rate']:.3f} "
             f"event_completion={focus['event_completion_rate']:.3f}"
+        )
+    ownership = summary.get("region_ownership")
+    if ownership:
+        print(
+            "Region ownership: "
+            f"coverage={ownership['runtime_word_coverage_rate']:.3f} "
+            f"integrity={ownership['runtime_word_region_integrity_rate']:.3f} "
+            f"runtime_mfa_strict={ownership['runtime_mfa_word_region_strict_accuracy']:.3f} "
+            f"transcript_mfa_boundary={ownership['transcript_mfa_boundary_agreement_rate']:.3f} "
+            f"runtime_mfa_boundary={ownership['runtime_mfa_boundary_agreement_rate']:.3f}"
         )
     print(f"Wrote {summary_path}")
     return 0

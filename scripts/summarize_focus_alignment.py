@@ -30,6 +30,8 @@ def main() -> int:
     rows: list[dict] = []
     all_region_errors: list[float] = []
     all_word_errors: list[float] = []
+    all_resume_in_pause_leads: list[float] = []
+    all_within_region_early_drifts: list[float] = []
 
     for path in sorted(latest.glob("case_*/focus_alignment_grade.json")):
         grade = json.loads(path.read_text(encoding="utf-8"))
@@ -40,6 +42,17 @@ def main() -> int:
         word_errors = absolute_errors(grade.get("word_heads", []))
         all_region_errors.extend(region_errors)
         all_word_errors.extend(word_errors)
+        resume_in_pause_leads = [
+            float(row.get("resume_in_pause_ms", 0.0))
+            for row in grade.get("region_heads", [])
+            if bool(row.get("is_resume", False))
+        ]
+        within_region_early_drifts = [
+            float(row.get("relative_early_drift_ms", 0.0))
+            for row in grade.get("word_heads", [])
+        ]
+        all_resume_in_pause_leads.extend(resume_in_pause_leads)
+        all_within_region_early_drifts.extend(within_region_early_drifts)
 
         pause_duration = float(grade.get("pause_duration_ms", 0.0))
         pause_leakage = float(grade.get("pause_animation_leakage_ms", 0.0))
@@ -49,6 +62,10 @@ def main() -> int:
         event_completion = float(grade.get("event_completion_rate", 1.0))
         region_mae = ratio(sum(region_errors), len(region_errors), 0.0)
         word_mae = ratio(sum(word_errors), len(word_errors), 0.0)
+        resume_in_pause_max = float(grade.get("region_resume_in_pause_max_ms", 0.0))
+        within_region_early_drift_max = float(
+            grade.get("within_region_early_drift_max_ms", 0.0)
+        )
 
         # This index selects cases for review; it is not an efficacy metric.
         # Its normalized budgets encode the product priorities: region heads
@@ -72,13 +89,21 @@ def main() -> int:
             "priority_failure_index": priority_failure_index,
             "region_head_coverage_rate": region_coverage,
             "region_head_mae_ms": region_mae,
+            "region_resume_in_pause_rate": float(grade.get("region_resume_in_pause_rate", 0.0)),
+            "region_resume_in_pause_max_ms": resume_in_pause_max,
             "pause_clean_rate": 1.0 - pause_leak_rate if pause_duration else "",
             "pause_duration_ms": pause_duration,
             "word_head_coverage_rate": word_coverage,
             "word_head_mae_ms": word_mae,
+            "within_region_early_drift_max_ms": within_region_early_drift_max,
+            "early_schedule_failure_max_ms": max(
+                resume_in_pause_max, within_region_early_drift_max
+            ),
             "event_completion_rate": event_completion,
             "expected_region_head_count": int(grade.get("expected_region_head_count", 0)),
             "matched_region_head_count": int(grade.get("matched_region_head_count", 0)),
+            "expected_region_resume_count": int(grade.get("expected_region_resume_count", 0)),
+            "region_resume_in_pause_count": int(grade.get("region_resume_in_pause_count", 0)),
             "expected_word_head_count": int(grade.get("expected_word_head_count", 0)),
             "matched_word_head_count": int(grade.get("matched_word_head_count", 0)),
             "planned_event_count": int(grade.get("planned_event_count", 0)),
@@ -106,12 +131,33 @@ def main() -> int:
     matched_regions = sum(row["matched_region_head_count"] for row in rows)
     total_words = sum(row["expected_word_head_count"] for row in rows)
     matched_words = sum(row["matched_word_head_count"] for row in rows)
+    total_region_resumes = sum(row["expected_region_resume_count"] for row in rows)
+    premature_region_resumes = sum(row["region_resume_in_pause_count"] for row in rows)
+    premature_resume_cases = sum(
+        1 for row in rows if row["region_resume_in_pause_count"] > 0
+    )
+    positive_resume_in_pause_leads = [
+        value for value in all_resume_in_pause_leads if value > 0.0
+    ]
+    early_schedule_rows = sorted(
+        rows, key=lambda row: row["early_schedule_failure_max_ms"], reverse=True
+    )
 
     summary = {
         "cases": len(rows),
         "region_head_mae_ms": ratio(sum(all_region_errors), len(all_region_errors), 0.0),
         "region_head_p90_abs_ms": percentile(all_region_errors, 0.90),
         "region_head_coverage_rate": ratio(matched_regions, total_regions),
+        "region_resume_in_pause_rate": ratio(
+            premature_region_resumes, total_region_resumes, 0.0
+        ),
+        "region_resume_in_pause_case_rate": ratio(premature_resume_cases, len(rows), 0.0),
+        "region_resume_in_pause_violation_p90_ms": percentile(
+            positive_resume_in_pause_leads, 0.90
+        ),
+        "within_region_early_drift_p90_ms": percentile(
+            all_within_region_early_drifts, 0.90
+        ),
         "pause_clean_rate": 1.0 - ratio(total_leakage, total_pause, 0.0),
         "word_head_mae_ms": ratio(sum(all_word_errors), len(all_word_errors), 0.0),
         "word_head_p90_abs_ms": percentile(all_word_errors, 0.90),
@@ -119,6 +165,7 @@ def main() -> int:
         "event_completion_rate": ratio(total_committed, total_planned),
         "best_cases": rows[:5],
         "worst_cases": list(reversed(rows[-5:])),
+        "worst_early_schedule_cases": early_schedule_rows[:10],
     }
     (latest / "focus_alignment_summary.json").write_text(
         json.dumps(summary, indent=2), encoding="utf-8"
@@ -130,6 +177,12 @@ def main() -> int:
         f"region_coverage={summary['region_head_coverage_rate']:.3f}"
     )
     print(
+        f"resume_in_pause={summary['region_resume_in_pause_rate']:.3f} "
+        f"affected_cases={summary['region_resume_in_pause_case_rate']:.3f} "
+        f"violation_p90={summary['region_resume_in_pause_violation_p90_ms']:.1f}ms "
+        f"within_region_early_drift_p90={summary['within_region_early_drift_p90_ms']:.1f}ms"
+    )
+    print(
         f"pause_clean={summary['pause_clean_rate']:.3f} "
         f"word_mae={summary['word_head_mae_ms']:.1f}ms "
         f"word_p90={summary['word_head_p90_abs_ms']:.1f}ms "
@@ -138,6 +191,10 @@ def main() -> int:
     )
     print("Best cases: " + ", ".join(row["case"] for row in rows[:5]))
     print("Worst cases: " + ", ".join(row["case"] for row in reversed(rows[-5:])))
+    print(
+        "Worst early-schedule cases: "
+        + ", ".join(row["case"] for row in early_schedule_rows[:10])
+    )
     return 0
 
 

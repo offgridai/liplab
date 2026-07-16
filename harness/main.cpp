@@ -4035,6 +4035,50 @@ static std::string focus_alignment_grade_json(
             total += std::abs(row.runtime_center - row.gold_center) * 1000.0;
         return rows.empty() ? 0.0 : total / static_cast<double>(rows.size());
     };
+    // A resumed region is owned incorrectly if its first viseme center lands
+    // before the gold speech start, inside the preceding nonspeech interval.
+    auto region_resume_in_pause_ms = [&](const CenterRow& row) {
+        const auto region = std::find_if(gold_speech.begin(), gold_speech.end(), [&](const GoldSpeechRegion& candidate) {
+            return candidate.index == row.region_index;
+        });
+        if (region == gold_speech.end() || region == gold_speech.begin()) return 0.0;
+        return std::max(0.0, region->start - row.runtime_center) * 1000.0;
+    };
+    auto is_region_resume = [&](const CenterRow& row) {
+        const auto region = std::find_if(gold_speech.begin(), gold_speech.end(), [&](const GoldSpeechRegion& candidate) {
+            return candidate.index == row.region_index;
+        });
+        return region != gold_speech.end() && region != gold_speech.begin();
+    };
+    int expected_region_resume_count = 0;
+    int region_resume_in_pause_count = 0;
+    double region_resume_in_pause_max_ms = 0.0;
+    for (const auto& row : regions)
+    {
+        const auto region = std::find_if(gold_speech.begin(), gold_speech.end(), [&](const GoldSpeechRegion& candidate) {
+            return candidate.index == row.region_index;
+        });
+        if (region == gold_speech.end() || region == gold_speech.begin()) continue;
+        ++expected_region_resume_count;
+        const double lead_ms = region_resume_in_pause_ms(row);
+        if (lead_ms > 0.0) ++region_resume_in_pause_count;
+        region_resume_in_pause_max_ms = std::max(region_resume_in_pause_max_ms, lead_ms);
+    }
+    // Subtract the region-head error so this measures cursor drift after the
+    // region was anchored, rather than counting a uniformly shifted region.
+    double within_region_early_drift_max_ms = 0.0;
+    for (const auto& word : words)
+    {
+        const auto region = std::find_if(regions.begin(), regions.end(), [&](const CenterRow& candidate) {
+            return candidate.region_index == word.region_index;
+        });
+        if (region == regions.end()) continue;
+        const double region_error = region->runtime_center - region->gold_center;
+        const double word_error = word.runtime_center - word.gold_center;
+        within_region_early_drift_max_ms = std::max(
+            within_region_early_drift_max_ms,
+            std::max(0.0, region_error - word_error) * 1000.0);
+    }
     int pause_samples = 0;
     int active_pause_samples = 0;
     for (size_t index = 0; index + 1 < gold_speech.size(); ++index)
@@ -4074,10 +4118,18 @@ static std::string focus_alignment_grade_json(
         << "  \"matched_region_head_count\": " << regions.size() << ",\n"
         << "  \"region_head_coverage_rate\": " << region_head_coverage_rate << ",\n"
         << "  \"region_head_mean_abs_ms\": " << mean_abs_ms(regions) << ",\n"
+        << "  \"expected_region_resume_count\": " << expected_region_resume_count << ",\n"
+        << "  \"region_resume_in_pause_count\": " << region_resume_in_pause_count << ",\n"
+        << "  \"region_resume_in_pause_rate\": "
+        << (expected_region_resume_count > 0
+            ? static_cast<double>(region_resume_in_pause_count) / static_cast<double>(expected_region_resume_count)
+            : 0.0) << ",\n"
+        << "  \"region_resume_in_pause_max_ms\": " << region_resume_in_pause_max_ms << ",\n"
         << "  \"expected_word_head_count\": " << expected_word_indices.size() << ",\n"
         << "  \"matched_word_head_count\": " << words.size() << ",\n"
         << "  \"word_head_coverage_rate\": " << word_head_coverage_rate << ",\n"
         << "  \"word_head_mean_abs_ms\": " << mean_abs_ms(words) << ",\n"
+        << "  \"within_region_early_drift_max_ms\": " << within_region_early_drift_max_ms << ",\n"
         << "  \"pause_duration_ms\": " << pause_samples << ",\n"
         << "  \"pause_animation_leakage_ms\": " << active_pause_samples << ",\n"
         << "  \"pause_clean_rate\": " << pause_clean_rate << ",\n"
@@ -4089,19 +4141,285 @@ static std::string focus_alignment_grade_json(
             << ", \"word\": \"" << row.word << "\", \"phone\": \"" << row.phone
             << "\", \"gold_center\": " << row.gold_center
             << ", \"runtime_center\": " << row.runtime_center
-            << ", \"error_ms\": " << (row.runtime_center - row.gold_center) * 1000.0 << "}"
+            << ", \"error_ms\": " << (row.runtime_center - row.gold_center) * 1000.0
+            << ", \"is_resume\": " << (is_region_resume(row) ? "true" : "false")
+            << ", \"resume_in_pause_ms\": " << region_resume_in_pause_ms(row) << "}"
             << (index + 1 < regions.size() ? "," : "") << "\n";
     }
     out << "  ],\n  \"word_heads\": [\n";
     for (size_t index = 0; index < words.size(); ++index)
     {
         const auto& row = words[index];
+        const auto region = std::find_if(regions.begin(), regions.end(), [&](const CenterRow& candidate) {
+            return candidate.region_index == row.region_index;
+        });
+        double relative_early_drift_ms = 0.0;
+        if (region != regions.end())
+        {
+            const double region_error = region->runtime_center - region->gold_center;
+            const double word_error = row.runtime_center - row.gold_center;
+            relative_early_drift_ms = std::max(0.0, region_error - word_error) * 1000.0;
+        }
         out << "    {\"word_index\": " << row.word_index
             << ", \"word\": \"" << row.word << "\", \"phone\": \"" << row.phone
             << "\", \"gold_center\": " << row.gold_center
             << ", \"runtime_center\": " << row.runtime_center
-            << ", \"error_ms\": " << (row.runtime_center - row.gold_center) * 1000.0 << "}"
+            << ", \"error_ms\": " << (row.runtime_center - row.gold_center) * 1000.0
+            << ", \"relative_early_drift_ms\": " << relative_early_drift_ms << "}"
             << (index + 1 < words.size() ? "," : "") << "\n";
+    }
+    out << "  ]\n}\n";
+    return out.str();
+}
+
+static std::string region_ownership_grade_json(
+    const FOffgridAIAlignedVisemeTrack& track,
+    const FOffgridAITextVisemePlan& plan,
+    const std::vector<GoldWordTiming>& gold_words,
+    const std::vector<GoldSpeechRegion>& gold_speech)
+{
+    struct WordRow
+    {
+        int word_index = -1;
+        std::string word;
+        int transcript_region = -1;
+        int mfa_region = -1;
+        int runtime_region = -1;
+        int runtime_mapped_mfa_region = -1;
+        int planned_events = 0;
+        int committed_events = 0;
+        std::vector<int> runtime_regions;
+        std::vector<int> runtime_mapped_mfa_regions;
+        bool runtime_region_integrity = false;
+        bool runtime_mfa_majority_correct = false;
+        bool runtime_mfa_strict_correct = false;
+    };
+
+    auto map_runtime_region_to_mfa = [&](int runtime_region_index) {
+        const auto runtime = std::find_if(
+            track.SpeechRegions.begin(), track.SpeechRegions.end(), [&](const auto& candidate) {
+                return candidate.SpeechRegionIndex == runtime_region_index;
+            });
+        if (runtime == track.SpeechRegions.end() || gold_speech.empty()) return -1;
+
+        const double runtime_start = runtime->StartSeconds;
+        const double runtime_end = runtime->EndSeconds;
+        int best_region = -1;
+        double best_overlap = 0.0;
+        for (const auto& gold : gold_speech)
+        {
+            const double overlap = std::max(
+                0.0, std::min(runtime_end, gold.end) - std::max(runtime_start, gold.start));
+            if (overlap > best_overlap)
+            {
+                best_overlap = overlap;
+                best_region = gold.index;
+            }
+        }
+        if (best_region >= 0) return best_region;
+
+        const double midpoint = 0.5 * (runtime_start + runtime_end);
+        double best_distance = std::numeric_limits<double>::max();
+        for (const auto& gold : gold_speech)
+        {
+            const double distance = midpoint < gold.start
+                ? gold.start - midpoint
+                : (midpoint > gold.end ? midpoint - gold.end : 0.0);
+            if (distance < best_distance)
+            {
+                best_distance = distance;
+                best_region = gold.index;
+            }
+        }
+        return best_region;
+    };
+
+    auto append_unique = [](std::vector<int>& values, int value) {
+        if (value >= 0 && std::find(values.begin(), values.end(), value) == values.end())
+            values.push_back(value);
+    };
+    auto mode_for_word = [](const FOffgridAIAlignedVisemeTrack& candidate_track, int word_index) {
+        std::map<int, int> counts;
+        for (const auto& event : candidate_track.Events)
+            if (event.WordIndex == word_index && event.SpeechRegionIndex >= 0)
+                ++counts[event.SpeechRegionIndex];
+        int mode = -1;
+        int best_count = 0;
+        for (const auto& pair : counts)
+            if (pair.second > best_count)
+            {
+                mode = pair.first;
+                best_count = pair.second;
+            }
+        return mode;
+    };
+
+    std::vector<WordRow> words;
+    int planned_word_count = 0;
+    int committed_word_count = 0;
+    int intact_word_count = 0;
+    int strict_correct_count = 0;
+    int majority_correct_count = 0;
+    int transcript_index_correct_count = 0;
+    int planned_event_count = 0;
+    int committed_event_count = 0;
+    int fully_committed_word_count = 0;
+    int fully_committed_and_strict_correct_word_count = 0;
+    for (const auto& gold_word : gold_words)
+    {
+        WordRow row;
+        row.word_index = gold_word.word_index;
+        row.word = gold_word.word;
+        row.mfa_region = gold_word.speech_region_index;
+        for (const auto& event : plan.Events)
+        {
+            if (event.WordIndex != row.word_index) continue;
+            ++row.planned_events;
+            if (row.transcript_region < 0) row.transcript_region = event.SpeechRegionIndex;
+        }
+        for (const auto& event : track.Events)
+        {
+            if (event.WordIndex != row.word_index) continue;
+            ++row.committed_events;
+            append_unique(row.runtime_regions, event.SpeechRegionIndex);
+            append_unique(
+                row.runtime_mapped_mfa_regions,
+                map_runtime_region_to_mfa(event.SpeechRegionIndex));
+        }
+        row.runtime_region = mode_for_word(track, row.word_index);
+        row.runtime_mapped_mfa_region = map_runtime_region_to_mfa(row.runtime_region);
+        row.runtime_region_integrity = row.committed_events > 0 && row.runtime_regions.size() == 1;
+        row.runtime_mfa_majority_correct = row.committed_events > 0
+            && row.runtime_mapped_mfa_region == row.mfa_region;
+        row.runtime_mfa_strict_correct = row.committed_events > 0
+            && !row.runtime_mapped_mfa_regions.empty()
+            && std::all_of(
+                row.runtime_mapped_mfa_regions.begin(),
+                row.runtime_mapped_mfa_regions.end(),
+                [&](int region) { return region == row.mfa_region; });
+        if (row.planned_events > 0) ++planned_word_count;
+        if (row.committed_events > 0) ++committed_word_count;
+        if (row.runtime_region_integrity) ++intact_word_count;
+        if (row.runtime_mfa_strict_correct) ++strict_correct_count;
+        if (row.runtime_mfa_majority_correct) ++majority_correct_count;
+        if (row.transcript_region >= 0 && row.transcript_region == row.mfa_region)
+            ++transcript_index_correct_count;
+        planned_event_count += row.planned_events;
+        committed_event_count += row.committed_events;
+        if (row.planned_events > 0 && row.committed_events == row.planned_events)
+        {
+            ++fully_committed_word_count;
+            if (row.runtime_mfa_strict_correct)
+                ++fully_committed_and_strict_correct_word_count;
+        }
+        words.push_back(row);
+    }
+
+    struct BoundaryCounts
+    {
+        int compared = 0;
+        int agreements = 0;
+        int reference_splits = 0;
+        int predicted_splits = 0;
+        int true_splits = 0;
+    };
+    auto add_boundary = [](BoundaryCounts& counts, bool reference_split, bool predicted_split) {
+        ++counts.compared;
+        if (reference_split == predicted_split) ++counts.agreements;
+        if (reference_split) ++counts.reference_splits;
+        if (predicted_split) ++counts.predicted_splits;
+        if (reference_split && predicted_split) ++counts.true_splits;
+    };
+    BoundaryCounts transcript_vs_mfa;
+    BoundaryCounts runtime_vs_mfa;
+    BoundaryCounts runtime_vs_transcript;
+    for (size_t index = 1; index < words.size(); ++index)
+    {
+        const auto& before = words[index - 1];
+        const auto& after = words[index];
+        const bool mfa_split = before.mfa_region >= 0 && after.mfa_region >= 0
+            && before.mfa_region != after.mfa_region;
+        if (before.transcript_region >= 0 && after.transcript_region >= 0)
+        {
+            const bool transcript_split = before.transcript_region != after.transcript_region;
+            add_boundary(transcript_vs_mfa, mfa_split, transcript_split);
+            if (before.runtime_region >= 0 && after.runtime_region >= 0)
+            {
+                const bool runtime_split = before.runtime_region != after.runtime_region;
+                add_boundary(runtime_vs_transcript, transcript_split, runtime_split);
+            }
+        }
+        if (before.runtime_region >= 0 && after.runtime_region >= 0)
+        {
+            const bool runtime_split = before.runtime_region != after.runtime_region;
+            add_boundary(runtime_vs_mfa, mfa_split, runtime_split);
+        }
+    }
+
+    auto rate = [](int numerator, int denominator, double fallback = 1.0) {
+        return denominator > 0
+            ? static_cast<double>(numerator) / static_cast<double>(denominator)
+            : fallback;
+    };
+    auto write_boundary_metrics = [&](std::ostringstream& out, const char* prefix, const BoundaryCounts& counts) {
+        const double precision = rate(counts.true_splits, counts.predicted_splits, 1.0);
+        const double recall = rate(counts.true_splits, counts.reference_splits, 1.0);
+        const double f1 = precision + recall > 0.0
+            ? 2.0 * precision * recall / (precision + recall)
+            : 0.0;
+        out << "  \"" << prefix << "_boundary_count\": " << counts.compared << ",\n"
+            << "  \"" << prefix << "_reference_split_count\": " << counts.reference_splits << ",\n"
+            << "  \"" << prefix << "_predicted_split_count\": " << counts.predicted_splits << ",\n"
+            << "  \"" << prefix << "_true_split_count\": " << counts.true_splits << ",\n"
+            << "  \"" << prefix << "_boundary_agreement_rate\": "
+            << rate(counts.agreements, counts.compared) << ",\n"
+            << "  \"" << prefix << "_split_precision\": " << precision << ",\n"
+            << "  \"" << prefix << "_split_recall\": " << recall << ",\n"
+            << "  \"" << prefix << "_split_f1\": " << f1 << ",\n";
+    };
+
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(6);
+    out << "{\n"
+        << "  \"mfa_word_count\": " << words.size() << ",\n"
+        << "  \"transcript_planned_word_count\": " << planned_word_count << ",\n"
+        << "  \"runtime_committed_word_count\": " << committed_word_count << ",\n"
+        << "  \"runtime_word_coverage_rate\": " << rate(committed_word_count, words.size()) << ",\n"
+        << "  \"planned_event_count\": " << planned_event_count << ",\n"
+        << "  \"committed_event_count\": " << committed_event_count << ",\n"
+        << "  \"runtime_event_completion_rate\": " << rate(committed_event_count, planned_event_count) << ",\n"
+        << "  \"runtime_fully_committed_word_rate\": " << rate(fully_committed_word_count, words.size()) << ",\n"
+        << "  \"runtime_fully_committed_and_strict_correct_word_rate\": "
+        << rate(fully_committed_and_strict_correct_word_count, words.size()) << ",\n"
+        << "  \"runtime_word_region_integrity_rate\": " << rate(intact_word_count, committed_word_count) << ",\n"
+        << "  \"runtime_mfa_word_region_strict_accuracy\": " << rate(strict_correct_count, committed_word_count) << ",\n"
+        << "  \"runtime_mfa_word_region_majority_accuracy\": " << rate(majority_correct_count, committed_word_count) << ",\n"
+        << "  \"transcript_mfa_raw_region_index_accuracy\": " << rate(transcript_index_correct_count, planned_word_count) << ",\n";
+    write_boundary_metrics(out, "transcript_mfa", transcript_vs_mfa);
+    write_boundary_metrics(out, "runtime_mfa", runtime_vs_mfa);
+    write_boundary_metrics(out, "runtime_transcript", runtime_vs_transcript);
+    out << "  \"words\": [\n";
+    for (size_t index = 0; index < words.size(); ++index)
+    {
+        const auto& row = words[index];
+        out << "    {\"word_index\": " << row.word_index
+            << ", \"word\": \"" << row.word << "\""
+            << ", \"transcript_region_index\": " << row.transcript_region
+            << ", \"mfa_region_index\": " << row.mfa_region
+            << ", \"runtime_region_index\": " << row.runtime_region
+            << ", \"runtime_mapped_mfa_region_index\": " << row.runtime_mapped_mfa_region
+            << ", \"planned_event_count\": " << row.planned_events
+            << ", \"committed_event_count\": " << row.committed_events
+            << ", \"runtime_regions\": [";
+        for (size_t region_index = 0; region_index < row.runtime_regions.size(); ++region_index)
+            out << (region_index > 0 ? ", " : "") << row.runtime_regions[region_index];
+        out << "], \"runtime_mapped_mfa_regions\": [";
+        for (size_t region_index = 0; region_index < row.runtime_mapped_mfa_regions.size(); ++region_index)
+            out << (region_index > 0 ? ", " : "") << row.runtime_mapped_mfa_regions[region_index];
+        out << "], \"runtime_region_integrity\": " << (row.runtime_region_integrity ? "true" : "false")
+            << ", \"runtime_mfa_majority_correct\": " << (row.runtime_mfa_majority_correct ? "true" : "false")
+            << ", \"runtime_mfa_strict_correct\": " << (row.runtime_mfa_strict_correct ? "true" : "false")
+            << "}" << (index + 1 < words.size() ? "," : "") << "\n";
     }
     out << "  ]\n}\n";
     return out.str();
@@ -4685,6 +5003,8 @@ int main(int argc, char** argv)
                 write_text(case_dir / "gold_visible_visemes.csv", gold_visible_visemes_csv(handmade));
                 write_text(case_dir / "focus_alignment_grade.json",
                     focus_alignment_grade_json(committed, plan, handmade, gold_speech));
+                write_text(case_dir / "region_ownership_grade.json",
+                    region_ownership_grade_json(committed, plan, gold_words, gold_speech));
                 report = grade(committed, speech, handmade, gold_words, gold_speech);
                 if (output.write_detailed_diagnostics)
                 {

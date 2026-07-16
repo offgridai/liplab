@@ -505,6 +505,23 @@ static const TMap<FString, FCmuPronunciation>& GetTtsPronunciationPreferences()
     return Preferences;
 }
 
+static bool IsVisuallyCoherentPronunciation(const FCmuPronunciation& Phones)
+{
+    // A standalone R immediately followed by the already-rhotic ER vowel
+    // double-articulates the same rhotic gesture (for example F R ER0). MFA
+    // may select such an alternate while fitting acoustics, but it is not a
+    // coherent transcript-owned visual sequence.
+    for (int32 Index = 0; Index + 1 < Phones.Num(); ++Index)
+    {
+        if (StripStressDigits(Phones[Index]) == TEXT("R")
+            && StripStressDigits(Phones[Index + 1]) == TEXT("ER"))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 static bool SelectCmuPronunciation(
     const FString& Word,
     const FString& PreviousWord,
@@ -526,7 +543,8 @@ static bool SelectCmuPronunciation(
     {
         for (int32 VariantIndex = 0; VariantIndex < Variants->Num(); ++VariantIndex)
         {
-            if (PronunciationsEqual((*Variants)[VariantIndex], *Preferred))
+            if (PronunciationsEqual((*Variants)[VariantIndex], *Preferred)
+                && IsVisuallyCoherentPronunciation(*Preferred))
             {
                 OutVariantIndex = VariantIndex;
                 break;
@@ -540,6 +558,9 @@ static bool SelectCmuPronunciation(
         if (Word != Row.Word) continue;
         const FString& Neighbor = Row.bPreviousNeighbor ? PreviousWord : NextWord;
         if (Neighbor != Row.NeighborWord) continue;
+        FCmuPronunciation ContextPhones;
+        FString(Row.Phones).ParseIntoArray(ContextPhones, TEXT(" "), true);
+        if (!IsVisuallyCoherentPronunciation(ContextPhones)) continue;
         if (BestContext == nullptr
             || Row.PreferredShare > BestContext->PreferredShare
             || (Row.PreferredShare == BestContext->PreferredShare
@@ -827,17 +848,14 @@ static void AddEvent(TArray<FOffgridAITextVisemeEvent>& Events, EOffgridAITextVi
     Events.Add(E);
 }
 
-static bool IsStress1Or2(const FString& Phone)
-{
-    return Phone.Contains(TEXT("1")) || Phone.Contains(TEXT("2"));
-}
-
 static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FString& Word, const TArray<FString>& WordPhones, const FString& Phone, int32 PhoneIndex, int32 PhoneCount, int32 WordIndex, int32 SpeechRegionIndex, int32 SentenceIndex)
 {
     const FString Base = StripStressDigits(Phone);
     const float LocalOrder = (static_cast<float>(PhoneIndex) + 0.5f) / FMath::Max(static_cast<float>(PhoneCount), 1.0f);
-    const bool bStressed = IsStress1Or2(Phone);
-    const float VowelStrength = bStressed ? 0.92f : 0.50f;
+    // Every vowel is a syllable nucleus and therefore a dominant visible pose.
+    // Strength is the final presentation magnitude; the performer does not
+    // apply a second pose-specific emphasis policy.
+    constexpr float VowelStrength = 1.00f;
 
     // Strong visible consonants. These are CMU phonemes, not letters.
     if (Base == TEXT("M") || Base == TEXT("B") || Base == TEXT("P"))
@@ -907,7 +925,7 @@ static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FStr
 
     if (Base == TEXT("AY"))
     {
-        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("05_Ay"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, bStressed ? 0.94f : 0.68f, TEXT("cmu_ay"), LocalOrder, PhoneIndex, Phone, Base);
+        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("05_Ay"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_ay"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("AA") || Base == TEXT("AW"))
@@ -1040,9 +1058,10 @@ static int32 EstimateUnknownWordSyllables(const FString& Word)
 
 static void AddConservativeUnknownWordEvents(TArray<FOffgridAITextVisemeEvent>& Events, const FString& Word, int32 WordIndex, int32 SpeechRegionIndex, int32 SentenceIndex)
 {
-    // Unknown words should not fall back to letter soup. Emit one low-strength
-    // generic vowel so timing can continue, and make CMU misses obvious in logs.
-    AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("06_Eh"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.28f, TEXT("cmu_miss_conservative_single_vowel"), 0.5f, 0, TEXT("UNK"), TEXT("UNK"));
+    // Unknown words should not fall back to letter soup. Emit one conservative
+    // but readable syllable nucleus so timing can continue and the mouth does
+    // not disappear merely because CMU lacks the word.
+    AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("06_Eh"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.78f, TEXT("cmu_miss_conservative_single_vowel"), 0.5f, 0, TEXT("UNK"), TEXT("UNK"));
 }
 }
 
