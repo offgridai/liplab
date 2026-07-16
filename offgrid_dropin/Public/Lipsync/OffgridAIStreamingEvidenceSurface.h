@@ -21,19 +21,9 @@ struct FOffgridAIStreamingEvidenceSurfaceConfig
 {
     float PrerollSec = 0.350f;
     float PostrollSec = 1.500f;
-    // Exposes weaker phone-family candidates for a separate transcript
-    // conditioning pass. It does not affect pulse or pause observations.
+    // Exposes lower-confidence phone-family candidates for offline grading.
+    // Runtime uses the conservative default.
     bool bPermissivePhoneCandidates = false;
-    // Enables the higher-recall pulse candidate experiment. Keep this false
-    // for existing runtime consumers until sequence assignment is revalidated.
-    bool bRefinedPulseCandidates = false;
-    // Emits a dense set of short-scale sonority maxima for transcript-count-
-    // conditioned pulse-track resolution. Do not consume these as independent
-    // high-confidence pulse detections.
-    bool bPermissivePulseCandidates = false;
-    // Applies family-specific thresholds calibrated inside pulse-matched
-    // syllable envelopes. Advisory until transcript assignment is validated.
-    bool bRefinedIntraEnvelopePhoneCandidates = false;
 };
 
 struct FOffgridAIAudioLandmarkObservation

@@ -145,7 +145,6 @@ static void UpdateSyllableAnchor(
     FOffgridAIStreamingEvidenceSurfaceConfig Config;
     Config.PrerollSec = FMath::Max(Input.PrerollSec, 0.100f);
     Config.PostrollSec = 1.500f;
-    Config.bRefinedPulseCandidates = true;
     const TArray<FOffgridAIAudioLandmarkObservation> Evidence =
         FOffgridAIStreamingEvidenceSurface::Analyze(*Input.AudioFeatureFrames, Config);
     const TArray<FOffgridAIStreamingSyllablePositionEstimate> Anchors =
@@ -185,10 +184,9 @@ static void UpdateSyllableAnchor(
     State.TimelineAudioAnchorSec = PredictedAudioCenter + CorrectionSec;
     State.LastMatchedSyllableIndex = Selected->SyllableIndex;
     State.LastMatchedSyllablePhoneIndex = Selected->NucleusPhoneIndex;
-    State.LastMatchedSyllablePriorSec = PriorCenter;
     State.LastMatchedSyllableAudioSec = Selected->AudioCenterSec;
     State.LastMatchedSyllableConfidence = Selected->Confidence;
-    ++State.ExactPulseRebaseCount;
+    ++State.BoundedSyllableRebaseCount;
 
     FOffgridAIRuntimeSyllableAssignmentDiagnosticRow Row;
     Row.LineID = Input.LineID;
@@ -247,16 +245,13 @@ static void FillCommittedEvent(
     Out.bUsedInitialSpeechAnchor = RegionIndex == 0;
     Out.bUsedResumeAnchor = RegionIndex > 0
         && State.LastAnchoredSpeechRegionIndex == RegionIndex;
-    Out.AcousticAnchorKind = CommitReason == FName(TEXT("phone_anchor_commit"))
-        ? State.LastMatchedStrongPhoneClass
-        : CommitReason == FName(TEXT("syllable_anchor_commit"))
-            ? FName(TEXT("syllable_pulse"))
-            : FName(TEXT("speech_region"));
-    Out.AcousticAnchorSeconds = CommitReason == FName(TEXT("phone_anchor_commit"))
-        ? State.LastMatchedStrongPhoneAudioSec
-        : CommitReason == FName(TEXT("syllable_anchor_commit"))
-            ? State.LastMatchedSyllableAudioSec
-            : State.TimelineAudioAnchorSec;
+    const bool bSyllableAnchor = CommitReason == FName(TEXT("bounded_syllable_rebase_commit"));
+    Out.AcousticAnchorKind = bSyllableAnchor
+        ? FName(TEXT("syllable_pulse"))
+        : FName(TEXT("speech_region"));
+    Out.AcousticAnchorSeconds = bSyllableAnchor
+        ? State.LastMatchedSyllableAudioSec
+        : State.TimelineAudioAnchorSec;
     Out.AcousticAnchorErrorSeconds = CenterSec - Out.AcousticAnchorSeconds;
 }
 }
@@ -455,7 +450,6 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(
         StateRow.bAudioSpeechActive = CurrentPlaybackSec >= Region.AudioBufferStartSec
             && (!Region.bEnded || CurrentPlaybackSec <= CausalRegionEnd(Region));
     }
-    StateRow.bAudioEnvelopeGateOpen = StateRow.bAudioSpeechActive;
     StateRow.TimelinePriorAnchorSec = PlaybackState.TimelinePriorAnchorSec;
     StateRow.TimelineAudioAnchorSec = PlaybackState.TimelineAudioAnchorSec;
     StateRow.TimelineRate = PlaybackState.TimelineRate;
@@ -463,30 +457,7 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(
     StateRow.LastMatchedSyllablePhoneIndex = PlaybackState.LastMatchedSyllablePhoneIndex;
     StateRow.LastMatchedSyllableAudioSec = PlaybackState.LastMatchedSyllableAudioSec;
     StateRow.LastMatchedSyllableConfidence = PlaybackState.LastMatchedSyllableConfidence;
-    StateRow.LastMatchedRegionPulseOrdinal = PlaybackState.LastMatchedRegionPulseOrdinal;
-    StateRow.ExactPulseRebaseCount = PlaybackState.ExactPulseRebaseCount;
-    StateRow.SpeculativePulseRebaseCount = PlaybackState.SpeculativePulseRebaseCount;
-    StateRow.LastMatchedStrongPhoneIndex = PlaybackState.LastMatchedStrongPhoneIndex;
-    StateRow.LastMatchedStrongPhoneAudioSec = PlaybackState.LastMatchedStrongPhoneAudioSec;
-    StateRow.LastMatchedStrongPhoneConfidence = PlaybackState.LastMatchedStrongPhoneConfidence;
-    StateRow.LastMatchedStrongPhoneClass = PlaybackState.LastMatchedStrongPhoneClass;
-    StateRow.StrongPhoneCandidateCount = PlaybackState.StrongPhoneCandidateCount;
-    StateRow.StrongPhoneAssignmentCount = PlaybackState.StrongPhoneAssignmentCount;
-    StateRow.FirstPulseAnchoredSpeechRegionIndex = PlaybackState.FirstPulseAnchoredSpeechRegionIndex;
-    StateRow.FirstPulseAnchorCount = PlaybackState.FirstPulseAnchorCount;
-    StateRow.FirstPulseFallbackCount = PlaybackState.FirstPulseFallbackCount;
-    StateRow.LastFirstPulseAudioSec = PlaybackState.LastFirstPulseAudioSec;
-    StateRow.InternalRegionCarryCount = PlaybackState.InternalRegionCarryCount;
-    StateRow.InternalRegionCarriedEventCount = PlaybackState.InternalRegionCarriedEventCount;
-    StateRow.ClosedRegionCutoffCount = PlaybackState.ClosedRegionCutoffCount;
-    StateRow.DroppedClosedRegionEventCount = PlaybackState.DroppedClosedRegionEventCount;
-    StateRow.PendingTextBoundaryToRegionIndex = PlaybackState.PendingTextBoundaryToRegionIndex;
-    StateRow.PendingTextBoundaryPredictedAudioSec = PlaybackState.PendingTextBoundaryPredictedAudioSec;
-    StateRow.bPendingTextBoundaryConfirmedPause = PlaybackState.bPendingTextBoundaryConfirmedPause;
-    StateRow.TextBoundaryPendingCount = PlaybackState.TextBoundaryPendingCount;
-    StateRow.TextBoundaryConfirmedPauseCount = PlaybackState.TextBoundaryConfirmedPauseCount;
-    StateRow.TextBoundaryRejectedContinuousSpeechCount =
-        PlaybackState.TextBoundaryRejectedContinuousSpeechCount;
+    StateRow.BoundedSyllableRebaseCount = PlaybackState.BoundedSyllableRebaseCount;
     StateRow.SchedulerNextEventIndex = PlaybackState.SchedulerNextEventIndex;
     StateRow.SchedulerNextPhoneIndex = PlaybackState.SchedulerNextPhoneIndex;
     StateRow.SchedulerCandidateCenterSec = PlaybackState.SchedulerCandidateCenterSec;
@@ -552,13 +523,8 @@ static void AnchorSimpleCursorToRegion(
     State.TimelineAudioAnchorSec = Region.AudioBufferStartSec;
     State.TimelineRate = NominalPriorPlaybackRate;
     State.bPlayheadStarted = true;
-    State.bActiveRegionFitApplied = false;
-    // Region onset itself is the authoritative anchor. Later syllable evidence
-    // may make bounded corrections, but the first pulse is never force-paired.
-    State.FirstPulseAnchoredSpeechRegionIndex = RegionIndex;
-    State.ActiveAudioRegionFirstSyllableIndex = INDEX_NONE;
-    State.ActiveAudioRegionPulseCount = 0;
-    State.LastMatchedRegionPulseOrdinal = 0;
+    // Region onset is authoritative. Stable syllable evidence may subsequently
+    // move only the uncommitted suffix.
 }
 
 static void UpdateSimpleCommittedTrack(

@@ -1,40 +1,46 @@
 # Active Runtime Path
 
-This repo's active lipsync path is intentionally narrow.
+This document is the inventory for the code that ships in
+`offgrid_dropin`.
 
-## Authoritative runtime flow
+## Components
 
-1. `OffgridAITextVisemePlanner` converts transcript text into authoritative CMU phones, visemes, duration priors, syllable nuclei, strong-phone markers, and punctuation fences.
-2. `OffgridAIStreamingSpeechDetector` converts streamed PCM into causal occupancy, quiet/resume candidates, and frame features.
-3. `OffgridAIAcousticEvidence` converts one feature frame into broad articulatory probabilities. It does not align or select phones.
-4. The cursor in `OffgridAILipsyncRuntimeAdapter` resolves punctuation fences strictly and assigns syllable/strong-phone anchors softly, always left to right.
-5. The scheduler rebases only the uncommitted suffix and commits transcript visemes monotonically.
-6. `harness/main.cpp` streams corpus PCM and exports raw runtime diagnostics. Python owns aggregate grading and policy checks.
+- `OffgridAITextVisemePlanner`: transcript pronunciation, visible event order,
+  syllables, and relative duration priors.
+- `OffgridAIStreamingSpeechDetector`: causal feature extraction and speech
+  regions.
+- `OffgridAIAcousticEvidence`: deterministic articulatory probabilities for a
+  single feature frame.
+- `OffgridAIStreamingEvidenceSurface`: syllabic pulses and broad phone-family
+  observations over retained preroll/postroll.
+- `OffgridAIStreamingSyllablePositionEstimator`: nearby-candidate grading,
+  monotonic assignment grading, and stable anchors for runtime correction.
+- `OffgridAILipsyncRuntimeAdapter`: the only scheduler.
+- `OffgridAIVisemePerformer`: committed-event pose sampling.
 
-## Ownership
+## Scheduler state
 
-- Transcript planning owns identity and order.
-- Audio evidence owns observed timing evidence only.
-- The cursor owns accepted anchor progression.
-- The scheduler owns suffix rebasing and irreversible commits.
-- Diagnostics observe decisions and never alter them.
+The adapter tracks only:
 
-## Non-goals
+- the next transcript event,
+- the active observed and text region indices,
+- the current prior-to-audio timeline anchor and rate,
+- the latest accepted syllable anchor,
+- the current commit frontier and block reason.
 
-The active path does not rely on:
+There is no punctuation hold state, strong-phone scheduler, speculative pulse
+path, region-fit path, alternate clock, or fallback scheduler.
 
-- TTS hint streams
-- token-progress ownership
-- predicted word schedules
-- external timing middleware
-- acoustic selection of viseme identity
-- overlapping fallback schedulers
+## Diagnostic contract
 
-The current conceptual model is:
+The harness retains metrics that explain one of these active stages:
 
-- `speech regions`
-- `speech occupancy`
-- `transcript-derived viseme identity`
-- `monotonic region-local playback`
-- `strict punctuation close/resume anchors`
-- `soft syllable and strong-phone suffix rebasing`
+- text phone, syllable, duration, and pause-hint quality,
+- complete speech close/resume boundary-pair quality,
+- pulse and broad phone-family evidence quality,
+- nearby-candidate and monotonic assignment quality,
+- accepted runtime bounded-anchor quality,
+- committed viseme timing, coverage, monotonicity, and uncommitted suffixes.
+
+Offline tuning programs and metrics for deleted runtime modes are intentionally
+not retained.

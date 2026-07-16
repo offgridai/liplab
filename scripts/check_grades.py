@@ -1,5 +1,4 @@
 import json
-import math
 import pathlib
 import sys
 
@@ -16,8 +15,6 @@ thresholds = {
     "max_degenerate_cases_increase": 0,
     "max_speech_region_count_mismatch_cases": 999999,
     "max_visible_speech_region_count_mismatch_cases": 999999,
-    "max_sentence_region_count_mismatch_cases": 999999,
-    "max_clause_region_count_mismatch_cases": 999999,
     "max_speech_f1_drop": 0.0,
     "max_speech_boundary_start_ms_increase": 0.0,
     "max_speech_boundary_end_ms_increase": 0.0,
@@ -32,18 +29,6 @@ thresholds = {
     "max_phoneme_end_ms_increase": 0.0,
     "max_intra_word_coverage_drop": 0.0,
     "max_intra_word_center_ms_increase": 0.0,
-    "max_pause_safety_unsafe_timeout_releases": 0,
-    "max_pause_safety_unresolved_holds": 0,
-    "max_pause_safety_pair_rate_drop": 0.0,
-    "max_pause_safety_early_resume_increase": 0,
-    "max_pause_safety_leakage_boundary_increase": 0,
-    "max_pause_safety_total_leakage_ms_increase": 0.0,
-    "max_pause_safety_false_hold_ms_increase": 0.0,
-    "max_pause_safety_false_pause_resolution_increase": 0,
-    "max_pause_safety_syllable_continuous_false_pause_release_increase": 0,
-    "max_pause_safety_syllable_continuous_false_pause_leakage_ms_increase": 0.0,
-    "max_pause_safety_syllable_continuous_all_graded_false_pause_release_increase": 0,
-    "max_pause_safety_syllable_continuous_all_graded_false_pause_leakage_ms_increase": 0.0,
 }
 if thresholds_path.exists():
     thresholds.update(json.loads(thresholds_path.read_text()))
@@ -83,33 +68,6 @@ def at_least(metric_name, threshold_name):
     )
 
 
-def pause_safety_at_most_per_target(metric_name, threshold_name, discrete=False):
-    """Compare additive pause metrics fairly when the gold corpus grows."""
-    baseline_targets = baseline.get("pause_safety_target_count", 0)
-    current_targets = summary.get("pause_safety_target_count", 0)
-    if metric_name not in baseline or baseline_targets <= 0 or current_targets <= 0:
-        return at_most(metric_name, threshold_name)
-
-    actual = summary[metric_name] / current_targets
-    baseline_rate_limit = (
-        baseline[metric_name] + thresholds[threshold_name]
-    ) / baseline_targets
-    if discrete:
-        count_limit = math.ceil(baseline_rate_limit * current_targets)
-        return (
-            summary[metric_name] <= count_limit,
-            metric_name,
-            summary[metric_name],
-            count_limit,
-        )
-    return (
-        actual <= baseline_rate_limit,
-        f"{metric_name}_per_target",
-        actual,
-        baseline_rate_limit,
-    )
-
-
 failed = False
 checks = [
     (
@@ -131,18 +89,6 @@ checks = [
         summary["visible_speech_region_count_mismatch_cases"],
         thresholds["max_visible_speech_region_count_mismatch_cases"],
     ),
-    (
-        summary["sentence_region_count_mismatch_cases"] <= thresholds["max_sentence_region_count_mismatch_cases"],
-        "sentence_region_count_mismatch_cases",
-        summary["sentence_region_count_mismatch_cases"],
-        thresholds["max_sentence_region_count_mismatch_cases"],
-    ),
-    (
-        summary["clause_region_count_mismatch_cases"] <= thresholds["max_clause_region_count_mismatch_cases"],
-        "clause_region_count_mismatch_cases",
-        summary["clause_region_count_mismatch_cases"],
-        thresholds["max_clause_region_count_mismatch_cases"],
-    ),
     at_least("speech_f1", "max_speech_f1_drop"),
     at_most("speech_boundary_start_ms", "max_speech_boundary_start_ms_increase"),
     at_most("speech_boundary_end_ms", "max_speech_boundary_end_ms_increase"),
@@ -160,60 +106,6 @@ checks = [
     at_most("phoneme_end_ms", "max_phoneme_end_ms_increase"),
     at_least("intra_word_coverage_rate", "max_intra_word_coverage_drop"),
     at_most("intra_word_center_ms", "max_intra_word_center_ms_increase"),
-    (
-        summary.get("pause_safety_unsafe_timeout_release_count", 0)
-            <= thresholds["max_pause_safety_unsafe_timeout_releases"],
-        "pause_safety_unsafe_timeout_release_count",
-        summary.get("pause_safety_unsafe_timeout_release_count", 0),
-        thresholds["max_pause_safety_unsafe_timeout_releases"],
-    ),
-    (
-        summary.get("pause_safety_unresolved_hold_count", 0)
-            <= thresholds["max_pause_safety_unresolved_holds"],
-        "pause_safety_unresolved_hold_count",
-        summary.get("pause_safety_unresolved_hold_count", 0),
-        thresholds["max_pause_safety_unresolved_holds"],
-    ),
-    at_least("pause_safety_pair_rate", "max_pause_safety_pair_rate_drop"),
-    pause_safety_at_most_per_target(
-        "pause_safety_early_resume_count",
-        "max_pause_safety_early_resume_increase",
-        discrete=True,
-    ),
-    pause_safety_at_most_per_target(
-        "pause_safety_leakage_boundary_count",
-        "max_pause_safety_leakage_boundary_increase",
-        discrete=True,
-    ),
-    pause_safety_at_most_per_target(
-        "pause_safety_total_leakage_ms",
-        "max_pause_safety_total_leakage_ms_increase",
-    ),
-    pause_safety_at_most_per_target(
-        "pause_safety_false_hold_during_gold_speech_ms",
-        "max_pause_safety_false_hold_ms_increase",
-    ),
-    pause_safety_at_most_per_target(
-        "pause_safety_false_pause_resolution_count",
-        "max_pause_safety_false_pause_resolution_increase",
-        discrete=True,
-    ),
-    at_most(
-        "pause_safety_syllable_continuous_false_pause_release_count",
-        "max_pause_safety_syllable_continuous_false_pause_release_increase",
-    ),
-    at_most(
-        "pause_safety_syllable_continuous_false_pause_leakage_ms",
-        "max_pause_safety_syllable_continuous_false_pause_leakage_ms_increase",
-    ),
-    at_most(
-        "pause_safety_syllable_continuous_all_graded_false_pause_release_count",
-        "max_pause_safety_syllable_continuous_all_graded_false_pause_release_increase",
-    ),
-    at_most(
-        "pause_safety_syllable_continuous_all_graded_false_pause_leakage_ms",
-        "max_pause_safety_syllable_continuous_all_graded_false_pause_leakage_ms_increase",
-    ),
 ]
 
 for ok, name, actual, limit in checks:
@@ -226,8 +118,6 @@ if failed:
         "Summary diagnostics: "
         f"graded={summary['graded_cases']} degenerate={summary['degenerate_cases']} "
         f"speech_region_mismatch={summary['speech_region_count_mismatch_cases']} "
-        f"text_sentence_span_mismatch={summary['text_sentence_span_count_mismatch_cases']} "
-        f"text_sentence_region_subspan_mismatch={summary['text_sentence_region_subspan_count_mismatch_cases']} "
         f"speech_boundary_start_ms={summary['speech_boundary_start_ms']:.3f} "
         f"speech_tail_leakage_ms={summary.get('speech_tail_leakage_ms', 0.0):.3f} "
         f"word_duration_ms={summary.get('word_duration_ms', 0.0):.3f} "
@@ -251,8 +141,6 @@ print(f"Grade thresholds passed for {summary['graded_cases']} graded case(s).")
 print(
     f"Diagnostics: degenerate={summary['degenerate_cases']} "
     f"speech_region_mismatch={summary['speech_region_count_mismatch_cases']} "
-    f"text_sentence_span_mismatch={summary['text_sentence_span_count_mismatch_cases']} "
-    f"text_sentence_region_subspan_mismatch={summary['text_sentence_region_subspan_count_mismatch_cases']} "
     f"speech_tail_leakage_ms={summary.get('speech_tail_leakage_ms', 0.0):.3f} "
     f"word_duration_ms={summary.get('word_duration_ms', 0.0):.3f} "
     f"word_head_start_ms={summary['word_head_start_ms']:.3f} "

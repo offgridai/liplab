@@ -58,8 +58,7 @@ struct FOffgridAITextVisemeEvent
     FString SourcePhoneBase;
     float PhoneLocalNorm = 0.5f;
     EOffgridAIVisualPhoneRole VisualRole = EOffgridAIVisualPhoneRole::PrimaryPose;
-    // False for legacy scheduler waypoints that preserve phone-chain timing but
-    // must never reach facial playback or visual grading.
+    // Timing-only phones remain in the ordered plan but do not produce a pose.
     bool bIsRenderable = true;
     bool bIsStrongVisibleEvent = false;
     FName Generator = NAME_None;

@@ -88,8 +88,7 @@ def main() -> int:
             f"phone_f1={summary['text_phone_exact_f1']:.3f} "
             f"base_f1={summary['text_phone_base_f1']:.3f} "
             f"pause_acc={summary['text_pause_class_accuracy']:.3f} "
-            f"break_recall={summary['text_region_break_recall']:.3f} "
-            f"landmark_recall={summary['text_landmark_recall']:.3f}"
+            f"break_recall={summary['text_region_break_recall']:.3f}"
         )
         worst_phone_words = list(summary.get("text_phone_mismatches_by_word", {}).items())[:8]
         if worst_phone_words:
@@ -118,16 +117,9 @@ def main() -> int:
         )
         print(
             f"Text cumulative priors vs MFA: word_start_ms={summary['text_word_prior_start_ms']:.1f} "
-            f"phone_center_ms={summary['text_phone_prior_center_ms']:.1f} "
-            f"landmark_center_ms={summary['text_landmark_prior_center_ms']:.1f}"
+            f"phone_center_ms={summary['text_phone_prior_center_ms']:.1f}"
         )
-    if summary["runtime_detector_available_cases"] > 0:
-        print(
-            f"Runtime detector vs text plan: selection_rate={summary['runtime_detector_planned_landmark_selection_rate']:.3f} "
-            f"timing_precision={summary['runtime_detector_planned_landmark_precision']:.3f} "
-            f"timing_recall={summary['runtime_detector_planned_landmark_recall']:.3f} "
-            f"center_ms={summary['runtime_detector_planned_landmark_center_ms']:.1f}"
-        )
+    if summary.get("streaming_region_boundary_available_cases", 0) > 0:
         print(
             "Streaming speech-region boundaries: "
             f"pair_p={summary['streaming_region_boundary_pair_precision']:.3f} "
@@ -154,14 +146,6 @@ def main() -> int:
             f"adjudication_misses={summary['streaming_region_adjudication_miss_count']} "
             f"no_candidate={summary['streaming_region_no_candidate_count']} "
             f"false_accepted={summary['streaming_region_false_accepted_count']}"
-        )
-        print(
-            f"Runtime pause/resume: close_p={summary['runtime_pause_close_precision']:.3f} "
-            f"close_r={summary['runtime_pause_close_recall']:.3f} "
-            f"close_ms={summary['runtime_pause_close_error_ms']:.1f} "
-            f"resume_p={summary['runtime_resume_precision']:.3f} "
-            f"resume_r={summary['runtime_resume_recall']:.3f} "
-            f"resume_ms={summary['runtime_resume_error_ms']:.1f}"
         )
     if summary.get("evidence_surface_available_cases", 0) > 0:
         print(
@@ -226,16 +210,6 @@ def main() -> int:
             f"assigned={summary['syllable_assignment_count']}/"
             f"{summary['syllable_assignment_target_count']}"
         )
-    if summary.get("resolved_pulse_track_available_cases", 0) > 0:
-        print(
-            "Transcript-conditioned pulse track: "
-            f"count_ratio={summary['resolved_pulse_track_assignment_ratio']:.3f} "
-            f"precision={summary['resolved_pulse_track_exact_precision']:.3f} "
-            f"recall={summary['resolved_pulse_track_exact_recall']:.3f} "
-            f"within1={summary['resolved_pulse_track_within_one_accuracy']:.3f} "
-            f"assigned={summary['resolved_pulse_track_assignment_count']}/"
-            f"{summary['resolved_pulse_track_target_count']}"
-        )
     if summary.get("syllable_position_available_cases", 0) > 0:
         print(
             "Retrospective syllable assignment: "
@@ -250,17 +224,6 @@ def main() -> int:
             f"coverage={summary['syllable_position_confident_coverage']:.3f} "
             f"exact={summary['syllable_position_confident_exact_rate']:.3f}"
         )
-    if summary.get("dense_position_available_cases", 0) > 0:
-        print(
-            "Causal current transcript position: "
-            f"coverage={summary['dense_position_coverage']:.3f} "
-            f"exact_recall={summary['dense_position_exact_recall']:.3f} "
-            f"within1={summary['dense_position_within_one_rate']:.3f} "
-            f"word={summary['dense_position_word_rate']:.3f} "
-            f"ahead={summary['dense_position_ahead_rate']:.3f} "
-            f"behind={summary['dense_position_behind_rate']:.3f} "
-            f"signed={summary['dense_position_mean_signed_error']:+.2f}syll"
-        )
     if summary.get("historical_anchor_available_cases", 0) > 0:
         print(
             "Stable historical anchors: "
@@ -272,119 +235,16 @@ def main() -> int:
             f"latency_ms={summary['historical_anchor_median_latency_ms']:.1f} "
             f"gap_ms={summary['historical_anchor_median_gap_ms']:.1f}"
         )
-        print(
-            "Historical-anchor forward rebase: "
-            f"coverage={summary['historical_rebase_coverage']:.3f} "
-            f"exact_recall={summary['historical_rebase_exact_recall']:.3f} "
-            f"within1={summary['historical_rebase_within_one_rate']:.3f} "
-            f"word={summary['historical_rebase_word_rate']:.3f}"
-        )
-    if summary.get("prosodic_peak_available_cases", 0) > 0:
-        print(
-            f"Prosodic peaks advisory: precision={summary['prosodic_peak_precision']:.3f} "
-            f"recall={summary['prosodic_peak_recall']:.3f} "
-            f"center_ms={summary['prosodic_peak_error_ms']:.1f} "
-            f"decision_ms={summary['prosodic_peak_decision_latency_ms']:.1f}"
-        )
-        print(
-            f"Raw syllabic pulses vs MFA vowel intervals: precision={summary['raw_prosodic_peak_precision']:.3f} "
-            f"recall={summary['raw_prosodic_peak_recall']:.3f}"
-        )
     if summary.get("runtime_syllable_available_cases", 0) > 0:
         print(
             f"Runtime syllable assignment: precision={summary['runtime_syllable_precision']:.3f} "
             f"recall={summary['runtime_syllable_recall']:.3f} "
             f"count_ratio={summary['runtime_syllable_count_ratio']:.3f} "
-            f"progress_ratio={summary.get('runtime_syllable_progress_ratio', 0.0):.3f} "
             f"center_ms={summary['runtime_syllable_error_ms']:.1f}"
-        )
-        exact_rebase = summary.get("runtime_exact_pulse_rebase", {})
-        speculative_rebase = summary.get("runtime_speculative_pulse_rebase", {})
-        print(
-            "Runtime pulse rebasing: "
-            f"exact_p={exact_rebase.get('precision', 0.0):.3f} "
-            f"exact_r={exact_rebase.get('recall', 0.0):.3f} "
-            f"exact_n={exact_rebase.get('observation_count', 0)} "
-            f"exact_shift_ms={summary.get('runtime_exact_pulse_mean_correction_ms', 0.0):.1f} "
-            f"spec_p={speculative_rebase.get('precision', 0.0):.3f} "
-            f"spec_r={speculative_rebase.get('recall', 0.0):.3f} "
-            f"spec_n={speculative_rebase.get('observation_count', 0)} "
-            f"spec_shift_ms={summary.get('runtime_speculative_pulse_mean_correction_ms', 0.0):.1f}"
-        )
-        syllable_diag = summary.get("runtime_syllable_diagnostics", {})
-        print(
-            f"Runtime syllable flow: pulses={syllable_diag.get('pulse_count', 0)} "
-            f"assigned={syllable_diag.get('assignment_count', 0)} "
-            f"low={syllable_diag.get('reject_low_prominence_count', 0)} "
-            f"pre_section={syllable_diag.get('reject_before_section_count', 0)} "
-            f"late={syllable_diag.get('late_assignment_count', 0)} "
-            f"no_candidate={syllable_diag.get('reject_no_candidate_count', 0)} "
-            f"ambiguous={syllable_diag.get('ambiguous_assignment_count', 0)} "
-            f"duplicates={syllable_diag.get('duplicate_pulse_count', 0)}"
-        )
-        print(
-            f"Runtime syllable progress: count={summary.get('runtime_syllable_progress_count', 0)} "
-            f"mae={summary.get('runtime_syllable_progress_mean_abs_count_error', 0.0):.2f} "
-            f"exact={summary.get('runtime_syllable_progress_exact_case_rate', 0.0):.3f} "
-            f"within1={summary.get('runtime_syllable_progress_within_one_case_rate', 0.0):.3f} "
-            f"over={summary.get('runtime_syllable_progress_over_case_count', 0)} "
-            f"under={summary.get('runtime_syllable_progress_under_case_count', 0)}"
-        )
-        print(
-            f"Runtime strong-phone flow: candidates={syllable_diag.get('strong_phone_candidate_count', 0)} "
-            f"assigned={syllable_diag.get('strong_phone_assignment_count', 0)}"
-        )
-        print(
-            f"Runtime region entry: first_pulse={syllable_diag.get('first_pulse_anchor_count', 0)} "
-            f"fallback={syllable_diag.get('first_pulse_fallback_count', 0)}"
-        )
-        print(
-            f"Runtime internal-region carry: episodes={syllable_diag.get('internal_region_carry_count', 0)} "
-            f"pending_events={syllable_diag.get('internal_region_carried_event_count', 0)}"
-        )
-        print(
-            f"Runtime region cutoff: episodes={syllable_diag.get('closed_region_cutoff_count', 0)} "
-            f"dropped_events={syllable_diag.get('dropped_closed_region_event_count', 0)}"
-        )
-    if summary.get("strict_punctuation_available_cases", 0) > 0:
-        print(
-            f"Strict punctuation mapping: close_p={summary['strict_punctuation_close_precision']:.3f} "
-            f"close_r={summary['strict_punctuation_close_recall']:.3f} "
-            f"resume_p={summary['strict_punctuation_resume_precision']:.3f} "
-            f"resume_r={summary['strict_punctuation_resume_recall']:.3f}"
-        )
-    if summary.get("soft_list_boundary_target_count", 0) > 0:
-        print(
-            f"List boundaries: targets={summary['soft_list_boundary_target_count']} "
-            f"close_p={summary['soft_list_boundary_close_precision']:.3f} "
-            f"close_r={summary['soft_list_boundary_close_recall']:.3f} "
-            f"resume_p={summary['soft_list_boundary_resume_precision']:.3f} "
-            f"resume_r={summary['soft_list_boundary_resume_recall']:.3f}"
-        )
-    if summary.get("audio_clock_available_cases", 0) > 0:
-        print(
-            "Audio evidence clock: "
-            f"speech_updates={summary['audio_clock_speech_update_count']} "
-            f"gate_open={summary['audio_clock_gate_open_rate_during_speech']:.3f} "
-            f"raw_support={summary['audio_clock_raw_support_rate_during_speech']:.3f} "
-            f"fail_soft={summary['audio_clock_fail_soft_rate_during_speech']:.3f} "
-            f"credit_grants={summary['audio_clock_credit_grant_count']} "
-            f"onset_grants={summary['audio_clock_speech_onset_grant_count']} "
-            f"fail_soft_activations={summary['audio_clock_fail_soft_activation_count']} "
-            f"fail_soft_advance_s={summary['audio_clock_fail_soft_advance_sec']:.2f} "
-            f"lull_pause_s={summary['audio_clock_observed_lull_pause_sec']:.2f}"
-        )
-        print(
-            "Text/audio boundary handshake: "
-            f"hypotheses={summary.get('text_boundary_hypothesis_count', 0)} "
-            f"confirmed_pauses={summary.get('text_boundary_confirmed_pause_count', 0)} "
-            f"continuous_speech={summary.get('text_boundary_rejected_continuous_speech_count', 0)} "
-            f"terminal_unresolved={summary.get('text_boundary_terminal_unresolved_count', 0)} "
-            f"terminal_waiting_resume={summary.get('text_boundary_terminal_waiting_resume_count', 0)}"
         )
     if summary.get("audio_health_available_cases", 0) > 0:
         print(
-            "Audio clock health vs MFA: "
+            "Runtime health vs MFA: "
             f"first_delay_ms={summary['audio_health_first_region_animation_delay_ms']:.1f} "
             f"first_p90_ms={summary['audio_health_first_region_animation_delay_p90_ms']:.1f} "
             f"starved_cases={summary['audio_health_first_region_starvation_cases']} "
@@ -394,39 +254,7 @@ def main() -> int:
             f"resume_behind={summary['audio_health_resume_cursor_behind_count']} "
             f"resume_ahead={summary['audio_health_resume_cursor_ahead_count']} "
             f"uncommitted={summary['audio_health_uncommitted_visible_count']} "
-            f"suffix={summary['audio_health_uncommitted_visible_suffix_count']} "
-            f"false_hold={summary['audio_health_gate_closed_during_gold_speech_rate']:.3f} "
-            f"pause_leak={summary['audio_health_gate_open_during_gold_pause_rate']:.3f}"
-        )
-    if summary.get("pause_safety_available_cases", 0) > 0:
-        print(
-            f"Pause safety: pair_rate={summary['pause_safety_pair_rate']:.3f} "
-            f"early_resume={summary['pause_safety_early_resume_count']} "
-            f"leaking_boundaries={summary['pause_safety_leakage_boundary_count']} "
-            f"leakage_ms={summary['pause_safety_total_leakage_ms']:.1f} "
-            f"close_signed_ms={summary['pause_safety_mean_signed_close_latency_ms']:.1f} "
-            f"resume_signed_ms={summary['pause_safety_mean_signed_resume_latency_ms']:.1f} "
-            f"post_resume_ms={summary['pause_safety_mean_post_resume_animation_delay_ms']:.1f} "
-            f"false_hold_ms={summary['pause_safety_false_hold_during_gold_speech_ms']:.1f} "
-            f"timeouts={summary['pause_safety_unsafe_timeout_release_count']} "
-            f"false_pause={summary['pause_safety_false_pause_resolution_count']} "
-            f"unresolved={summary['pause_safety_unresolved_hold_count']}"
-        )
-        print(
-            "Syllable continuation safety: "
-            f"releases={summary['pause_safety_syllable_continuous_release_count']} "
-            f"precision={summary['pause_safety_syllable_continuous_precision']:.3f} "
-            f"false_pause={summary['pause_safety_syllable_continuous_false_pause_release_count']} "
-            f"cases={summary['pause_safety_syllable_continuous_false_pause_case_count']} "
-            f"pause_preservation={summary['pause_safety_syllable_continuous_pause_preservation_rate']:.3f} "
-            f"leakage_ms={summary['pause_safety_syllable_continuous_false_pause_leakage_ms']:.1f}"
-        )
-        print(
-            "Syllable continuation safety (all graded): "
-            f"releases={summary['pause_safety_syllable_continuous_all_graded_release_count']} "
-            f"false_pause={summary['pause_safety_syllable_continuous_all_graded_false_pause_release_count']} "
-            f"cases={summary['pause_safety_syllable_continuous_all_graded_false_pause_case_count']} "
-            f"leakage_ms={summary['pause_safety_syllable_continuous_all_graded_false_pause_leakage_ms']:.1f}"
+            f"suffix={summary['audio_health_uncommitted_visible_suffix_count']}"
         )
     print(f"Wrote {summary_path}")
     return 0

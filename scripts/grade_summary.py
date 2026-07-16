@@ -192,220 +192,6 @@ def _compute_playback_health(
     }
 
 
-def _compute_pause_safety(
-    strict_rows: list[dict[str, str]],
-    committed_rows: list[dict[str, str]],
-    boundary_rows: list[dict[str, str]],
-    speech_rows: list[dict[str, str]],
-) -> dict[str, Any]:
-    if not strict_rows:
-        return {"available": False}
-
-    tolerance_sec = 0.020
-    details: list[dict[str, Any]] = []
-    close_errors: list[float] = []
-    resume_errors: list[float] = []
-    post_resume_delays: list[float] = []
-    leakage_ms: list[float] = []
-    paired_count = 0
-    early_resume_count = 0
-    leakage_boundary_count = 0
-    gold_boundary_words: set[int] = set()
-    class_totals: dict[str, dict[str, int]] = {}
-    resolved_by_word: dict[int, dict[str, str]] = {}
-    all_resolved_by_word: dict[int, dict[str, str]] = {}
-    for row in boundary_rows:
-        resolved_word_index = _safe_int(row, "last_resolved_boundary_word_index", -1)
-        outcome = row.get("last_resolved_boundary_outcome", "")
-        if resolved_word_index < 0 or not outcome:
-            continue
-        all_resolved_by_word[resolved_word_index] = row
-        decay = _safe_float(row, "last_resolved_boundary_decay_sec", -1.0)
-        resume = _safe_float(row, "last_resolved_boundary_resume_onset_sec", -1.0)
-        if decay >= 0.0 or resume >= 0.0:
-            resolved_by_word[resolved_word_index] = row
-
-    for target in strict_rows:
-        word_index = _safe_int(target, "word_index", -1)
-        pause_class = target.get("pause_class", "unknown") or "unknown"
-        class_total = class_totals.setdefault(
-            pause_class,
-            {"targets": 0, "paired": 0, "early_resumes": 0, "leaking": 0},
-        )
-        class_total["targets"] += 1
-        gold_boundary_words.add(word_index)
-        gold_close = _safe_float(target, "gold_close", -1.0)
-        gold_resume = _safe_float(target, "gold_resume", -1.0)
-        resolved_row = resolved_by_word.get(word_index, {})
-        observed_close = _safe_float(
-            resolved_row, "last_resolved_boundary_decay_sec", -1.0
-        )
-        observed_resume = _safe_float(
-            resolved_row, "last_resolved_boundary_resume_onset_sec", -1.0
-        )
-        has_close = observed_close >= 0.0
-        has_resume = observed_resume >= 0.0
-        paired_count += int(has_close and has_resume and observed_resume >= observed_close)
-        class_total["paired"] += int(has_close and has_resume and observed_resume >= observed_close)
-        if has_close:
-            close_errors.append((observed_close - gold_close) * 1000.0)
-        if has_resume:
-            resume_errors.append((observed_resume - gold_resume) * 1000.0)
-            is_early_resume = observed_resume < gold_resume - tolerance_sec
-            early_resume_count += int(is_early_resume)
-            class_total["early_resumes"] += int(is_early_resume)
-
-        post_events = [
-            row for row in committed_rows
-            if _safe_int(row, "word_index", -1) > word_index
-        ]
-        leaking = [
-            row for row in post_events
-            if gold_close + tolerance_sec < _safe_float(row, "center") < gold_resume - tolerance_sec
-        ]
-        boundary_leakage_ms = 0.0
-        for event in leaking:
-            boundary_leakage_ms += max(
-                0.0,
-                min(_safe_float(event, "end"), gold_resume)
-                    - max(_safe_float(event, "start"), gold_close),
-            ) * 1000.0
-        leakage_ms.append(boundary_leakage_ms)
-        leakage_boundary_count += int(boundary_leakage_ms > 20.0)
-        class_total["leaking"] += int(boundary_leakage_ms > 20.0)
-
-        first_post_center = min(
-            [_safe_float(row, "center") for row in post_events if _safe_float(row, "center") >= gold_close]
-            or [-1.0]
-        )
-        post_resume_delay_ms = (
-            (first_post_center - gold_resume) * 1000.0 if first_post_center >= 0.0 else 0.0
-        )
-        if first_post_center >= 0.0:
-            post_resume_delays.append(post_resume_delay_ms)
-        details.append({
-            "word_index": word_index,
-            "pause_class": pause_class,
-            "gold_close": gold_close,
-            "gold_resume": gold_resume,
-            "observed_close": observed_close,
-            "observed_resume": observed_resume,
-            "paired": has_close and has_resume and observed_resume >= observed_close,
-            "post_boundary_leakage_ms": boundary_leakage_ms,
-            "post_resume_animation_delay_ms": post_resume_delay_ms,
-            "resolution_outcome": all_resolved_by_word.get(word_index, {}).get(
-                "last_resolved_boundary_outcome", ""
-            ),
-        })
-
-    def is_syllable_continuous_release(outcome: str) -> bool:
-        return outcome == "list_next_item_pulse_continuous" or (
-            "syllable" in outcome and "continuous" in outcome
-        )
-
-    syllable_continuous_releases = {
-        word_index: row
-        for word_index, row in all_resolved_by_word.items()
-        if is_syllable_continuous_release(
-            row.get("last_resolved_boundary_outcome", "")
-        )
-    }
-    false_syllable_continuous_words = (
-        set(syllable_continuous_releases) & gold_boundary_words
-    )
-    syllable_false_pause_leakage_ms = sum(
-        float(detail["post_boundary_leakage_ms"])
-        for detail in details
-        if int(detail["word_index"]) in false_syllable_continuous_words
-    )
-    for detail in details:
-        detail["syllable_continuous_false_pause_release"] = (
-            int(detail["word_index"]) in false_syllable_continuous_words
-        )
-
-    resolved: set[tuple[int, str]] = set()
-    unsafe_timeout_count = 0
-    false_pause_resolution_count = 0
-    for row in boundary_rows:
-        word_index = _safe_int(row, "last_resolved_boundary_word_index", -1)
-        outcome = row.get("last_resolved_boundary_outcome", "")
-        if word_index < 0 or not outcome:
-            continue
-        if (word_index, outcome) in resolved:
-            continue
-        resolved.add((word_index, outcome))
-        unsafe_timeout_count += int("patience_expired" in outcome)
-        is_acoustic_pause = (
-            "resume" in outcome or "speech_region" in outcome
-        ) and "no_decay" not in outcome
-        false_pause_resolution_count += int(
-            is_acoustic_pause and word_index not in gold_boundary_words
-        )
-
-    unresolved_hold_count = 0
-    if boundary_rows:
-        unresolved_hold_count = int(
-            _safe_int(boundary_rows[-1], "b_hold_active", 0) != 0
-        )
-
-    hold_intervals: list[tuple[float, float]] = []
-    hold_start = -1.0
-    last_playback = 0.0
-    for row in boundary_rows:
-        playback = _safe_float(row, "current_playback_sec", last_playback)
-        active = _safe_int(row, "b_hold_active", 0) != 0
-        if active and hold_start < 0.0:
-            hold_start = playback
-        elif not active and hold_start >= 0.0:
-            hold_intervals.append((hold_start, playback))
-            hold_start = -1.0
-        last_playback = playback
-    if hold_start >= 0.0:
-        hold_intervals.append((hold_start, last_playback))
-    speech_intervals = _merge_intervals([
-        (_safe_float(row, "start"), _safe_float(row, "end")) for row in speech_rows
-    ])
-    false_hold_ms = _interval_overlap_seconds(
-        _merge_intervals(hold_intervals), speech_intervals
-    ) * 1000.0
-
-    return {
-        "available": True,
-        "target_count": len(strict_rows),
-        "paired_count": paired_count,
-        "unpaired_count": len(strict_rows) - paired_count,
-        "early_resume_count": early_resume_count,
-        "leakage_boundary_count": leakage_boundary_count,
-        "total_post_boundary_leakage_ms": sum(leakage_ms),
-        "mean_post_boundary_leakage_ms": _mean(leakage_ms),
-        "mean_signed_close_latency_ms": _mean(close_errors),
-        "median_signed_close_latency_ms": _median(close_errors),
-        "p90_abs_close_latency_ms": _p90([abs(value) for value in close_errors]),
-        "mean_signed_resume_latency_ms": _mean(resume_errors),
-        "median_signed_resume_latency_ms": _median(resume_errors),
-        "p90_abs_resume_latency_ms": _p90([abs(value) for value in resume_errors]),
-        "mean_post_resume_animation_delay_ms": _mean(post_resume_delays),
-        "p90_abs_post_resume_animation_delay_ms": _p90(
-            [abs(value) for value in post_resume_delays]
-        ),
-        "unsafe_timeout_release_count": unsafe_timeout_count,
-        "false_pause_resolution_count": false_pause_resolution_count,
-        "unresolved_hold_count": unresolved_hold_count,
-        "false_hold_during_gold_speech_ms": false_hold_ms,
-        "syllable_continuous_release_count": len(syllable_continuous_releases),
-        "syllable_continuous_safe_release_count": (
-            len(syllable_continuous_releases)
-            - len(false_syllable_continuous_words)
-        ),
-        "syllable_continuous_false_pause_release_count": len(
-            false_syllable_continuous_words
-        ),
-        "syllable_continuous_false_pause_leakage_ms": (
-            syllable_false_pause_leakage_ms
-        ),
-        "classes": class_totals,
-        "boundaries": details,
-    }
 def _nested(dct: dict[str, Any], *keys: str, default: float = 0.0) -> float:
     cur: Any = dct
     try:
@@ -466,21 +252,6 @@ def _normalize_word(word: str) -> str:
     return (word or "").strip().lower()
 
 
-def _transcript_landmark_type_for_phone_base(phone_base: str) -> str | None:
-    base = (phone_base or "").strip().upper()
-    if base in {"M", "B", "P"}:
-        return "mbp"
-    if base in {"F", "V"}:
-        return "fv"
-    if base == "W":
-        return "w"
-    if base in {"CH", "JH", "SH", "ZH"}:
-        return "chjjsh"
-    if base in {"UW", "UH", "OW", "OY", "AO"}:
-        return "round"
-    return None
-
-
 def _gold_pause_class(boundary_row: dict[str, str]) -> str:
     pause_class = (boundary_row.get("pause_class") or "").strip().lower()
     split_applied = (boundary_row.get("split_applied") or "").strip() not in {"", "0", "false", "False"}
@@ -491,62 +262,11 @@ def _gold_pause_class(boundary_row: dict[str, str]) -> str:
     return "none"
 
 
-def _build_gold_landmark_refs(
-    gold_phones: list[dict[str, str]],
-    gold_words: list[dict[str, str]],
-    gold_boundaries: list[dict[str, str]],
-) -> dict[tuple[str, str, int], dict[str, Any]]:
-    refs: dict[tuple[str, str, int], dict[str, Any]] = {}
-    for ordinal, row in enumerate(gold_phones):
-        phone_index = _safe_int(row, "global_phone_index", ordinal)
-        phone_base = "".join(ch for ch in (row.get("phone") or "") if not ch.isdigit())
-        landmark_type = _transcript_landmark_type_for_phone_base(phone_base)
-        if landmark_type is None or phone_index < 0:
-            continue
-        start = _safe_float(row, "start")
-        end = _safe_float(row, "end")
-        refs[(landmark_type, "phone", phone_index)] = {
-            "type": landmark_type,
-            "kind": "phone",
-            "index": phone_index,
-            "center": 0.5 * (start + end),
-            "start": start,
-            "end": end,
-        }
-
-    words_by_index = {_safe_int(row, "word_index"): row for row in gold_words}
-    for row in gold_boundaries:
-        word_index = _safe_int(row, "word_index")
-        next_word_index = _safe_int(row, "next_word_index")
-        if word_index < 0 or next_word_index < 0:
-            continue
-        if _gold_pause_class(row) == "none":
-            continue
-        left = words_by_index.get(word_index)
-        right = words_by_index.get(next_word_index)
-        if not left or not right:
-            continue
-        start = _safe_float(left, "end")
-        end = _safe_float(right, "start")
-        if end <= start:
-            continue
-        refs[("pause_lull", "boundary", word_index)] = {
-            "type": "pause_lull",
-            "kind": "boundary",
-            "index": word_index,
-            "center": 0.5 * (start + end),
-            "start": start,
-            "end": end,
-        }
-    return refs
-
-
 def _compute_text_plan_grade(case_dir: pathlib.Path, gold_case_dir: pathlib.Path) -> dict[str, Any]:
     planned_words = _read_csv_rows(case_dir / "planned_words.csv")
     planned_boundaries = _read_csv_rows(case_dir / "planned_boundaries.csv")
     expected_phones = _read_csv_rows(case_dir / "expected_phones.csv")
     planned_syllables = _read_csv_rows(case_dir / "planned_syllables.csv")
-    transcript_landmarks = _read_csv_rows(case_dir / "transcript_landmarks.csv")
     gold_words = _read_csv_rows(gold_case_dir / "words.csv")
     gold_phones = _read_csv_rows(gold_case_dir / "phones.csv")
     gold_boundaries = _read_csv_rows(gold_case_dir / "boundaries.csv")
@@ -784,38 +504,6 @@ def _compute_text_plan_grade(case_dir: pathlib.Path, gold_case_dir: pathlib.Path
         if _safe_int(ref, "word_index") in word_prior_starts
     ]
 
-    predicted_landmark_refs: dict[tuple[str, str, int], dict[str, Any]] = {}
-    landmark_prior_errors_ms: list[float] = []
-    for row in transcript_landmarks:
-        landmark_type = row.get("type", "")
-        if not landmark_type:
-            continue
-        if landmark_type == "pause_lull":
-            key = (landmark_type, "boundary", _safe_int(row, "word_index"))
-        else:
-            key = (landmark_type, "phone", _safe_int(row, "global_phone_index"))
-        predicted_landmark_refs[key] = row
-        if (row.get("has_gold_reference") or "") not in {"", "0", "false", "False"}:
-            landmark_prior_errors_ms.append(
-                abs(_safe_float(row, "prior_center") - _safe_float(row, "gold_center")) * 1000.0
-            )
-
-    gold_landmark_refs = _build_gold_landmark_refs(ref_phones, ref_words, ref_boundaries)
-    matched_landmark_count = sum(1 for key in predicted_landmark_refs if key in gold_landmark_refs)
-
-    by_type: dict[str, dict[str, float]] = {}
-    for landmark_type in sorted({key[0] for key in predicted_landmark_refs} | {key[0] for key in gold_landmark_refs}):
-        predicted_count = sum(1 for key in predicted_landmark_refs if key[0] == landmark_type)
-        gold_count = sum(1 for key in gold_landmark_refs if key[0] == landmark_type)
-        matched_count = sum(1 for key in predicted_landmark_refs if key[0] == landmark_type and key in gold_landmark_refs)
-        by_type[landmark_type] = {
-            "predicted_count": predicted_count,
-            "reference_count": gold_count,
-            "matched_count": matched_count,
-            "precision": matched_count / predicted_count if predicted_count else 0.0,
-            "recall": matched_count / gold_count if gold_count else 0.0,
-        }
-
     return {
         "available": True,
         "predicted_word_count": len(pred_words),
@@ -869,11 +557,6 @@ def _compute_text_plan_grade(case_dir: pathlib.Path, gold_case_dir: pathlib.Path
         "matched_region_break_count": matched_break_count,
         "region_break_precision": matched_break_count / max(predicted_break_count, 1),
         "region_break_recall": matched_break_count / max(gold_break_count, 1),
-        "predicted_landmark_count": len(predicted_landmark_refs),
-        "reference_landmark_count": len(gold_landmark_refs),
-        "matched_landmark_count": matched_landmark_count,
-        "landmark_precision": matched_landmark_count / max(len(predicted_landmark_refs), 1),
-        "landmark_recall": matched_landmark_count / max(len(gold_landmark_refs), 1),
         "mean_abs_word_prior_start_error_ms": _mean(word_prior_start_errors_ms),
         "median_abs_word_prior_start_error_ms": _median(word_prior_start_errors_ms),
         "mean_abs_phone_prior_center_error_ms": _mean(phone_prior_center_errors_ms),
@@ -881,13 +564,10 @@ def _compute_text_plan_grade(case_dir: pathlib.Path, gold_case_dir: pathlib.Path
         "mean_abs_phone_prior_duration_error_ms": _mean(phone_prior_duration_errors_ms),
         "median_abs_phone_prior_duration_error_ms": _median(phone_prior_duration_errors_ms),
         "phone_prior_duration_match_count": len(phone_prior_duration_errors_ms),
-        "mean_abs_landmark_prior_center_error_ms": _mean(landmark_prior_errors_ms),
-        "median_abs_landmark_prior_center_error_ms": _median(landmark_prior_errors_ms),
-        "by_type": by_type,
     }
 
 
-def _compute_audio_clock_health(
+def _compute_runtime_health(
     case_dir: pathlib.Path,
     gold_case_dir: pathlib.Path | None,
 ) -> dict[str, Any]:
@@ -1026,7 +706,7 @@ def _compute_streaming_region_boundary_grade(
     tolerance_seconds: float = 0.100,
 ) -> dict[str, Any]:
     comparison_tolerance = tolerance_seconds + 1e-6
-    predicted_regions = _read_csv_rows(case_dir / "refined_speech_regions.csv")
+    predicted_regions = _read_csv_rows(case_dir / "speech_regions.csv")
     gold_regions = (
         _read_csv_rows(gold_case_dir / "speech.csv")
         if gold_case_dir is not None and gold_case_dir.exists()
@@ -1044,7 +724,7 @@ def _compute_streaming_region_boundary_grade(
         for index in range(len(gold_regions) - 1)
     ]
 
-    gap_candidates = _read_csv_rows(case_dir / "refined_gap_candidates.csv")
+    gap_candidates = _read_csv_rows(case_dir / "gap_candidates.csv")
     candidate_pairs = [
         (_safe_float(row, "gap_start"), _safe_float(row, "gap_end"))
         for row in gap_candidates
@@ -1174,20 +854,13 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
         commit_rows = _renderable_rows(_read_csv_rows(case_dir / "commit_decisions.csv"))
         committed_rows = _renderable_rows(_read_csv_rows(case_dir / "committed.csv"))
         speech_rows = _read_csv_rows(case_dir / "speech_regions.csv")
-        boundary_rows = _read_csv_rows(case_dir / "runtime_boundary_state.csv")
-        strict_rows = _read_csv_rows(case_dir / "strict_punctuation_alignment.csv")
         playback_health = _compute_playback_health(commit_rows, speech_rows)
         if playback_health.get("available"):
             _write_json(case_dir / "playback_health.json", playback_health)
-        pause_safety = _compute_pause_safety(
-            strict_rows, committed_rows, boundary_rows, speech_rows
-        )
-        if pause_safety.get("available"):
-            _write_json(case_dir / "pause_safety.json", pause_safety)
         gold_case_dir = gold_root / case_dir.name if gold_root is not None else None
-        audio_clock_health = _compute_audio_clock_health(case_dir, gold_case_dir)
-        if audio_clock_health.get("available"):
-            _write_json(case_dir / "audio_clock_health.json", audio_clock_health)
+        runtime_health = _compute_runtime_health(case_dir, gold_case_dir)
+        if runtime_health.get("available"):
+            _write_json(case_dir / "runtime_health.json", runtime_health)
         streaming_region_boundary_grade = _compute_streaming_region_boundary_grade(
             case_dir,
             gold_case_dir,
@@ -1202,33 +875,21 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "case": case_dir.name,
             "grade": grade,
             "text_plan_grade": text_plan_grade,
-            "streaming_landmark_grade": _read_json(case_dir / "streaming_landmark_grade.json"),
             "streaming_evidence_grade": _read_json(case_dir / "streaming_evidence_grade.json"),
             "streaming_conditioned_evidence_grade": _read_json(case_dir / "streaming_conditioned_evidence_grade.json"),
             "streaming_intra_envelope_phone_grade": _read_json(case_dir / "streaming_intra_envelope_phone_grade.json"),
             "streaming_syllable_candidate_set_grade": _read_json(case_dir / "streaming_syllable_candidate_set_grade.json"),
             "streaming_syllable_assignment_grade": _read_json(case_dir / "streaming_syllable_assignment_grade.json"),
-            "streaming_resolved_pulse_track_grade": _read_json(case_dir / "streaming_resolved_pulse_track_grade.json"),
             "streaming_syllable_position_grade": _read_json(case_dir / "streaming_syllable_position_grade.json"),
-            "streaming_dense_position_grade": _read_json(case_dir / "streaming_dense_position_grade.json"),
             "streaming_historical_anchor_grade": _read_json(case_dir / "streaming_historical_anchor_grade.json"),
-            "streaming_historical_rebase_grade": _read_json(case_dir / "streaming_historical_rebase_grade.json"),
-            "streaming_prosodic_peak_grade": _read_json(case_dir / "streaming_prosodic_peak_grade.json"),
             "runtime_syllable_assignment_grade": _read_json(case_dir / "runtime_syllable_assignment_grade.json"),
-            "runtime_exact_pulse_rebase_grade": _read_json(case_dir / "runtime_exact_pulse_rebase_grade.json"),
-            "runtime_speculative_pulse_rebase_grade": _read_json(case_dir / "runtime_speculative_pulse_rebase_grade.json"),
-            "runtime_syllable_anchor_rows": _read_csv_rows(case_dir / "runtime_syllable_anchor_diagnostics.csv"),
-            "strict_punctuation_grade": _read_json(case_dir / "strict_punctuation_alignment_grade.json"),
-            "strict_rows": strict_rows,
             "committed_rows": committed_rows,
             "commit_rows": commit_rows,
             "speech_rows": speech_rows,
             "playback_health": playback_health,
-            "pause_safety": pause_safety,
-            "audio_clock_health": audio_clock_health,
+            "runtime_health": runtime_health,
             "streaming_region_boundary_grade": streaming_region_boundary_grade,
             "runtime_region_rows": _read_csv_rows(case_dir / "runtime_speech_regions.csv"),
-            "runtime_boundary_rows": boundary_rows,
             "occupancy_rows": _read_csv_rows(case_dir / "occupancy_frames.csv"),
             "gap_rows": _read_csv_rows(case_dir / "gap_candidates.csv"),
             "word_onset_rows": _read_csv_rows(case_dir / "word_onset_diagnostics.csv"),
@@ -1374,7 +1035,6 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
     # Text planning is independent of runtime speech-region segmentation. Grade
     # every approved case; region-count qualification applies only to timing.
     text_available = [row for row in graded if row["text_plan_grade"].get("available")]
-    landmark_available = [row for row in bulk if row["streaming_landmark_grade"].get("available")]
     evidence_available = [row for row in bulk if row["streaming_evidence_grade"].get("available")]
     conditioned_evidence_available = [row for row in bulk if row["streaming_conditioned_evidence_grade"].get("available")]
     intra_envelope_phone_available = [
@@ -1386,28 +1046,13 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
     syllable_assignment_available = [
         row for row in bulk if row["streaming_syllable_assignment_grade"].get("available")
     ]
-    resolved_pulse_track_available = [
-        row for row in bulk if row["streaming_resolved_pulse_track_grade"].get("available")
-    ]
     syllable_position_available = [row for row in bulk if row["streaming_syllable_position_grade"].get("available")]
-    dense_position_available = [row for row in bulk if row["streaming_dense_position_grade"].get("available")]
     historical_anchor_available = [row for row in bulk if row["streaming_historical_anchor_grade"].get("available")]
-    historical_rebase_available = [row for row in bulk if row["streaming_historical_rebase_grade"].get("available")]
-    prosodic_available = [row for row in bulk if row["streaming_prosodic_peak_grade"].get("available")]
     runtime_syllable_available = [row for row in bulk if row["runtime_syllable_assignment_grade"].get("available")]
-    runtime_exact_pulse_available = [row for row in bulk if row["runtime_exact_pulse_rebase_grade"].get("available")]
-    runtime_speculative_pulse_available = [row for row in bulk if row["runtime_speculative_pulse_rebase_grade"].get("available")]
-    strict_punctuation_available = [row for row in bulk if row["strict_punctuation_grade"].get("available")]
-    pause_safety_available = [row for row in bulk if row["pause_safety"].get("available")]
-    pause_safety_all_graded = [row for row in graded if row["pause_safety"].get("available")]
     playback_health_available = [row for row in bulk if row["playback_health"].get("available")]
-    text_by_type: dict[str, dict[str, float]] = {}
     text_predicted_break_count = sum(int(row["text_plan_grade"].get("predicted_region_break_count", 0)) for row in text_available)
     text_reference_break_count = sum(int(row["text_plan_grade"].get("reference_region_break_count", 0)) for row in text_available)
     text_matched_break_count = sum(int(row["text_plan_grade"].get("matched_region_break_count", 0)) for row in text_available)
-    text_predicted_landmark_count = sum(int(row["text_plan_grade"].get("predicted_landmark_count", 0)) for row in text_available)
-    text_reference_landmark_count = sum(int(row["text_plan_grade"].get("reference_landmark_count", 0)) for row in text_available)
-    text_matched_landmark_count = sum(int(row["text_plan_grade"].get("matched_landmark_count", 0)) for row in text_available)
     text_reference_phone_count = sum(int(row["text_plan_grade"].get("reference_phone_count", 0)) for row in text_available)
     text_predicted_phone_count = sum(int(row["text_plan_grade"].get("predicted_phone_count", 0)) for row in text_available)
     text_predicted_syllable_count = sum(int(row["text_plan_grade"].get("predicted_syllable_count", 0)) for row in text_available)
@@ -1468,107 +1113,6 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         int(round(float(row["text_plan_grade"].get("word_exact_match_rate", 0.0)) * max(int(row["text_plan_grade"].get("reference_word_count", 0)), 0)))
         for row in text_available
     )
-    all_text_types = sorted(
-        {
-            key
-            for row in text_available
-            for key in row["text_plan_grade"].get("by_type", {}).keys()
-        }
-    )
-    for landmark_type in all_text_types:
-        predicted = sum(int(row["text_plan_grade"].get("by_type", {}).get(landmark_type, {}).get("predicted_count", 0)) for row in text_available)
-        reference = sum(int(row["text_plan_grade"].get("by_type", {}).get(landmark_type, {}).get("reference_count", 0)) for row in text_available)
-        matched = sum(int(row["text_plan_grade"].get("by_type", {}).get(landmark_type, {}).get("matched_count", 0)) for row in text_available)
-        text_by_type[landmark_type] = {
-            "predicted_count": predicted,
-            "reference_count": reference,
-            "matched_count": matched,
-            "precision": matched / predicted if predicted else 0.0,
-            "recall": matched / reference if reference else 0.0,
-        }
-
-    streaming_by_type: dict[str, dict[str, float]] = {}
-    all_streaming_types = sorted(
-        {
-            key
-            for row in landmark_available
-            for key in row["streaming_landmark_grade"].get("types", {}).keys()
-        }
-    )
-    for landmark_type in all_streaming_types:
-        target_count = sum(int(row["streaming_landmark_grade"].get("types", {}).get(landmark_type, {}).get("target_count", 0)) for row in landmark_available)
-        observation_count = sum(int(row["streaming_landmark_grade"].get("types", {}).get(landmark_type, {}).get("observation_count", 0)) for row in landmark_available)
-        matched_target_count = sum(int(row["streaming_landmark_grade"].get("types", {}).get(landmark_type, {}).get("matched_target_count", 0)) for row in landmark_available)
-        matched_observation_count = sum(int(row["streaming_landmark_grade"].get("types", {}).get(landmark_type, {}).get("matched_observation_count", 0)) for row in landmark_available)
-        weighted_errors = []
-        for row in landmark_available:
-            stats = row["streaming_landmark_grade"].get("types", {}).get(landmark_type, {})
-            matched_count = int(stats.get("matched_target_count", 0))
-            if matched_count > 0:
-                weighted_errors.extend([float(stats.get("mean_abs_center_error_ms", 0.0))] * matched_count)
-        streaming_by_type[landmark_type] = {
-            "target_count": target_count,
-            "observation_count": observation_count,
-            "matched_target_count": matched_target_count,
-            "matched_observation_count": matched_observation_count,
-            "precision": matched_observation_count / observation_count if observation_count else 0.0,
-            "recall": matched_target_count / target_count if target_count else 0.0,
-            "mean_abs_center_error_ms": _mean(weighted_errors),
-        }
-
-    streaming_target_count = sum(int(row["streaming_landmark_grade"].get("target_count", 0)) for row in landmark_available)
-    streaming_observation_count = sum(int(row["streaming_landmark_grade"].get("observation_count", 0)) for row in landmark_available)
-    streaming_matched_target_count = sum(int(row["streaming_landmark_grade"].get("matched_target_count", 0)) for row in landmark_available)
-    streaming_matched_observation_count = sum(int(row["streaming_landmark_grade"].get("matched_observation_count", 0)) for row in landmark_available)
-    streaming_center_error_values = []
-    for row in landmark_available:
-        grade = row["streaming_landmark_grade"]
-        for landmark_type, stats in grade.get("types", {}).items():
-            matched_count = int(stats.get("matched_target_count", 0))
-            if matched_count > 0:
-                streaming_center_error_values.extend([float(stats.get("mean_abs_center_error_ms", 0.0))] * matched_count)
-
-    runtime_boundary_summary: dict[str, dict[str, float]] = {}
-    for boundary_name in ("pause_close", "resume"):
-        target_count = sum(
-            int(row["streaming_landmark_grade"].get("boundary_events", {}).get(boundary_name, {}).get("target_count", 0))
-            for row in landmark_available
-        )
-        observation_count = sum(
-            int(row["streaming_landmark_grade"].get("boundary_events", {}).get(boundary_name, {}).get("observation_count", 0))
-            for row in landmark_available
-        )
-        matched_target_count = sum(
-            int(row["streaming_landmark_grade"].get("boundary_events", {}).get(boundary_name, {}).get("matched_target_count", 0))
-            for row in landmark_available
-        )
-        matched_observation_count = sum(
-            int(row["streaming_landmark_grade"].get("boundary_events", {}).get(boundary_name, {}).get("matched_observation_count", 0))
-            for row in landmark_available
-        )
-        error_values = []
-        latency_values = []
-        for row in landmark_available:
-            stats = row["streaming_landmark_grade"].get("boundary_events", {}).get(boundary_name, {})
-            matched_count = int(stats.get("matched_target_count", 0))
-            if matched_count > 0:
-                error_values.extend([float(stats.get("mean_abs_error_ms", 0.0))] * matched_count)
-                latency_values.extend([float(stats.get("mean_decision_latency_ms", 0.0))] * matched_count)
-        runtime_boundary_summary[boundary_name] = {
-            "target_count": target_count,
-            "observation_count": observation_count,
-            "matched_target_count": matched_target_count,
-            "matched_observation_count": matched_observation_count,
-            "precision": matched_observation_count / observation_count if observation_count else 0.0,
-            "recall": matched_target_count / target_count if target_count else 0.0,
-            "mean_abs_error_ms": _mean(error_values),
-            "median_abs_error_ms": _median(error_values),
-            "p90_abs_error_ms": _p90(error_values),
-            "mean_decision_latency_ms": _mean(latency_values),
-            "median_decision_latency_ms": _median(latency_values),
-            "p90_decision_latency_ms": _p90(latency_values),
-        }
-
     region_boundary_available = [
         row for row in graded
         if row["streaming_region_boundary_grade"].get("available")
@@ -1642,87 +1186,10 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
             category = "oversegmented"
         region_case_categories[category] += 1
 
-    audio_clock_cases = [row for row in graded if row.get("runtime_boundary_rows")]
-    audio_clock_updates = [
-        update
-        for row in audio_clock_cases
-        for update in row["runtime_boundary_rows"]
-        if _safe_int(update, "final_replay", 0) == 0
-    ]
-    audio_clock_speech_updates = [
-        update for update in audio_clock_updates
-        if _safe_int(update, "b_audio_speech_active", 0) != 0
-    ]
-    audio_clock_terminal_rows = [row["runtime_boundary_rows"][-1] for row in audio_clock_cases]
-    audio_clock_summary = {
-        "audio_clock_available_cases": len(audio_clock_cases),
-        "audio_clock_speech_update_count": len(audio_clock_speech_updates),
-        "audio_clock_gate_open_rate_during_speech": (
-            sum(_safe_int(update, "b_audio_envelope_gate_open", 0) != 0 for update in audio_clock_speech_updates)
-            / len(audio_clock_speech_updates)
-            if audio_clock_speech_updates else 0.0
-        ),
-        "audio_clock_raw_support_rate_during_speech": (
-            sum(_safe_int(update, "b_audio_envelope_raw_support", 0) != 0 for update in audio_clock_speech_updates)
-            / len(audio_clock_speech_updates)
-            if audio_clock_speech_updates else 0.0
-        ),
-        "audio_clock_fail_soft_rate_during_speech": (
-            sum(_safe_int(update, "b_audio_fail_soft_active", 0) != 0 for update in audio_clock_speech_updates)
-            / len(audio_clock_speech_updates)
-            if audio_clock_speech_updates else 0.0
-        ),
-        "audio_clock_credit_grant_count": sum(
-            _safe_int(update, "audio_evidence_credit_grant_count", 0)
-            for update in audio_clock_terminal_rows
-        ),
-        "audio_clock_speech_onset_grant_count": sum(
-            _safe_int(update, "audio_speech_onset_grant_count", 0)
-            for update in audio_clock_terminal_rows
-        ),
-        "audio_clock_fail_soft_activation_count": sum(
-            _safe_int(update, "audio_fail_soft_activation_count", 0)
-            for update in audio_clock_terminal_rows
-        ),
-        "audio_clock_fail_soft_advance_sec": sum(
-            _safe_float(update, "audio_fail_soft_advance_sec", 0.0)
-            for update in audio_clock_terminal_rows
-        ),
-        "audio_clock_observed_lull_pause_sec": sum(
-            _safe_float(update, "audio_lull_paused_sec", 0.0)
-            for update in audio_clock_terminal_rows
-        ),
-        "text_boundary_hypothesis_count": sum(
-            _safe_int(update, "text_boundary_pending_count", 0)
-            for update in audio_clock_terminal_rows
-        ),
-        "text_boundary_confirmed_pause_count": sum(
-            _safe_int(update, "text_boundary_confirmed_pause_count", 0)
-            for update in audio_clock_terminal_rows
-        ),
-        "text_boundary_rejected_continuous_speech_count": sum(
-            _safe_int(update, "text_boundary_rejected_continuous_speech_count", 0)
-            for update in audio_clock_terminal_rows
-        ),
-        "text_boundary_terminal_unresolved_count": sum(
-            _safe_int(update, "pending_text_boundary_to_region_index", -1) != -1
-            for update in audio_clock_terminal_rows
-        ),
-        "text_boundary_terminal_waiting_resume_count": sum(
-            update.get("scheduler_block_reason", "")
-            == "text_boundary_confirmed_waiting_resume"
-            for update in audio_clock_terminal_rows
-        ),
-        "audio_clock_total_gate_pause_sec": sum(
-            _safe_float(update, "total_paused_sec", 0.0)
-            for update in audio_clock_terminal_rows
-        ),
-    }
-
     audio_health_rows = [
-        row["audio_clock_health"]
+        row["runtime_health"]
         for row in graded
-        if row.get("audio_clock_health", {}).get("gold_available")
+        if row.get("runtime_health", {}).get("gold_available")
     ]
     resume_cursor_targets = sum(int(row.get("resume_cursor_target_count", 0)) for row in audio_health_rows)
     resume_cursor_observed = sum(int(row.get("resume_cursor_observed_count", 0)) for row in audio_health_rows)
@@ -1788,7 +1255,6 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
     }
 
     playback_summary = {
-        **audio_clock_summary,
         **audio_health_summary,
         "cases": len(rows),
         "graded_cases": len(graded),
@@ -1799,10 +1265,6 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "order_fail_cases": sum(1 for row in graded if int(row["grade"].get("order_violations", 0)) > 0),
         "speech_region_count_mismatch_cases": sum(1 for row in graded if speech_mismatch(row)),
         "visible_speech_region_count_mismatch_cases": 0,
-        "text_sentence_span_count_mismatch_cases": sum(1 for row in graded if _flag(row["grade"], "pause_alignment", "text_sentence_span_count_mismatch")),
-        "text_sentence_region_subspan_count_mismatch_cases": sum(1 for row in graded if _flag(row["grade"], "pause_alignment", "text_sentence_region_subspan_count_mismatch")),
-        "sentence_region_count_mismatch_cases": 0,
-        "clause_region_count_mismatch_cases": 0,
         "speech_match_rate": speech_matches / max(speech_refs, 1),
         "speech_boundary_start_ms": _mean(speech_start_values),
         "speech_boundary_end_ms": _mean(speech_end_values),
@@ -1822,9 +1284,7 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "phoneme_center_ms": _mean(phoneme_center_values),
         "phoneme_start_ms": _mean(phoneme_start_values),
         "phoneme_end_ms": _mean(phoneme_end_values),
-        # These are projected visible-event metrics, not complete-phone
-        # recognition metrics. Keep the old keys temporarily for baseline
-        # compatibility while exposing the accurate names to new consumers.
+        # Both names describe projected visible events, not phone recognition.
         "visible_articulation_coverage_rate": phoneme_matches / max(phoneme_refs, 1),
         "visible_articulation_center_ms": _mean(phoneme_center_values),
         "visible_articulation_start_ms": _mean(phoneme_start_values),
@@ -1921,26 +1381,8 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         ),
         "text_region_break_precision": text_matched_break_count / max(text_predicted_break_count, 1),
         "text_region_break_recall": text_matched_break_count / max(text_reference_break_count, 1),
-        "text_landmark_precision": text_matched_landmark_count / max(text_predicted_landmark_count, 1),
-        "text_landmark_recall": text_matched_landmark_count / max(text_reference_landmark_count, 1),
         "text_word_prior_start_ms": _mean([float(row["text_plan_grade"].get("mean_abs_word_prior_start_error_ms", 0.0)) for row in text_available]),
         "text_phone_prior_center_ms": _mean([float(row["text_plan_grade"].get("mean_abs_phone_prior_center_error_ms", 0.0)) for row in text_available]),
-        "text_landmark_prior_center_ms": _mean([float(row["text_plan_grade"].get("mean_abs_landmark_prior_center_error_ms", 0.0)) for row in text_available]),
-        "text_landmark_by_type": text_by_type,
-    }
-
-    runtime_detector_summary = {
-        "available_cases": len(landmark_available),
-        "planned_landmark_target_count": streaming_target_count,
-        "observed_landmark_count": streaming_observation_count,
-        "planned_landmark_selection_rate": streaming_observation_count / max(streaming_target_count, 1),
-        "planned_landmark_precision": streaming_matched_observation_count / max(streaming_observation_count, 1),
-        "planned_landmark_recall": streaming_matched_target_count / max(streaming_target_count, 1),
-        "planned_landmark_center_ms": _mean(streaming_center_error_values),
-        "planned_landmark_center_median_ms": _median(streaming_center_error_values),
-        "planned_landmark_center_p90_ms": _p90(streaming_center_error_values),
-        "planned_landmark_by_type": streaming_by_type,
-        "boundary_events": runtime_boundary_summary,
     }
 
     def aggregate_evidence(rows: list[dict[str, Any]], key: str) -> dict[str, dict[str, float]]:
@@ -2040,26 +1482,6 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         int(row["streaming_syllable_assignment_grade"].get("within_one_count", 0))
         for row in syllable_assignment_available
     )
-    resolved_pulse_track_targets = sum(
-        int(row["streaming_resolved_pulse_track_grade"].get("target_count", 0))
-        for row in resolved_pulse_track_available
-    )
-    resolved_pulse_track_assignments = sum(
-        int(row["streaming_resolved_pulse_track_grade"].get("assignment_count", 0))
-        for row in resolved_pulse_track_available
-    )
-    resolved_pulse_track_timing_matches = sum(
-        int(row["streaming_resolved_pulse_track_grade"].get("timing_matched_count", 0))
-        for row in resolved_pulse_track_available
-    )
-    resolved_pulse_track_exact = sum(
-        int(row["streaming_resolved_pulse_track_grade"].get("exact_count", 0))
-        for row in resolved_pulse_track_available
-    )
-    resolved_pulse_track_within_one = sum(
-        int(row["streaming_resolved_pulse_track_grade"].get("within_one_count", 0))
-        for row in resolved_pulse_track_available
-    )
     syllable_position_targets = sum(int(row["streaming_syllable_position_grade"].get("target_count", 0)) for row in syllable_position_available)
     syllable_position_estimates = sum(int(row["streaming_syllable_position_grade"].get("estimate_count", 0)) for row in syllable_position_available)
     syllable_position_timing_matches = sum(int(row["streaming_syllable_position_grade"].get("timing_match_count", 0)) for row in syllable_position_available)
@@ -2068,212 +1490,23 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
     syllable_position_word_matches = sum(int(row["streaming_syllable_position_grade"].get("word_match_count", 0)) for row in syllable_position_available)
     syllable_position_confident = sum(int(row["streaming_syllable_position_grade"].get("confident_count", 0)) for row in syllable_position_available)
     syllable_position_confident_exact = sum(int(row["streaming_syllable_position_grade"].get("confident_exact_count", 0)) for row in syllable_position_available)
-    dense_position_reference = sum(int(row["streaming_dense_position_grade"].get("reference_frame_count", 0)) for row in dense_position_available)
-    dense_position_estimates = sum(int(row["streaming_dense_position_grade"].get("estimate_count", 0)) for row in dense_position_available)
-    dense_position_in_speech = sum(int(row["streaming_dense_position_grade"].get("in_speech_estimate_count", 0)) for row in dense_position_available)
-    dense_position_exact = sum(int(row["streaming_dense_position_grade"].get("exact_count", 0)) for row in dense_position_available)
-    dense_position_within_one = sum(int(row["streaming_dense_position_grade"].get("within_one_count", 0)) for row in dense_position_available)
-    dense_position_word = sum(int(row["streaming_dense_position_grade"].get("word_match_count", 0)) for row in dense_position_available)
-    dense_position_confident = sum(int(row["streaming_dense_position_grade"].get("confident_count", 0)) for row in dense_position_available)
-    dense_position_confident_exact = sum(int(row["streaming_dense_position_grade"].get("confident_exact_count", 0)) for row in dense_position_available)
-    dense_position_ahead = sum(int(row["streaming_dense_position_grade"].get("ahead_count", 0)) for row in dense_position_available)
-    dense_position_behind = sum(int(row["streaming_dense_position_grade"].get("behind_count", 0)) for row in dense_position_available)
-    dense_position_signed_error_sum = sum(
-        float(row["streaming_dense_position_grade"].get("mean_signed_syllable_error", 0.0))
-        * int(row["streaming_dense_position_grade"].get("in_speech_estimate_count", 0))
-        for row in dense_position_available
-    )
     historical_anchor_targets = sum(int(row["streaming_historical_anchor_grade"].get("target_count", 0)) for row in historical_anchor_available)
     historical_anchor_estimates = sum(int(row["streaming_historical_anchor_grade"].get("estimate_count", 0)) for row in historical_anchor_available)
     historical_anchor_timing = sum(int(row["streaming_historical_anchor_grade"].get("timing_match_count", 0)) for row in historical_anchor_available)
     historical_anchor_exact = sum(int(row["streaming_historical_anchor_grade"].get("exact_position_count", 0)) for row in historical_anchor_available)
     historical_anchor_within_one = sum(int(row["streaming_historical_anchor_grade"].get("within_one_count", 0)) for row in historical_anchor_available)
-    historical_rebase_reference = sum(int(row["streaming_historical_rebase_grade"].get("reference_frame_count", 0)) for row in historical_rebase_available)
-    historical_rebase_in_speech = sum(int(row["streaming_historical_rebase_grade"].get("in_speech_estimate_count", 0)) for row in historical_rebase_available)
-    historical_rebase_exact = sum(int(row["streaming_historical_rebase_grade"].get("exact_count", 0)) for row in historical_rebase_available)
-    historical_rebase_within_one = sum(int(row["streaming_historical_rebase_grade"].get("within_one_count", 0)) for row in historical_rebase_available)
-    historical_rebase_word = sum(int(row["streaming_historical_rebase_grade"].get("word_match_count", 0)) for row in historical_rebase_available)
-
-    prosodic_targets = sum(int(row["streaming_prosodic_peak_grade"].get("target_count", 0)) for row in prosodic_available)
-    prosodic_observations = sum(int(row["streaming_prosodic_peak_grade"].get("observation_count", 0)) for row in prosodic_available)
-    prosodic_matches = sum(int(row["streaming_prosodic_peak_grade"].get("matched_count", 0)) for row in prosodic_available)
-    raw_prosodic_observations = sum(int(row["streaming_prosodic_peak_grade"].get("raw_observation_count", 0)) for row in prosodic_available)
-    raw_prosodic_matches = sum(int(row["streaming_prosodic_peak_grade"].get("raw_matched_count", 0)) for row in prosodic_available)
-    prosodic_errors = []
-    prosodic_latencies = []
-    for row in prosodic_available:
-        grade = row["streaming_prosodic_peak_grade"]
-        count = int(grade.get("matched_count", 0))
-        if count > 0:
-            prosodic_errors.extend([float(grade.get("mean_abs_error_ms", 0.0))] * count)
-            prosodic_latencies.extend([float(grade.get("mean_decision_latency_ms", 0.0))] * count)
-
     runtime_syllable_targets = sum(int(row["runtime_syllable_assignment_grade"].get("target_count", 0)) for row in runtime_syllable_available)
     runtime_syllable_observations = sum(int(row["runtime_syllable_assignment_grade"].get("observation_count", 0)) for row in runtime_syllable_available)
     runtime_syllable_matches = sum(int(row["runtime_syllable_assignment_grade"].get("matched_count", 0)) for row in runtime_syllable_available)
-    def aggregate_runtime_rebase(rows: list[dict[str, Any]], key: str) -> dict[str, float]:
-        targets = sum(int(row[key].get("target_count", 0)) for row in rows)
-        observations = sum(int(row[key].get("observation_count", 0)) for row in rows)
-        matches = sum(int(row[key].get("matched_count", 0)) for row in rows)
-        weighted_errors = [
-            float(row[key].get("mean_abs_error_ms", 0.0))
-            for row in rows
-            for _ in range(int(row[key].get("matched_count", 0)))
-        ]
-        return {
-            "target_count": targets,
-            "observation_count": observations,
-            "matched_count": matches,
-            "precision": matches / observations if observations else 0.0,
-            "recall": matches / targets if targets else 0.0,
-            "mean_abs_error_ms": _mean(weighted_errors),
-        }
-
-    runtime_exact_pulse_summary = aggregate_runtime_rebase(
-        runtime_exact_pulse_available, "runtime_exact_pulse_rebase_grade"
-    )
-    runtime_speculative_pulse_summary = aggregate_runtime_rebase(
-        runtime_speculative_pulse_available, "runtime_speculative_pulse_rebase_grade"
-    )
-    exact_corrections = [
-        abs(_safe_float(anchor, "timeline_correction_sec", 0.0)) * 1000.0
-        for row in bulk
-        for anchor in row.get("runtime_syllable_anchor_rows", [])
-        if anchor.get("anchor_kind") in {"region_first_pulse", "exact_pulse_rebase"}
-    ]
-    speculative_corrections = [
-        abs(_safe_float(anchor, "timeline_correction_sec", 0.0)) * 1000.0
-        for row in bulk
-        for anchor in row.get("runtime_syllable_anchor_rows", [])
-        if anchor.get("anchor_kind") == "speculative_pulse_rebase"
-    ]
     runtime_syllable_errors = []
     for row in runtime_syllable_available:
         grade = row["runtime_syllable_assignment_grade"]
         count = int(grade.get("matched_count", 0))
         if count > 0:
             runtime_syllable_errors.extend([float(grade.get("mean_abs_error_ms", 0.0))] * count)
-    syllable_diagnostic_totals = {
-        "pulse_count": 0,
-        "assignment_count": 0,
-        "progress_count": 0,
-        "reject_low_prominence_count": 0,
-        "reject_before_section_count": 0,
-        "late_assignment_count": 0,
-        "reject_no_candidate_count": 0,
-        "ambiguous_assignment_count": 0,
-        "duplicate_pulse_count": 0,
-        "strong_phone_candidate_count": 0,
-        "strong_phone_assignment_count": 0,
-        "first_pulse_anchor_count": 0,
-        "first_pulse_fallback_count": 0,
-        "exact_pulse_rebase_count": 0,
-        "speculative_pulse_rebase_count": 0,
-        "internal_region_carry_count": 0,
-        "internal_region_carried_event_count": 0,
-        "closed_region_cutoff_count": 0,
-        "dropped_closed_region_event_count": 0,
-    }
-    for row in bulk:
-        boundary_rows = row.get("runtime_boundary_rows", [])
-        if not boundary_rows:
-            continue
-        final = boundary_rows[-1]
-        for output_key, csv_key in {
-            "pulse_count": "syllable_pulse_count",
-            "assignment_count": "syllable_assignment_count",
-            "progress_count": "syllable_progress_count",
-            "reject_low_prominence_count": "syllable_reject_low_prominence_count",
-            "reject_before_section_count": "syllable_reject_before_section_count",
-            "late_assignment_count": "syllable_late_assignment_count",
-            "reject_no_candidate_count": "syllable_reject_no_candidate_count",
-            "ambiguous_assignment_count": "syllable_ambiguous_assignment_count",
-            "duplicate_pulse_count": "syllable_duplicate_pulse_count",
-            "strong_phone_candidate_count": "strong_phone_candidate_count",
-            "strong_phone_assignment_count": "strong_phone_assignment_count",
-            "first_pulse_anchor_count": "first_pulse_anchor_count",
-            "first_pulse_fallback_count": "first_pulse_fallback_count",
-            "exact_pulse_rebase_count": "exact_pulse_rebase_count",
-            "speculative_pulse_rebase_count": "speculative_pulse_rebase_count",
-            "internal_region_carry_count": "internal_region_carry_count",
-            "internal_region_carried_event_count": "internal_region_carried_event_count",
-            "closed_region_cutoff_count": "closed_region_cutoff_count",
-            "dropped_closed_region_event_count": "dropped_closed_region_event_count",
-        }.items():
-            syllable_diagnostic_totals[output_key] += _safe_int(final, csv_key, 0)
-
-    runtime_syllable_progress_count = sum(
-        _safe_int(row.get("runtime_boundary_rows", [])[-1], "syllable_progress_count", 0)
-        for row in runtime_syllable_available
-        if row.get("runtime_boundary_rows")
-    )
-    runtime_syllable_progress_errors = []
-    for row in runtime_syllable_available:
-        boundary_rows = row.get("runtime_boundary_rows", [])
-        if not boundary_rows:
-            continue
-        progress_count = _safe_int(boundary_rows[-1], "syllable_progress_count", 0)
-        target_count = int(row["runtime_syllable_assignment_grade"].get("target_count", 0))
-        runtime_syllable_progress_errors.append(progress_count - target_count)
-    strict_punctuation_targets = sum(int(row["strict_punctuation_grade"].get("target_count", 0)) for row in strict_punctuation_available)
-    strict_close_observations = sum(int(row["strict_punctuation_grade"].get("close_observation_count", 0)) for row in strict_punctuation_available)
-    strict_close_matches = sum(int(row["strict_punctuation_grade"].get("close_match_count", 0)) for row in strict_punctuation_available)
-    strict_resume_observations = sum(int(row["strict_punctuation_grade"].get("resume_observation_count", 0)) for row in strict_punctuation_available)
-    strict_resume_matches = sum(int(row["strict_punctuation_grade"].get("resume_match_count", 0)) for row in strict_punctuation_available)
-    soft_list_rows = [
-        strict_row
-        for row in strict_punctuation_available
-        for strict_row in row.get("strict_rows", [])
-        if strict_row.get("pause_class") == "soft_list_pause"
-    ]
-    soft_list_close_observations = sum(_safe_float(row, "observed_close", -1.0) >= 0.0 for row in soft_list_rows)
-    soft_list_close_matches = sum(_safe_int(row, "close_matched", 0) != 0 for row in soft_list_rows)
-    soft_list_resume_observations = sum(_safe_float(row, "observed_resume", -1.0) >= 0.0 for row in soft_list_rows)
-    soft_list_resume_matches = sum(_safe_int(row, "resume_matched", 0) != 0 for row in soft_list_rows)
-    pause_safety_targets = sum(int(row["pause_safety"].get("target_count", 0)) for row in pause_safety_available)
-    pause_safety_pairs = sum(int(row["pause_safety"].get("paired_count", 0)) for row in pause_safety_available)
-    pause_safety_unpaired = sum(int(row["pause_safety"].get("unpaired_count", 0)) for row in pause_safety_available)
-    pause_safety_early_resumes = sum(int(row["pause_safety"].get("early_resume_count", 0)) for row in pause_safety_available)
-    pause_safety_leak_boundaries = sum(int(row["pause_safety"].get("leakage_boundary_count", 0)) for row in pause_safety_available)
-    pause_safety_leak_ms = sum(float(row["pause_safety"].get("total_post_boundary_leakage_ms", 0.0)) for row in pause_safety_available)
-    pause_safety_timeouts = sum(int(row["pause_safety"].get("unsafe_timeout_release_count", 0)) for row in pause_safety_available)
-    pause_safety_false_resolutions = sum(int(row["pause_safety"].get("false_pause_resolution_count", 0)) for row in pause_safety_available)
-    pause_safety_unresolved = sum(int(row["pause_safety"].get("unresolved_hold_count", 0)) for row in pause_safety_available)
-    pause_safety_false_hold_ms = sum(float(row["pause_safety"].get("false_hold_during_gold_speech_ms", 0.0)) for row in pause_safety_available)
-    syllable_continuous_releases = sum(int(row["pause_safety"].get("syllable_continuous_release_count", 0)) for row in pause_safety_available)
-    syllable_continuous_safe_releases = sum(int(row["pause_safety"].get("syllable_continuous_safe_release_count", 0)) for row in pause_safety_available)
-    syllable_continuous_false_pause_releases = sum(int(row["pause_safety"].get("syllable_continuous_false_pause_release_count", 0)) for row in pause_safety_available)
-    syllable_continuous_false_pause_cases = sum(int(row["pause_safety"].get("syllable_continuous_false_pause_release_count", 0) > 0) for row in pause_safety_available)
-    syllable_continuous_false_pause_leakage_ms = sum(float(row["pause_safety"].get("syllable_continuous_false_pause_leakage_ms", 0.0)) for row in pause_safety_available)
-    syllable_continuous_all_releases = sum(int(row["pause_safety"].get("syllable_continuous_release_count", 0)) for row in pause_safety_all_graded)
-    syllable_continuous_all_false_pause_releases = sum(int(row["pause_safety"].get("syllable_continuous_false_pause_release_count", 0)) for row in pause_safety_all_graded)
-    syllable_continuous_all_false_pause_cases = sum(int(row["pause_safety"].get("syllable_continuous_false_pause_release_count", 0) > 0) for row in pause_safety_all_graded)
-    syllable_continuous_all_false_pause_leakage_ms = sum(float(row["pause_safety"].get("syllable_continuous_false_pause_leakage_ms", 0.0)) for row in pause_safety_all_graded)
-    pause_close_signed = []
-    pause_resume_signed = []
-    pause_post_resume_delay = []
-    for row in pause_safety_available:
-        safety = row["pause_safety"]
-        count = int(safety.get("target_count", 0))
-        if count <= 0:
-            continue
-        pause_close_signed.extend([float(safety.get("mean_signed_close_latency_ms", 0.0))] * count)
-        pause_resume_signed.extend([float(safety.get("mean_signed_resume_latency_ms", 0.0))] * count)
-        pause_post_resume_delay.extend([float(safety.get("mean_post_resume_animation_delay_ms", 0.0))] * count)
-
     summary = {
         **playback_summary,
         **text_plan_summary,
-        "runtime_detector_available_cases": runtime_detector_summary["available_cases"],
-        "runtime_detector_target_count": runtime_detector_summary["planned_landmark_target_count"],
-        "runtime_detector_observation_count": runtime_detector_summary["observed_landmark_count"],
-        "runtime_detector_planned_landmark_selection_rate": runtime_detector_summary["planned_landmark_selection_rate"],
-        "runtime_detector_planned_landmark_precision": runtime_detector_summary["planned_landmark_precision"],
-        "runtime_detector_planned_landmark_recall": runtime_detector_summary["planned_landmark_recall"],
-        "runtime_detector_planned_landmark_center_ms": runtime_detector_summary["planned_landmark_center_ms"],
-        "runtime_detector_planned_landmark_center_median_ms": runtime_detector_summary["planned_landmark_center_median_ms"],
-        "runtime_detector_planned_landmark_center_p90_ms": runtime_detector_summary["planned_landmark_center_p90_ms"],
-        "runtime_detector_planned_landmark_by_type": runtime_detector_summary["planned_landmark_by_type"],
         "evidence_surface_available_cases": len(evidence_available),
         "evidence_surface_preroll_ms": _mean([float(row["streaming_evidence_grade"].get("preroll_ms", 0.0)) for row in evidence_available]),
         "evidence_surface_postroll_ms": _mean([float(row["streaming_evidence_grade"].get("postroll_ms", 0.0)) for row in evidence_available]),
@@ -2301,25 +1534,6 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
             syllable_assignment_within_one / syllable_assignment_count
             if syllable_assignment_count else 0.0
         ),
-        "resolved_pulse_track_available_cases": len(resolved_pulse_track_available),
-        "resolved_pulse_track_target_count": resolved_pulse_track_targets,
-        "resolved_pulse_track_assignment_count": resolved_pulse_track_assignments,
-        "resolved_pulse_track_assignment_ratio": (
-            resolved_pulse_track_assignments / resolved_pulse_track_targets
-            if resolved_pulse_track_targets else 0.0
-        ),
-        "resolved_pulse_track_exact_precision": (
-            resolved_pulse_track_exact / resolved_pulse_track_assignments
-            if resolved_pulse_track_assignments else 0.0
-        ),
-        "resolved_pulse_track_exact_recall": (
-            resolved_pulse_track_exact / resolved_pulse_track_targets
-            if resolved_pulse_track_targets else 0.0
-        ),
-        "resolved_pulse_track_within_one_accuracy": (
-            resolved_pulse_track_within_one / resolved_pulse_track_timing_matches
-            if resolved_pulse_track_timing_matches else 0.0
-        ),
         "syllable_position_available_cases": len(syllable_position_available),
         "syllable_position_target_count": syllable_position_targets,
         "syllable_position_estimate_count": syllable_position_estimates,
@@ -2330,17 +1544,6 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "syllable_position_word_rate": syllable_position_word_matches / syllable_position_estimates if syllable_position_estimates else 0.0,
         "syllable_position_confident_coverage": syllable_position_confident / syllable_position_estimates if syllable_position_estimates else 0.0,
         "syllable_position_confident_exact_rate": syllable_position_confident_exact / syllable_position_confident if syllable_position_confident else 0.0,
-        "dense_position_available_cases": len(dense_position_available),
-        "dense_position_coverage": dense_position_in_speech / dense_position_reference if dense_position_reference else 0.0,
-        "dense_position_exact_recall": dense_position_exact / dense_position_reference if dense_position_reference else 0.0,
-        "dense_position_exact_precision": dense_position_exact / dense_position_estimates if dense_position_estimates else 0.0,
-        "dense_position_within_one_rate": dense_position_within_one / dense_position_in_speech if dense_position_in_speech else 0.0,
-        "dense_position_word_rate": dense_position_word / dense_position_in_speech if dense_position_in_speech else 0.0,
-        "dense_position_confident_coverage": dense_position_confident / dense_position_in_speech if dense_position_in_speech else 0.0,
-        "dense_position_confident_exact_rate": dense_position_confident_exact / dense_position_confident if dense_position_confident else 0.0,
-        "dense_position_ahead_rate": dense_position_ahead / dense_position_in_speech if dense_position_in_speech else 0.0,
-        "dense_position_behind_rate": dense_position_behind / dense_position_in_speech if dense_position_in_speech else 0.0,
-        "dense_position_mean_signed_error": dense_position_signed_error_sum / dense_position_in_speech if dense_position_in_speech else 0.0,
         "historical_anchor_available_cases": len(historical_anchor_available),
         "historical_anchor_count": historical_anchor_estimates,
         "historical_anchor_exact_rate": historical_anchor_exact / historical_anchor_estimates if historical_anchor_estimates else 0.0,
@@ -2349,19 +1552,6 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "historical_anchor_timing_recall": historical_anchor_timing / historical_anchor_targets if historical_anchor_targets else 0.0,
         "historical_anchor_median_latency_ms": _mean([float(row["streaming_historical_anchor_grade"].get("median_decision_latency_ms", 0.0)) for row in historical_anchor_available]),
         "historical_anchor_median_gap_ms": _mean([float(row["streaming_historical_anchor_grade"].get("median_anchor_gap_ms", 0.0)) for row in historical_anchor_available]),
-        "historical_rebase_available_cases": len(historical_rebase_available),
-        "historical_rebase_coverage": historical_rebase_in_speech / historical_rebase_reference if historical_rebase_reference else 0.0,
-        "historical_rebase_exact_recall": historical_rebase_exact / historical_rebase_reference if historical_rebase_reference else 0.0,
-        "historical_rebase_within_one_rate": historical_rebase_within_one / historical_rebase_in_speech if historical_rebase_in_speech else 0.0,
-        "historical_rebase_word_rate": historical_rebase_word / historical_rebase_in_speech if historical_rebase_in_speech else 0.0,
-        "runtime_pause_close_precision": runtime_boundary_summary["pause_close"]["precision"],
-        "runtime_pause_close_recall": runtime_boundary_summary["pause_close"]["recall"],
-        "runtime_pause_close_error_ms": runtime_boundary_summary["pause_close"]["mean_abs_error_ms"],
-        "runtime_pause_close_latency_ms": runtime_boundary_summary["pause_close"]["mean_decision_latency_ms"],
-        "runtime_resume_precision": runtime_boundary_summary["resume"]["precision"],
-        "runtime_resume_recall": runtime_boundary_summary["resume"]["recall"],
-        "runtime_resume_error_ms": runtime_boundary_summary["resume"]["mean_abs_error_ms"],
-        "runtime_resume_latency_ms": runtime_boundary_summary["resume"]["mean_decision_latency_ms"],
         "streaming_region_boundary_available_cases": len(region_boundary_available),
         "streaming_region_boundary_tolerance_ms": 100.0,
         "streaming_region_boundary_predicted_count": region_boundary_predicted,
@@ -2381,18 +1571,6 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "streaming_region_initial_open_recall": region_initial_matched / len(region_boundary_available) if region_boundary_available else 0.0,
         "streaming_region_final_close_precision": region_final_matched / region_final_observed if region_final_observed else 0.0,
         "streaming_region_final_close_recall": region_final_matched / len(region_boundary_available) if region_boundary_available else 0.0,
-        "prosodic_peak_available_cases": len(prosodic_available),
-        "prosodic_peak_target_count": prosodic_targets,
-        "prosodic_peak_observation_count": prosodic_observations,
-        "prosodic_peak_matched_count": prosodic_matches,
-        "prosodic_peak_precision": prosodic_matches / prosodic_observations if prosodic_observations else 0.0,
-        "prosodic_peak_recall": prosodic_matches / prosodic_targets if prosodic_targets else 0.0,
-        "prosodic_peak_error_ms": _mean(prosodic_errors),
-        "prosodic_peak_decision_latency_ms": _mean(prosodic_latencies),
-        "raw_prosodic_peak_observation_count": raw_prosodic_observations,
-        "raw_prosodic_peak_matched_count": raw_prosodic_matches,
-        "raw_prosodic_peak_precision": raw_prosodic_matches / raw_prosodic_observations if raw_prosodic_observations else 0.0,
-        "raw_prosodic_peak_recall": raw_prosodic_matches / prosodic_targets if prosodic_targets else 0.0,
         "runtime_syllable_available_cases": len(runtime_syllable_available),
         "runtime_syllable_target_count": runtime_syllable_targets,
         "runtime_syllable_observation_count": runtime_syllable_observations,
@@ -2400,82 +1578,12 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "runtime_syllable_precision": runtime_syllable_matches / runtime_syllable_observations if runtime_syllable_observations else 0.0,
         "runtime_syllable_recall": runtime_syllable_matches / runtime_syllable_targets if runtime_syllable_targets else 0.0,
         "runtime_syllable_error_ms": _mean(runtime_syllable_errors),
-        "runtime_exact_pulse_rebase": runtime_exact_pulse_summary,
-        "runtime_exact_pulse_mean_correction_ms": _mean(exact_corrections),
-        "runtime_speculative_pulse_rebase": runtime_speculative_pulse_summary,
-        "runtime_speculative_pulse_mean_correction_ms": _mean(speculative_corrections),
         "runtime_syllable_count_ratio": runtime_syllable_observations / runtime_syllable_targets if runtime_syllable_targets else 0.0,
-        "runtime_syllable_progress_count": runtime_syllable_progress_count,
-        "runtime_syllable_progress_ratio": runtime_syllable_progress_count / runtime_syllable_targets if runtime_syllable_targets else 0.0,
-        "runtime_syllable_progress_mean_abs_count_error": _mean([abs(value) for value in runtime_syllable_progress_errors]),
-        "runtime_syllable_progress_exact_case_rate": (
-            sum(value == 0 for value in runtime_syllable_progress_errors) / len(runtime_syllable_progress_errors)
-            if runtime_syllable_progress_errors else 0.0
-        ),
-        "runtime_syllable_progress_within_one_case_rate": (
-            sum(abs(value) <= 1 for value in runtime_syllable_progress_errors) / len(runtime_syllable_progress_errors)
-            if runtime_syllable_progress_errors else 0.0
-        ),
-        "runtime_syllable_progress_over_case_count": sum(value > 0 for value in runtime_syllable_progress_errors),
-        "runtime_syllable_progress_under_case_count": sum(value < 0 for value in runtime_syllable_progress_errors),
-        "runtime_syllable_diagnostics": syllable_diagnostic_totals,
-        "strict_punctuation_available_cases": len(strict_punctuation_available),
-        "strict_punctuation_close_precision": strict_close_matches / strict_close_observations if strict_close_observations else 0.0,
-        "strict_punctuation_close_recall": strict_close_matches / strict_punctuation_targets if strict_punctuation_targets else 0.0,
-        "strict_punctuation_resume_precision": strict_resume_matches / strict_resume_observations if strict_resume_observations else 0.0,
-        "strict_punctuation_resume_recall": strict_resume_matches / strict_punctuation_targets if strict_punctuation_targets else 0.0,
-        "soft_list_boundary_target_count": len(soft_list_rows),
-        "soft_list_boundary_close_precision": soft_list_close_matches / soft_list_close_observations if soft_list_close_observations else 0.0,
-        "soft_list_boundary_close_recall": soft_list_close_matches / len(soft_list_rows) if soft_list_rows else 0.0,
-        "soft_list_boundary_resume_precision": soft_list_resume_matches / soft_list_resume_observations if soft_list_resume_observations else 0.0,
-        "soft_list_boundary_resume_recall": soft_list_resume_matches / len(soft_list_rows) if soft_list_rows else 0.0,
-        "pause_safety_available_cases": len(pause_safety_available),
-        "pause_safety_target_count": pause_safety_targets,
-        "pause_safety_pair_rate": pause_safety_pairs / pause_safety_targets if pause_safety_targets else 0.0,
-        "pause_safety_unpaired_count": pause_safety_unpaired,
-        "pause_safety_early_resume_count": pause_safety_early_resumes,
-        "pause_safety_leakage_boundary_count": pause_safety_leak_boundaries,
-        "pause_safety_total_leakage_ms": pause_safety_leak_ms,
-        "pause_safety_mean_signed_close_latency_ms": _mean(pause_close_signed),
-        "pause_safety_mean_signed_resume_latency_ms": _mean(pause_resume_signed),
-        "pause_safety_mean_post_resume_animation_delay_ms": _mean(pause_post_resume_delay),
-        "pause_safety_unsafe_timeout_release_count": pause_safety_timeouts,
-        "pause_safety_false_pause_resolution_count": pause_safety_false_resolutions,
-        "pause_safety_unresolved_hold_count": pause_safety_unresolved,
-        "pause_safety_false_hold_during_gold_speech_ms": pause_safety_false_hold_ms,
-        "pause_safety_syllable_continuous_release_count": syllable_continuous_releases,
-        "pause_safety_syllable_continuous_precision": (
-            syllable_continuous_safe_releases / syllable_continuous_releases
-            if syllable_continuous_releases else 1.0
-        ),
-        "pause_safety_syllable_continuous_false_pause_release_count": syllable_continuous_false_pause_releases,
-        "pause_safety_syllable_continuous_false_pause_case_count": syllable_continuous_false_pause_cases,
-        "pause_safety_syllable_continuous_false_pause_leakage_ms": syllable_continuous_false_pause_leakage_ms,
-        "pause_safety_syllable_continuous_pause_preservation_rate": (
-            1.0 - syllable_continuous_false_pause_releases / pause_safety_targets
-            if pause_safety_targets else 1.0
-        ),
-        "pause_safety_syllable_continuous_all_graded_release_count": syllable_continuous_all_releases,
-        "pause_safety_syllable_continuous_all_graded_false_pause_release_count": syllable_continuous_all_false_pause_releases,
-        "pause_safety_syllable_continuous_all_graded_false_pause_case_count": syllable_continuous_all_false_pause_cases,
-        "pause_safety_syllable_continuous_all_graded_false_pause_leakage_ms": syllable_continuous_all_false_pause_leakage_ms,
-        "streaming_landmark_available_cases": runtime_detector_summary["available_cases"],
-        "streaming_landmark_target_count": runtime_detector_summary["planned_landmark_target_count"],
-        "streaming_landmark_observation_count": runtime_detector_summary["observed_landmark_count"],
-        "streaming_landmark_selection_rate": runtime_detector_summary["planned_landmark_selection_rate"],
-        "streaming_landmark_precision": runtime_detector_summary["planned_landmark_precision"],
-        "streaming_landmark_recall": runtime_detector_summary["planned_landmark_recall"],
-        "streaming_landmark_center_ms": runtime_detector_summary["planned_landmark_center_ms"],
-        "streaming_landmark_center_median_ms": runtime_detector_summary["planned_landmark_center_median_ms"],
-        "streaming_landmark_center_p90_ms": runtime_detector_summary["planned_landmark_center_p90_ms"],
-        "streaming_landmark_by_type": runtime_detector_summary["planned_landmark_by_type"],
         "playback": playback_summary,
         "text_plan_vs_mfa": text_plan_summary,
-        "runtime_detector_vs_text_plan": runtime_detector_summary,
     }
 
     summary["speech_f1"] = summary["speech_match_rate"]
     summary["word_f1"] = summary["word_match_rate"]
-    summary["sentence_region_count_mismatch_cases"] = summary["text_sentence_span_count_mismatch_cases"]
-    summary["clause_region_count_mismatch_cases"] = summary["text_sentence_region_subspan_count_mismatch_cases"]
+
     return summary

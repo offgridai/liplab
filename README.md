@@ -1,63 +1,47 @@
 # liplab
 
-Standalone lipsync lab for iterating on the OffgridAI lipsync core outside Unreal Engine.
+Standalone research harness for the OffgridAI streaming lipsync core.
 
-`offgrid_dropin` is the authoritative lipsync source tree shared with OffgridAI. The standalone harness compiles and exercises that code directly.
+`offgrid_dropin` is the authoritative source shared with Unreal. The harness
+adapts around that code; it does not contain a second scheduler.
 
-## Goals
+## Runtime model
 
-- Build locally with CMake, without UE.
-- Drive the lipsync core from `inputs/transcripts`, `inputs/wav`, and approved `inputs/gold`.
-- Emit inspectable logs for every case.
-- Grade committed visemes against approved MFA-backed gold answers.
-- Keep the iterated lipsync logic compatible with a thin Offgrid LineCoach adapter.
-- Use transcript + PCM audio only; do not consume TTS hint streams, text-progress estimates, token indices, or predicted word schedules.
+The product path has five stages:
 
-## Current Runtime Shape
+1. `OffgridAITextVisemePlanner` converts the transcript into ordered CMU
+   phones, visible visemes, syllables, and relative duration priors.
+2. `OffgridAIStreamingSpeechDetector` extracts causal speech regions and
+   acoustic feature frames from streamed PCM.
+3. `OffgridAIStreamingEvidenceSurface` identifies syllabic pulses and a small
+   set of broad phone-family observations.
+4. `OffgridAILipsyncRuntimeAdapter` advances one append-only duration cursor
+   while observed speech is available. Stable syllable evidence may move the
+   uncommitted suffix by at most 120 ms.
+5. `OffgridAIVisemePerformer` samples committed events into pose weights.
 
-The active shared runtime is intentionally simple:
+Transcript identity and order are authoritative. Audio affects timing only.
+There are no punctuation schedulers, fallback playheads, TTS timing hints,
+acoustic phone substitutions, or revisions to committed events.
 
-- transcript plans one ordered phone/viseme chain with duration priors, syllables, strong-phone landmarks, and punctuation fences
-- streamed PCM produces causal speech occupancy, quiet/resume evidence, syllable envelopes, and broad acoustic-class evidence
-- one monotonic runtime cursor resolves strict punctuation pause/resume boundaries and soft syllable/strong-phone timing anchors
-- accepted anchors rebase only the uncommitted suffix; committed events remain immutable
+See [lipsync.md](lipsync.md) and
+[docs/active_runtime_path.md](docs/active_runtime_path.md).
 
-See [lipsync.md](C:\git\liplab\lipsync.md) for the current runtime contract.
-
-## Layout
+## Repository layout
 
 ```text
-offgrid_dropin/              Authoritative OffgridAI lipsync source snapshot and edit target
-harness/                     Local command-line runner
-inputs/transcripts/          One .txt per case
-inputs/wav/                  Matching .wav files, PCM16
-inputs/gold/                 Approved gold labels and metadata
-outputs/runs/latest/         Generated planned/speech/committed/grade logs
-scripts/verify.bat          One-command Windows build/run/grade verification
-AGENTS.md                   Rules for Codex and other coding agents
-lipsync.md                   OffgridAI architecture/spec
+offgrid_dropin/        Authoritative shared C++ implementation
+standalone_ue_shim/    Minimal Unreal type compatibility for CMake
+harness/               Streaming corpus runner and raw diagnostics
+scripts/               Build, gold-generation, grading, and regression tools
+inputs/transcripts/    Corpus transcripts
+inputs/wav/            Matching PCM16 WAV files
+inputs/gold/           Approved MFA-backed references
+docs/                  Current contracts, baseline, and calibration data
+outputs/runs/latest/   Generated run artifacts
 ```
 
-## Build
-
-```bash
-cmake -S . -B build
-cmake --build build --config Release
-build\Release\liplab_runner.exe .
-```
-
-With Ninja or Makefile generators, the executable may instead be `build\liplab_runner.exe` or `./build/liplab_runner`.
-
-Optional streaming knobs:
-
-```bash
-build\Release\liplab_runner.exe . --preroll-ms 350 --chunk-ms 40
-```
-
-`--preroll-ms` controls the streamed audio lookahead and defaults to `350`. The same value is passed into the shared runtime as `PrerollSec`. `--chunk-ms` controls only how the harness feeds PCM; it does not define the detector's analysis window.
-
-
-## One-command verification
+## Verify
 
 On Windows:
 
@@ -65,113 +49,46 @@ On Windows:
 scripts\verify.bat
 ```
 
-This configures CMake, builds `liplab_runner`, runs the sample corpus, summarizes the latest run, and checks grade thresholds from `docs/grade_thresholds.json`.
+This configures and builds with Visual Studio CMake/Ninja, validates gold,
+streams the complete corpus with a 350 ms preroll and 1500 ms retained
+postroll, summarizes results, and checks regression thresholds.
 
-## MFA-backed gold generation
+Manual execution after a build:
 
-The gold-label workflow is now:
-
-- offline MFA-backed batch generation creates draft evidence under `outputs/`
-- reviewed/approved cases are exported to `inputs/gold`
-- the standalone harness simulates the streamed runtime path and grades only against approved gold
-
-### Prerequisites
-
-Expected local MFA layout:
-
-```text
-.conda/mfa/                         Local Conda environment containing MFA
-.mfa/pretrained_models/acoustic/    Downloaded MFA acoustic models
-.mfa/pretrained_models/dictionary/  Downloaded MFA dictionaries
+```bat
+python scripts\run_all.py
+python scripts\summarize.py
+python scripts\check_grades.py
 ```
 
-Expected commands:
+The runner also accepts `--preroll-ms`, `--evidence-postroll-ms`,
+`--chunk-ms`, and `--case`. Chunk size controls transport simulation only;
+it does not define the acoustic analysis window.
 
-```bash
-conda run -p C:\git\liplab\.conda\mfa mfa version
+## Gold workflow
+
+MFA is offline-only and never ships in the runtime.
+
+```bat
+python scripts\draft_gold.py --mfa-num-jobs 4
+python scripts\check_gold.py --include-drafts
+python scripts\export_gold.py
 ```
 
-If MFA cannot write to your user Documents folder, ensure `MFA_ROOT_DIR` points at `C:\git\liplab\.mfa`.
+Approved packages live under `inputs/gold/<case>` and contain phones, words,
+speech regions, pause boundaries, and review metadata. See
+[docs/gold_dataset_plan.md](docs/gold_dataset_plan.md).
 
-### Regenerate the gold set
+## Primary generated artifacts
 
-Generate batch draft annotations from the current transcript + WAV corpus:
+Each case directory under `outputs/runs/latest` contains:
 
-```bash
-python scripts/draft_gold.py --mfa-num-jobs 4
-```
+- `planned.csv`, `expected_phones.csv`, and `planned_syllables.csv`
+- `speech_regions.csv` and `gap_candidates.csv`
+- `committed.csv` and `commit_decisions.csv`
+- `runtime_boundary_state.csv` and
+  `runtime_syllable_anchor_diagnostics.csv`
+- evidence, matcher, runtime-health, playback-health, and final grade files
 
-Validate draft packages and approved gold:
-
-```bash
-python scripts/check_gold.py --include-drafts
-```
-
-Export approved draft packages into `inputs/gold`:
-
-```bash
-python scripts/export_gold.py
-```
-
-The current gold package shape is:
-
-- `inputs/gold/<case>/phones.csv`
-- `inputs/gold/<case>/words.csv`
-- `inputs/gold/<case>/speech.csv`
-- `inputs/gold/<case>/boundaries.csv`
-- `inputs/gold/<case>/metadata.json`
-
-### Re-run the streamed harness against gold
-
-```bash
-python scripts/run_all.py
-python scripts/summarize.py
-python scripts/check_grades.py
-```
-
-This is the intended evaluation split:
-
-- offline MFA batch creates the accepted gold answer
-- streamed harness runs with `--preroll-ms 350 --chunk-ms 40`
-- grading measures runtime error against offline gold
-
-### Important constraint
-
-MFA is offline-only. It must not be added to `offgrid_dropin` runtime scheduling logic. Transcript still owns viseme identity; MFA only improves offline timing evidence.
-
-## Agent rules
-
-1. Keep Offgrid LineCoach thin; scheduling logic belongs in `offgrid_dropin`.
-2. Iterate lipsync logic in `offgrid_dropin`.
-3. Preserve monotonic committed event order.
-4. Transcript owns viseme identity; PCM audio only affects timing.
-5. Do not add TTS hint-stream inputs, text-progress fields, token progress, or predicted word schedule dependencies.
-6. Do not permanently suppress planned visible visemes.
-7. Scheduling changes must improve or preserve aggregate grade.
-8. Prefer deleting overlapping layers over adding fallbacks.
-9. `offgrid_dropin/Public/Lipsync` and `offgrid_dropin/Private/Lipsync` are the authoritative lipsync boundary.
-
-10. Run `scripts\verify.bat` before handing off code changes.
-11. Keep the authoritative lipsync behavior in `offgrid_dropin` and route standalone verification through that same code.
-
-See `AGENTS.md`, `docs/regression_policy.md`, `docs/offgrid_transplant_contract.md`, `docs/gold_dataset_plan.md`, and `docs/active_runtime_path.md` for the current automation and runtime contract.
-
-## Outputs
-
-Each case emits a generated diagnostic package under `outputs/runs/latest`. The primary artifacts are:
-
-```text
-planned.csv
-planned_boundaries.csv
-planned_words.csv
-speech_regions.csv
-committed.csv
-commit_decisions.csv
-runtime_boundary_state.csv
-runtime_syllable_assignments.csv
-grade.json
-pause_safety.json
-playback_health.json
-```
-
-Additional acoustic-evidence CSVs exist to explain detector and cursor decisions. They are diagnostics, not a second scheduler or a runtime dependency.
+Generated case directories are replaced on every run so removed diagnostics
+cannot survive as stale output.

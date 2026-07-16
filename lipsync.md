@@ -1,117 +1,96 @@
 # OffgridAI Lipsync
 
-## Overview
+## Contract
 
-OffgridAI Lipsync is a streaming viseme scheduler.
+OffgridAI Lipsync is a deterministic streaming viseme scheduler.
 
-Ownership is strict:
+- The transcript owns phone and viseme identity and order.
+- PCM owns observed speech timing and optional syllable timing evidence.
+- The runtime adapter owns placement and irreversible commitment.
+- The performer owns pose sampling, not scheduling.
 
-- transcript owns viseme identity and order
-- PCM audio occupancy owns when speech is active
-- runtime scheduling owns when planned visemes are committed
-- the performer and face driver only render committed events
+The runtime does not consume TTS token timing, predicted word schedules, hint
+streams, MFA, Python, or external inference.
 
-The active runtime does not use TTS hint streams, text-progress estimates, token indices, predicted word schedules, or acoustic identity overrides.
-
-## Runtime Pipeline
+## Pipeline
 
 ```text
-Transcript
-  -> TextVisemePlanner
-  -> Planned phone + viseme chain
-  -> RuntimeSession
-       -> StreamingSpeechDetector
-       -> AcousticEvidence
-       -> RuntimeAdapter
-  -> Committed viseme track
-  -> VisemePerformer
-  -> FaceDriver
+transcript
+  -> text plan: phones, visemes, syllables, relative durations
+streamed PCM
+  -> speech regions and acoustic feature frames
+feature frames
+  -> syllabic pulses and broad phone-family evidence
+text plan + audio evidence
+  -> one monotonic duration cursor with bounded suffix correction
+committed events
+  -> pose weights
 ```
 
-## Active Components
+## Text planning
 
-### TextVisemePlanner
+`FOffgridAITextVisemePlanner`:
 
-The planner converts transcript text into:
+- resolves CMU pronunciations, including supported alternatives and unknown-word
+  fallbacks,
+- emits every renderable transcript viseme in fixed order,
+- groups phones into syllables around planned nuclei,
+- assigns relative phone durations and small inter-word spacing,
+- records punctuation and pause hints for diagnostics.
 
-- a dense expected phone chain
-- ordered visible viseme events
-- per-word boundary punctuation metadata
-- syllable membership and strong-phone landmarks
-- punctuation fences that may require pause/resume resolution
+Punctuation does not create runtime fences or a second region schedule.
 
-The planner provides a duration prior only. It does not own final timestamps.
+## Streaming analysis
 
-### StreamingSpeechDetector
+`FOffgridAIStreamingSpeechDetector` consumes PCM incrementally and emits:
 
-The detector consumes streamed PCM and produces causal evidence:
+- speech-region opens, provisional closes, confirmed closes, and resumes,
+- one causal acoustic feature frame per analysis step,
+- refined gap candidates used to explain region decisions.
 
-- observed speech-region opens
-- observed speech-region closes
-- quiet/resume evidence
-- syllabic envelopes and feature frames
+`FOffgridAIStreamingEvidenceSurface` examines the retained evidence window:
+350 ms of upcoming preroll by default plus 1500 ms of recent postroll. It emits
+syllabic pulses and conservative broad phone-family observations. A permissive
+phone-family mode exists only for corpus evaluation of transcript conditioning.
 
-The detector does not choose phone or viseme identity.
+Neither component chooses a transcript phone or viseme.
 
-### AcousticEvidence
+## Scheduling
 
-The acoustic evidence classifier maps streamed feature frames to broad articulatory probabilities used by the runtime cursor. It is deliberately small and deterministic. It is not a forced aligner, beam search, or alternate transcript.
+`FOffgridAILipsyncRuntimeAdapter` owns one cursor.
 
-### RuntimeAdapter
+1. Wait for the first observed speech region.
+2. Anchor the next uncommitted event to that region's onset.
+3. Advance through relative duration priors at the nominal rate.
+4. Commit an event only when its center is inside the known speech frontier and
+   no more than 160 ms ahead of audible playback.
+5. If a stable monotonic syllable assignment becomes available, move the
+   timeline anchor by at most 120 ms. Only uncommitted events are affected.
+6. At a confirmed region end, stop committing into that region. Carry the next
+   uncommitted transcript event to the next observed region.
+7. If the final region closes before the plan is exhausted, leave the remaining
+   suffix uncommitted rather than bursting it after speech.
 
-The adapter maps planned phones onto observed active speech time and commits visible visemes monotonically.
+Late recovery may move the uncommitted cursor forward to a small live lead. It
+never reorders events or changes identity.
 
-Current behavior:
+## Invariants
 
-1. Wait for observed speech onset and anchor the first uncommitted event to it.
-2. Advance one transcript cursor through the planned chain using relative duration priors.
-3. At punctuation fences, require matching quiet/resume evidence before crossing the boundary.
-4. Within active speech, match syllable envelopes and strong-phone evidence as soft timing anchors.
-5. Rebase the uncommitted suffix when an anchor is accepted.
-6. Commit events monotonically once their placement is no longer revisable.
+- committed events are append-only and strictly monotonic,
+- audio never substitutes or suppresses transcript identity,
+- no event is committed outside an observed speech region,
+- one scheduler owns all placement,
+- optional syllable correction is bounded and cannot affect committed events,
+- stream closure and audible playback completion are separate events.
 
-The adapter never rewrites committed events.
+## Runtime lifecycle
 
-### VisemePerformer
+1. `BeginLine`
+2. `PushAudioPCM16` for every chunk
+3. `Update(CurrentPlaybackSec)` throughout audible playback
+4. `CloseInputStream` when no more PCM will arrive
+5. continue `Update` while buffered audio plays
+6. `Finalize` only when audible playback ends
 
-The performer samples committed events and converts them into pose weights.
-
-It does not schedule events.
-
-## Current Pause / Resume Model
-
-Pause and resume are resolved by the same transcript cursor that handles syllable timing. Punctuation supplies a strict fence; streamed audio determines whether a lull occurred and where speech resumed. A fence does not silently time out and let downstream visemes cross unresolved silence.
-
-Speech occupancy remains the coarse safety boundary. Punctuation evidence explains where a transcript boundary maps into that observed stream; it does not pre-create an independent text-owned speech-region schedule.
-
-## Timing Prior
-
-The planner supplies relative durations, not absolute timestamps.
-
-Current prior details:
-
-- phone weights come from the text plan
-- runtime advances through those relative durations and may rebase the uncommitted suffix from accepted audio anchors
-- adjacent words get a small `20ms` spacer in prior space
-- committed centers are lead-adjusted per pose so strongly visible mouth shapes can land slightly ahead of their nominal center
-
-## Core Invariants
-
-- transcript owns viseme identity
-- audio owns coarse speech timing
-- committed playback is monotonic
-- committed events are append-only
-- planned visible visemes are not permanently suppressed as a timing shortcut
-- one monotonic cursor owns punctuation, syllable, and strong-phone timing decisions
-
-## Harness Relationship
-
-`offgrid_dropin` is the authoritative runtime implementation shared with OffgridAI.
-
-The standalone harness exists to:
-
-- stream corpus audio through the same code
-- export inspectable logs
-- compare committed output against gold labels
-
-It should not diverge into a second lipsync implementation.
+See [docs/offgrid_transplant_contract.md](docs/offgrid_transplant_contract.md)
+for the Unreal adapter boundary.

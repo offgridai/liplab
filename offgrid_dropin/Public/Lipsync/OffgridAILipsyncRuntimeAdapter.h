@@ -51,12 +51,6 @@ struct FOffgridAIRuntimeCommitDiagnosticRow
     FName AcousticAnchorKind = NAME_None;
     float AcousticAnchorSec = -1.0f;
     float AcousticAnchorErrorSec = 0.0f;
-    float ObservedPauseDecaySec = -1.0f;
-    float ObservedResumeOnsetSec = -1.0f;
-    float ObservedResumeEnergyAnchorSec = -1.0f;
-    int32 BoundaryWordIndex = INDEX_NONE;
-    FString BoundaryMark;
-    FName BoundaryOutcome = NAME_None;
 };
 
 struct FOffgridAIStreamTailDiagnosticRow
@@ -107,18 +101,9 @@ struct FOffgridAIRuntimeSyllableAssignmentDiagnosticRow
     float ObservedAudioSec = 0.0f;
     float Prominence = 0.0f;
     float Confidence = 0.0f;
-    float Margin = 0.0f;
     int32 SkipCount = 0;
     FName AnchorKind = NAME_None;
-    int32 PulseOrdinal = 0;
-    int32 UnresolvedPulseCount = 0;
     float TimelineCorrectionSec = 0.0f;
-    bool bSpeculative = false;
-    int32 StrongPhoneCandidateCount = 0;
-    int32 StrongPhoneIndex = INDEX_NONE;
-    float StrongPhoneAudioSec = -1.0f;
-    float StrongPhoneConfidence = 0.0f;
-    FName StrongPhoneClass = NAME_None;
 };
 
 // Compact state trace for the single audio-primary scheduler.
@@ -130,7 +115,6 @@ struct FOffgridAIRuntimeBoundaryDiagnosticRow
     float CurrentPlaybackSec = 0.0f;
     bool bPlayheadStarted = false;
     bool bAudioSpeechActive = false;
-    bool bAudioEnvelopeGateOpen = false; // CSV compatibility: identical to speech active.
     int32 ActiveSpeechRegionIndex = INDEX_NONE;
     int32 ActiveTextSpeechRegionIndex = INDEX_NONE;
     float ActiveTextRegionAudioStartSec = -1.0f;
@@ -143,29 +127,7 @@ struct FOffgridAIRuntimeBoundaryDiagnosticRow
     int32 LastMatchedSyllablePhoneIndex = INDEX_NONE;
     float LastMatchedSyllableAudioSec = -1.0f;
     float LastMatchedSyllableConfidence = 0.0f;
-    int32 LastMatchedRegionPulseOrdinal = 0;
-    int32 ExactPulseRebaseCount = 0;
-    int32 SpeculativePulseRebaseCount = 0;
-    int32 LastMatchedStrongPhoneIndex = INDEX_NONE;
-    float LastMatchedStrongPhoneAudioSec = -1.0f;
-    float LastMatchedStrongPhoneConfidence = 0.0f;
-    FName LastMatchedStrongPhoneClass = NAME_None;
-    int32 StrongPhoneCandidateCount = 0;
-    int32 StrongPhoneAssignmentCount = 0;
-    int32 FirstPulseAnchoredSpeechRegionIndex = INDEX_NONE;
-    int32 FirstPulseAnchorCount = 0;
-    int32 FirstPulseFallbackCount = 0;
-    float LastFirstPulseAudioSec = -1.0f;
-    int32 InternalRegionCarryCount = 0;
-    int32 InternalRegionCarriedEventCount = 0;
-    int32 ClosedRegionCutoffCount = 0;
-    int32 DroppedClosedRegionEventCount = 0;
-    int32 PendingTextBoundaryToRegionIndex = INDEX_NONE;
-    float PendingTextBoundaryPredictedAudioSec = -1.0f;
-    bool bPendingTextBoundaryConfirmedPause = false;
-    int32 TextBoundaryPendingCount = 0;
-    int32 TextBoundaryConfirmedPauseCount = 0;
-    int32 TextBoundaryRejectedContinuousSpeechCount = 0;
+    int32 BoundedSyllableRebaseCount = 0;
     int32 SchedulerNextEventIndex = INDEX_NONE;
     int32 SchedulerNextPhoneIndex = INDEX_NONE;
     float SchedulerCandidateCenterSec = -1.0f;
@@ -184,8 +146,7 @@ struct FOffgridAILipsyncRuntimeBeginInput
     float PrerollSec = 0.350f;
 };
 
-// One scheduler state. No punctuation holds, alternate playheads, or fallback
-// schedulers are permitted here.
+// Complete mutable state for the single monotonic scheduler.
 struct FOffgridAIBoundaryPlaybackState
 {
     bool bPlayheadStarted = false;
@@ -194,42 +155,14 @@ struct FOffgridAIBoundaryPlaybackState
     int32 ActiveTextSpeechRegionIndex = INDEX_NONE;
     float ActiveTextRegionAudioStartSec = -1.0f;
     int32 LastAnchoredSpeechRegionIndex = INDEX_NONE;
-    float ActiveTextRegionObservedSpeechSec = 0.0f;
-    int32 ActiveAudioRegionFirstSyllableIndex = INDEX_NONE;
-    int32 ActiveAudioRegionPulseCount = 0;
-    float LastObservedAudioPulseSec = -1.0f;
-    int32 PendingTextBoundaryToRegionIndex = INDEX_NONE;
-    float PendingTextBoundaryPredictedAudioSec = -1.0f;
-    bool bPendingTextBoundaryConfirmedPause = false;
-    int32 TextBoundaryPendingCount = 0;
-    int32 TextBoundaryConfirmedPauseCount = 0;
-    int32 TextBoundaryRejectedContinuousSpeechCount = 0;
-    int32 DroppedClosedRegionEventCount = 0;
-    int32 ClosedRegionCutoffCount = 0;
-    int32 InternalRegionCarryCount = 0;
-    int32 InternalRegionCarriedEventCount = 0;
-    bool bActiveRegionFitApplied = false;
     float TimelinePriorAnchorSec = 0.0f;
     float TimelineAudioAnchorSec = 0.0f;
     float TimelineRate = 1.0f;
     int32 LastMatchedSyllableIndex = INDEX_NONE;
     int32 LastMatchedSyllablePhoneIndex = INDEX_NONE;
     float LastMatchedSyllableAudioSec = -1.0f;
-    float LastMatchedSyllablePriorSec = -1.0f;
     float LastMatchedSyllableConfidence = 0.0f;
-    int32 LastMatchedRegionPulseOrdinal = 0;
-    int32 ExactPulseRebaseCount = 0;
-    int32 SpeculativePulseRebaseCount = 0;
-    int32 LastMatchedStrongPhoneIndex = INDEX_NONE;
-    float LastMatchedStrongPhoneAudioSec = -1.0f;
-    float LastMatchedStrongPhoneConfidence = 0.0f;
-    FName LastMatchedStrongPhoneClass = NAME_None;
-    int32 StrongPhoneCandidateCount = 0;
-    int32 StrongPhoneAssignmentCount = 0;
-    int32 FirstPulseAnchoredSpeechRegionIndex = INDEX_NONE;
-    int32 FirstPulseAnchorCount = 0;
-    int32 FirstPulseFallbackCount = 0;
-    float LastFirstPulseAudioSec = -1.0f;
+    int32 BoundedSyllableRebaseCount = 0;
     int32 LastAnalyzedFeatureFrameCount = 0;
     TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow> PendingSyllableAssignments;
 
