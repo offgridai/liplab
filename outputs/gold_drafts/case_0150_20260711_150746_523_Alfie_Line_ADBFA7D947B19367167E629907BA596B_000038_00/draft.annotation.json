@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0150_20260711_150746_523_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000038_00",
-  "created_utc": "2026-07-12T14:15:36.609399+00:00",
+  "created_utc": "2026-07-15T20:24:44.923263+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 125,
+    "speech_merge_gap_ms": 120,
     "source_run_dir": "outputs/offline_gold/latest/case_0150_20260711_150746_523_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000038_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-12T14:15:36.609521+00:00"
+    "reviewed_utc": "2026-07-15T20:24:44.923330+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -46,13 +46,13 @@
     {
       "index": 0,
       "start": 0.12,
-      "end": 4.09,
+      "end": 2.48,
       "word_start_index": 0,
-      "word_end_index": 12,
+      "word_end_index": 6,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -60,14 +60,29 @@
     },
     {
       "index": 1,
+      "start": 2.61,
+      "end": 4.08,
+      "word_start_index": 7,
+      "word_end_index": 12,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    },
+    {
+      "index": 2,
       "start": 4.38,
-      "end": 6.14,
+      "end": 6.15,
       "word_start_index": 13,
       "word_end_index": 18,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -184,15 +199,15 @@
       "next_word": "keeping",
       "mark": ",",
       "mark_sequence": ",",
-      "pause_class": "soft_pause",
-      "split_applied": false,
-      "split_reason": "none",
-      "direct_word_gap_seconds": 0.1200000000000001,
-      "phone_gap_seconds": 0.1200000000000001,
-      "wave_silence_seconds": 0.1200000000000001,
-      "acoustic_gap_seconds": 0.1200000000000001,
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "comma_with_lull",
+      "direct_word_gap_seconds": 0.1299999999999999,
+      "phone_gap_seconds": 0.1299999999999999,
+      "wave_silence_seconds": 0.1299999999999999,
+      "acoustic_gap_seconds": 0.1299999999999999,
       "speech_region_index_before": 0,
-      "speech_region_index_after": 0
+      "speech_region_index_after": 1
     },
     {
       "word_index": 7,
@@ -208,8 +223,8 @@
       "phone_gap_seconds": 0.0,
       "wave_silence_seconds": 0.0,
       "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 0,
-      "speech_region_index_after": 0
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
     },
     {
       "word_index": 8,
@@ -225,8 +240,8 @@
       "phone_gap_seconds": 0.0,
       "wave_silence_seconds": 0.0,
       "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 0,
-      "speech_region_index_after": 0
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
     },
     {
       "word_index": 9,
@@ -242,8 +257,8 @@
       "phone_gap_seconds": 0.0,
       "wave_silence_seconds": 0.0,
       "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 0,
-      "speech_region_index_after": 0
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
     },
     {
       "word_index": 10,
@@ -259,8 +274,8 @@
       "phone_gap_seconds": 0.0,
       "wave_silence_seconds": 0.0,
       "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 0,
-      "speech_region_index_after": 0
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
     },
     {
       "word_index": 11,
@@ -276,8 +291,8 @@
       "phone_gap_seconds": 0.0,
       "wave_silence_seconds": 0.0,
       "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 0,
-      "speech_region_index_after": 0
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
     },
     {
       "word_index": 12,
@@ -289,12 +304,12 @@
       "pause_class": "region_break",
       "split_applied": true,
       "split_reason": "hard_punctuation_with_lull",
-      "direct_word_gap_seconds": 0.29000000000000004,
-      "phone_gap_seconds": 0.29000000000000004,
-      "wave_silence_seconds": 0.29000000000000004,
-      "acoustic_gap_seconds": 0.29000000000000004,
-      "speech_region_index_before": 0,
-      "speech_region_index_after": 1
+      "direct_word_gap_seconds": 0.2999999999999998,
+      "phone_gap_seconds": 0.2999999999999998,
+      "wave_silence_seconds": 0.2999999999999998,
+      "acoustic_gap_seconds": 0.2999999999999998,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 2
     },
     {
       "word_index": 13,
@@ -310,8 +325,8 @@
       "phone_gap_seconds": 0.0,
       "wave_silence_seconds": 0.0,
       "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 1,
-      "speech_region_index_after": 1
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 2
     },
     {
       "word_index": 14,
@@ -327,8 +342,8 @@
       "phone_gap_seconds": 0.0,
       "wave_silence_seconds": 0.0,
       "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 1,
-      "speech_region_index_after": 1
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 2
     },
     {
       "word_index": 15,
@@ -344,8 +359,8 @@
       "phone_gap_seconds": 0.0,
       "wave_silence_seconds": 0.0,
       "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 1,
-      "speech_region_index_after": 1
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 2
     },
     {
       "word_index": 16,
@@ -361,8 +376,8 @@
       "phone_gap_seconds": 0.0,
       "wave_silence_seconds": 0.0,
       "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 1,
-      "speech_region_index_after": 1
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 2
     },
     {
       "word_index": 17,
@@ -378,8 +393,8 @@
       "phone_gap_seconds": 0.0,
       "wave_silence_seconds": 0.0,
       "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 1,
-      "speech_region_index_after": 1
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 2
     }
   ],
   "gold_words": [
@@ -389,7 +404,6 @@
       "mfa_word": "queuing",
       "start": 0.12,
       "end": 0.38,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -406,7 +420,6 @@
       "mfa_word": "politely",
       "start": 0.38,
       "end": 1.0,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -425,7 +438,6 @@
       "mfa_word": "saying",
       "start": 1.07,
       "end": 1.48,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -442,7 +454,6 @@
       "mfa_word": "please",
       "start": 1.48,
       "end": 1.85,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -459,7 +470,6 @@
       "mfa_word": "and",
       "start": 1.85,
       "end": 1.99,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -476,7 +486,6 @@
       "mfa_word": "thank",
       "start": 1.99,
       "end": 2.24,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -493,7 +502,6 @@
       "mfa_word": "you",
       "start": 2.24,
       "end": 2.48,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -510,9 +518,8 @@
       "word_index": 7,
       "word": "keeping",
       "mfa_word": "keeping",
-      "start": 2.6,
+      "start": 2.61,
       "end": 2.88,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -521,7 +528,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 8,
@@ -529,7 +536,6 @@
       "mfa_word": "your",
       "start": 2.88,
       "end": 2.99,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -538,7 +544,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 9,
@@ -546,7 +552,6 @@
       "mfa_word": "voice",
       "start": 2.99,
       "end": 3.29,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -555,7 +560,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 10,
@@ -563,7 +568,6 @@
       "mfa_word": "down",
       "start": 3.29,
       "end": 3.54,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -572,7 +576,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 11,
@@ -580,7 +584,6 @@
       "mfa_word": "in",
       "start": 3.54,
       "end": 3.64,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -589,15 +592,14 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 12,
       "word": "public",
       "mfa_word": "public",
       "start": 3.64,
-      "end": 4.09,
-      "phrase_index": -1,
+      "end": 4.08,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -608,7 +610,7 @@
         "."
       ],
       "boundary_mark_after": ".",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 13,
@@ -616,7 +618,6 @@
       "mfa_word": "basics",
       "start": 4.38,
       "end": 4.87,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -625,7 +626,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "word_index": 14,
@@ -633,7 +634,6 @@
       "mfa_word": "we",
       "start": 4.87,
       "end": 4.99,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -642,7 +642,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "word_index": 15,
@@ -650,7 +650,6 @@
       "mfa_word": "often",
       "start": 4.99,
       "end": 5.3,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -659,7 +658,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "word_index": 16,
@@ -667,7 +666,6 @@
       "mfa_word": "take",
       "start": 5.3,
       "end": 5.53,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -676,7 +674,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "word_index": 17,
@@ -684,7 +682,6 @@
       "mfa_word": "for",
       "start": 5.53,
       "end": 5.63,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -693,15 +690,14 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "word_index": 18,
       "word": "granted",
       "mfa_word": "granted",
       "start": 5.63,
-      "end": 6.14,
-      "phrase_index": -1,
+      "end": 6.15,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -712,7 +708,7 @@
         "."
       ],
       "boundary_mark_after": ".",
-      "speech_region_index": 1
+      "speech_region_index": 2
     }
   ],
   "word_heads": [
@@ -722,7 +718,7 @@
       "start": 0.12,
       "end": 0.17,
       "pose": "K",
-      "phrase_index": 0,
+      "speech_region_index": 0,
       "sentence_index": -1,
       "source_phone": "K",
       "source_phone_index": 0,
@@ -738,7 +734,7 @@
       "start": 0.38,
       "end": 0.43,
       "pose": "P",
-      "phrase_index": 0,
+      "speech_region_index": 0,
       "sentence_index": -1,
       "source_phone": "P",
       "source_phone_index": 0,
@@ -754,7 +750,7 @@
       "start": 1.07,
       "end": 1.23,
       "pose": "S",
-      "phrase_index": 0,
+      "speech_region_index": 0,
       "sentence_index": -1,
       "source_phone": "S",
       "source_phone_index": 0,
@@ -770,7 +766,7 @@
       "start": 1.48,
       "end": 1.57,
       "pose": "P",
-      "phrase_index": 0,
+      "speech_region_index": 0,
       "sentence_index": -1,
       "source_phone": "P",
       "source_phone_index": 0,
@@ -786,7 +782,7 @@
       "start": 1.85,
       "end": 1.9,
       "pose": "AH0",
-      "phrase_index": 0,
+      "speech_region_index": 0,
       "sentence_index": -1,
       "source_phone": "AH0",
       "source_phone_index": 0,
@@ -802,7 +798,7 @@
       "start": 1.99,
       "end": 2.02,
       "pose": "TH",
-      "phrase_index": 0,
+      "speech_region_index": 0,
       "sentence_index": -1,
       "source_phone": "TH",
       "source_phone_index": 0,
@@ -818,7 +814,7 @@
       "start": 2.24,
       "end": 2.32,
       "pose": "Y",
-      "phrase_index": 0,
+      "speech_region_index": 0,
       "sentence_index": -1,
       "source_phone": "Y",
       "source_phone_index": 0,
@@ -831,10 +827,10 @@
     {
       "word_index": 7,
       "word": "keeping",
-      "start": 2.6,
+      "start": 2.61,
       "end": 2.68,
       "pose": "K",
-      "phrase_index": 0,
+      "speech_region_index": 1,
       "sentence_index": -1,
       "source_phone": "K",
       "source_phone_index": 0,
@@ -850,7 +846,7 @@
       "start": 2.88,
       "end": 2.92,
       "pose": "Y",
-      "phrase_index": 0,
+      "speech_region_index": 1,
       "sentence_index": -1,
       "source_phone": "Y",
       "source_phone_index": 0,
@@ -866,7 +862,7 @@
       "start": 2.99,
       "end": 3.06,
       "pose": "V",
-      "phrase_index": 0,
+      "speech_region_index": 1,
       "sentence_index": -1,
       "source_phone": "V",
       "source_phone_index": 0,
@@ -882,7 +878,7 @@
       "start": 3.29,
       "end": 3.35,
       "pose": "D",
-      "phrase_index": 0,
+      "speech_region_index": 1,
       "sentence_index": -1,
       "source_phone": "D",
       "source_phone_index": 0,
@@ -898,7 +894,7 @@
       "start": 3.54,
       "end": 3.57,
       "pose": "IH0",
-      "phrase_index": 0,
+      "speech_region_index": 1,
       "sentence_index": -1,
       "source_phone": "IH0",
       "source_phone_index": 0,
@@ -914,7 +910,7 @@
       "start": 3.64,
       "end": 3.69,
       "pose": "P",
-      "phrase_index": 0,
+      "speech_region_index": 1,
       "sentence_index": -1,
       "source_phone": "P",
       "source_phone_index": 0,
@@ -930,7 +926,7 @@
       "start": 4.38,
       "end": 4.43,
       "pose": "B",
-      "phrase_index": 1,
+      "speech_region_index": 2,
       "sentence_index": -1,
       "source_phone": "B",
       "source_phone_index": 0,
@@ -946,7 +942,7 @@
       "start": 4.87,
       "end": 4.92,
       "pose": "W",
-      "phrase_index": 1,
+      "speech_region_index": 2,
       "sentence_index": -1,
       "source_phone": "W",
       "source_phone_index": 0,
@@ -962,7 +958,7 @@
       "start": 4.99,
       "end": 5.11,
       "pose": "AA1",
-      "phrase_index": 1,
+      "speech_region_index": 2,
       "sentence_index": -1,
       "source_phone": "AA1",
       "source_phone_index": 0,
@@ -978,7 +974,7 @@
       "start": 5.3,
       "end": 5.36,
       "pose": "T",
-      "phrase_index": 1,
+      "speech_region_index": 2,
       "sentence_index": -1,
       "source_phone": "T",
       "source_phone_index": 0,
@@ -994,7 +990,7 @@
       "start": 5.53,
       "end": 5.58,
       "pose": "F",
-      "phrase_index": 1,
+      "speech_region_index": 2,
       "sentence_index": -1,
       "source_phone": "F",
       "source_phone_index": 0,
@@ -1010,7 +1006,7 @@
       "start": 5.63,
       "end": 5.69,
       "pose": "G",
-      "phrase_index": 1,
+      "speech_region_index": 2,
       "sentence_index": -1,
       "source_phone": "G",
       "source_phone_index": 0,
@@ -1028,7 +1024,6 @@
       "mfa_word": "queuing",
       "start": 0.12,
       "end": 0.38,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1045,7 +1040,6 @@
       "mfa_word": "politely",
       "start": 0.38,
       "end": 1.0,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1064,7 +1058,6 @@
       "mfa_word": "saying",
       "start": 1.07,
       "end": 1.48,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1081,7 +1074,6 @@
       "mfa_word": "please",
       "start": 1.48,
       "end": 1.85,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1098,7 +1090,6 @@
       "mfa_word": "and",
       "start": 1.85,
       "end": 1.99,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1115,7 +1106,6 @@
       "mfa_word": "thank",
       "start": 1.99,
       "end": 2.24,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1132,7 +1122,6 @@
       "mfa_word": "you",
       "start": 2.24,
       "end": 2.48,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1149,9 +1138,8 @@
       "word_index": 7,
       "word": "keeping",
       "mfa_word": "keeping",
-      "start": 2.6,
+      "start": 2.61,
       "end": 2.88,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1160,7 +1148,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 8,
@@ -1168,7 +1156,6 @@
       "mfa_word": "your",
       "start": 2.88,
       "end": 2.99,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1177,7 +1164,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 9,
@@ -1185,7 +1172,6 @@
       "mfa_word": "voice",
       "start": 2.99,
       "end": 3.29,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1194,7 +1180,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 10,
@@ -1202,7 +1188,6 @@
       "mfa_word": "down",
       "start": 3.29,
       "end": 3.54,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1211,7 +1196,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 11,
@@ -1219,7 +1204,6 @@
       "mfa_word": "in",
       "start": 3.54,
       "end": 3.64,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1228,15 +1212,14 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 12,
       "word": "public",
       "mfa_word": "public",
       "start": 3.64,
-      "end": 4.09,
-      "phrase_index": -1,
+      "end": 4.08,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1247,7 +1230,7 @@
         "."
       ],
       "boundary_mark_after": ".",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 13,
@@ -1255,7 +1238,6 @@
       "mfa_word": "basics",
       "start": 4.38,
       "end": 4.87,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1264,7 +1246,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "word_index": 14,
@@ -1272,7 +1254,6 @@
       "mfa_word": "we",
       "start": 4.87,
       "end": 4.99,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1281,7 +1262,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "word_index": 15,
@@ -1289,7 +1270,6 @@
       "mfa_word": "often",
       "start": 4.99,
       "end": 5.3,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1298,7 +1278,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "word_index": 16,
@@ -1306,7 +1286,6 @@
       "mfa_word": "take",
       "start": 5.3,
       "end": 5.53,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1315,7 +1294,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "word_index": 17,
@@ -1323,7 +1302,6 @@
       "mfa_word": "for",
       "start": 5.53,
       "end": 5.63,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1332,15 +1310,14 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "word_index": 18,
       "word": "granted",
       "mfa_word": "granted",
       "start": 5.63,
-      "end": 6.14,
-      "phrase_index": -1,
+      "end": 6.15,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -1351,7 +1328,7 @@
         "."
       ],
       "boundary_mark_after": ".",
-      "speech_region_index": 1
+      "speech_region_index": 2
     }
   ],
   "mfa_phones": [
@@ -1620,7 +1597,7 @@
       "index_in_word": 0,
       "phone": "K",
       "phone_base": "K",
-      "start": 2.6,
+      "start": 2.61,
       "end": 2.68,
       "word_index": 7,
       "word": "keeping"
@@ -1810,7 +1787,7 @@
       "phone": "K",
       "phone_base": "K",
       "start": 3.96,
-      "end": 4.09,
+      "end": 4.08,
       "word_index": 12,
       "word": "public"
     },
@@ -2035,7 +2012,7 @@
       "phone": "D",
       "phone_base": "D",
       "start": 6.04,
-      "end": 6.14,
+      "end": 6.15,
       "word_index": 18,
       "word": "granted"
     }
@@ -2188,7 +2165,7 @@
     },
     {
       "phone": "K",
-      "start": 2.6,
+      "start": 2.61,
       "end": 2.68
     },
     {
@@ -2294,7 +2271,7 @@
     {
       "phone": "K",
       "start": 3.96,
-      "end": 4.09
+      "end": 4.08
     },
     {
       "phone": "B",
@@ -2419,7 +2396,7 @@
     {
       "phone": "D",
       "start": 6.04,
-      "end": 6.14
+      "end": 6.15
     }
   ],
   "wave_silence_spans": [
@@ -2470,7 +2447,6 @@
       "pose": "13_KGY_TDS",
       "word": "queuing",
       "word_index": 0,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.006078,
       "strength": 0.34,
@@ -2483,7 +2459,6 @@
       "pose": "02_TDS_KGY-Ee-",
       "word": "queuing",
       "word_index": 0,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.017647,
       "strength": 0.4,
@@ -2496,7 +2471,6 @@
       "pose": "11_Oo",
       "word": "queuing",
       "word_index": 0,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.029412,
       "strength": 0.92,
@@ -2506,23 +2480,21 @@
     },
     {
       "index": 3,
-      "pose": "03_Ee",
+      "pose": "04_Ih",
       "word": "queuing",
       "word_index": 0,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.041176,
       "strength": 0.5,
       "source_phone": "IH",
       "source_phone_index": 3,
-      "generator": "cmu_front_vowel"
+      "generator": "cmu_ih_vowel"
     },
     {
       "index": 4,
       "pose": "22_MBP",
       "word": "politely",
       "word_index": 1,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.065826,
       "strength": 1.0,
@@ -2532,23 +2504,21 @@
     },
     {
       "index": 5,
-      "pose": "07_Aa",
+      "pose": "18_Uh",
       "word": "politely",
       "word_index": 1,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.079832,
       "strength": 0.5,
       "source_phone": "AH",
       "source_phone_index": 1,
-      "generator": "cmu_open_vowel"
+      "generator": "cmu_central_vowel"
     },
     {
       "index": 6,
       "pose": "23_Tongue_LNTDS",
       "word": "politely",
       "word_index": 1,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.093838,
       "strength": 0.46,
@@ -2561,7 +2531,6 @@
       "pose": "05_Ay",
       "word": "politely",
       "word_index": 1,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.107843,
       "strength": 0.94,
@@ -2574,7 +2543,6 @@
       "pose": "01_TDS-Ah-",
       "word": "politely",
       "word_index": 1,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.121849,
       "strength": 0.4,
@@ -2587,7 +2555,6 @@
       "pose": "23_Tongue_LNTDS",
       "word": "politely",
       "word_index": 1,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.135854,
       "strength": 0.46,
@@ -2600,7 +2567,6 @@
       "pose": "03_Ee",
       "word": "politely",
       "word_index": 1,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.14986,
       "strength": 0.5,
@@ -2613,7 +2579,6 @@
       "pose": "21_FV-Ee-",
       "word": "saying",
       "word_index": 2,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.164216,
       "strength": 0.42,
@@ -2626,7 +2591,6 @@
       "pose": "06_Eh",
       "word": "saying",
       "word_index": 2,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.178922,
       "strength": 0.92,
@@ -2636,23 +2600,21 @@
     },
     {
       "index": 13,
-      "pose": "03_Ee",
+      "pose": "04_Ih",
       "word": "saying",
       "word_index": 2,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.193627,
       "strength": 0.5,
       "source_phone": "IH",
       "source_phone_index": 2,
-      "generator": "cmu_front_vowel"
+      "generator": "cmu_ih_vowel"
     },
     {
       "index": 14,
       "pose": "22_MBP",
       "word": "please",
       "word_index": 3,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.220588,
       "strength": 1.0,
@@ -2665,7 +2627,6 @@
       "pose": "23_Tongue_LNTDS",
       "word": "please",
       "word_index": 3,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.230392,
       "strength": 0.46,
@@ -2678,7 +2639,6 @@
       "pose": "03_Ee",
       "word": "please",
       "word_index": 3,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.240196,
       "strength": 0.92,
@@ -2691,7 +2651,6 @@
       "pose": "21_FV-Ee-",
       "word": "please",
       "word_index": 3,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.25,
       "strength": 0.42,
@@ -2701,23 +2660,21 @@
     },
     {
       "index": 18,
-      "pose": "07_Aa",
+      "pose": "08_Ah",
       "word": "and",
       "word_index": 4,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.261438,
-      "strength": 0.5,
-      "source_phone": "AH",
+      "strength": 0.92,
+      "source_phone": "AE",
       "source_phone_index": 0,
-      "generator": "cmu_open_vowel"
+      "generator": "cmu_ah_vowel"
     },
     {
       "index": 19,
       "pose": "23_Tongue_LNTDS",
       "word": "and",
       "word_index": 4,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.27451,
       "strength": 0.46,
@@ -2730,7 +2687,6 @@
       "pose": "01_TDS-Ah-",
       "word": "and",
       "word_index": 4,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.287582,
       "strength": 0.4,
@@ -2743,7 +2699,6 @@
       "pose": "24_Tongue_Th",
       "word": "thank",
       "word_index": 5,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.29902,
       "strength": 0.62,
@@ -2753,23 +2708,21 @@
     },
     {
       "index": 22,
-      "pose": "07_Aa",
+      "pose": "08_Ah",
       "word": "thank",
       "word_index": 5,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.308824,
       "strength": 0.92,
       "source_phone": "AE",
       "source_phone_index": 1,
-      "generator": "cmu_open_vowel"
+      "generator": "cmu_ah_vowel"
     },
     {
       "index": 23,
       "pose": "13_KGY_TDS",
       "word": "thank",
       "word_index": 5,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.328431,
       "strength": 0.34,
@@ -2782,7 +2735,6 @@
       "pose": "02_TDS_KGY-Ee-",
       "word": "you",
       "word_index": 6,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.343137,
       "strength": 0.4,
@@ -2795,7 +2747,6 @@
       "pose": "11_Oo",
       "word": "you",
       "word_index": 6,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.362745,
       "strength": 0.92,
@@ -2808,7 +2759,6 @@
       "pose": "13_KGY_TDS",
       "word": "keeping",
       "word_index": 7,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.378431,
       "strength": 0.34,
@@ -2821,7 +2771,6 @@
       "pose": "03_Ee",
       "word": "keeping",
       "word_index": 7,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.390196,
       "strength": 0.92,
@@ -2834,7 +2783,6 @@
       "pose": "22_MBP",
       "word": "keeping",
       "word_index": 7,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.401961,
       "strength": 1.0,
@@ -2844,23 +2792,21 @@
     },
     {
       "index": 29,
-      "pose": "03_Ee",
+      "pose": "04_Ih",
       "word": "keeping",
       "word_index": 7,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.413725,
       "strength": 0.5,
       "source_phone": "IH",
       "source_phone_index": 3,
-      "generator": "cmu_front_vowel"
+      "generator": "cmu_ih_vowel"
     },
     {
       "index": 30,
       "pose": "02_TDS_KGY-Ee-",
       "word": "your",
       "word_index": 8,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.437909,
       "strength": 0.4,
@@ -2870,23 +2816,21 @@
     },
     {
       "index": 31,
-      "pose": "09_Oh",
+      "pose": "18_Uh",
       "word": "your",
       "word_index": 8,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.45098,
       "strength": 0.92,
-      "source_phone": "AO",
+      "source_phone": "UH",
       "source_phone_index": 1,
-      "generator": "cmu_oh_vowel"
+      "generator": "cmu_uh_vowel"
     },
     {
       "index": 32,
       "pose": "17_Rr",
       "word": "your",
       "word_index": 8,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.464052,
       "strength": 0.78,
@@ -2899,7 +2843,6 @@
       "pose": "20_FV",
       "word": "voice",
       "word_index": 9,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.477124,
       "strength": 0.96,
@@ -2912,7 +2855,6 @@
       "pose": "09_Oh",
       "word": "voice",
       "word_index": 9,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.490196,
       "strength": 0.92,
@@ -2925,7 +2867,6 @@
       "pose": "21_FV-Ee-",
       "word": "voice",
       "word_index": 9,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.503268,
       "strength": 0.42,
@@ -2938,7 +2879,6 @@
       "pose": "01_TDS-Ah-",
       "word": "down",
       "word_index": 10,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.51634,
       "strength": 0.4,
@@ -2951,7 +2891,6 @@
       "pose": "07_Aa",
       "word": "down",
       "word_index": 10,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.529412,
       "strength": 0.92,
@@ -2964,7 +2903,6 @@
       "pose": "23_Tongue_LNTDS",
       "word": "down",
       "word_index": 10,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.542484,
       "strength": 0.46,
@@ -2974,23 +2912,21 @@
     },
     {
       "index": 39,
-      "pose": "03_Ee",
+      "pose": "04_Ih",
       "word": "in",
       "word_index": 11,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.558824,
       "strength": 0.5,
       "source_phone": "IH",
       "source_phone_index": 0,
-      "generator": "cmu_front_vowel"
+      "generator": "cmu_ih_vowel"
     },
     {
       "index": 40,
       "pose": "23_Tongue_LNTDS",
       "word": "in",
       "word_index": 11,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.578431,
       "strength": 0.46,
@@ -3003,7 +2939,6 @@
       "pose": "22_MBP",
       "word": "public",
       "word_index": 12,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.594771,
       "strength": 1.0,
@@ -3013,23 +2948,21 @@
     },
     {
       "index": 42,
-      "pose": "07_Aa",
+      "pose": "18_Uh",
       "word": "public",
       "word_index": 12,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.607843,
       "strength": 0.92,
       "source_phone": "AH",
       "source_phone_index": 1,
-      "generator": "cmu_open_vowel"
+      "generator": "cmu_central_vowel"
     },
     {
       "index": 43,
       "pose": "22_MBP",
       "word": "public",
       "word_index": 12,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.620915,
       "strength": 1.0,
@@ -3042,7 +2975,6 @@
       "pose": "23_Tongue_LNTDS",
       "word": "public",
       "word_index": 12,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.633987,
       "strength": 0.46,
@@ -3052,23 +2984,21 @@
     },
     {
       "index": 45,
-      "pose": "03_Ee",
+      "pose": "04_Ih",
       "word": "public",
       "word_index": 12,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.647059,
       "strength": 0.5,
       "source_phone": "IH",
       "source_phone_index": 4,
-      "generator": "cmu_front_vowel"
+      "generator": "cmu_ih_vowel"
     },
     {
       "index": 46,
       "pose": "13_KGY_TDS",
       "word": "public",
       "word_index": 12,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.660131,
       "strength": 0.34,
@@ -3081,7 +3011,6 @@
       "pose": "22_MBP",
       "word": "basics",
       "word_index": 13,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.673203,
       "strength": 1.0,
@@ -3094,7 +3023,6 @@
       "pose": "06_Eh",
       "word": "basics",
       "word_index": 13,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.686275,
       "strength": 0.92,
@@ -3107,7 +3035,6 @@
       "pose": "21_FV-Ee-",
       "word": "basics",
       "word_index": 13,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.699346,
       "strength": 0.42,
@@ -3117,23 +3044,21 @@
     },
     {
       "index": 50,
-      "pose": "03_Ee",
+      "pose": "04_Ih",
       "word": "basics",
       "word_index": 13,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.712418,
       "strength": 0.5,
       "source_phone": "IH",
       "source_phone_index": 3,
-      "generator": "cmu_front_vowel"
+      "generator": "cmu_ih_vowel"
     },
     {
       "index": 51,
       "pose": "13_KGY_TDS",
       "word": "basics",
       "word_index": 13,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.72549,
       "strength": 0.34,
@@ -3146,7 +3071,6 @@
       "pose": "21_FV-Ee-",
       "word": "basics",
       "word_index": 13,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.738562,
       "strength": 0.42,
@@ -3159,7 +3083,6 @@
       "pose": "12_Ww-Oo-",
       "word": "we",
       "word_index": 14,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.754902,
       "strength": 0.88,
@@ -3172,7 +3095,6 @@
       "pose": "03_Ee",
       "word": "we",
       "word_index": 14,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.77451,
       "strength": 0.92,
@@ -3185,7 +3107,6 @@
       "pose": "09_Oh",
       "word": "often",
       "word_index": 15,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.791667,
       "strength": 0.92,
@@ -3198,7 +3119,6 @@
       "pose": "20_FV",
       "word": "often",
       "word_index": 15,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.806373,
       "strength": 0.96,
@@ -3208,23 +3128,21 @@
     },
     {
       "index": 57,
-      "pose": "07_Aa",
+      "pose": "18_Uh",
       "word": "often",
       "word_index": 15,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.821078,
       "strength": 0.5,
       "source_phone": "AH",
       "source_phone_index": 2,
-      "generator": "cmu_open_vowel"
+      "generator": "cmu_central_vowel"
     },
     {
       "index": 58,
       "pose": "23_Tongue_LNTDS",
       "word": "often",
       "word_index": 15,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.835784,
       "strength": 0.46,
@@ -3237,7 +3155,6 @@
       "pose": "01_TDS-Ah-",
       "word": "take",
       "word_index": 16,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.849673,
       "strength": 0.4,
@@ -3250,7 +3167,6 @@
       "pose": "06_Eh",
       "word": "take",
       "word_index": 16,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.862745,
       "strength": 0.92,
@@ -3263,7 +3179,6 @@
       "pose": "13_KGY_TDS",
       "word": "take",
       "word_index": 16,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.875817,
       "strength": 0.34,
@@ -3276,9 +3191,8 @@
       "pose": "20_FV",
       "word": "for",
       "word_index": 17,
-      "phrase_index": -1,
       "sentence_index": -1,
-      "text_center_norm": 0.888889,
+      "text_center_norm": 0.892157,
       "strength": 0.96,
       "source_phone": "F",
       "source_phone_index": 0,
@@ -3286,36 +3200,21 @@
     },
     {
       "index": 63,
-      "pose": "09_Oh",
+      "pose": "10_Or",
       "word": "for",
       "word_index": 17,
-      "phrase_index": -1,
       "sentence_index": -1,
-      "text_center_norm": 0.901961,
-      "strength": 0.92,
-      "source_phone": "AO",
+      "text_center_norm": 0.911765,
+      "strength": 0.5,
+      "source_phone": "ER",
       "source_phone_index": 1,
-      "generator": "cmu_oh_vowel"
+      "generator": "cmu_rhotic_vowel"
     },
     {
       "index": 64,
-      "pose": "17_Rr",
-      "word": "for",
-      "word_index": 17,
-      "phrase_index": -1,
-      "sentence_index": -1,
-      "text_center_norm": 0.915033,
-      "strength": 0.78,
-      "source_phone": "R",
-      "source_phone_index": 2,
-      "generator": "cmu_rhotic"
-    },
-    {
-      "index": 65,
       "pose": "13_KGY_TDS",
       "word": "granted",
       "word_index": 18,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.927171,
       "strength": 0.34,
@@ -3324,11 +3223,10 @@
       "generator": "cmu_velar_stop"
     },
     {
-      "index": 66,
+      "index": 65,
       "pose": "17_Rr",
       "word": "granted",
       "word_index": 18,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.938375,
       "strength": 0.78,
@@ -3337,24 +3235,22 @@
       "generator": "cmu_rhotic"
     },
     {
-      "index": 67,
-      "pose": "07_Aa",
+      "index": 66,
+      "pose": "08_Ah",
       "word": "granted",
       "word_index": 18,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.94958,
       "strength": 0.92,
       "source_phone": "AE",
       "source_phone_index": 2,
-      "generator": "cmu_open_vowel"
+      "generator": "cmu_ah_vowel"
     },
     {
-      "index": 68,
+      "index": 67,
       "pose": "23_Tongue_LNTDS",
       "word": "granted",
       "word_index": 18,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.960784,
       "strength": 0.46,
@@ -3363,11 +3259,10 @@
       "generator": "cmu_lingual"
     },
     {
-      "index": 69,
+      "index": 68,
       "pose": "01_TDS-Ah-",
       "word": "granted",
       "word_index": 18,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.971989,
       "strength": 0.4,
@@ -3376,24 +3271,22 @@
       "generator": "cmu_alveolar_stop"
     },
     {
-      "index": 70,
-      "pose": "07_Aa",
+      "index": 69,
+      "pose": "18_Uh",
       "word": "granted",
       "word_index": 18,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.983193,
       "strength": 0.5,
       "source_phone": "AH",
       "source_phone_index": 5,
-      "generator": "cmu_open_vowel"
+      "generator": "cmu_central_vowel"
     },
     {
-      "index": 71,
+      "index": 70,
       "pose": "01_TDS-Ah-",
       "word": "granted",
       "word_index": 18,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.994062,
       "strength": 0.4,
@@ -3414,7 +3307,6 @@
       "word": "queuing",
       "mfa_word": "queuing",
       "word_index": 0,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3442,7 +3334,6 @@
       "word": "queuing",
       "mfa_word": "queuing",
       "word_index": 0,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3470,7 +3361,6 @@
       "word": "queuing",
       "mfa_word": "queuing",
       "word_index": 0,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3498,7 +3388,6 @@
       "word": "queuing",
       "mfa_word": "queuing",
       "word_index": 0,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3526,7 +3415,6 @@
       "word": "queuing",
       "mfa_word": "queuing",
       "word_index": 0,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3554,7 +3442,6 @@
       "word": "politely",
       "mfa_word": "politely",
       "word_index": 1,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3582,7 +3469,6 @@
       "word": "politely",
       "mfa_word": "politely",
       "word_index": 1,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3610,7 +3496,6 @@
       "word": "politely",
       "mfa_word": "politely",
       "word_index": 1,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3638,7 +3523,6 @@
       "word": "politely",
       "mfa_word": "politely",
       "word_index": 1,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3666,7 +3550,6 @@
       "word": "politely",
       "mfa_word": "politely",
       "word_index": 1,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3694,7 +3577,6 @@
       "word": "politely",
       "mfa_word": "politely",
       "word_index": 1,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3722,7 +3604,6 @@
       "word": "politely",
       "mfa_word": "politely",
       "word_index": 1,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3750,7 +3631,6 @@
       "word": "saying",
       "mfa_word": "saying",
       "word_index": 2,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3778,7 +3658,6 @@
       "word": "saying",
       "mfa_word": "saying",
       "word_index": 2,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3806,7 +3685,6 @@
       "word": "saying",
       "mfa_word": "saying",
       "word_index": 2,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3834,7 +3712,6 @@
       "word": "saying",
       "mfa_word": "saying",
       "word_index": 2,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3862,7 +3739,6 @@
       "word": "please",
       "mfa_word": "please",
       "word_index": 3,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3890,7 +3766,6 @@
       "word": "please",
       "mfa_word": "please",
       "word_index": 3,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3918,7 +3793,6 @@
       "word": "please",
       "mfa_word": "please",
       "word_index": 3,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3946,7 +3820,6 @@
       "word": "please",
       "mfa_word": "please",
       "word_index": 3,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3974,7 +3847,6 @@
       "word": "and",
       "mfa_word": "and",
       "word_index": 4,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4002,7 +3874,6 @@
       "word": "and",
       "mfa_word": "and",
       "word_index": 4,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4030,7 +3901,6 @@
       "word": "and",
       "mfa_word": "and",
       "word_index": 4,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4058,7 +3928,6 @@
       "word": "thank",
       "mfa_word": "thank",
       "word_index": 5,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4086,7 +3955,6 @@
       "word": "thank",
       "mfa_word": "thank",
       "word_index": 5,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4114,7 +3982,6 @@
       "word": "thank",
       "mfa_word": "thank",
       "word_index": 5,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4142,7 +4009,6 @@
       "word": "thank",
       "mfa_word": "thank",
       "word_index": 5,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4170,7 +4036,6 @@
       "word": "you",
       "mfa_word": "you",
       "word_index": 6,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4198,7 +4063,6 @@
       "word": "you",
       "mfa_word": "you",
       "word_index": 6,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4220,13 +4084,12 @@
       "id": "K",
       "pose": "K",
       "phone": "K",
-      "start": 2.6,
-      "center": 2.64,
+      "start": 2.61,
+      "center": 2.645,
       "end": 2.68,
       "word": "keeping",
       "mfa_word": "keeping",
       "word_index": 7,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4241,7 +4104,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 30,
@@ -4254,7 +4117,6 @@
       "word": "keeping",
       "mfa_word": "keeping",
       "word_index": 7,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4269,7 +4131,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 31,
@@ -4282,7 +4144,6 @@
       "word": "keeping",
       "mfa_word": "keeping",
       "word_index": 7,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4297,7 +4158,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 32,
@@ -4310,7 +4171,6 @@
       "word": "keeping",
       "mfa_word": "keeping",
       "word_index": 7,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4325,7 +4185,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 33,
@@ -4338,7 +4198,6 @@
       "word": "keeping",
       "mfa_word": "keeping",
       "word_index": 7,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4353,7 +4212,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 34,
@@ -4366,7 +4225,6 @@
       "word": "your",
       "mfa_word": "your",
       "word_index": 8,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4381,7 +4239,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 35,
@@ -4394,7 +4252,6 @@
       "word": "your",
       "mfa_word": "your",
       "word_index": 8,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4409,7 +4266,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 36,
@@ -4422,7 +4279,6 @@
       "word": "your",
       "mfa_word": "your",
       "word_index": 8,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4437,7 +4293,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 37,
@@ -4450,7 +4306,6 @@
       "word": "voice",
       "mfa_word": "voice",
       "word_index": 9,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4465,7 +4320,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 38,
@@ -4478,7 +4333,6 @@
       "word": "voice",
       "mfa_word": "voice",
       "word_index": 9,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4493,7 +4347,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 39,
@@ -4506,7 +4360,6 @@
       "word": "voice",
       "mfa_word": "voice",
       "word_index": 9,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4521,7 +4374,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 40,
@@ -4534,7 +4387,6 @@
       "word": "down",
       "mfa_word": "down",
       "word_index": 10,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4549,7 +4401,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 41,
@@ -4562,7 +4414,6 @@
       "word": "down",
       "mfa_word": "down",
       "word_index": 10,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4577,7 +4428,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 42,
@@ -4590,7 +4441,6 @@
       "word": "down",
       "mfa_word": "down",
       "word_index": 10,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4605,7 +4455,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 43,
@@ -4618,7 +4468,6 @@
       "word": "in",
       "mfa_word": "in",
       "word_index": 11,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4633,7 +4482,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 44,
@@ -4646,7 +4495,6 @@
       "word": "in",
       "mfa_word": "in",
       "word_index": 11,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4661,7 +4509,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 45,
@@ -4674,7 +4522,6 @@
       "word": "public",
       "mfa_word": "public",
       "word_index": 12,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4689,7 +4536,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 46,
@@ -4702,7 +4549,6 @@
       "word": "public",
       "mfa_word": "public",
       "word_index": 12,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4717,7 +4563,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 47,
@@ -4730,7 +4576,6 @@
       "word": "public",
       "mfa_word": "public",
       "word_index": 12,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4745,7 +4590,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 48,
@@ -4758,7 +4603,6 @@
       "word": "public",
       "mfa_word": "public",
       "word_index": 12,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4773,7 +4617,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 49,
@@ -4786,7 +4630,6 @@
       "word": "public",
       "mfa_word": "public",
       "word_index": 12,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4801,7 +4644,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 50,
@@ -4809,12 +4652,11 @@
       "pose": "K",
       "phone": "K",
       "start": 3.96,
-      "center": 4.025,
-      "end": 4.09,
+      "center": 4.02,
+      "end": 4.08,
       "word": "public",
       "mfa_word": "public",
       "word_index": 12,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4829,7 +4671,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 51,
@@ -4842,7 +4684,6 @@
       "word": "basics",
       "mfa_word": "basics",
       "word_index": 13,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4857,7 +4698,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 52,
@@ -4870,7 +4711,6 @@
       "word": "basics",
       "mfa_word": "basics",
       "word_index": 13,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4885,7 +4725,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 53,
@@ -4898,7 +4738,6 @@
       "word": "basics",
       "mfa_word": "basics",
       "word_index": 13,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4913,7 +4752,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 54,
@@ -4926,7 +4765,6 @@
       "word": "basics",
       "mfa_word": "basics",
       "word_index": 13,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4941,7 +4779,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 55,
@@ -4954,7 +4792,6 @@
       "word": "basics",
       "mfa_word": "basics",
       "word_index": 13,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4969,7 +4806,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 56,
@@ -4982,7 +4819,6 @@
       "word": "basics",
       "mfa_word": "basics",
       "word_index": 13,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4997,7 +4833,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 57,
@@ -5010,7 +4846,6 @@
       "word": "we",
       "mfa_word": "we",
       "word_index": 14,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5025,7 +4860,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 58,
@@ -5038,7 +4873,6 @@
       "word": "we",
       "mfa_word": "we",
       "word_index": 14,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5053,7 +4887,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 59,
@@ -5066,7 +4900,6 @@
       "word": "often",
       "mfa_word": "often",
       "word_index": 15,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5081,7 +4914,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 60,
@@ -5094,7 +4927,6 @@
       "word": "often",
       "mfa_word": "often",
       "word_index": 15,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5109,7 +4941,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 61,
@@ -5122,7 +4954,6 @@
       "word": "often",
       "mfa_word": "often",
       "word_index": 15,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5137,7 +4968,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 62,
@@ -5150,7 +4981,6 @@
       "word": "often",
       "mfa_word": "often",
       "word_index": 15,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5165,7 +4995,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 63,
@@ -5178,7 +5008,6 @@
       "word": "often",
       "mfa_word": "often",
       "word_index": 15,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5193,7 +5022,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 64,
@@ -5206,7 +5035,6 @@
       "word": "take",
       "mfa_word": "take",
       "word_index": 16,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5221,7 +5049,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 65,
@@ -5234,7 +5062,6 @@
       "word": "take",
       "mfa_word": "take",
       "word_index": 16,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5249,7 +5076,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 66,
@@ -5262,7 +5089,6 @@
       "word": "take",
       "mfa_word": "take",
       "word_index": 16,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5277,7 +5103,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 67,
@@ -5290,7 +5116,6 @@
       "word": "for",
       "mfa_word": "for",
       "word_index": 17,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5305,7 +5130,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 68,
@@ -5318,7 +5143,6 @@
       "word": "for",
       "mfa_word": "for",
       "word_index": 17,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5333,7 +5157,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 69,
@@ -5346,7 +5170,6 @@
       "word": "granted",
       "mfa_word": "granted",
       "word_index": 18,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5361,7 +5184,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 70,
@@ -5374,7 +5197,6 @@
       "word": "granted",
       "mfa_word": "granted",
       "word_index": 18,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5389,7 +5211,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 71,
@@ -5402,7 +5224,6 @@
       "word": "granted",
       "mfa_word": "granted",
       "word_index": 18,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5417,7 +5238,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 72,
@@ -5430,7 +5251,6 @@
       "word": "granted",
       "mfa_word": "granted",
       "word_index": 18,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5445,7 +5265,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 73,
@@ -5458,7 +5278,6 @@
       "word": "granted",
       "mfa_word": "granted",
       "word_index": 18,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5473,7 +5292,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 74,
@@ -5486,7 +5305,6 @@
       "word": "granted",
       "mfa_word": "granted",
       "word_index": 18,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5501,7 +5319,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     },
     {
       "index": 75,
@@ -5509,12 +5327,11 @@
       "pose": "D",
       "phone": "D",
       "start": 6.04,
-      "center": 6.09,
-      "end": 6.14,
+      "center": 6.095000000000001,
+      "end": 6.15,
       "word": "granted",
       "mfa_word": "granted",
       "word_index": 18,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -5529,24 +5346,24 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 2
     }
   ],
   "flags": [
     {
       "kind": "speech_regions_split_on_pause_boundaries",
-      "region_count": 2,
-      "gap_threshold_seconds": 0.125,
-      "largest_split_gap_seconds": 0.29,
+      "region_count": 3,
+      "gap_threshold_seconds": 0.12,
+      "largest_split_gap_seconds": 0.3,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }
   ],
   "notes": [],
   "summary": {
     "word_count": 19,
-    "speech_region_count": 2,
+    "speech_region_count": 3,
     "pause_boundary_count": 18,
-    "pause_region_break_count": 1,
+    "pause_region_break_count": 2,
     "word_head_count": 19,
     "viseme_count": 76,
     "flag_count": 1,

@@ -4,6 +4,7 @@
 namespace
 {
 #include "OffgridAITtsPronunciationPreferences.inl"
+#include "OffgridAIPhoneDurationPriors.inl"
 
 static FString NormalizeWord(const FString& In)
 {
@@ -351,6 +352,47 @@ static int32 CountCmuSyllables(const TArray<FString>& Phones)
     return FMath::Max(Count, 1);
 }
 
+static void BuildPlannedSyllables(FOffgridAITextVisemePlan& Plan)
+{
+    Plan.Syllables.Reset();
+    for (int32 WordIndex = 0; WordIndex < Plan.WordPhoneBeginIndices.Num(); ++WordIndex)
+    {
+        const int32 WordBegin = Plan.WordPhoneBeginIndices[WordIndex];
+        const int32 WordEnd = Plan.WordPhoneEndIndices.IsValidIndex(WordIndex)
+            ? Plan.WordPhoneEndIndices[WordIndex]
+            : WordBegin;
+        TArray<int32> Nuclei;
+        for (int32 PhoneIndex = WordBegin; PhoneIndex < WordEnd; ++PhoneIndex)
+        {
+            if (Plan.ExpectedPhones.IsValidIndex(PhoneIndex) && Plan.ExpectedPhones[PhoneIndex].bIsVowel)
+                Nuclei.Add(PhoneIndex);
+        }
+
+        if (Plan.WordSyllableCounts.IsValidIndex(WordIndex))
+            Plan.WordSyllableCounts[WordIndex] = Nuclei.Num();
+        for (int32 LocalIndex = 0; LocalIndex < Nuclei.Num(); ++LocalIndex)
+        {
+            const int32 Begin = LocalIndex == 0
+                ? WordBegin
+                : (Nuclei[LocalIndex - 1] + Nuclei[LocalIndex] + 1) / 2;
+            const int32 End = LocalIndex + 1 == Nuclei.Num()
+                ? WordEnd
+                : (Nuclei[LocalIndex] + Nuclei[LocalIndex + 1] + 1) / 2;
+            const FOffgridAIExpectedPhone& Nucleus = Plan.ExpectedPhones[Nuclei[LocalIndex]];
+            FOffgridAIPlannedSyllable Syllable;
+            Syllable.SyllableIndex = Plan.Syllables.Num();
+            Syllable.WordSyllableIndex = LocalIndex;
+            Syllable.WordIndex = WordIndex;
+            Syllable.SpeechRegionIndex = Nucleus.SpeechRegionIndex;
+            Syllable.SentenceIndex = Nucleus.SentenceIndex;
+            Syllable.PhoneBeginIndex = Begin;
+            Syllable.PhoneEndIndex = End;
+            Syllable.NucleusPhoneIndex = Nuclei[LocalIndex];
+            Plan.Syllables.Add(Syllable);
+        }
+    }
+}
+
 using FCmuPronunciation = TArray<FString>;
 using FCmuPronunciationVariants = TArray<FCmuPronunciation>;
 
@@ -465,6 +507,8 @@ static const TMap<FString, FCmuPronunciation>& GetTtsPronunciationPreferences()
 
 static bool SelectCmuPronunciation(
     const FString& Word,
+    const FString& PreviousWord,
+    const FString& NextWord,
     FCmuPronunciation& OutPhones,
     int32& OutVariantIndex,
     int32& OutVariantCount)
@@ -489,17 +533,192 @@ static bool SelectCmuPronunciation(
             }
         }
     }
+
+    const FOffgridAITtsContextPronunciationPreferenceRow* BestContext = nullptr;
+    for (const FOffgridAITtsContextPronunciationPreferenceRow& Row : GTtsContextPronunciationPreferences)
+    {
+        if (Word != Row.Word) continue;
+        const FString& Neighbor = Row.bPreviousNeighbor ? PreviousWord : NextWord;
+        if (Neighbor != Row.NeighborWord) continue;
+        if (BestContext == nullptr
+            || Row.PreferredShare > BestContext->PreferredShare
+            || (Row.PreferredShare == BestContext->PreferredShare
+                && Row.ObservationCount > BestContext->ObservationCount))
+        {
+            BestContext = &Row;
+        }
+    }
+    if (BestContext != nullptr)
+    {
+        FCmuPronunciation ContextPhones;
+        FString(BestContext->Phones).ParseIntoArray(ContextPhones, TEXT(" "), true);
+        for (int32 VariantIndex = 0; VariantIndex < Variants->Num(); ++VariantIndex)
+        {
+            if (PronunciationsEqual((*Variants)[VariantIndex], ContextPhones))
+            {
+                OutVariantIndex = VariantIndex;
+                break;
+            }
+        }
+    }
     OutPhones = (*Variants)[OutVariantIndex];
     return true;
 }
 
+static bool AppendPhones(const TCHAR* Phones, FCmuPronunciation& OutPhones)
+{
+    TArray<FString> Parsed;
+    FString(Phones).ParseIntoArray(Parsed, TEXT(" "), true);
+    for (const FString& Phone : Parsed) OutPhones.Add(Phone);
+    return Parsed.Num() > 0;
+}
+
+static const TCHAR* LetterNamePhones(TCHAR Letter)
+{
+    switch (Letter)
+    {
+    case TEXT('a'): return TEXT("EY1"); case TEXT('b'): return TEXT("B IY1");
+    case TEXT('c'): return TEXT("S IY1"); case TEXT('d'): return TEXT("D IY1");
+    case TEXT('e'): return TEXT("IY1"); case TEXT('f'): return TEXT("EH1 F");
+    case TEXT('g'): return TEXT("JH IY1"); case TEXT('h'): return TEXT("EY1 CH");
+    case TEXT('i'): return TEXT("AY1"); case TEXT('j'): return TEXT("JH EY1");
+    case TEXT('k'): return TEXT("K EY1"); case TEXT('l'): return TEXT("EH1 L");
+    case TEXT('m'): return TEXT("EH1 M"); case TEXT('n'): return TEXT("EH1 N");
+    case TEXT('o'): return TEXT("OW1"); case TEXT('p'): return TEXT("P IY1");
+    case TEXT('q'): return TEXT("K Y UW1"); case TEXT('r'): return TEXT("AA1 R");
+    case TEXT('s'): return TEXT("EH1 S"); case TEXT('t'): return TEXT("T IY1");
+    case TEXT('u'): return TEXT("Y UW1"); case TEXT('v'): return TEXT("V IY1");
+    case TEXT('w'): return TEXT("D AH1 B AH0 L Y UW0"); case TEXT('x'): return TEXT("EH1 K S");
+    case TEXT('y'): return TEXT("W AY1"); case TEXT('z'): return TEXT("Z IY1");
+    default: return nullptr;
+    }
+}
+
+static const TCHAR* SingleGraphemePhones(TCHAR Letter, TCHAR NextLetter)
+{
+    if (Letter == TEXT('c') && (NextLetter == TEXT('e') || NextLetter == TEXT('i') || NextLetter == TEXT('y'))) return TEXT("S");
+    if (Letter == TEXT('g') && (NextLetter == TEXT('e') || NextLetter == TEXT('i') || NextLetter == TEXT('y'))) return TEXT("JH");
+    switch (Letter)
+    {
+    case TEXT('a'): return TEXT("AH0"); case TEXT('b'): return TEXT("B");
+    case TEXT('c'): return TEXT("K"); case TEXT('d'): return TEXT("D");
+    case TEXT('e'): return TEXT("EH1"); case TEXT('f'): return TEXT("F");
+    case TEXT('g'): return TEXT("G"); case TEXT('h'): return TEXT("HH");
+    case TEXT('i'): return TEXT("IH1"); case TEXT('j'): return TEXT("JH");
+    case TEXT('k'): return TEXT("K"); case TEXT('l'): return TEXT("L");
+    case TEXT('m'): return TEXT("M"); case TEXT('n'): return TEXT("N");
+    case TEXT('o'): return TEXT("OW1"); case TEXT('p'): return TEXT("P");
+    case TEXT('q'): return TEXT("K"); case TEXT('r'): return TEXT("R");
+    case TEXT('s'): return TEXT("S"); case TEXT('t'): return TEXT("T");
+    case TEXT('u'): return TEXT("AH0"); case TEXT('v'): return TEXT("V");
+    case TEXT('w'): return TEXT("W"); case TEXT('x'): return TEXT("K S");
+    case TEXT('y'): return TEXT("IY0"); case TEXT('z'): return TEXT("Z");
+    default: return nullptr;
+    }
+}
+
+static bool BuildFallbackPronunciation(const FString& Word, FCmuPronunciation& OutPhones)
+{
+    OutPhones.Reset();
+    bool bAllDigits = !Word.IsEmpty();
+    for (TCHAR C : Word) bAllDigits = bAllDigits && FChar::IsDigit(C);
+    if (bAllDigits)
+    {
+        static const TCHAR* DigitWords[] = {
+            TEXT("zero"), TEXT("one"), TEXT("two"), TEXT("three"), TEXT("four"),
+            TEXT("five"), TEXT("six"), TEXT("seven"), TEXT("eight"), TEXT("nine")};
+        for (TCHAR C : Word)
+        {
+            FCmuPronunciation DigitPhones;
+            int32 VariantIndex = 0;
+            int32 VariantCount = 0;
+            if (!SelectCmuPronunciation(
+                DigitWords[C - TEXT('0')], FString(), FString(), DigitPhones, VariantIndex, VariantCount)) return false;
+            for (const FString& Phone : DigitPhones) OutPhones.Add(Phone);
+        }
+        return OutPhones.Num() > 0;
+    }
+
+    FString Letters;
+    for (TCHAR C : Word)
+    {
+        if ((C >= TEXT('a') && C <= TEXT('z')) || (C >= TEXT('A') && C <= TEXT('Z')))
+        {
+            Letters.AppendChar(C >= TEXT('A') && C <= TEXT('Z') ? C - TEXT('A') + TEXT('a') : C);
+        }
+    }
+    if (Letters.Len() < 2) return false;
+
+    bool bHasVowelLetter = false;
+    for (TCHAR C : Letters)
+    {
+        bHasVowelLetter = bHasVowelLetter || C == TEXT('a') || C == TEXT('e')
+            || C == TEXT('i') || C == TEXT('o') || C == TEXT('u');
+    }
+    if (!bHasVowelLetter && Letters.Len() <= 5)
+    {
+        for (TCHAR C : Letters)
+        {
+            const TCHAR* Phones = LetterNamePhones(C);
+            if (!Phones) return false;
+            AppendPhones(Phones, OutPhones);
+        }
+        return OutPhones.Num() > 0;
+    }
+
+    struct FGraphemeRule { const TCHAR* Grapheme; const TCHAR* Phones; };
+    static const FGraphemeRule Rules[] = {
+        {TEXT("ough"), TEXT("AO1")}, {TEXT("eigh"), TEXT("EY1")},
+        {TEXT("tion"), TEXT("SH AH0 N")}, {TEXT("sion"), TEXT("ZH AH0 N")},
+        {TEXT("ch"), TEXT("CH")}, {TEXT("sh"), TEXT("SH")}, {TEXT("th"), TEXT("TH")},
+        {TEXT("ph"), TEXT("F")}, {TEXT("wh"), TEXT("W")}, {TEXT("ng"), TEXT("NG")},
+        {TEXT("qu"), TEXT("K W")}, {TEXT("ck"), TEXT("K")}, {TEXT("ee"), TEXT("IY1")},
+        {TEXT("ea"), TEXT("IY1")}, {TEXT("ai"), TEXT("EY1")}, {TEXT("ay"), TEXT("EY1")},
+        {TEXT("oa"), TEXT("OW1")}, {TEXT("ow"), TEXT("AW1")}, {TEXT("oo"), TEXT("UW1")},
+        {TEXT("ou"), TEXT("AW1")}, {TEXT("oi"), TEXT("OY1")}, {TEXT("oy"), TEXT("OY1")},
+        {TEXT("er"), TEXT("ER0")}, {TEXT("ar"), TEXT("AA1 R")}, {TEXT("or"), TEXT("AO1 R")},
+        {TEXT("ir"), TEXT("ER1")}, {TEXT("ur"), TEXT("ER1")}};
+
+    for (int32 Index = 0; Index < Letters.Len();)
+    {
+        bool bMatched = false;
+        for (const FGraphemeRule& Rule : Rules)
+        {
+            const FString Grapheme(Rule.Grapheme);
+            bool bStartsHere = Index + Grapheme.Len() <= Letters.Len();
+            for (int32 Offset = 0; bStartsHere && Offset < Grapheme.Len(); ++Offset)
+            {
+                bStartsHere = Letters[Index + Offset] == Grapheme[Offset];
+            }
+            if (bStartsHere)
+            {
+                AppendPhones(Rule.Phones, OutPhones);
+                Index += Grapheme.Len();
+                bMatched = true;
+                break;
+            }
+        }
+        if (bMatched) continue;
+        const TCHAR Next = Index + 1 < Letters.Len() ? Letters[Index + 1] : TCHAR(0);
+        if (const TCHAR* Phones = SingleGraphemePhones(Letters[Index], Next)) AppendPhones(Phones, OutPhones);
+        ++Index;
+    }
+
+    bool bHasVowelPhone = false;
+    for (const FString& Phone : OutPhones) bHasVowelPhone = bHasVowelPhone || IsVowelPhonemeBase(StripStressDigits(Phone));
+    if (!bHasVowelPhone) OutPhones.Add(TEXT("AH0"));
+    return OutPhones.Num() > 0;
+}
+
 static bool LookupCmuPronunciation(
     const FString& Word,
+    const FString& PreviousWord,
+    const FString& NextWord,
     TArray<FString>& OutPhones,
     int32& OutVariantIndex,
     int32& OutVariantCount)
 {
-    if (SelectCmuPronunciation(Word, OutPhones, OutVariantIndex, OutVariantCount))
+    if (SelectCmuPronunciation(Word, PreviousWord, NextWord, OutPhones, OutVariantIndex, OutVariantCount))
     {
         return true;
     }
@@ -508,7 +727,7 @@ static bool LookupCmuPronunciation(
     if (Word.EndsWith(TEXT("'s")) && Word.Len() > 2)
     {
         const FString Base = Word.LeftChop(2);
-        if (SelectCmuPronunciation(Base, OutPhones, OutVariantIndex, OutVariantCount))
+        if (SelectCmuPronunciation(Base, FString(), FString(), OutPhones, OutVariantIndex, OutVariantCount))
         {
             OutPhones.Add(TEXT("Z"));
             return true;
@@ -517,7 +736,7 @@ static bool LookupCmuPronunciation(
     if (Word.EndsWith(TEXT("s")) && Word.Len() > 1)
     {
         const FString Base = Word.LeftChop(1);
-        if (SelectCmuPronunciation(Base, OutPhones, OutVariantIndex, OutVariantCount))
+        if (SelectCmuPronunciation(Base, FString(), FString(), OutPhones, OutVariantIndex, OutVariantCount))
         {
             OutPhones.Add(TEXT("Z"));
             return true;
@@ -540,8 +759,10 @@ static bool LookupCmuPronunciation(
         int32 LeftVariantCount = 0;
         int32 RightVariantIndex = 0;
         int32 RightVariantCount = 0;
-        if (SelectCmuPronunciation(Word.Left(Split), Left, LeftVariantIndex, LeftVariantCount)
-            && SelectCmuPronunciation(Suffix, Right, RightVariantIndex, RightVariantCount))
+        if (SelectCmuPronunciation(
+                Word.Left(Split), FString(), FString(), Left, LeftVariantIndex, LeftVariantCount)
+            && SelectCmuPronunciation(
+                Suffix, FString(), FString(), Right, RightVariantIndex, RightVariantCount))
         {
             OutPhones = Left;
             for (const FString& Phone : Right)
@@ -753,57 +974,25 @@ static void AddCmuWordVisemeEvents(TArray<FOffgridAITextVisemeEvent>& Events, co
 }
 
 
-static float ExpectedPhoneWeightSeconds(const FString& Base)
+static float ExpectedPhoneWeightSeconds(const FString& Base, int32 WordPhoneIndex, int32 WordPhoneCount)
 {
-    // Use corpus-derived consonant duration priors where they helped, but keep
-    // vowels deliberately conservative so the text plan does not consume whole
-    // regions too early when a speaker stretches nuclei or inserts intra-region
-    // pauses.
-    if (IsVowelPhonemeBase(Base))
+    const int32 WordPosition = WordPhoneCount <= 1
+        ? 0
+        : (WordPhoneIndex <= 0 ? 1 : (WordPhoneIndex + 1 >= WordPhoneCount ? 3 : 2));
+    float BasePrior = 0.075f;
+    for (const FOffgridAIPhoneDurationPriorRow& Row : GPhoneDurationPriors)
     {
-        if (Base == TEXT("AW") || Base == TEXT("AY") || Base == TEXT("EY") || Base == TEXT("OW") || Base == TEXT("OY") || Base == TEXT("UH"))
+        if (Base != Row.BasePhone) continue;
+        if (Row.WordPosition == WordPosition)
         {
-            return 0.120f;
+            return Row.Seconds;
         }
-        if (Base == TEXT("AE") || Base == TEXT("ER") || Base == TEXT("IY"))
+        if (Row.WordPosition == -1)
         {
-            return 0.100f;
-        }
-        return 0.090f;
-    }
-
-    struct FCorpusPhoneDuration
-    {
-        const TCHAR* Base;
-        float Seconds;
-    };
-
-    static const FCorpusPhoneDuration CorpusDurations[] = {
-        { TEXT("B"), 0.070f },  { TEXT("CH"), 0.130f }, { TEXT("D"), 0.050f },
-        { TEXT("DH"), 0.040f }, { TEXT("F"), 0.100f },  { TEXT("G"), 0.060f },
-        { TEXT("HH"), 0.070f }, { TEXT("JH"), 0.100f }, { TEXT("K"), 0.080f },
-        { TEXT("L"), 0.080f },  { TEXT("M"), 0.070f },  { TEXT("N"), 0.040f },
-        { TEXT("NG"), 0.070f }, { TEXT("P"), 0.080f },  { TEXT("R"), 0.070f },
-        { TEXT("S"), 0.110f },  { TEXT("SH"), 0.100f }, { TEXT("T"), 0.060f },
-        { TEXT("TH"), 0.070f }, { TEXT("V"), 0.060f },  { TEXT("W"), 0.080f },
-        { TEXT("Y"), 0.080f },  { TEXT("Z"), 0.070f },  { TEXT("ZH"), 0.090f },
-    };
-
-    for (const FCorpusPhoneDuration& Entry : CorpusDurations)
-    {
-        if (Base == Entry.Base)
-        {
-            return Entry.Seconds;
+            BasePrior = Row.Seconds;
         }
     }
-
-    if (Base == TEXT("M") || Base == TEXT("B") || Base == TEXT("P")) return 0.070f;
-    if (Base == TEXT("W") || Base == TEXT("R")) return 0.080f;
-    if (Base == TEXT("F") || Base == TEXT("V") || Base == TEXT("CH") || Base == TEXT("JH") || Base == TEXT("SH") || Base == TEXT("ZH")) return 0.100f;
-    if (Base == TEXT("TH") || Base == TEXT("DH") || Base == TEXT("L") || Base == TEXT("N")) return 0.060f;
-    if (Base == TEXT("T") || Base == TEXT("D") || Base == TEXT("K") || Base == TEXT("G") || Base == TEXT("Y") || Base == TEXT("HH")) return 0.060f;
-    if (Base == TEXT("S") || Base == TEXT("Z")) return 0.090f;
-    return 0.060f;
+    return BasePrior;
 }
 
 static float ExpectedPauseSeconds(EOffgridAIBoundaryPauseClass PauseClass)
@@ -896,7 +1085,8 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
     }
 
     TArray<TArray<FString>> WordPhones;
-    TArray<bool> WordCmuHit;
+    TArray<bool> WordHasPronunciation;
+    TArray<bool> WordUsesFallbackPronunciation;
     TArray<int32> WordPronunciationVariantIndices;
     TArray<int32> WordPronunciationVariantCounts;
     TArray<EOffgridAIBoundaryPauseClass> BoundaryPauseClasses;
@@ -905,32 +1095,40 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
     Plan.WordVisibleEventBeginIndices.Init(INDEX_NONE, Words.Num());
     Plan.WordVisibleEventEndIndices.Init(INDEX_NONE, Words.Num());
     int32 Sentence = 0;
+    int32 SpeechRegion = 0;
     int32 TotalUnits = 0;
     TArray<int32> WordUnits;
 
     for (int32 W = 0; W < Words.Num(); ++W)
     {
         const FString& Word = Words[W];
+        const FString PreviousWord = W > 0 ? Words[W - 1] : TEXT("<s>");
+        const FString NextWord = W + 1 < Words.Num() ? Words[W + 1] : TEXT("</s>");
         TArray<FString> Phones;
         int32 PronunciationVariantIndex = 0;
         int32 PronunciationVariantCount = 1;
         const bool bCmuHit = LookupCmuPronunciation(
             Word,
+            PreviousWord,
+            NextWord,
             Phones,
             PronunciationVariantIndex,
             PronunciationVariantCount);
+        const bool bUsesFallback = !bCmuHit && BuildFallbackPronunciation(Word, Phones);
+        const bool bHasPronunciation = bCmuHit || bUsesFallback;
         WordPhones.Add(Phones);
-        WordCmuHit.Add(bCmuHit);
+        WordHasPronunciation.Add(bHasPronunciation);
+        WordUsesFallbackPronunciation.Add(bUsesFallback);
         WordPronunciationVariantIndices.Add(PronunciationVariantIndex);
         WordPronunciationVariantCounts.Add(PronunciationVariantCount);
 
-        const int32 Syllables = bCmuHit ? CountCmuSyllables(Phones) : EstimateUnknownWordSyllables(Word);
-        const int32 VisiblePhones = bCmuHit ? FMath::Max(Phones.Num(), 1) : 1;
+        const int32 Syllables = bHasPronunciation ? CountCmuSyllables(Phones) : EstimateUnknownWordSyllables(Word);
+        const int32 VisiblePhones = bHasPronunciation ? FMath::Max(Phones.Num(), 1) : 1;
         const int32 Units = FMath::Clamp(Syllables + FMath::Clamp(VisiblePhones / 3, 1, 3), 2, 6);
         WordUnits.Add(Units);
         TotalUnits += Units;
 
-        Plan.WordSpeechRegionIndices.Add(0);
+        Plan.WordSpeechRegionIndices.Add(SpeechRegion);
         Plan.WordSentenceIndices.Add(Sentence);
         Plan.WordSyllableCounts.Add(Syllables);
         Plan.WordBoundaryPunctuationAfter.Add(Boundaries.IsValidIndex(W) ? Boundaries[W] : TCHAR(0));
@@ -939,6 +1137,11 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
         Plan.WordBoundaryPauseClassAfter.Add(BoundaryPauseClass);
         Plan.WordBoundaryPauseSecondsAfter.Add(ExpectedPauseSeconds(BoundaryPauseClass));
         const TCHAR B = Boundaries.IsValidIndex(W) ? Boundaries[W] : TCHAR(0);
+        if (BoundaryPauseClass == EOffgridAIBoundaryPauseClass::HardBreakPause
+            && W + 1 < Words.Num())
+        {
+            ++SpeechRegion;
+        }
         if (IsHardSentenceBoundary(B)) { ++Sentence; }
     }
 
@@ -951,18 +1154,30 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
         const int32 WordStartUnit = UnitCursor;
         const int32 Units = WordUnits.IsValidIndex(W) ? WordUnits[W] : 2;
         const int32 FirstEventIndex = Plan.Events.Num();
+        const int32 WordSpeechRegion = Plan.WordSpeechRegionIndices.IsValidIndex(W)
+            ? Plan.WordSpeechRegionIndices[W]
+            : 0;
         Plan.WordVisibleEventBeginIndices[W] = FirstEventIndex;
 
-        if (WordCmuHit.IsValidIndex(W) && WordCmuHit[W])
+        if (WordHasPronunciation.IsValidIndex(W) && WordHasPronunciation[W])
         {
-            AddCmuWordVisemeEvents(Plan.Events, Word, WordPhones[W], W, 0, Sentence);
+            AddCmuWordVisemeEvents(
+                Plan.Events, Word, WordPhones[W], W, WordSpeechRegion, Sentence);
+            if (WordUsesFallbackPronunciation.IsValidIndex(W) && WordUsesFallbackPronunciation[W])
+            {
+                for (int32 EIdx = FirstEventIndex; EIdx < Plan.Events.Num(); ++EIdx)
+                {
+                    Plan.Events[EIdx].Generator = TEXT("fallback_g2p");
+                }
+            }
         }
         else
         {
-            AddConservativeUnknownWordEvents(Plan.Events, Word, W, 0, Sentence);
+            AddConservativeUnknownWordEvents(
+                Plan.Events, Word, W, WordSpeechRegion, Sentence);
         }
 
-        const TArray<FString>* PhonesForWordPtr = (WordCmuHit.IsValidIndex(W) && WordCmuHit[W]) ? &WordPhones[W] : nullptr;
+        const TArray<FString>* PhonesForWordPtr = (WordHasPronunciation.IsValidIndex(W) && WordHasPronunciation[W]) ? &WordPhones[W] : nullptr;
         if (PhonesForWordPtr && PhonesForWordPtr->Num() > 0)
         {
             Plan.WordPhoneBeginIndices[W] = Plan.ExpectedPhones.Num();
@@ -977,7 +1192,7 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
                 Expected.BasePhone = Base;
                 Expected.SourceWord = Word;
                 Expected.WordIndex = W;
-                Expected.SpeechRegionIndex = 0;
+                Expected.SpeechRegionIndex = WordSpeechRegion;
                 Expected.SentenceIndex = Sentence;
                 Expected.bIsVowel = IsVowelPhonemeBase(Base);
                 Expected.PronunciationVariantIndex = WordPronunciationVariantIndices.IsValidIndex(W)
@@ -986,6 +1201,8 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
                 Expected.PronunciationVariantCount = WordPronunciationVariantCounts.IsValidIndex(W)
                     ? WordPronunciationVariantCounts[W]
                     : 1;
+                Expected.bUsesFallbackPronunciation = WordUsesFallbackPronunciation.IsValidIndex(W)
+                    && WordUsesFallbackPronunciation[W];
                 Expected.bIsVisibleViseme = PhoneHasVisibleViseme(Plan.Events, W, PIdx);
                 if (Expected.bIsVisibleViseme)
                 {
@@ -1004,7 +1221,7 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
                     Expected.VisualRole = EOffgridAIVisualPhoneRole::Coarticulated;
                 }
                 Expected.BoundaryAfterWord = Boundaries.IsValidIndex(W) ? Boundaries[W] : TCHAR(0);
-                Expected.WeightSeconds = ExpectedPhoneWeightSeconds(Base);
+                Expected.WeightSeconds = ExpectedPhoneWeightSeconds(Base, PIdx, PhonesForWordPtr->Num());
                 Plan.ExpectedPhones.Add(Expected);
             }
             Plan.WordPhoneEndIndices[W] = Plan.ExpectedPhones.Num();
@@ -1051,7 +1268,7 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
             Expected.BasePhone = TEXT("UNK");
             Expected.SourceWord = Word;
             Expected.WordIndex = W;
-            Expected.SpeechRegionIndex = 0;
+            Expected.SpeechRegionIndex = WordSpeechRegion;
             Expected.SentenceIndex = Sentence;
             Expected.bIsVisibleViseme = (Plan.Events.Num() > FirstEventIndex);
             Expected.VisualRole = Expected.bIsVisibleViseme
@@ -1094,6 +1311,7 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
     }
 
     Plan.Events.Sort([](const FOffgridAITextVisemeEvent& A, const FOffgridAITextVisemeEvent& B){ return A.StartNorm < B.StartNorm; });
+    BuildPlannedSyllables(Plan);
     Plan.EstimatedDurationSeconds = FMath::Max(MinDurationSeconds, Text.Len() / FMath::Max(CharactersPerSecond, 1.0f));
     return Plan;
 }

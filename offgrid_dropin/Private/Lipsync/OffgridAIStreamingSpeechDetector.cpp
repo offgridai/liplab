@@ -1,5 +1,9 @@
 #include "Lipsync/OffgridAIStreamingSpeechDetector.h"
 
+#include <cmath>
+
+#include "OffgridAIStreamingRegionModel.inl"
+
 namespace
 {
 constexpr float DetectorGapBridgeMaxSec = 0.180f;
@@ -207,208 +211,19 @@ static void AccumulateGapFrame(
 }
 
 static FDetectorGapDecision ClassifyGapDecision(
-    const FOffgridAIStreamingSpeechRegion& PrevSpeechRegion,
-    const FOffgridAIStreamingSpeechGapCandidate& Gap,
-    float ReopenEvidence,
-    float ReopenFlux,
-    bool bStrongOnsetReopen)
+    const FOffgridAIStreamingSpeechGapCandidate& Gap)
 {
     const float GapDurationSec = Gap.GapDurationSec;
-    const float PrevSpeechRegionDurationSec = FMath::Max(PrevSpeechRegion.AudioBufferEndSec - PrevSpeechRegion.AudioBufferStartSec, 0.0f);
     if (GapDurationSec <= 0.055f)
     {
         return { true, FName(TEXT("micro_gap_bridge")) };
     }
 
-    const float MeanEvidence = SafeGapMean(Gap.GapEvidenceSum, Gap.GapFrameCount);
-    const float MeanRMSNorm = SafeGapMean(Gap.GapRMSNormSum, Gap.GapFrameCount);
-    const float MeanPeriodicity = SafeGapMean(Gap.GapPeriodicitySum, Gap.GapFrameCount);
-    const float LowEvidenceRatio = Gap.GapFrameCount > 0
-        ? static_cast<float>(Gap.LowEvidenceFrameCount) / static_cast<float>(Gap.GapFrameCount)
-        : 0.0f;
-    const float StrongQuietRatio = Gap.GapFrameCount > 0
-        ? static_cast<float>(Gap.StrongQuietFrameCount) / static_cast<float>(Gap.GapFrameCount)
-        : 0.0f;
-    const bool bStrongRestart = bStrongOnsetReopen || ReopenEvidence >= 0.23f || ReopenFlux >= 0.14f;
-    const bool bSoftOrRelativeCollapseClose =
-        PrevSpeechRegion.EndReason == FName(TEXT("soft_collapse_hangover"))
-        || PrevSpeechRegion.EndReason == FName(TEXT("relative_collapse_hangover"))
-        || PrevSpeechRegion.EndReason == FName(TEXT("hard_relative_collapse_hangover"));
-
-    const bool bClosureLikeBridge =
-        bSoftOrRelativeCollapseClose
-        && GapDurationSec >= DetectorClosureLikeBridgeMinSec
-        && GapDurationSec <= DetectorClosureLikeBridgeMaxSec
-        && MeanRMSNorm <= DetectorClosureLikeBridgeMeanRMSMax
-        && Gap.GapRMSNormMin <= DetectorClosureLikeBridgeMinRMSMax
-        && LowEvidenceRatio <= DetectorClosureLikeBridgeLowEvidenceRatioMax
-        && StrongQuietRatio <= DetectorClosureLikeBridgeStrongQuietRatioMax
-        && ReopenFlux >= DetectorClosureLikeBridgeReopenFluxMin
-        && ReopenFlux <= DetectorClosureLikeBridgeReopenFluxMax
-        && ReopenEvidence >= DetectorClosureLikeBridgeReopenEvidenceMin;
-    if (bClosureLikeBridge)
-    {
-        return { true, FName(TEXT("candidate_closure_like_bridge")) };
-    }
-
-    const bool bCollapsedRhetoricalSplit =
-        GapDurationSec >= DetectorCollapsedRhetoricalSplitMinSec
-        && GapDurationSec <= DetectorCollapsedRhetoricalSplitMaxSec
-        && MeanRMSNorm <= DetectorCollapsedRhetoricalSplitMeanRMSMax
-        && Gap.GapRMSNormMin <= DetectorCollapsedRhetoricalSplitMinRMSMax
-        && (PrevSpeechRegionDurationSec >= DetectorCollapsedRhetoricalSplitPrevSpeechRegionMinSec
-            || ReopenFlux >= DetectorCollapsedRhetoricalSplitReopenFluxMin
-            || ReopenEvidence >= DetectorCollapsedRhetoricalSplitReopenEvidenceMin)
-        && (StrongQuietRatio >= 0.20f || LowEvidenceRatio >= 0.35f);
-    if (bCollapsedRhetoricalSplit)
-    {
-        return { false, FName(TEXT("candidate_collapsed_rhetorical_split")) };
-    }
-
-    const bool bIsolatedPulseSplit =
-        GapDurationSec >= DetectorIsolatedPulseSplitMinSec
-        && GapDurationSec <= DetectorIsolatedPulseSplitMaxSec
-        && MeanRMSNorm <= DetectorIsolatedPulseSplitMeanRMSMax
-        && Gap.GapRMSNormMin <= DetectorIsolatedPulseSplitMinRMSMax
-        && ReopenFlux >= DetectorIsolatedPulseSplitReopenFluxMin
-        && PrevSpeechRegionDurationSec <= DetectorIsolatedPulseSplitPrevSpeechRegionMaxSec;
-    if (bIsolatedPulseSplit)
-    {
-        return { false, FName(TEXT("candidate_isolated_pulse_split")) };
-    }
-
-    const bool bAmbiguousInternalValleyBridge =
-        GapDurationSec >= DetectorAmbiguousValleyBridgeMinSec
-        && GapDurationSec <= DetectorAmbiguousValleyBridgeMaxSec
-        && MeanRMSNorm <= DetectorAmbiguousValleyBridgeMeanRMSMax
-        && Gap.GapRMSNormMin <= DetectorAmbiguousValleyBridgeMinRMSMax
-        && ReopenFlux <= DetectorAmbiguousValleyBridgeReopenFluxMax
-        && ReopenEvidence <= DetectorAmbiguousValleyBridgeReopenEvidenceMax;
-    if (bAmbiguousInternalValleyBridge)
-    {
-        const bool bShortContinuousValley =
-            GapDurationSec <= 0.190f
-            && MeanEvidence >= 0.085f;
-        return bShortContinuousValley
-            ? FDetectorGapDecision{ true, FName(TEXT("candidate_ambiguous_valley_bridge")) }
-            : FDetectorGapDecision{ false, FName(TEXT("candidate_ambiguous_valley_split")) };
-    }
-
-    const bool bShallowContinuityBridge =
-        GapDurationSec >= DetectorShallowContinuityBridgeMinSec
-        && GapDurationSec <= DetectorShallowContinuityBridgeMaxSec
-        && MeanRMSNorm >= DetectorShallowContinuityBridgeMeanRMSMin
-        && ReopenFlux >= DetectorShallowContinuityBridgeReopenFluxMin
-        && ReopenFlux <= DetectorShallowContinuityBridgeReopenFluxMax
-        && !(MeanEvidence <= 0.050f && LowEvidenceRatio >= 0.75f);
-    if (bShallowContinuityBridge)
-    {
-        return { true, FName(TEXT("candidate_shallow_continuity_bridge")) };
-    }
-
-    const bool bSharpRestartSplit =
-        GapDurationSec >= DetectorSharpRestartSplitMinSec
-        && GapDurationSec <= DetectorSharpRestartSplitMaxSec
-        && MeanRMSNorm <= DetectorSharpRestartSplitMeanRMSMax
-        && Gap.GapRMSNormMin <= DetectorSharpRestartSplitMinRMSMax
-        && ReopenFlux >= DetectorSharpRestartSplitReopenFluxMin;
-    if (bSharpRestartSplit)
-    {
-        return { false, FName(TEXT("candidate_sharp_restart_split")) };
-    }
-
-    const bool bShortDeepValleySplit =
-        GapDurationSec >= DetectorShortDeepValleySplitMinSec
-        && GapDurationSec <= DetectorShortDeepValleySplitMaxSec
-        && MeanRMSNorm <= DetectorShortDeepValleySplitMeanRMSMax
-        && Gap.GapRMSNormMin <= DetectorShortDeepValleySplitMinRMSMax
-        && PrevSpeechRegionDurationSec >= DetectorShortDeepValleySplitPrevSpeechRegionMinSec
-        && ReopenFlux <= DetectorShortGapBridgeReopenFluxMax;
-    if (bShortDeepValleySplit)
-    {
-        return { false, FName(TEXT("candidate_short_deep_valley_split")) };
-    }
-
-    const bool bShortSoftBridge =
-        GapDurationSec <= DetectorShortGapBridgeMaxSec
-        && ReopenFlux <= DetectorShortGapBridgeReopenFluxMax
-        && Gap.GapFluxMax <= 0.08f;
-    if (bShortSoftBridge)
-    {
-        return { true, FName(TEXT("candidate_short_soft_bridge")) };
-    }
-
-    const bool bModerateSoftBridge =
-        GapDurationSec <= DetectorModerateGapBridgeMaxSec
-        && ReopenFlux <= DetectorModerateGapBridgeReopenFluxMax
-        && ReopenEvidence <= DetectorModerateGapBridgeReopenEvidenceMax
-        && Gap.GapFluxMax <= 0.06f
-        && MeanRMSNorm <= 0.04f
-        && !bStrongOnsetReopen;
-    if (bModerateSoftBridge)
-    {
-        return { true, FName(TEXT("candidate_moderate_soft_bridge")) };
-    }
-
-    const bool bShortIsolatedRestartSplit =
-        GapDurationSec >= DetectorShortIsolatedRestartSplitMinSec
-        && GapDurationSec <= DetectorShortIsolatedRestartSplitMaxSec
-        && MeanRMSNorm <= DetectorShortIsolatedRestartSplitMeanRMSMax
-        && Gap.GapRMSNormMin <= DetectorShortIsolatedRestartSplitMinRMSMax
-        && PrevSpeechRegionDurationSec <= DetectorShortIsolatedRestartSplitPrevSpeechRegionMaxSec
-        && ReopenFlux >= DetectorShortIsolatedRestartSplitReopenFluxMin
-        && ReopenEvidence >= DetectorShortIsolatedRestartSplitReopenEvidenceMin;
-    if (bShortIsolatedRestartSplit)
-    {
-        return { false, FName(TEXT("candidate_short_isolated_restart_split")) };
-    }
-
-    int32 SplitScore = 0;
-    if (GapDurationSec >= 0.115f) SplitScore += 2;
-    else if (GapDurationSec >= 0.105f) SplitScore += 1;
-
-    if (LowEvidenceRatio >= 0.78f) SplitScore += 2;
-    else if (LowEvidenceRatio >= 0.58f) SplitScore += 1;
-
-    if (StrongQuietRatio >= 0.34f) SplitScore += 1;
-    if (MeanEvidence <= 0.095f) SplitScore += 1;
-    if (Gap.GapEvidenceMin <= 0.070f) SplitScore += 1;
-    if (MeanRMSNorm <= 0.18f) SplitScore += 1;
-    if (Gap.GapRMSNormMin <= 0.11f) SplitScore += 1;
-    if (bStrongRestart) SplitScore += 1;
-    if (PrevSpeechRegionDurationSec >= 0.90f) SplitScore += 1;
-
-    if (GapDurationSec < 0.100f) SplitScore -= 3;
-    if (MeanPeriodicity >= 0.18f) SplitScore -= 1;
-    if (Gap.GapFluxMax >= 0.18f && GapDurationSec < 0.090f) SplitScore -= 1;
-
-    const bool bDeepQuietGap =
-        GapDurationSec >= 0.105f
-        && LowEvidenceRatio >= 0.78f
-        && MeanEvidence <= 0.080f
-        && MeanRMSNorm <= 0.15f
-        && bStrongRestart;
-    if (bDeepQuietGap)
-    {
-        return { false, FName(TEXT("candidate_deep_quiet_split")) };
-    }
-
-    const bool bDeepEnvelopeCollapseGap =
-        GapDurationSec >= 0.180f
-        && MeanRMSNorm <= 0.012f
-        && Gap.GapRMSNormMin <= 0.005f
-        && (LowEvidenceRatio >= 0.20f || StrongQuietRatio >= 0.15f);
-    if (bDeepEnvelopeCollapseGap)
-    {
-        return { false, FName(TEXT("candidate_deep_envelope_split")) };
-    }
-
-    if (GapDurationSec >= 0.105f && SplitScore >= 8)
-    {
-        return { false, FName(TEXT("candidate_score_split")) };
-    }
-
-    return { true, FName(TEXT("candidate_score_bridge")) };
+    // A candidate that reopens inside the causal bridge window is not a
+    // reliable speech-region boundary. Earlier feature-specific exceptions
+    // split these short valleys with low precision; only persistence beyond
+    // the bridge window may create a region transition.
+    return { true, FName(TEXT("candidate_bridge_window_hold")) };
 }
 }
 
@@ -418,6 +233,14 @@ void FOffgridAIStreamingSpeechDetector::Reset()
     GapCandidates.Reset();
     SoftLullCandidates.Reset();
     FeatureFrames.Reset();
+    LearnedSpeechRegions.Reset();
+    LearnedGapCandidates.Reset();
+    LearnedNextFrameIndex = 0;
+    LearnedSpeechCandidateStartFrame = INDEX_NONE;
+    LearnedQuietCandidateStartFrame = INDEX_NONE;
+    bLearnedInSpeech = false;
+    bLearnedHasObservedFirstSpeechStart = false;
+    LearnedFirstSpeechAudioBufferStartSec = 0.0f;
     bInSpeech = false;
     bSpeechCandidateActive = false;
     SpeechCandidateStartSeconds = 0.0f;
@@ -456,6 +279,8 @@ void FOffgridAIStreamingSpeechDetector::Reset()
     bPendingSoftLullActive = false;
     PendingSoftLull = FOffgridAIStreamingSoftLullCandidate();
     PendingMonoSamples.Reset();
+    RichAnalysisSamples.Reset();
+    PreviousRichBandDistribution.Reset();
     PendingSampleBase = 0;
     ActiveSampleRate = 0;
     SpeechPeakRMS = 0.0001f;
@@ -500,6 +325,51 @@ void FOffgridAIStreamingSpeechDetector::CommitPendingSoftLull()
     }
     bPendingSoftLullActive = false;
     PendingSoftLull = FOffgridAIStreamingSoftLullCandidate();
+}
+
+void FOffgridAIStreamingSpeechDetector::RefinePendingGapFromRecoveredContext(float GapEndSec)
+{
+    if (!bPendingGapCandidateActive || GapEndSec <= PendingGapCandidate.GapStartSec)
+    {
+        return;
+    }
+
+    float RefinedStartSec = PendingGapCandidate.GapStartSec;
+    for (const FOffgridAIStreamingAudioFeatureFrame& Frame : FeatureFrames)
+    {
+        if (Frame.AudioBufferCenterSec < PendingGapCandidate.GapStartSec)
+        {
+            continue;
+        }
+        if (Frame.AudioBufferCenterSec > GapEndSec)
+        {
+            break;
+        }
+        if (Frame.SpeechEvidence <= 0.15f
+            && Frame.Periodicity <= 0.25f
+            && Frame.RMSNorm <= 0.02f)
+        {
+            RefinedStartSec = Frame.AudioBufferStartSec;
+            break;
+        }
+    }
+
+    if (RefinedStartSec <= PendingGapCandidate.GapStartSec + 0.001f)
+    {
+        return;
+    }
+
+    PendingGapCandidate.GapStartSec = RefinedStartSec;
+    PendingGapCandidate.GapEndSec = GapEndSec;
+    PendingGapCandidate.GapDurationSec = FMath::Max(GapEndSec - RefinedStartSec, 0.0f);
+    if (SpeechRegions.IsValidIndex(PendingGapCandidate.PrevSpeechRegionIndex))
+    {
+        FOffgridAIStreamingSpeechRegion& Region = SpeechRegions[PendingGapCandidate.PrevSpeechRegionIndex];
+        if (Region.bEnded)
+        {
+            Region.AudioBufferEndSec = RefinedStartSec;
+        }
+    }
 }
 
 void FOffgridAIStreamingSpeechDetector::SuppressRecentMicroSpeechRegionIfNeeded()
@@ -621,6 +491,8 @@ void FOffgridAIStreamingSpeechDetector::AppendPCM16(const TArray<uint8>& PCMChun
     if (ActiveSampleRate != SampleRate)
     {
         PendingMonoSamples.Reset();
+        RichAnalysisSamples.Reset();
+        PreviousRichBandDistribution.Reset();
         PendingSampleBase = ChunkStartSample >= 0 ? ChunkStartSample : 0;
         ActiveSampleRate = SampleRate;
     }
@@ -718,9 +590,148 @@ void FOffgridAIStreamingSpeechDetector::AppendPCM16(const TArray<uint8>& PCMChun
         }
         const float Periodicity = FMath::Clamp(BestAutoCorr, 0.0f, 1.0f);
 
+        for (int32 I = 0; I < Hop; ++I)
+        {
+            RichAnalysisSamples.Add(PendingMonoSamples[I]);
+        }
+        const int32 RichWindowSamples = FMath::Max(FMath::RoundToInt(0.030f * SampleRate), Hop);
+        if (RichAnalysisSamples.Num() > RichWindowSamples)
+        {
+            RichAnalysisSamples.RemoveAt(0, RichAnalysisSamples.Num() - RichWindowSamples, EAllowShrinking::No);
+        }
+
+        float RichLowBandNorm = LowBandNorm;
+        float RichMidBandNorm = MidBandNorm;
+        float RichHighBandNorm = HighBandNorm;
+        float RichCentroidNorm = SpectralCentroidNorm;
+        float RichRolloffNorm = SpectralCentroidNorm;
+        float RichFlatness = 0.0f;
+        float RichFlux = 0.0f;
+        float RichPeriodicity = Periodicity;
+        TArray<float> RichBandDistribution;
+        if (RichAnalysisSamples.Num() >= RichWindowSamples)
+        {
+            auto RichGoertzelEnergy = [&](float FrequencyHz) -> float
+            {
+                const int32 N = RichAnalysisSamples.Num();
+                const float Nyquist = static_cast<float>(SampleRate) * 0.5f;
+                if (FrequencyHz <= 0.0f || FrequencyHz >= Nyquist || N <= 2) return 0.0f;
+                const float K = FMath::FloorToFloat(0.5f + (static_cast<float>(N) * FrequencyHz) / static_cast<float>(SampleRate));
+                const float Omega = 2.0f * PI * K / static_cast<float>(N);
+                const float Coeff = 2.0f * FMath::Cos(Omega);
+                float Q0 = 0.0f;
+                float Q1 = 0.0f;
+                float Q2 = 0.0f;
+                for (int32 I = 0; I < N; ++I)
+                {
+                    const float Window = 0.54f - 0.46f * FMath::Cos(
+                        2.0f * PI * static_cast<float>(I) / static_cast<float>(FMath::Max(N - 1, 1)));
+                    Q0 = Coeff * Q1 - Q2 + RichAnalysisSamples[I] * Window;
+                    Q2 = Q1;
+                    Q1 = Q0;
+                }
+                return FMath::Max(Q1 * Q1 + Q2 * Q2 - Coeff * Q1 * Q2, 0.0f);
+            };
+
+            static const float FrequenciesHz[] = {
+                250.0f, 400.0f, 630.0f, 1000.0f, 1400.0f, 2000.0f,
+                2800.0f, 3600.0f, 4500.0f, 5400.0f, 6300.0f, 7200.0f
+            };
+            TArray<float> Energies;
+            float TotalEnergy = 0.0f;
+            float RichLowEnergy = 0.0f;
+            float RichMidEnergy = 0.0f;
+            float RichHighEnergy = 0.0f;
+            float WeightedFrequency = 0.0f;
+            double LogEnergySum = 0.0;
+            for (float FrequencyHz : FrequenciesHz)
+            {
+                const float Energy = RichGoertzelEnergy(FrequencyHz);
+                Energies.Add(Energy);
+                TotalEnergy += Energy;
+                WeightedFrequency += Energy * FrequencyHz;
+                LogEnergySum += std::log(static_cast<double>(Energy) + 1.0e-9);
+                if (FrequencyHz < 1000.0f) RichLowEnergy += Energy;
+                else if (FrequencyHz < 3500.0f) RichMidEnergy += Energy;
+                else RichHighEnergy += Energy;
+            }
+            TotalEnergy = FMath::Max(TotalEnergy, 0.000001f);
+            RichLowBandNorm = FMath::Clamp(RichLowEnergy / TotalEnergy, 0.0f, 1.0f);
+            RichMidBandNorm = FMath::Clamp(RichMidEnergy / TotalEnergy, 0.0f, 1.0f);
+            RichHighBandNorm = FMath::Clamp(RichHighEnergy / TotalEnergy, 0.0f, 1.0f);
+            RichCentroidNorm = FMath::Clamp(
+                (WeightedFrequency / TotalEnergy) / FMath::Max(static_cast<float>(SampleRate) * 0.5f, 1.0f),
+                0.0f,
+                1.0f);
+            const double GeometricMean = std::exp(LogEnergySum / static_cast<double>(Energies.Num()));
+            const double ArithmeticMean = static_cast<double>(TotalEnergy) / static_cast<double>(Energies.Num());
+            RichFlatness = FMath::Clamp(static_cast<float>(GeometricMean / FMath::Max(ArithmeticMean, 1.0e-9)), 0.0f, 1.0f);
+
+            const float RolloffEnergy = TotalEnergy * 0.85f;
+            float CumulativeEnergy = 0.0f;
+            for (int32 I = 0; I < Energies.Num(); ++I)
+            {
+                CumulativeEnergy += Energies[I];
+                if (CumulativeEnergy >= RolloffEnergy)
+                {
+                    RichRolloffNorm = FMath::Clamp(
+                        FrequenciesHz[I] / FMath::Max(static_cast<float>(SampleRate) * 0.5f, 1.0f),
+                        0.0f,
+                        1.0f);
+                    break;
+                }
+            }
+
+            TArray<float> Distribution;
+            for (float Energy : Energies) Distribution.Add(Energy / TotalEnergy);
+            RichBandDistribution = Distribution;
+            if (PreviousRichBandDistribution.Num() == Distribution.Num())
+            {
+                for (int32 I = 0; I < Distribution.Num(); ++I)
+                {
+                    RichFlux += FMath::Max(Distribution[I] - PreviousRichBandDistribution[I], 0.0f);
+                }
+                RichFlux = FMath::Clamp(RichFlux * 2.0f, 0.0f, 1.0f);
+            }
+            PreviousRichBandDistribution = Distribution;
+
+            float BestRichAutoCorr = 0.0f;
+            const int32 MinRichLag = FMath::Max(FMath::RoundToInt(0.0025f * SampleRate), 1);
+            const int32 MaxRichLag = FMath::Min(FMath::RoundToInt(0.0125f * SampleRate), RichAnalysisSamples.Num() - 2);
+            const int32 LagStep = FMath::Max((MaxRichLag - MinRichLag) / 24, 1);
+            for (int32 Lag = MinRichLag; Lag <= MaxRichLag; Lag += LagStep)
+            {
+                double Corr = 0.0;
+                double A = 0.0;
+                double B = 0.0;
+                for (int32 I = 0; I + Lag < RichAnalysisSamples.Num(); ++I)
+                {
+                    const float X = RichAnalysisSamples[I];
+                    const float Y = RichAnalysisSamples[I + Lag];
+                    Corr += static_cast<double>(X) * static_cast<double>(Y);
+                    A += static_cast<double>(X) * static_cast<double>(X);
+                    B += static_cast<double>(Y) * static_cast<double>(Y);
+                }
+                const float NormCorr = static_cast<float>(Corr / std::sqrt(FMath::Max(A * B, 1.0e-8)));
+                BestRichAutoCorr = FMath::Max(BestRichAutoCorr, NormCorr);
+            }
+            RichPeriodicity = FMath::Clamp(BestRichAutoCorr, 0.0f, 1.0f);
+        }
+
         const float Start = static_cast<float>(PendingSampleBase) / static_cast<float>(SampleRate);
         const float End = static_cast<float>(PendingSampleBase + Hop) / static_cast<float>(SampleRate);
         ProcessAnalysisFrame(Start, End, RMS, static_cast<float>(Crossings) / static_cast<float>(Hop), LowBandNorm, MidBandNorm, HighBandNorm, SpectralCentroidNorm, Periodicity);
+        FOffgridAIStreamingAudioFeatureFrame& RichFrame = FeatureFrames.Last();
+        RichFrame.RichLowBandNorm = RichLowBandNorm;
+        RichFrame.RichMidBandNorm = RichMidBandNorm;
+        RichFrame.RichHighBandNorm = RichHighBandNorm;
+        RichFrame.RichSpectralCentroidNorm = RichCentroidNorm;
+        RichFrame.RichSpectralRolloffNorm = RichRolloffNorm;
+        RichFrame.RichSpectralFlatness = RichFlatness;
+        RichFrame.RichSpectralFlux = RichFlux;
+        RichFrame.RichPeriodicity = RichPeriodicity;
+        RichFrame.RichBandDistribution = MoveTemp(RichBandDistribution);
+        ProcessLearnedRegionFrames(false);
         PendingMonoSamples.RemoveAt(0, Hop, EAllowShrinking::No);
         PendingSampleBase += Hop;
     }
@@ -872,19 +883,13 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                         && SpeechCandidatePeakEvidence >= DetectorShortIsolatedRestartSplitReopenEvidenceMin;
                     FDetectorGapDecision GapDecision = bCanConsiderHighFluxContinuationBridge
                         ? FDetectorGapDecision{ true, FName(TEXT("candidate_high_flux_continuation_bridge")) }
-                        : bShortIsolatedRestartOverride
-                        ? FDetectorGapDecision{ false, FName(TEXT("candidate_short_isolated_restart_split")) }
-                        : ClassifyGapDecision(
-                            SpeechRegions.Last(),
-                            PendingGapCandidate,
-                            SpeechCandidatePeakEvidence,
-                            Frame.Flux,
-                            bStrongOnsetAnchor);
+                        : ClassifyGapDecision(PendingGapCandidate);
                     if (GapDecision.bBridge)
                     {
                         FOffgridAIStreamingSpeechRegion& SpeechRegion = SpeechRegions.Last();
                         if (bPendingGapCandidateActive)
                         {
+                            RefinePendingGapFromRecoveredContext(SpeechCandidateStartSeconds);
                             PendingGapCandidate.GapEndSec = SpeechCandidateStartSeconds;
                             PendingGapCandidate.GapDurationSec = FMath::Max(PendingGapCandidate.GapEndSec - PendingGapCandidate.GapStartSec, 0.0f);
                             PendingGapCandidate.ReopenEvidence = SpeechCandidatePeakEvidence;
@@ -938,6 +943,7 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                         {
                             if (bPendingGapCandidateActive)
                             {
+                                RefinePendingGapFromRecoveredContext(SpeechCandidateStartSeconds);
                                 PendingGapCandidate.GapEndSec = SpeechCandidateStartSeconds;
                                 PendingGapCandidate.GapDurationSec = FMath::Max(PendingGapCandidate.GapEndSec - PendingGapCandidate.GapStartSec, 0.0f);
                                 PendingGapCandidate.ReopenEvidence = SpeechCandidatePeakEvidence;
@@ -996,6 +1002,7 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
                     {
                         if (bCanConsiderReopen && bPendingGapCandidateActive)
                         {
+                            RefinePendingGapFromRecoveredContext(SpeechCandidateStartSeconds);
                             PendingGapCandidate.GapEndSec = SpeechCandidateStartSeconds;
                             PendingGapCandidate.GapDurationSec = FMath::Max(PendingGapCandidate.GapEndSec - PendingGapCandidate.GapStartSec, 0.0f);
                             PendingGapCandidate.ReopenEvidence = SpeechCandidatePeakEvidence;
@@ -1417,8 +1424,182 @@ void FOffgridAIStreamingSpeechDetector::RefreshLocalFeatureFlags()
     F.bLocalFluxPeak = F.Flux > A.Flux && F.Flux >= B.Flux;
 }
 
+float FOffgridAIStreamingSpeechDetector::ComputeLearnedSpeechProbability(int32 FrameIndex) const
+{
+    constexpr int32 BaseFeatureCount = 10;
+    float Base[BaseFeatureCount] = {};
+    auto FillBase = [](const FOffgridAIStreamingAudioFeatureFrame& Frame, float* Out)
+    {
+        Out[0] = std::log(FMath::Max(Frame.RMS, 1.0e-6f));
+        Out[1] = Frame.RMSNorm;
+        Out[2] = Frame.DeltaRMS;
+        Out[3] = Frame.Flux;
+        Out[4] = Frame.ZCR;
+        Out[5] = Frame.LowBandNorm;
+        Out[6] = Frame.MidBandNorm;
+        Out[7] = Frame.HighBandNorm;
+        Out[8] = Frame.SpectralCentroidNorm;
+        Out[9] = Frame.Periodicity;
+    };
+    FillBase(FeatureFrames[FrameIndex], Base);
+
+    float Features[StreamingRegionFeatureCount] = {};
+    for (int32 FeatureIndex = 0; FeatureIndex < BaseFeatureCount; ++FeatureIndex)
+    {
+        Features[FeatureIndex] = Base[FeatureIndex];
+    }
+
+    const int32 WindowBegins[3] = {
+        FMath::Max(FrameIndex - 10, 0),
+        FrameIndex,
+        FMath::Max(FrameIndex - 10, 0),
+    };
+    const int32 WindowEnds[3] = {
+        FrameIndex,
+        FMath::Min(FrameIndex + 10, FeatureFrames.Num() - 1),
+        FMath::Min(FrameIndex + 10, FeatureFrames.Num() - 1),
+    };
+    for (int32 WindowIndex = 0; WindowIndex < 3; ++WindowIndex)
+    {
+        const int32 Begin = WindowBegins[WindowIndex];
+        const int32 End = WindowEnds[WindowIndex];
+        const float Denominator = static_cast<float>(FMath::Max(End - Begin + 1, 1));
+        for (int32 SampleIndex = Begin; SampleIndex <= End; ++SampleIndex)
+        {
+            float Sample[BaseFeatureCount] = {};
+            FillBase(FeatureFrames[SampleIndex], Sample);
+            for (int32 FeatureIndex = 0; FeatureIndex < BaseFeatureCount; ++FeatureIndex)
+            {
+                Features[(WindowIndex + 1) * BaseFeatureCount + FeatureIndex] +=
+                    Sample[FeatureIndex] / Denominator;
+            }
+        }
+    }
+
+    float Logit = StreamingRegionBias;
+    for (int32 FeatureIndex = 0; FeatureIndex < StreamingRegionFeatureCount; ++FeatureIndex)
+    {
+        Logit += Features[FeatureIndex] * StreamingRegionWeights[FeatureIndex];
+    }
+    return 1.0f / (1.0f + std::exp(-FMath::Clamp(Logit, -30.0f, 30.0f)));
+}
+
+void FOffgridAIStreamingSpeechDetector::DecodeLearnedSpeechFrame(int32 FrameIndex)
+{
+    FOffgridAIStreamingAudioFeatureFrame& Frame = FeatureFrames[FrameIndex];
+    Frame.LearnedSpeechProbability = ComputeLearnedSpeechProbability(FrameIndex);
+    Frame.bLearnedSpeech = Frame.LearnedSpeechProbability >= StreamingRegionSpeechThreshold;
+
+    if (!bLearnedInSpeech)
+    {
+        if (!Frame.bLearnedSpeech)
+        {
+            LearnedSpeechCandidateStartFrame = INDEX_NONE;
+            return;
+        }
+        if (LearnedSpeechCandidateStartFrame == INDEX_NONE)
+        {
+            LearnedSpeechCandidateStartFrame = FrameIndex;
+        }
+        if (FrameIndex - LearnedSpeechCandidateStartFrame + 1 < StreamingRegionMinimumSpeechFrames)
+        {
+            return;
+        }
+
+        FOffgridAIStreamingSpeechRegion Region;
+        Region.SpeechRegionIndex = LearnedSpeechRegions.Num();
+        Region.AudioBufferStartSec = FeatureFrames[LearnedSpeechCandidateStartFrame].AudioBufferStartSec;
+        Region.AudioBufferLastSpeechSec = Frame.AudioBufferEndSec;
+        Region.AudioBufferEndSec = Frame.AudioBufferEndSec;
+        Region.bStarted = true;
+        LearnedSpeechRegions.Add(Region);
+
+        if (LearnedSpeechRegions.Num() > 1)
+        {
+            const FOffgridAIStreamingSpeechRegion& Previous = LearnedSpeechRegions[LearnedSpeechRegions.Num() - 2];
+            FOffgridAIStreamingSpeechGapCandidate Gap;
+            Gap.GapIndex = LearnedGapCandidates.Num();
+            Gap.PrevSpeechRegionIndex = Previous.SpeechRegionIndex;
+            Gap.NextSpeechRegionIndex = Region.SpeechRegionIndex;
+            Gap.GapStartSec = Previous.AudioBufferEndSec;
+            Gap.GapEndSec = Region.AudioBufferStartSec;
+            Gap.GapDurationSec = FMath::Max(Gap.GapEndSec - Gap.GapStartSec, 0.0f);
+            Gap.bBridged = false;
+            Gap.CloseReason = Previous.EndReason;
+            Gap.DecisionClass = FName(TEXT("learned_duration_split"));
+            LearnedGapCandidates.Add(Gap);
+        }
+
+        if (!bLearnedHasObservedFirstSpeechStart)
+        {
+            bLearnedHasObservedFirstSpeechStart = true;
+            LearnedFirstSpeechAudioBufferStartSec = Region.AudioBufferStartSec;
+        }
+        bLearnedInSpeech = true;
+        LearnedSpeechCandidateStartFrame = INDEX_NONE;
+        LearnedQuietCandidateStartFrame = INDEX_NONE;
+        return;
+    }
+
+    FOffgridAIStreamingSpeechRegion& Region = LearnedSpeechRegions.Last();
+    if (Frame.bLearnedSpeech)
+    {
+        LearnedQuietCandidateStartFrame = INDEX_NONE;
+        Region.AudioBufferLastSpeechSec = Frame.AudioBufferEndSec;
+        Region.AudioBufferEndSec = Frame.AudioBufferEndSec;
+        return;
+    }
+
+    if (LearnedQuietCandidateStartFrame == INDEX_NONE)
+    {
+        LearnedQuietCandidateStartFrame = FrameIndex;
+    }
+    if (FrameIndex - LearnedQuietCandidateStartFrame + 1 < StreamingRegionMinimumPauseFrames)
+    {
+        return;
+    }
+
+    const float CloseSec = FeatureFrames[LearnedQuietCandidateStartFrame].AudioBufferStartSec;
+    Region.AudioBufferEndSec = CloseSec;
+    Region.ProvisionalEndSec = CloseSec;
+    Region.EndDecisionSec = Frame.AudioBufferEndSec;
+    Region.bEnded = true;
+    Region.EndReason = FName(TEXT("learned_duration_close"));
+    bLearnedInSpeech = false;
+    LearnedQuietCandidateStartFrame = INDEX_NONE;
+    LearnedSpeechCandidateStartFrame = INDEX_NONE;
+}
+
+void FOffgridAIStreamingSpeechDetector::ProcessLearnedRegionFrames(bool bFlush)
+{
+    const int32 FinalizableCount = bFlush
+        ? FeatureFrames.Num()
+        : FMath::Max(FeatureFrames.Num() - 10, 0);
+    while (LearnedNextFrameIndex < FinalizableCount)
+    {
+        DecodeLearnedSpeechFrame(LearnedNextFrameIndex);
+        ++LearnedNextFrameIndex;
+    }
+}
+
 void FOffgridAIStreamingSpeechDetector::Finalize(float FinalObservedAudioBufferEndSec)
 {
+    ProcessLearnedRegionFrames(true);
+    if (LearnedSpeechRegions.Num() > 0 && bLearnedInSpeech)
+    {
+        FOffgridAIStreamingSpeechRegion& Region = LearnedSpeechRegions.Last();
+        const float CloseSec = LearnedQuietCandidateStartFrame != INDEX_NONE
+            ? FeatureFrames[LearnedQuietCandidateStartFrame].AudioBufferStartSec
+            : Region.AudioBufferLastSpeechSec;
+        Region.AudioBufferEndSec = CloseSec;
+        Region.ProvisionalEndSec = CloseSec;
+        Region.EndDecisionSec = FinalObservedAudioBufferEndSec >= 0.0f
+            ? FinalObservedAudioBufferEndSec
+            : ObservedAudioBufferEndSec;
+        Region.bEnded = true;
+        Region.EndReason = FName(TEXT("learned_finalize"));
+        bLearnedInSpeech = false;
+    }
     if (bPendingSoftLullActive)
     {
         CommitPendingSoftLull();

@@ -33,6 +33,8 @@ from gold_tools import (
 SILENCE_PHONE_LABELS = {"", "sil", "sp", "<eps>", "silence", "pau"}
 BOUNDARY_PUNCTUATION = {".", ",", ";", ":", "?", "!", "-"}
 HARD_BOUNDARY_PUNCTUATION = {".", ";", ":", "?", "!", "-"}
+HARD_REGION_GAP_SECONDS = 0.090
+STRONG_REGION_GAP_SECONDS = 0.240
 
 
 def is_silence_phone_label(label: object) -> bool:
@@ -858,13 +860,13 @@ def build_pause_boundaries(
 
         split_applied = False
         split_reason = "none"
-        if has_hard_mark and acoustic_gap >= 0.080:
+        if has_hard_mark and acoustic_gap >= HARD_REGION_GAP_SECONDS:
             split_applied = True
             split_reason = "hard_punctuation_with_lull"
         elif has_comma_mark and acoustic_gap >= max_gap_seconds:
             split_applied = True
             split_reason = "comma_with_lull"
-        elif acoustic_gap >= max(0.240, max_gap_seconds * 1.5):
+        elif acoustic_gap >= max(STRONG_REGION_GAP_SECONDS, max_gap_seconds * 1.5):
             split_applied = True
             split_reason = "strong_acoustic_gap"
 
@@ -1219,7 +1221,12 @@ def main() -> int:
     parser.add_argument("--buffer-ms", type=int, default=600000)
     parser.add_argument("--chunk-ms", type=int, default=600000)
     parser.add_argument("--mfa-num-jobs", type=int, default=4)
-    parser.add_argument("--speech-merge-gap-ms", type=int, default=125)
+    parser.add_argument(
+        "--speech-merge-gap-ms",
+        type=int,
+        default=120,
+        help="Minimum comma-associated acoustic gap retained as a speech-region break (default: 120 ms).",
+    )
     parser.add_argument("--case", action="append", dest="cases", default=[])
     parser.add_argument("--skip-runner", action="store_true")
     parser.add_argument("--skip-mfa", action="store_true")

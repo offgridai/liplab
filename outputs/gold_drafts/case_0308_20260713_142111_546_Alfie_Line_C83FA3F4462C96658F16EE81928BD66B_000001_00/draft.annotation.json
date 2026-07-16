@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0308_20260713_142111_546_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000001_00",
-  "created_utc": "2026-07-13T21:37:18.614137+00:00",
+  "created_utc": "2026-07-15T20:24:46.289188+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 125,
+    "speech_merge_gap_ms": 120,
     "source_run_dir": "outputs/offline_gold/latest/case_0308_20260713_142111_546_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000001_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-13T21:37:18.614290+00:00"
+    "reviewed_utc": "2026-07-15T20:24:46.289292+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -45,14 +45,14 @@
   "speech_regions": [
     {
       "index": 0,
-      "start": 0.16,
+      "start": 0.17,
       "end": 3.27,
       "word_start_index": 0,
       "word_end_index": 9,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -285,7 +285,7 @@
       "word_index": 0,
       "word": "we've",
       "mfa_word": "we've",
-      "start": 0.16,
+      "start": 0.17,
       "end": 0.45,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -498,7 +498,7 @@
     {
       "word_index": 0,
       "word": "we've",
-      "start": 0.16,
+      "start": 0.17,
       "end": 0.29,
       "pose": "W",
       "speech_region_index": 0,
@@ -627,7 +627,7 @@
       "word_index": 8,
       "word": "for",
       "start": 2.71,
-      "end": 2.79,
+      "end": 2.8,
       "pose": "F",
       "speech_region_index": 0,
       "sentence_index": -1,
@@ -709,7 +709,7 @@
       "word_index": 0,
       "word": "we've",
       "mfa_word": "we've",
-      "start": 0.16,
+      "start": 0.17,
       "end": 0.45,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -923,7 +923,7 @@
       "index_in_word": 0,
       "phone": "W",
       "phone_base": "W",
-      "start": 0.16,
+      "start": 0.17,
       "end": 0.29,
       "word_index": 0,
       "word": "we've"
@@ -1212,24 +1212,15 @@
       "phone": "F",
       "phone_base": "F",
       "start": 2.71,
-      "end": 2.79,
+      "end": 2.8,
       "word_index": 8,
       "word": "for"
     },
     {
       "index_in_word": 1,
-      "phone": "R",
-      "phone_base": "R",
-      "start": 2.79,
-      "end": 2.82,
-      "word_index": 8,
-      "word": "for"
-    },
-    {
-      "index_in_word": 2,
       "phone": "ER0",
       "phone_base": "ER",
-      "start": 2.82,
+      "start": 2.8,
       "end": 2.86,
       "word_index": 8,
       "word": "for"
@@ -1346,7 +1337,7 @@
   "mfa_non_silence_phone_intervals": [
     {
       "phone": "W",
-      "start": 0.16,
+      "start": 0.17,
       "end": 0.29
     },
     {
@@ -1507,16 +1498,11 @@
     {
       "phone": "F",
       "start": 2.71,
-      "end": 2.79
-    },
-    {
-      "phone": "R",
-      "start": 2.79,
-      "end": 2.82
+      "end": 2.8
     },
     {
       "phone": "ER0",
-      "start": 2.82,
+      "start": 2.8,
       "end": 2.86
     },
     {
@@ -1777,7 +1763,7 @@
       "word": "for",
       "word_index": 3,
       "sentence_index": -1,
-      "text_center_norm": 0.296875,
+      "text_center_norm": 0.291667,
       "strength": 0.96,
       "source_phone": "F",
       "source_phone_index": 0,
@@ -1785,18 +1771,30 @@
     },
     {
       "index": 15,
+      "pose": "17_Rr",
+      "word": "for",
+      "word_index": 3,
+      "sentence_index": -1,
+      "text_center_norm": 0.3125,
+      "strength": 0.78,
+      "source_phone": "R",
+      "source_phone_index": 1,
+      "generator": "cmu_rhotic"
+    },
+    {
+      "index": 16,
       "pose": "10_Or",
       "word": "for",
       "word_index": 3,
       "sentence_index": -1,
-      "text_center_norm": 0.328125,
+      "text_center_norm": 0.333333,
       "strength": 0.5,
       "source_phone": "ER",
-      "source_phone_index": 1,
+      "source_phone_index": 2,
       "generator": "cmu_rhotic_vowel"
     },
     {
-      "index": 16,
+      "index": 17,
       "pose": "20_FV",
       "word": "five",
       "word_index": 4,
@@ -1808,7 +1806,7 @@
       "generator": "cmu_fv"
     },
     {
-      "index": 17,
+      "index": 18,
       "pose": "05_Ay",
       "word": "five",
       "word_index": 4,
@@ -1820,7 +1818,7 @@
       "generator": "cmu_ay"
     },
     {
-      "index": 18,
+      "index": 19,
       "pose": "20_FV",
       "word": "five",
       "word_index": 4,
@@ -1832,7 +1830,7 @@
       "generator": "cmu_fv"
     },
     {
-      "index": 19,
+      "index": 20,
       "pose": "01_TDS-Ah-",
       "word": "dollars",
       "word_index": 5,
@@ -1844,7 +1842,7 @@
       "generator": "cmu_alveolar_stop"
     },
     {
-      "index": 20,
+      "index": 21,
       "pose": "07_Aa",
       "word": "dollars",
       "word_index": 5,
@@ -1856,7 +1854,7 @@
       "generator": "cmu_open_vowel"
     },
     {
-      "index": 21,
+      "index": 22,
       "pose": "23_Tongue_LNTDS",
       "word": "dollars",
       "word_index": 5,
@@ -1868,7 +1866,7 @@
       "generator": "cmu_lingual"
     },
     {
-      "index": 22,
+      "index": 23,
       "pose": "10_Or",
       "word": "dollars",
       "word_index": 5,
@@ -1880,7 +1878,7 @@
       "generator": "cmu_rhotic_vowel"
     },
     {
-      "index": 23,
+      "index": 24,
       "pose": "21_FV-Ee-",
       "word": "dollars",
       "word_index": 5,
@@ -1892,19 +1890,19 @@
       "generator": "cmu_sibilant_teeth_wide"
     },
     {
-      "index": 24,
-      "pose": "08_Ah",
+      "index": 25,
+      "pose": "18_Uh",
       "word": "and",
       "word_index": 6,
       "sentence_index": -1,
       "text_center_norm": 0.510417,
-      "strength": 0.92,
-      "source_phone": "AE",
+      "strength": 0.5,
+      "source_phone": "AH",
       "source_phone_index": 0,
-      "generator": "cmu_ah_vowel"
+      "generator": "cmu_central_vowel"
     },
     {
-      "index": 25,
+      "index": 26,
       "pose": "23_Tongue_LNTDS",
       "word": "and",
       "word_index": 6,
@@ -1916,7 +1914,7 @@
       "generator": "cmu_lingual"
     },
     {
-      "index": 26,
+      "index": 27,
       "pose": "01_TDS-Ah-",
       "word": "and",
       "word_index": 6,
@@ -1928,7 +1926,7 @@
       "generator": "cmu_alveolar_stop"
     },
     {
-      "index": 27,
+      "index": 28,
       "pose": "14_ChJjSh",
       "word": "chips",
       "word_index": 7,
@@ -1940,7 +1938,7 @@
       "generator": "cmu_affricate_sibilant"
     },
     {
-      "index": 28,
+      "index": 29,
       "pose": "04_Ih",
       "word": "chips",
       "word_index": 7,
@@ -1952,7 +1950,7 @@
       "generator": "cmu_ih_vowel"
     },
     {
-      "index": 29,
+      "index": 30,
       "pose": "22_MBP",
       "word": "chips",
       "word_index": 7,
@@ -1964,7 +1962,7 @@
       "generator": "cmu_bilabial"
     },
     {
-      "index": 30,
+      "index": 31,
       "pose": "21_FV-Ee-",
       "word": "chips",
       "word_index": 7,
@@ -1976,7 +1974,7 @@
       "generator": "cmu_sibilant_teeth_wide"
     },
     {
-      "index": 31,
+      "index": 32,
       "pose": "20_FV",
       "word": "for",
       "word_index": 8,
@@ -1988,7 +1986,7 @@
       "generator": "cmu_fv"
     },
     {
-      "index": 32,
+      "index": 33,
       "pose": "10_Or",
       "word": "for",
       "word_index": 8,
@@ -2000,7 +1998,7 @@
       "generator": "cmu_rhotic_vowel"
     },
     {
-      "index": 33,
+      "index": 34,
       "pose": "01_TDS-Ah-",
       "word": "two",
       "word_index": 9,
@@ -2012,7 +2010,7 @@
       "generator": "cmu_alveolar_stop"
     },
     {
-      "index": 34,
+      "index": 35,
       "pose": "11_Oo",
       "word": "two",
       "word_index": 9,
@@ -2024,7 +2022,7 @@
       "generator": "cmu_oo_vowel"
     },
     {
-      "index": 35,
+      "index": 36,
       "pose": "08_Ah",
       "word": "what'll",
       "word_index": 10,
@@ -2036,7 +2034,7 @@
       "generator": "cmu_hh_timing_waypoint"
     },
     {
-      "index": 36,
+      "index": 37,
       "pose": "12_Ww-Oo-",
       "word": "what'll",
       "word_index": 10,
@@ -2048,7 +2046,7 @@
       "generator": "cmu_w"
     },
     {
-      "index": 37,
+      "index": 38,
       "pose": "18_Uh",
       "word": "what'll",
       "word_index": 10,
@@ -2060,7 +2058,7 @@
       "generator": "cmu_central_vowel"
     },
     {
-      "index": 38,
+      "index": 39,
       "pose": "01_TDS-Ah-",
       "word": "what'll",
       "word_index": 10,
@@ -2072,7 +2070,7 @@
       "generator": "cmu_alveolar_stop"
     },
     {
-      "index": 39,
+      "index": 40,
       "pose": "18_Uh",
       "word": "what'll",
       "word_index": 10,
@@ -2084,7 +2082,7 @@
       "generator": "cmu_central_vowel"
     },
     {
-      "index": 40,
+      "index": 41,
       "pose": "23_Tongue_LNTDS",
       "word": "what'll",
       "word_index": 10,
@@ -2096,19 +2094,19 @@
       "generator": "cmu_lingual"
     },
     {
-      "index": 41,
+      "index": 42,
       "pose": "04_Ih",
       "word": "it",
       "word_index": 11,
       "sentence_index": -1,
       "text_center_norm": 0.890625,
-      "strength": 0.92,
+      "strength": 0.5,
       "source_phone": "IH",
       "source_phone_index": 0,
       "generator": "cmu_ih_vowel"
     },
     {
-      "index": 42,
+      "index": 43,
       "pose": "01_TDS-Ah-",
       "word": "it",
       "word_index": 11,
@@ -2120,7 +2118,7 @@
       "generator": "cmu_alveolar_stop"
     },
     {
-      "index": 43,
+      "index": 44,
       "pose": "22_MBP",
       "word": "be",
       "word_index": 12,
@@ -2132,7 +2130,7 @@
       "generator": "cmu_bilabial"
     },
     {
-      "index": 44,
+      "index": 45,
       "pose": "03_Ee",
       "word": "be",
       "word_index": 12,
@@ -2150,8 +2148,8 @@
       "id": "W",
       "pose": "W",
       "phone": "W",
-      "start": 0.16,
-      "center": 0.22499999999999998,
+      "start": 0.17,
+      "center": 0.22999999999999998,
       "end": 0.29,
       "word": "we've",
       "mfa_word": "we've",
@@ -3015,8 +3013,8 @@
       "pose": "F",
       "phone": "F",
       "start": 2.71,
-      "center": 2.75,
-      "end": 2.79,
+      "center": 2.755,
+      "end": 2.8,
       "word": "for",
       "mfa_word": "for",
       "word_index": 8,
@@ -3038,12 +3036,12 @@
     },
     {
       "index": 33,
-      "id": "R",
-      "pose": "R",
-      "phone": "R",
-      "start": 2.79,
-      "center": 2.8049999999999997,
-      "end": 2.82,
+      "id": "ER0",
+      "pose": "ER0",
+      "phone": "ER0",
+      "start": 2.8,
+      "center": 2.83,
+      "end": 2.86,
       "word": "for",
       "mfa_word": "for",
       "word_index": 8,
@@ -3051,7 +3049,7 @@
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
-      "source_phone": "R",
+      "source_phone": "ER0",
       "source_phone_index": 1,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
@@ -3065,33 +3063,6 @@
     },
     {
       "index": 34,
-      "id": "ER0",
-      "pose": "ER0",
-      "phone": "ER0",
-      "start": 2.82,
-      "center": 2.84,
-      "end": 2.86,
-      "word": "for",
-      "mfa_word": "for",
-      "word_index": 8,
-      "sentence_index": -1,
-      "strength": 1.0,
-      "commit_reason": "mfa_phone_interval",
-      "alignment_reason": "mfa_textgrid_phone",
-      "source_phone": "ER0",
-      "source_phone_index": 2,
-      "source_phone_class": "cmu_arpa",
-      "mapped_to_observed_speech": true,
-      "approval": {
-        "status": "approved_gold",
-        "reviewed": true
-      },
-      "notes": [],
-      "flags": [],
-      "speech_region_index": 0
-    },
-    {
-      "index": 35,
       "id": "T",
       "pose": "T",
       "phone": "T",
@@ -3118,7 +3089,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 36,
+      "index": 35,
       "id": "UW1",
       "pose": "UW1",
       "phone": "UW1",
@@ -3145,7 +3116,7 @@
       "speech_region_index": 0
     },
     {
-      "index": 37,
+      "index": 36,
       "id": "HH",
       "pose": "HH",
       "phone": "HH",
@@ -3172,7 +3143,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 38,
+      "index": 37,
       "id": "W",
       "pose": "W",
       "phone": "W",
@@ -3199,7 +3170,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 39,
+      "index": 38,
       "id": "AH1",
       "pose": "AH1",
       "phone": "AH1",
@@ -3226,7 +3197,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 40,
+      "index": 39,
       "id": "T",
       "pose": "T",
       "phone": "T",
@@ -3253,7 +3224,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 41,
+      "index": 40,
       "id": "AH0",
       "pose": "AH0",
       "phone": "AH0",
@@ -3280,7 +3251,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 42,
+      "index": 41,
       "id": "L",
       "pose": "L",
       "phone": "L",
@@ -3307,7 +3278,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 43,
+      "index": 42,
       "id": "IH0",
       "pose": "IH0",
       "phone": "IH0",
@@ -3334,7 +3305,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 44,
+      "index": 43,
       "id": "T",
       "pose": "T",
       "phone": "T",
@@ -3361,7 +3332,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 45,
+      "index": 44,
       "id": "B",
       "pose": "B",
       "phone": "B",
@@ -3388,7 +3359,7 @@
       "speech_region_index": 1
     },
     {
-      "index": 46,
+      "index": 45,
       "id": "IY1",
       "pose": "IY1",
       "phone": "IY1",
@@ -3419,7 +3390,7 @@
     {
       "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 2,
-      "gap_threshold_seconds": 0.125,
+      "gap_threshold_seconds": 0.12,
       "largest_split_gap_seconds": 0.58,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }
@@ -3431,17 +3402,17 @@
     "pause_boundary_count": 12,
     "pause_region_break_count": 1,
     "word_head_count": 13,
-    "viseme_count": 47,
+    "viseme_count": 46,
     "flag_count": 1,
     "flags_by_kind": {
       "speech_regions_split_on_pause_boundaries": 1
     },
     "commit_reasons": {
-      "mfa_phone_interval": 47
+      "mfa_phone_interval": 46
     },
     "alignment_reasons": {
-      "mfa_textgrid_phone": 47
+      "mfa_textgrid_phone": 46
     },
-    "mapped_to_observed_speech_count": 47
+    "mapped_to_observed_speech_count": 46
   }
 }

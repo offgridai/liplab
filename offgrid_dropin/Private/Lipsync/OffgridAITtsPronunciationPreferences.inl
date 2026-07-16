@@ -10,24 +10,82 @@ struct FOffgridAITtsPronunciationPreferenceRow
 
 static const FOffgridAITtsPronunciationPreferenceRow GTtsPronunciationPreferences[] =
 {
-    {TEXT("always"), TEXT("AO1 L W IY0 Z"), 5, 1.000000f},
-    {TEXT("and"), TEXT("AE1 N D"), 134, 0.626866f},
+    {TEXT("always"), TEXT("AO1 L W IY0 Z"), 6, 1.000000f},
+    {TEXT("and"), TEXT("AE1 N D"), 142, 0.633803f},
     {TEXT("as"), TEXT("AE1 Z"), 4, 0.750000f},
     {TEXT("beaches"), TEXT("B IY1 CH IH0 Z"), 11, 1.000000f},
-    {TEXT("can"), TEXT("K AH0 N"), 25, 0.680000f},
+    {TEXT("can"), TEXT("K AH0 N"), 28, 0.714286f},
     {TEXT("enjoy"), TEXT("IH0 N JH OY1"), 6, 1.000000f},
-    {TEXT("for"), TEXT("F ER0"), 61, 0.508197f},
+    {TEXT("for"), TEXT("F ER0"), 68, 0.529412f},
     {TEXT("indigo"), TEXT("IH1 N D IH0 G OW2"), 9, 0.888889f},
     {TEXT("interesting"), TEXT("IH1 N T R IH0 S T IH0 NG"), 5, 1.000000f},
     {TEXT("is"), TEXT("IH1 Z"), 25, 1.000000f},
-    {TEXT("sandwiches"), TEXT("S AE1 M W IH0 CH IH0 Z"), 22, 0.681818f},
-    {TEXT("sounds"), TEXT("S AW1 N Z"), 13, 0.615385f},
+    {TEXT("it"), TEXT("IH0 T"), 25, 0.560000f},
+    {TEXT("its"), TEXT("IH0 T S"), 10, 0.900000f},
+    {TEXT("sandwiches"), TEXT("S AE1 M W IH0 CH IH0 Z"), 25, 0.680000f},
+    {TEXT("sounds"), TEXT("S AW1 N Z"), 14, 0.642857f},
     {TEXT("to"), TEXT("T AH0"), 41, 0.682927f},
     {TEXT("violet"), TEXT("V AY1 L IH0 T"), 9, 0.666667f},
-    {TEXT("what"), TEXT("HH W AH1 T"), 23, 0.869565f},
-    {TEXT("what'll"), TEXT("HH W AH1 T AH0 L"), 9, 1.000000f},
-    {TEXT("what's"), TEXT("HH W AH1 T S"), 4, 1.000000f},
-    {TEXT("which"), TEXT("HH W IH1 CH"), 11, 0.818182f},
-    {TEXT("with"), TEXT("W IH1 TH"), 17, 0.823529f},
-    {TEXT("your"), TEXT("Y UH1 R"), 10, 1.000000f},
+    {TEXT("what"), TEXT("HH W AH1 T"), 25, 0.880000f},
+    {TEXT("what'll"), TEXT("HH W AH1 T AH0 L"), 11, 1.000000f},
+    {TEXT("what's"), TEXT("HH W AH1 T S"), 5, 1.000000f},
+    {TEXT("which"), TEXT("HH W IH1 CH"), 12, 0.833333f},
+    {TEXT("with"), TEXT("W IH0 TH"), 17, 0.764706f},
+    {TEXT("your"), TEXT("Y UH1 R"), 11, 1.000000f},
+};
+
+struct FOffgridAITtsContextPronunciationPreferenceRow
+{
+    const TCHAR* Word;
+    const TCHAR* NeighborWord;
+    bool bPreviousNeighbor;
+    const TCHAR* Phones;
+    int32 ObservationCount;
+    float PreferredShare;
+};
+
+static const FOffgridAITtsContextPronunciationPreferenceRow GTtsContextPronunciationPreferences[] =
+{
+    {TEXT("ancient"), TEXT("has"), true, TEXT("EY1 N SH AH0 N T"), 2, 1.000000f},
+    {TEXT("ancient"), TEXT("ruins"), false, TEXT("EY1 N SH AH0 N T"), 2, 1.000000f},
+    {TEXT("and"), TEXT("chips"), false, TEXT("AH0 N D"), 17, 0.882353f},
+    {TEXT("and"), TEXT("coffee"), false, TEXT("AH0 N D"), 2, 1.000000f},
+    {TEXT("and"), TEXT("dollars"), true, TEXT("AH0 N D"), 13, 0.923077f},
+    {TEXT("and"), TEXT("fresh"), true, TEXT("AH0 N D"), 2, 1.000000f},
+    {TEXT("and"), TEXT("ruins"), true, TEXT("AH0 N D"), 2, 1.000000f},
+    {TEXT("and"), TEXT("sandwiches"), true, TEXT("AH0 N D"), 4, 0.750000f},
+    {TEXT("and"), TEXT("tropical"), false, TEXT("AH0 N D"), 2, 1.000000f},
+    {TEXT("and"), TEXT("vibrant"), false, TEXT("AH0 N D"), 2, 1.000000f},
+    {TEXT("be"), TEXT("must"), true, TEXT("B IY0"), 2, 1.000000f},
+    {TEXT("be"), TEXT("quite"), false, TEXT("B IY0"), 2, 1.000000f},
+    {TEXT("be"), TEXT("to"), true, TEXT("B IY0"), 2, 1.000000f},
+    {TEXT("because"), TEXT("it"), false, TEXT("B IH0 K AH1 Z"), 2, 1.000000f},
+    {TEXT("don't"), TEXT("have"), false, TEXT("D OW1 N"), 3, 1.000000f},
+    {TEXT("don't"), TEXT("we"), true, TEXT("D OW1 N"), 3, 1.000000f},
+    {TEXT("for"), TEXT("a"), false, TEXT("F R ER0"), 3, 1.000000f},
+    {TEXT("for"), TEXT("five"), false, TEXT("F R ER0"), 13, 1.000000f},
+    {TEXT("for"), TEXT("sandwiches"), true, TEXT("F R ER0"), 14, 0.928571f},
+    {TEXT("haven't"), TEXT("heard"), false, TEXT("HH AE1 V AH0 N"), 2, 1.000000f},
+    {TEXT("in"), TEXT("if"), false, TEXT("IH1 N"), 2, 1.000000f},
+    {TEXT("in"), TEXT("some"), true, TEXT("IH1 N"), 2, 1.000000f},
+    {TEXT("it"), TEXT("because"), true, TEXT("IH1 T"), 2, 1.000000f},
+    {TEXT("it"), TEXT("but"), true, TEXT("IH1 T"), 2, 1.000000f},
+    {TEXT("it"), TEXT("was"), false, TEXT("IH1 T"), 2, 1.000000f},
+    {TEXT("new"), TEXT("</s>"), false, TEXT("N Y UW1"), 2, 1.000000f},
+    {TEXT("new"), TEXT("something"), true, TEXT("N Y UW1"), 2, 1.000000f},
+    {TEXT("the"), TEXT("has"), true, TEXT("DH AH1"), 10, 0.700000f},
+    {TEXT("the"), TEXT("horse"), false, TEXT("DH AH1"), 2, 1.000000f},
+    {TEXT("the"), TEXT("largest"), false, TEXT("DH AH1"), 3, 1.000000f},
+    {TEXT("the"), TEXT("most"), false, TEXT("DH AH1"), 3, 1.000000f},
+    {TEXT("the"), TEXT("oldest"), false, TEXT("DH IY0"), 2, 1.000000f},
+    {TEXT("the"), TEXT("world"), false, TEXT("DH AH1"), 10, 0.800000f},
+    {TEXT("to"), TEXT("be"), false, TEXT("T IH0"), 2, 1.000000f},
+    {TEXT("to"), TEXT("meet"), false, TEXT("T IH0"), 2, 1.000000f},
+    {TEXT("to"), TEXT("nice"), true, TEXT("T IH0"), 2, 1.000000f},
+    {TEXT("us"), TEXT("of"), true, TEXT("AH1 S"), 2, 1.000000f},
+    {TEXT("was"), TEXT("it"), true, TEXT("W AH0 Z"), 2, 1.000000f},
+    {TEXT("what"), TEXT("sure"), true, TEXT("W AH1 T"), 2, 1.000000f},
+    {TEXT("what"), TEXT("you"), false, TEXT("W AH1 T"), 2, 1.000000f},
+    {TEXT("why"), TEXT("<s>"), true, TEXT("HH W AY1"), 2, 1.000000f},
+    {TEXT("why"), TEXT("did"), false, TEXT("HH W AY1"), 2, 1.000000f},
 };

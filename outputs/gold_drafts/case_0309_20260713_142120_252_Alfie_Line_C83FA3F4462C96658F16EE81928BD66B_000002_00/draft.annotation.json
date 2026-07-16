@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0309_20260713_142120_252_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000002_00",
-  "created_utc": "2026-07-13T21:37:18.629727+00:00",
+  "created_utc": "2026-07-15T20:24:46.297594+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 125,
+    "speech_merge_gap_ms": 120,
     "source_run_dir": "outputs/offline_gold/latest/case_0309_20260713_142120_252_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000002_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-13T21:37:18.629860+00:00"
+    "reviewed_utc": "2026-07-15T20:24:46.297660+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -60,14 +60,14 @@
     },
     {
       "index": 1,
-      "start": 2.69,
-      "end": 3.76,
+      "start": 2.68,
+      "end": 3.75,
       "word_start_index": 6,
       "word_end_index": 9,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -170,10 +170,10 @@
       "pause_class": "region_break",
       "split_applied": true,
       "split_reason": "hard_punctuation_with_lull",
-      "direct_word_gap_seconds": 0.19999999999999973,
-      "phone_gap_seconds": 0.19999999999999973,
-      "wave_silence_seconds": 0.19999999999999973,
-      "acoustic_gap_seconds": 0.19999999999999973,
+      "direct_word_gap_seconds": 0.18999999999999995,
+      "phone_gap_seconds": 0.18999999999999995,
+      "wave_silence_seconds": 0.18999999999999995,
+      "acoustic_gap_seconds": 0.18999999999999995,
       "speech_region_index_before": 0,
       "speech_region_index_after": 1
     },
@@ -336,7 +336,7 @@
       "word_index": 6,
       "word": "which",
       "mfa_word": "which",
-      "start": 2.69,
+      "start": 2.68,
       "end": 2.98,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -385,7 +385,7 @@
       "word": "good",
       "mfa_word": "good",
       "start": 3.46,
-      "end": 3.76,
+      "end": 3.75,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -499,7 +499,7 @@
     {
       "word_index": 6,
       "word": "which",
-      "start": 2.69,
+      "start": 2.68,
       "end": 2.73,
       "pose": "HH",
       "speech_region_index": 1,
@@ -668,7 +668,7 @@
       "word_index": 6,
       "word": "which",
       "mfa_word": "which",
-      "start": 2.69,
+      "start": 2.68,
       "end": 2.98,
       "sentence_index": -1,
       "source": "mfa_word_interval",
@@ -717,7 +717,7 @@
       "word": "good",
       "mfa_word": "good",
       "start": 3.46,
-      "end": 3.76,
+      "end": 3.75,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -916,7 +916,7 @@
       "index_in_word": 0,
       "phone": "HH",
       "phone_base": "HH",
-      "start": 2.69,
+      "start": 2.68,
       "end": 2.73,
       "word_index": 6,
       "word": "which"
@@ -1034,7 +1034,7 @@
       "phone": "D",
       "phone_base": "D",
       "start": 3.68,
-      "end": 3.76,
+      "end": 3.75,
       "word_index": 9,
       "word": "good"
     }
@@ -1142,7 +1142,7 @@
     },
     {
       "phone": "HH",
-      "start": 2.69,
+      "start": 2.68,
       "end": 2.73
     },
     {
@@ -1208,7 +1208,7 @@
     {
       "phone": "D",
       "start": 3.68,
-      "end": 3.76
+      "end": 3.75
     }
   ],
   "wave_silence_spans": [
@@ -2184,8 +2184,8 @@
       "id": "HH",
       "pose": "HH",
       "phone": "HH",
-      "start": 2.69,
-      "center": 2.71,
+      "start": 2.68,
+      "center": 2.705,
       "end": 2.73,
       "word": "which",
       "mfa_word": "which",
@@ -2536,8 +2536,8 @@
       "pose": "D",
       "phone": "D",
       "start": 3.68,
-      "center": 3.7199999999999998,
-      "end": 3.76,
+      "center": 3.715,
+      "end": 3.75,
       "word": "good",
       "mfa_word": "good",
       "word_index": 9,
@@ -2562,8 +2562,8 @@
     {
       "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 2,
-      "gap_threshold_seconds": 0.125,
-      "largest_split_gap_seconds": 0.2,
+      "gap_threshold_seconds": 0.12,
+      "largest_split_gap_seconds": 0.19,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }
   ],
