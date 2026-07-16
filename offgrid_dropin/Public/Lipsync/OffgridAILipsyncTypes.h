@@ -61,10 +61,21 @@ struct FOffgridAICommittedVisemeEvent
 
 struct FOffgridAICommittedVisemeTrack
 {
+    struct FSpeechRegion
+    {
+        int32 SpeechRegionIndex = INDEX_NONE;
+        float StartSeconds = 0.0f;
+        float EndSeconds = 0.0f;
+        bool bEnded = false;
+    };
+
     FName NPCID = NAME_None;
     FName LineID = NAME_None;
     float SpeechStartSeconds = 0.0f;
     float SpeechEndSeconds = 0.0f;
+    // Detector-owned region bounds used only to gate pose envelopes. Event
+    // centers and identity remain immutable once committed.
+    TArray<FSpeechRegion> SpeechRegions;
     TArray<FOffgridAICommittedVisemeEvent> Events;
 };
 

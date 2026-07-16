@@ -94,7 +94,13 @@ static bool SameContinuousSpeechGroup(const FOffgridAICommittedVisemeEvent* A, c
     return true;
 }
 
-static float EventWeightAt(const FOffgridAICommittedVisemeEvent& E, const FOffgridAICommittedVisemeEvent* Prev, const FOffgridAICommittedVisemeEvent* Next, float PlaybackSeconds)
+static float EventWeightAt(
+    const FOffgridAICommittedVisemeEvent& E,
+    const FOffgridAICommittedVisemeEvent* Prev,
+    const FOffgridAICommittedVisemeEvent* Next,
+    float PlaybackSeconds,
+    float RegionStartSeconds,
+    float RegionEndSeconds)
 {
     float Attack = 0.060f;
     float Release = 0.075f;
@@ -132,6 +138,12 @@ static float EventWeightAt(const FOffgridAICommittedVisemeEvent& E, const FOffgr
         }
     }
 
+    // The speech detector owns animation gating. Neighbor blending may fill
+    // soft gaps inside a region, but it must never leak into an inter-region
+    // pause or anticipate a resume.
+    AttackStart = FMath::Max(AttackStart, RegionStartSeconds);
+    ReleaseEnd = FMath::Min(ReleaseEnd, RegionEndSeconds);
+
     float Shape = 0.0f;
     if (PlaybackSeconds < AttackStart || PlaybackSeconds > ReleaseEnd)
     {
@@ -168,7 +180,17 @@ TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const 
         if (!FMath::IsFinite(E.FinalRenderCenterSeconds)) continue;
         const FOffgridAICommittedVisemeEvent* Prev = I > 0 ? &Track.Events[I - 1] : nullptr;
         const FOffgridAICommittedVisemeEvent* Next = I + 1 < Track.Events.Num() ? &Track.Events[I + 1] : nullptr;
-        const float W = EventWeightAt(E, Prev, Next, PlaybackSeconds);
+        float RegionStartSeconds = Track.SpeechStartSeconds;
+        float RegionEndSeconds = TNumericLimits<float>::Max();
+        for (const auto& Region : Track.SpeechRegions)
+        {
+            if (Region.SpeechRegionIndex != E.SpeechRegionIndex) continue;
+            RegionStartSeconds = Region.StartSeconds;
+            if (Region.bEnded) RegionEndSeconds = Region.EndSeconds;
+            break;
+        }
+        const float W = EventWeightAt(
+            E, Prev, Next, PlaybackSeconds, RegionStartSeconds, RegionEndSeconds);
         if (W <= 0.012f) continue;
         FOffgridAISubmittedVisemeSample S;
         S.EventIndex = E.EventIndex;

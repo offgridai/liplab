@@ -3972,6 +3972,141 @@ static std::string word_onset_diagnostics_csv(
     return out.str();
 }
 
+static std::string focus_alignment_grade_json(
+    const FOffgridAIAlignedVisemeTrack& track,
+    const FOffgridAITextVisemePlan& plan,
+    const std::vector<HandmadeLabel>& handmade,
+    const std::vector<GoldSpeechRegion>& gold_speech)
+{
+    struct CenterRow
+    {
+        int word_index = -1;
+        int region_index = -1;
+        std::string word;
+        std::string phone;
+        double gold_center = 0.0;
+        double runtime_center = 0.0;
+    };
+
+    std::vector<CenterRow> words;
+    std::vector<int> expected_word_indices;
+    std::vector<int> expected_region_indices;
+    for (const auto& label : handmade)
+    {
+        if (label.word_index < 0) continue;
+        if (std::find(expected_word_indices.begin(), expected_word_indices.end(), label.word_index)
+            == expected_word_indices.end())
+            expected_word_indices.push_back(label.word_index);
+        if (label.speech_region_index >= 0
+            && std::find(expected_region_indices.begin(), expected_region_indices.end(), label.speech_region_index)
+                == expected_region_indices.end())
+            expected_region_indices.push_back(label.speech_region_index);
+        if (std::any_of(words.begin(), words.end(), [&](const CenterRow& row) {
+            return row.word_index == label.word_index;
+        })) continue;
+        const auto event = std::find_if(track.Events.begin(), track.Events.end(), [&](const auto& candidate) {
+            return candidate.bIsRenderable
+                && candidate.WordIndex == label.word_index
+                && (label.source_phone_global_index < 0
+                    || candidate.SourcePhoneIndex == label.source_phone_global_index);
+        });
+        if (event == track.Events.end()) continue;
+        words.push_back({
+            label.word_index,
+            label.speech_region_index,
+            label.word,
+            label.source_phone_base,
+            0.5 * (label.start + label.end),
+            event->FinalRenderCenterSeconds });
+    }
+
+    std::vector<CenterRow> regions;
+    for (const auto& word : words)
+    {
+        if (std::any_of(regions.begin(), regions.end(), [&](const CenterRow& row) {
+            return row.region_index == word.region_index;
+        })) continue;
+        regions.push_back(word);
+    }
+
+    auto mean_abs_ms = [](const std::vector<CenterRow>& rows) {
+        double total = 0.0;
+        for (const auto& row : rows)
+            total += std::abs(row.runtime_center - row.gold_center) * 1000.0;
+        return rows.empty() ? 0.0 : total / static_cast<double>(rows.size());
+    };
+    int pause_samples = 0;
+    int active_pause_samples = 0;
+    for (size_t index = 0; index + 1 < gold_speech.size(); ++index)
+    {
+        for (double seconds = gold_speech[index].end;
+             seconds + 0.0005 < gold_speech[index + 1].start;
+             seconds += 0.001)
+        {
+            ++pause_samples;
+            if (FOffgridAIVisemePerformer::Sample(
+                    track, static_cast<float>(seconds), true).Num() > 0)
+                ++active_pause_samples;
+        }
+    }
+
+    std::ostringstream out;
+    const int planned_event_count = plan.Events.Num();
+    const int committed_event_count = track.Events.Num();
+    const double event_completion_rate = planned_event_count > 0
+        ? static_cast<double>(committed_event_count) / static_cast<double>(planned_event_count)
+        : 1.0;
+    const double word_head_coverage_rate = !expected_word_indices.empty()
+        ? static_cast<double>(words.size()) / static_cast<double>(expected_word_indices.size())
+        : 1.0;
+    const double region_head_coverage_rate = !expected_region_indices.empty()
+        ? static_cast<double>(regions.size()) / static_cast<double>(expected_region_indices.size())
+        : 1.0;
+    const double pause_clean_rate = pause_samples > 0
+        ? 1.0 - static_cast<double>(active_pause_samples) / static_cast<double>(pause_samples)
+        : 1.0;
+    out << std::fixed << std::setprecision(3);
+    out << "{\n"
+        << "  \"planned_event_count\": " << planned_event_count << ",\n"
+        << "  \"committed_event_count\": " << committed_event_count << ",\n"
+        << "  \"event_completion_rate\": " << event_completion_rate << ",\n"
+        << "  \"expected_region_head_count\": " << expected_region_indices.size() << ",\n"
+        << "  \"matched_region_head_count\": " << regions.size() << ",\n"
+        << "  \"region_head_coverage_rate\": " << region_head_coverage_rate << ",\n"
+        << "  \"region_head_mean_abs_ms\": " << mean_abs_ms(regions) << ",\n"
+        << "  \"expected_word_head_count\": " << expected_word_indices.size() << ",\n"
+        << "  \"matched_word_head_count\": " << words.size() << ",\n"
+        << "  \"word_head_coverage_rate\": " << word_head_coverage_rate << ",\n"
+        << "  \"word_head_mean_abs_ms\": " << mean_abs_ms(words) << ",\n"
+        << "  \"pause_duration_ms\": " << pause_samples << ",\n"
+        << "  \"pause_animation_leakage_ms\": " << active_pause_samples << ",\n"
+        << "  \"pause_clean_rate\": " << pause_clean_rate << ",\n"
+        << "  \"region_heads\": [\n";
+    for (size_t index = 0; index < regions.size(); ++index)
+    {
+        const auto& row = regions[index];
+        out << "    {\"region_index\": " << row.region_index
+            << ", \"word\": \"" << row.word << "\", \"phone\": \"" << row.phone
+            << "\", \"gold_center\": " << row.gold_center
+            << ", \"runtime_center\": " << row.runtime_center
+            << ", \"error_ms\": " << (row.runtime_center - row.gold_center) * 1000.0 << "}"
+            << (index + 1 < regions.size() ? "," : "") << "\n";
+    }
+    out << "  ],\n  \"word_heads\": [\n";
+    for (size_t index = 0; index < words.size(); ++index)
+    {
+        const auto& row = words[index];
+        out << "    {\"word_index\": " << row.word_index
+            << ", \"word\": \"" << row.word << "\", \"phone\": \"" << row.phone
+            << "\", \"gold_center\": " << row.gold_center
+            << ", \"runtime_center\": " << row.runtime_center
+            << ", \"error_ms\": " << (row.runtime_center - row.gold_center) * 1000.0 << "}"
+            << (index + 1 < words.size() ? "," : "") << "\n";
+    }
+    out << "  ]\n}\n";
+    return out.str();
+}
+
 static std::string grade_json(const GradeReport& grade_report)
 {
     std::ostringstream out;
@@ -4126,6 +4261,7 @@ struct RunnerCliConfig
     StreamConfig stream;
     OutputConfig output;
     bool fast_batch = false;
+    bool focused_alignment = false;
     std::string case_filter;
 };
 
@@ -4214,6 +4350,10 @@ static RunnerCliConfig parse_cli_config(int argc, char** argv)
         else if (arg == "--full-diagnostics")
         {
             cli.output.write_detailed_diagnostics = true;
+        }
+        else if (arg == "--focused-alignment")
+        {
+            cli.focused_alignment = true;
         }
         else if (arg == "--case")
         {
@@ -4384,6 +4524,8 @@ int main(int argc, char** argv)
             begin.LineID = FName(stem);
             begin.NPCID = FName("liplab");
             begin.PrerollSec = stream.buffer_seconds;
+            begin.bEnableFocusedWordStartAlignment =
+                cli.focused_alignment || !cli.case_filter.empty();
             if (!cli.case_filter.empty()) std::cerr << "[case] begin " << stem << std::endl;
             session.BeginLine(begin);
             if (!cli.case_filter.empty()) std::cerr << "[case] stream " << stem << std::endl;
@@ -4541,6 +4683,8 @@ int main(int argc, char** argv)
                 write_text(case_dir / "planned_syllables.csv", planned_syllables_csv(plan));
                 write_text(case_dir / "planned_boundaries.csv", planned_boundaries_csv(plan));
                 write_text(case_dir / "gold_visible_visemes.csv", gold_visible_visemes_csv(handmade));
+                write_text(case_dir / "focus_alignment_grade.json",
+                    focus_alignment_grade_json(committed, plan, handmade, gold_speech));
                 report = grade(committed, speech, handmade, gold_words, gold_speech);
                 if (output.write_detailed_diagnostics)
                 {
