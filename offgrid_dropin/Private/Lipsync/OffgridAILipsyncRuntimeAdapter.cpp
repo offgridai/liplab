@@ -21,6 +21,7 @@ static constexpr float ListRestartMaximumValleySec = 0.180f;
 static constexpr float ListRestartMaximumValleyRMSNorm = 0.020f;
 static constexpr float ListRestartMinimumReboundRatio = 3.0f;
 static constexpr float ListRestartMinimumFlux = 0.060f;
+static constexpr int32 DenseListMinimumBoundaryCount = 6;
 
 static float SpanForPose(const FName& PoseID)
 {
@@ -184,6 +185,109 @@ static bool IsListGapSensitiveAtCursor(
     return FirstListBoundary != INDEX_NONE
         && WordIndex >= FirstListBoundary
         && WordIndex <= SentenceEnd;
+}
+
+static int32 ListBoundaryCountInSentence(
+    const FOffgridAITextVisemePlan& Plan,
+    int32 WordIndex)
+{
+    if (WordIndex < 0 || Plan.WordBoundaryPauseClassAfter.Num() == 0)
+        return 0;
+
+    int32 SentenceStart = 0;
+    for (int32 Index = WordIndex - 1; Index >= 0; --Index)
+    {
+        if (Plan.WordBoundaryPauseClassAfter.IsValidIndex(Index)
+            && Plan.WordBoundaryPauseClassAfter[Index]
+                == EOffgridAIBoundaryPauseClass::HardBreakPause)
+        {
+            SentenceStart = Index + 1;
+            break;
+        }
+    }
+
+    int32 SentenceEnd = Plan.WordBoundaryPauseClassAfter.Num() - 1;
+    for (int32 Index = WordIndex; Index < Plan.WordBoundaryPauseClassAfter.Num(); ++Index)
+    {
+        if (Plan.WordBoundaryPauseClassAfter[Index]
+            == EOffgridAIBoundaryPauseClass::HardBreakPause)
+        {
+            SentenceEnd = Index;
+            break;
+        }
+    }
+
+    int32 Count = 0;
+    for (int32 Index = SentenceStart; Index <= SentenceEnd; ++Index)
+    {
+        if (Plan.WordBoundaryPauseClassAfter[Index]
+            == EOffgridAIBoundaryPauseClass::SoftListPause)
+        {
+            ++Count;
+        }
+    }
+    return Count;
+}
+
+static bool IsFirstListBoundaryInSentence(
+    const FOffgridAITextVisemePlan& Plan,
+    int32 BoundaryWordIndex)
+{
+    if (BoundaryWordIndex < 0)
+        return false;
+
+    int32 SentenceStart = 0;
+    for (int32 Index = BoundaryWordIndex - 1; Index >= 0; --Index)
+    {
+        if (Plan.WordBoundaryPauseClassAfter.IsValidIndex(Index)
+            && Plan.WordBoundaryPauseClassAfter[Index]
+                == EOffgridAIBoundaryPauseClass::HardBreakPause)
+        {
+            SentenceStart = Index + 1;
+            break;
+        }
+    }
+    for (int32 Index = SentenceStart; Index < BoundaryWordIndex; ++Index)
+    {
+        if (Plan.WordBoundaryPauseClassAfter.IsValidIndex(Index)
+            && Plan.WordBoundaryPauseClassAfter[Index]
+                == EOffgridAIBoundaryPauseClass::SoftListPause)
+        {
+            return false;
+        }
+    }
+    return Plan.WordBoundaryPauseClassAfter.IsValidIndex(BoundaryWordIndex)
+        && Plan.WordBoundaryPauseClassAfter[BoundaryWordIndex]
+            == EOffgridAIBoundaryPauseClass::SoftListPause;
+}
+
+static bool FindTrailingListQuietRun(
+    const FOffgridAILipsyncRuntimeUpdateInput& Input,
+    float SearchStartSec,
+    float& OutQuietStartSec)
+{
+    if (!Input.AudioFeatureFrames)
+        return false;
+
+    float QuietStartSec = -1.0f;
+    for (const auto& Frame : *Input.AudioFeatureFrames)
+    {
+        if (Frame.AudioBufferCenterSec < SearchStartSec - 0.001f)
+            continue;
+        if (Frame.AudioBufferCenterSec > Input.ObservedAudioBufferEndSec + 0.001f)
+            break;
+        if (!Frame.bLearnedSpeech)
+        {
+            if (QuietStartSec < 0.0f)
+                QuietStartSec = Frame.AudioBufferCenterSec;
+        }
+        else
+        {
+            QuietStartSec = -1.0f;
+        }
+    }
+    OutQuietStartSec = QuietStartSec;
+    return QuietStartSec >= 0.0f;
 }
 
 static bool FindProsodicRestart(
@@ -855,29 +959,39 @@ static void UpdateSimpleCommittedTrack(
                 // handled by the prosodic/list path above.
                 && Plan.WordBoundaryPunctuationAfter.IsValidIndex(PreviousWordIndex)
                 && Plan.WordBoundaryPunctuationAfter[PreviousWordIndex] != TEXT(',');
+            const bool bDenseListEntryBoundary = bSoftListBoundary
+                && ListBoundaryCountInSentence(Plan, EventWordIndex)
+                    >= DenseListMinimumBoundaryCount
+                && IsFirstListBoundaryInSentence(Plan, PreviousWordIndex);
 
             if (Input.bEnableFocusedWordStartAlignment
                 && bSoftListBoundary
-                && State.LastListRestartWordIndex != EventWordIndex)
+                && State.LastResolvedListBoundaryWordIndex != EventWordIndex)
             {
-                const float SearchStartSec = InOutTrack.Events.Num() > 0
-                    ? InOutTrack.Events.Last().RenderEndSeconds - 0.010f
-                    : Region.AudioBufferStartSec;
+                if (State.PendingListBoundaryWordIndex != EventWordIndex)
+                {
+                    State.PendingListBoundaryWordIndex = EventWordIndex;
+                    State.PendingListSearchStartSec = InOutTrack.Events.Num() > 0
+                        ? InOutTrack.Events.Last().RenderEndSeconds - 0.010f
+                        : Region.AudioBufferStartSec;
+                    State.PendingListQuietStartSec = -1.0f;
+                }
                 float RestartSec = -1.0f;
                 const bool bFoundRestart = FindProsodicRestart(
                         Input,
-                        SearchStartSec,
+                        State.PendingListSearchStartSec,
                         State.LastConsumedProsodicRestartSec,
                         ListRestartMaximumValleyRMSNorm,
                         ListRestartMinimumReboundRatio,
                         RestartSec);
-                if (bFoundRestart
+                const bool bRestartBelongsToActiveRegion = bFoundRestart
                     // Once the active decoded region has ended, a restart
                     // beyond its endpoint belongs to a later region.  Let the
                     // ordinary region handoff own that onset instead of
                     // allowing a comma boundary to steal it.
                     && (!Region.bEnded
-                        || RestartSec <= CausalRegionEnd(Region) + 0.001f))
+                        || RestartSec <= CausalRegionEnd(Region) + 0.001f);
+                if (bRestartBelongsToActiveRegion)
                 {
                     State.TimelinePriorAnchorSec = Prior.EventCenters.IsValidIndex(EventIndex)
                         ? Prior.EventCenters[EventIndex]
@@ -885,6 +999,49 @@ static void UpdateSimpleCommittedTrack(
                     State.TimelineAudioAnchorSec = RestartSec;
                     State.LastConsumedProsodicRestartSec = RestartSec;
                     State.LastListRestartWordIndex = EventWordIndex;
+                    State.LastResolvedListBoundaryWordIndex = EventWordIndex;
+                    State.PendingListBoundaryWordIndex = INDEX_NONE;
+                    State.PendingListSearchStartSec = -1.0f;
+                    State.PendingListQuietStartSec = -1.0f;
+                }
+                else if (bFoundRestart)
+                {
+                    // A later decoded region owns this landmark. Resolve the
+                    // comma without rebasing so the ordinary region handoff
+                    // below can anchor the word.
+                    State.LastResolvedListBoundaryWordIndex = EventWordIndex;
+                    State.PendingListBoundaryWordIndex = INDEX_NONE;
+                    State.PendingListSearchStartSec = -1.0f;
+                    State.PendingListQuietStartSec = -1.0f;
+                }
+                else if (bDenseListEntryBoundary)
+                {
+                    float QuietStartSec = -1.0f;
+                    const bool bEndsInQuiet = FindTrailingListQuietRun(
+                        Input,
+                        State.PendingListSearchStartSec,
+                        QuietStartSec);
+                    if (bEndsInQuiet)
+                    {
+                        if (State.PendingListQuietStartSec < 0.0f)
+                            State.PendingListQuietStartSec = QuietStartSec;
+                        if (!Input.bInputStreamClosed
+                            && Input.ObservedAudioBufferEndSec
+                                <= State.PendingListQuietStartSec
+                                    + ListRestartMaximumValleySec + 0.001f)
+                        {
+                            State.SchedulerBlockReason = FName(
+                                TEXT("waiting_for_list_prosodic_restart"));
+                            break;
+                        }
+
+                        // An expired quiet run or a closed stream resolves
+                        // the comma without fabricating a pause.
+                        State.LastResolvedListBoundaryWordIndex = EventWordIndex;
+                        State.PendingListBoundaryWordIndex = INDEX_NONE;
+                        State.PendingListSearchStartSec = -1.0f;
+                        State.PendingListQuietStartSec = -1.0f;
+                    }
                 }
             }
 
