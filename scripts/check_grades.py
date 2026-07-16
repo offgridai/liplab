@@ -1,4 +1,5 @@
 import json
+import math
 import pathlib
 import sys
 
@@ -20,6 +21,7 @@ thresholds = {
     "max_speech_f1_drop": 0.0,
     "max_speech_boundary_start_ms_increase": 0.0,
     "max_speech_boundary_end_ms_increase": 0.0,
+    "max_streaming_region_boundary_pair_f1_drop": 0.0,
     "max_word_f1_drop": 0.0,
     "max_word_start_ms_increase": 0.0,
     "max_word_duration_ms_increase": 0.0,
@@ -81,6 +83,33 @@ def at_least(metric_name, threshold_name):
     )
 
 
+def pause_safety_at_most_per_target(metric_name, threshold_name, discrete=False):
+    """Compare additive pause metrics fairly when the gold corpus grows."""
+    baseline_targets = baseline.get("pause_safety_target_count", 0)
+    current_targets = summary.get("pause_safety_target_count", 0)
+    if metric_name not in baseline or baseline_targets <= 0 or current_targets <= 0:
+        return at_most(metric_name, threshold_name)
+
+    actual = summary[metric_name] / current_targets
+    baseline_rate_limit = (
+        baseline[metric_name] + thresholds[threshold_name]
+    ) / baseline_targets
+    if discrete:
+        count_limit = math.ceil(baseline_rate_limit * current_targets)
+        return (
+            summary[metric_name] <= count_limit,
+            metric_name,
+            summary[metric_name],
+            count_limit,
+        )
+    return (
+        actual <= baseline_rate_limit,
+        f"{metric_name}_per_target",
+        actual,
+        baseline_rate_limit,
+    )
+
+
 failed = False
 checks = [
     (
@@ -117,6 +146,10 @@ checks = [
     at_least("speech_f1", "max_speech_f1_drop"),
     at_most("speech_boundary_start_ms", "max_speech_boundary_start_ms_increase"),
     at_most("speech_boundary_end_ms", "max_speech_boundary_end_ms_increase"),
+    at_least(
+        "streaming_region_boundary_pair_f1",
+        "max_streaming_region_boundary_pair_f1_drop",
+    ),
     at_least("word_f1", "max_word_f1_drop"),
     at_most("word_start_ms", "max_word_start_ms_increase"),
     at_most("word_duration_ms", "max_word_duration_ms_increase"),
@@ -142,11 +175,29 @@ checks = [
         thresholds["max_pause_safety_unresolved_holds"],
     ),
     at_least("pause_safety_pair_rate", "max_pause_safety_pair_rate_drop"),
-    at_most("pause_safety_early_resume_count", "max_pause_safety_early_resume_increase"),
-    at_most("pause_safety_leakage_boundary_count", "max_pause_safety_leakage_boundary_increase"),
-    at_most("pause_safety_total_leakage_ms", "max_pause_safety_total_leakage_ms_increase"),
-    at_most("pause_safety_false_hold_during_gold_speech_ms", "max_pause_safety_false_hold_ms_increase"),
-    at_most("pause_safety_false_pause_resolution_count", "max_pause_safety_false_pause_resolution_increase"),
+    pause_safety_at_most_per_target(
+        "pause_safety_early_resume_count",
+        "max_pause_safety_early_resume_increase",
+        discrete=True,
+    ),
+    pause_safety_at_most_per_target(
+        "pause_safety_leakage_boundary_count",
+        "max_pause_safety_leakage_boundary_increase",
+        discrete=True,
+    ),
+    pause_safety_at_most_per_target(
+        "pause_safety_total_leakage_ms",
+        "max_pause_safety_total_leakage_ms_increase",
+    ),
+    pause_safety_at_most_per_target(
+        "pause_safety_false_hold_during_gold_speech_ms",
+        "max_pause_safety_false_hold_ms_increase",
+    ),
+    pause_safety_at_most_per_target(
+        "pause_safety_false_pause_resolution_count",
+        "max_pause_safety_false_pause_resolution_increase",
+        discrete=True,
+    ),
     at_most(
         "pause_safety_syllable_continuous_false_pause_release_count",
         "max_pause_safety_syllable_continuous_false_pause_release_increase",

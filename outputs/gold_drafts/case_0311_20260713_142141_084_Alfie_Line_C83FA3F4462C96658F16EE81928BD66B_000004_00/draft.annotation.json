@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0311_20260713_142141_084_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000004_00",
-  "created_utc": "2026-07-13T21:37:18.665015+00:00",
+  "created_utc": "2026-07-15T20:24:46.312917+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 125,
+    "speech_merge_gap_ms": 120,
     "source_run_dir": "outputs/offline_gold/latest/case_0311_20260713_142141_084_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000004_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-13T21:37:18.665164+00:00"
+    "reviewed_utc": "2026-07-15T20:24:46.312977+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -52,7 +52,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -67,7 +67,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -82,7 +82,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -91,13 +91,13 @@
     {
       "index": 3,
       "start": 2.6,
-      "end": 3.29,
+      "end": 3.27,
       "word_start_index": 3,
       "word_end_index": 4,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -112,7 +112,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -198,10 +198,10 @@
       "pause_class": "region_break",
       "split_applied": true,
       "split_reason": "hard_punctuation_with_lull",
-      "direct_word_gap_seconds": 0.31000000000000005,
-      "phone_gap_seconds": 0.31000000000000005,
-      "wave_silence_seconds": 0.31000000000000005,
-      "acoustic_gap_seconds": 0.31000000000000005,
+      "direct_word_gap_seconds": 0.33000000000000007,
+      "phone_gap_seconds": 0.33000000000000007,
+      "wave_silence_seconds": 0.33000000000000007,
+      "acoustic_gap_seconds": 0.33000000000000007,
       "speech_region_index_before": 3,
       "speech_region_index_after": 4
     }
@@ -282,7 +282,7 @@
       "word": "mayo",
       "mfa_word": "mayo",
       "start": 2.78,
-      "end": 3.29,
+      "end": 3.27,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -488,7 +488,7 @@
       "word": "mayo",
       "mfa_word": "mayo",
       "start": 2.78,
-      "end": 3.29,
+      "end": 3.27,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -706,7 +706,7 @@
       "phone": "OW0",
       "phone_base": "OW",
       "start": 3.05,
-      "end": 3.29,
+      "end": 3.27,
       "word_index": 4,
       "word": "mayo"
     },
@@ -842,7 +842,7 @@
     {
       "phone": "OW0",
       "start": 3.05,
-      "end": 3.29
+      "end": 3.27
     },
     {
       "phone": "Y",
@@ -1729,8 +1729,8 @@
       "pose": "OW0",
       "phone": "OW0",
       "start": 3.05,
-      "center": 3.17,
-      "end": 3.29,
+      "center": 3.16,
+      "end": 3.27,
       "word": "mayo",
       "mfa_word": "mayo",
       "word_index": 4,
@@ -1836,8 +1836,8 @@
     {
       "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 5,
-      "gap_threshold_seconds": 0.125,
-      "largest_split_gap_seconds": 0.31,
+      "gap_threshold_seconds": 0.12,
+      "largest_split_gap_seconds": 0.33,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }
   ],

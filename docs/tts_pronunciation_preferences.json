@@ -2,21 +2,27 @@
   "criteria": {
     "minimum_observations": 4,
     "minimum_preferred_share": 0.45,
-    "minimum_win_over_default": 2
+    "minimum_win_over_default": 2,
+    "minimum_context_observations": 2,
+    "minimum_context_preferred_share": 0.67
   },
-  "matched_gold_occurrences": 2873,
-  "preference_count": 20,
+  "matched_gold_occurrences": 2979,
+  "preference_count": 22,
+  "context_preference_count": 42,
   "heldout": {
-    "train_occurrences": 2375,
-    "test_occurrences": 498,
-    "learned_preference_count": 19,
-    "default_base_pronunciation_accuracy": 0.8534136546184738,
-    "calibrated_base_pronunciation_accuracy": 0.9136546184738956
+    "train_occurrences": 2463,
+    "test_occurrences": 516,
+    "learned_preference_count": 21,
+    "learned_context_preference_count": 39,
+    "default_exact_pronunciation_accuracy": 0.8275193798449613,
+    "calibrated_exact_pronunciation_accuracy": 0.9050387596899225,
+    "default_base_pronunciation_accuracy": 0.8527131782945736,
+    "calibrated_base_pronunciation_accuracy": 0.9244186046511628
   },
   "preferences": {
     "always": {
-      "observations": 5,
-      "preferred_count": 5,
+      "observations": 6,
+      "preferred_count": 6,
       "preferred_share": 1.0,
       "default_count": 0,
       "variant_index": 1,
@@ -37,10 +43,10 @@
       ]
     },
     "and": {
-      "observations": 134,
-      "preferred_count": 84,
-      "preferred_share": 0.6268656716417911,
-      "default_count": 50,
+      "observations": 142,
+      "preferred_count": 90,
+      "preferred_share": 0.6338028169014085,
+      "default_count": 52,
       "variant_index": 1,
       "variant_count": 2,
       "phones": [
@@ -93,9 +99,9 @@
       ]
     },
     "can": {
-      "observations": 25,
-      "preferred_count": 17,
-      "preferred_share": 0.68,
+      "observations": 28,
+      "preferred_count": 20,
+      "preferred_share": 0.7142857142857143,
       "default_count": 8,
       "variant_index": 1,
       "variant_count": 2,
@@ -131,9 +137,9 @@
       ]
     },
     "for": {
-      "observations": 61,
-      "preferred_count": 31,
-      "preferred_share": 0.5081967213114754,
+      "observations": 68,
+      "preferred_count": 36,
+      "preferred_share": 0.5294117647058824,
       "default_count": 4,
       "variant_index": 1,
       "variant_count": 3,
@@ -217,11 +223,45 @@
         "Z"
       ]
     },
+    "it": {
+      "observations": 25,
+      "preferred_count": 14,
+      "preferred_share": 0.56,
+      "default_count": 11,
+      "variant_index": 1,
+      "variant_count": 2,
+      "phones": [
+        "IH0",
+        "T"
+      ],
+      "default_phones": [
+        "IH1",
+        "T"
+      ]
+    },
+    "its": {
+      "observations": 10,
+      "preferred_count": 9,
+      "preferred_share": 0.9,
+      "default_count": 1,
+      "variant_index": 1,
+      "variant_count": 2,
+      "phones": [
+        "IH0",
+        "T",
+        "S"
+      ],
+      "default_phones": [
+        "IH1",
+        "T",
+        "S"
+      ]
+    },
     "sandwiches": {
-      "observations": 22,
-      "preferred_count": 15,
-      "preferred_share": 0.6818181818181818,
-      "default_count": 4,
+      "observations": 25,
+      "preferred_count": 17,
+      "preferred_share": 0.68,
+      "default_count": 5,
       "variant_index": 2,
       "variant_count": 3,
       "phones": [
@@ -247,9 +287,9 @@
       ]
     },
     "sounds": {
-      "observations": 13,
-      "preferred_count": 8,
-      "preferred_share": 0.6153846153846154,
+      "observations": 14,
+      "preferred_count": 9,
+      "preferred_share": 0.6428571428571429,
       "default_count": 5,
       "variant_index": 1,
       "variant_count": 2,
@@ -307,9 +347,9 @@
       ]
     },
     "what": {
-      "observations": 23,
-      "preferred_count": 20,
-      "preferred_share": 0.8695652173913043,
+      "observations": 25,
+      "preferred_count": 22,
+      "preferred_share": 0.88,
       "default_count": 3,
       "variant_index": 1,
       "variant_count": 2,
@@ -326,8 +366,8 @@
       ]
     },
     "what'll": {
-      "observations": 9,
-      "preferred_count": 9,
+      "observations": 11,
+      "preferred_count": 11,
       "preferred_share": 1.0,
       "default_count": 0,
       "variant_index": 1,
@@ -349,8 +389,8 @@
       ]
     },
     "what's": {
-      "observations": 4,
-      "preferred_count": 4,
+      "observations": 5,
+      "preferred_count": 5,
       "preferred_share": 1.0,
       "default_count": 0,
       "variant_index": 1,
@@ -370,9 +410,9 @@
       ]
     },
     "which": {
-      "observations": 11,
-      "preferred_count": 9,
-      "preferred_share": 0.8181818181818182,
+      "observations": 12,
+      "preferred_count": 10,
+      "preferred_share": 0.8333333333333334,
       "default_count": 2,
       "variant_index": 1,
       "variant_count": 2,
@@ -390,14 +430,14 @@
     },
     "with": {
       "observations": 17,
-      "preferred_count": 14,
-      "preferred_share": 0.8235294117647058,
-      "default_count": 3,
-      "variant_index": 1,
+      "preferred_count": 13,
+      "preferred_share": 0.7647058823529411,
+      "default_count": 0,
+      "variant_index": 2,
       "variant_count": 4,
       "phones": [
         "W",
-        "IH1",
+        "IH0",
         "TH"
       ],
       "default_phones": [
@@ -407,8 +447,8 @@
       ]
     },
     "your": {
-      "observations": 10,
-      "preferred_count": 10,
+      "observations": 11,
+      "preferred_count": 11,
       "preferred_share": 1.0,
       "default_count": 0,
       "variant_index": 1,
@@ -424,5 +464,545 @@
         "R"
       ]
     }
-  }
+  },
+  "context_preferences": [
+    {
+      "word": "ancient",
+      "neighbor": "has",
+      "previous_neighbor": true,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "EY1",
+        "N",
+        "SH",
+        "AH0",
+        "N",
+        "T"
+      ]
+    },
+    {
+      "word": "ancient",
+      "neighbor": "ruins",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "EY1",
+        "N",
+        "SH",
+        "AH0",
+        "N",
+        "T"
+      ]
+    },
+    {
+      "word": "and",
+      "neighbor": "chips",
+      "previous_neighbor": false,
+      "observations": 17,
+      "preferred_count": 15,
+      "preferred_share": 0.8823529411764706,
+      "phones": [
+        "AH0",
+        "N",
+        "D"
+      ]
+    },
+    {
+      "word": "and",
+      "neighbor": "coffee",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "AH0",
+        "N",
+        "D"
+      ]
+    },
+    {
+      "word": "and",
+      "neighbor": "dollars",
+      "previous_neighbor": true,
+      "observations": 13,
+      "preferred_count": 12,
+      "preferred_share": 0.9230769230769231,
+      "phones": [
+        "AH0",
+        "N",
+        "D"
+      ]
+    },
+    {
+      "word": "and",
+      "neighbor": "fresh",
+      "previous_neighbor": true,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "AH0",
+        "N",
+        "D"
+      ]
+    },
+    {
+      "word": "and",
+      "neighbor": "ruins",
+      "previous_neighbor": true,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "AH0",
+        "N",
+        "D"
+      ]
+    },
+    {
+      "word": "and",
+      "neighbor": "sandwiches",
+      "previous_neighbor": true,
+      "observations": 4,
+      "preferred_count": 3,
+      "preferred_share": 0.75,
+      "phones": [
+        "AH0",
+        "N",
+        "D"
+      ]
+    },
+    {
+      "word": "and",
+      "neighbor": "tropical",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "AH0",
+        "N",
+        "D"
+      ]
+    },
+    {
+      "word": "and",
+      "neighbor": "vibrant",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "AH0",
+        "N",
+        "D"
+      ]
+    },
+    {
+      "word": "be",
+      "neighbor": "must",
+      "previous_neighbor": true,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "B",
+        "IY0"
+      ]
+    },
+    {
+      "word": "be",
+      "neighbor": "quite",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "B",
+        "IY0"
+      ]
+    },
+    {
+      "word": "be",
+      "neighbor": "to",
+      "previous_neighbor": true,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "B",
+        "IY0"
+      ]
+    },
+    {
+      "word": "because",
+      "neighbor": "it",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "B",
+        "IH0",
+        "K",
+        "AH1",
+        "Z"
+      ]
+    },
+    {
+      "word": "don't",
+      "neighbor": "have",
+      "previous_neighbor": false,
+      "observations": 3,
+      "preferred_count": 3,
+      "preferred_share": 1.0,
+      "phones": [
+        "D",
+        "OW1",
+        "N"
+      ]
+    },
+    {
+      "word": "don't",
+      "neighbor": "we",
+      "previous_neighbor": true,
+      "observations": 3,
+      "preferred_count": 3,
+      "preferred_share": 1.0,
+      "phones": [
+        "D",
+        "OW1",
+        "N"
+      ]
+    },
+    {
+      "word": "for",
+      "neighbor": "a",
+      "previous_neighbor": false,
+      "observations": 3,
+      "preferred_count": 3,
+      "preferred_share": 1.0,
+      "phones": [
+        "F",
+        "R",
+        "ER0"
+      ]
+    },
+    {
+      "word": "for",
+      "neighbor": "five",
+      "previous_neighbor": false,
+      "observations": 13,
+      "preferred_count": 13,
+      "preferred_share": 1.0,
+      "phones": [
+        "F",
+        "R",
+        "ER0"
+      ]
+    },
+    {
+      "word": "for",
+      "neighbor": "sandwiches",
+      "previous_neighbor": true,
+      "observations": 14,
+      "preferred_count": 13,
+      "preferred_share": 0.9285714285714286,
+      "phones": [
+        "F",
+        "R",
+        "ER0"
+      ]
+    },
+    {
+      "word": "haven't",
+      "neighbor": "heard",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "HH",
+        "AE1",
+        "V",
+        "AH0",
+        "N"
+      ]
+    },
+    {
+      "word": "in",
+      "neighbor": "if",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "IH1",
+        "N"
+      ]
+    },
+    {
+      "word": "in",
+      "neighbor": "some",
+      "previous_neighbor": true,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "IH1",
+        "N"
+      ]
+    },
+    {
+      "word": "it",
+      "neighbor": "because",
+      "previous_neighbor": true,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "IH1",
+        "T"
+      ]
+    },
+    {
+      "word": "it",
+      "neighbor": "but",
+      "previous_neighbor": true,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "IH1",
+        "T"
+      ]
+    },
+    {
+      "word": "it",
+      "neighbor": "was",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "IH1",
+        "T"
+      ]
+    },
+    {
+      "word": "new",
+      "neighbor": "</s>",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "N",
+        "Y",
+        "UW1"
+      ]
+    },
+    {
+      "word": "new",
+      "neighbor": "something",
+      "previous_neighbor": true,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "N",
+        "Y",
+        "UW1"
+      ]
+    },
+    {
+      "word": "the",
+      "neighbor": "has",
+      "previous_neighbor": true,
+      "observations": 10,
+      "preferred_count": 7,
+      "preferred_share": 0.7,
+      "phones": [
+        "DH",
+        "AH1"
+      ]
+    },
+    {
+      "word": "the",
+      "neighbor": "horse",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "DH",
+        "AH1"
+      ]
+    },
+    {
+      "word": "the",
+      "neighbor": "largest",
+      "previous_neighbor": false,
+      "observations": 3,
+      "preferred_count": 3,
+      "preferred_share": 1.0,
+      "phones": [
+        "DH",
+        "AH1"
+      ]
+    },
+    {
+      "word": "the",
+      "neighbor": "most",
+      "previous_neighbor": false,
+      "observations": 3,
+      "preferred_count": 3,
+      "preferred_share": 1.0,
+      "phones": [
+        "DH",
+        "AH1"
+      ]
+    },
+    {
+      "word": "the",
+      "neighbor": "oldest",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "DH",
+        "IY0"
+      ]
+    },
+    {
+      "word": "the",
+      "neighbor": "world",
+      "previous_neighbor": false,
+      "observations": 10,
+      "preferred_count": 8,
+      "preferred_share": 0.8,
+      "phones": [
+        "DH",
+        "AH1"
+      ]
+    },
+    {
+      "word": "to",
+      "neighbor": "be",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "T",
+        "IH0"
+      ]
+    },
+    {
+      "word": "to",
+      "neighbor": "meet",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "T",
+        "IH0"
+      ]
+    },
+    {
+      "word": "to",
+      "neighbor": "nice",
+      "previous_neighbor": true,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "T",
+        "IH0"
+      ]
+    },
+    {
+      "word": "us",
+      "neighbor": "of",
+      "previous_neighbor": true,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "AH1",
+        "S"
+      ]
+    },
+    {
+      "word": "was",
+      "neighbor": "it",
+      "previous_neighbor": true,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "W",
+        "AH0",
+        "Z"
+      ]
+    },
+    {
+      "word": "what",
+      "neighbor": "sure",
+      "previous_neighbor": true,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "W",
+        "AH1",
+        "T"
+      ]
+    },
+    {
+      "word": "what",
+      "neighbor": "you",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "W",
+        "AH1",
+        "T"
+      ]
+    },
+    {
+      "word": "why",
+      "neighbor": "<s>",
+      "previous_neighbor": true,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "HH",
+        "W",
+        "AY1"
+      ]
+    },
+    {
+      "word": "why",
+      "neighbor": "did",
+      "previous_neighbor": false,
+      "observations": 2,
+      "preferred_count": 2,
+      "preferred_share": 1.0,
+      "phones": [
+        "HH",
+        "W",
+        "AY1"
+      ]
+    }
+  ]
 }

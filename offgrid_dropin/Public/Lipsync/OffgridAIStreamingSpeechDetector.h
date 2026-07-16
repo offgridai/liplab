@@ -91,6 +91,20 @@ struct FOffgridAIStreamingAudioFeatureFrame
     float SpectralCentroidNorm = 0.0f;
     float Periodicity = 0.0f;
 
+    // Parallel 30 ms analysis window, evaluated at the existing 10 ms cadence.
+    // These richer features are advisory and do not affect speech occupancy.
+    float RichLowBandNorm = 0.0f;
+    float RichMidBandNorm = 0.0f;
+    float RichHighBandNorm = 0.0f;
+    float RichSpectralCentroidNorm = 0.0f;
+    float RichSpectralRolloffNorm = 0.0f;
+    float RichSpectralFlatness = 0.0f;
+    float RichSpectralFlux = 0.0f;
+    float RichPeriodicity = 0.0f;
+    // Normalized energies at the fixed Goertzel frequencies used by the
+    // lightweight vowel-nucleus classifier.
+    TArray<float> RichBandDistribution;
+
     // Detector-owned occupancy diagnostics captured at 10 ms frame cadence.
     float SpeechEvidence = 0.0f;
     float OpenThreshold = 0.0f;
@@ -116,6 +130,9 @@ struct FOffgridAIStreamingAudioFeatureFrame
     bool bLocalRMSValley = false;
     bool bLocalFluxPeak = false;
 
+    float LearnedSpeechProbability = 0.0f;
+    bool bLearnedSpeech = false;
+
 };
 
 class OFFGRIDAI_API FOffgridAIStreamingSpeechDetector
@@ -125,8 +142,12 @@ public:
     void AppendPCM16(const TArray<uint8>& PCMChunk, int32 BytesToUse, int32 SampleRate, int32 NumChannels, int64 ChunkStartSample = -1);
     void Finalize(float FinalObservedAudioBufferEndSec = -1.0f);
 
+    // Causal occupancy state used by live playback.
     const TArray<FOffgridAIStreamingSpeechRegion>& GetSpeechRegions() const { return SpeechRegions; }
     const TArray<FOffgridAIStreamingSpeechGapCandidate>& GetGapCandidates() const { return GapCandidates; }
+    // Postroll-refined estimates used for boundary analysis and future delayed decisions.
+    const TArray<FOffgridAIStreamingSpeechRegion>& GetRefinedSpeechRegions() const { return LearnedSpeechRegions; }
+    const TArray<FOffgridAIStreamingSpeechGapCandidate>& GetRefinedGapCandidates() const { return LearnedGapCandidates; }
     const TArray<FOffgridAIStreamingSoftLullCandidate>& GetSoftLullCandidates() const { return SoftLullCandidates; }
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& GetFeatureFrames() const { return FeatureFrames; }
     bool HasObservedFirstSpeechStart() const { return bHasObservedFirstSpeechStart; }
@@ -138,11 +159,23 @@ private:
     void SuppressRecentMicroSpeechRegionIfNeeded();
     void RefreshLocalFeatureFlags();
     void CommitPendingSoftLull();
+    void RefinePendingGapFromRecoveredContext(float GapEndSec);
+    void ProcessLearnedRegionFrames(bool bFlush);
+    float ComputeLearnedSpeechProbability(int32 FrameIndex) const;
+    void DecodeLearnedSpeechFrame(int32 FrameIndex);
 
     TArray<FOffgridAIStreamingSpeechRegion> SpeechRegions;
     TArray<FOffgridAIStreamingSpeechGapCandidate> GapCandidates;
     TArray<FOffgridAIStreamingSoftLullCandidate> SoftLullCandidates;
     TArray<FOffgridAIStreamingAudioFeatureFrame> FeatureFrames;
+    TArray<FOffgridAIStreamingSpeechRegion> LearnedSpeechRegions;
+    TArray<FOffgridAIStreamingSpeechGapCandidate> LearnedGapCandidates;
+    int32 LearnedNextFrameIndex = 0;
+    int32 LearnedSpeechCandidateStartFrame = INDEX_NONE;
+    int32 LearnedQuietCandidateStartFrame = INDEX_NONE;
+    bool bLearnedInSpeech = false;
+    bool bLearnedHasObservedFirstSpeechStart = false;
+    float LearnedFirstSpeechAudioBufferStartSec = 0.0f;
     bool bInSpeech = false;
     bool bSpeechCandidateActive = false;
     float SpeechCandidateStartSeconds = 0.0f;
@@ -182,6 +215,8 @@ private:
     FOffgridAIStreamingSoftLullCandidate PendingSoftLull;
 
     TArray<float> PendingMonoSamples;
+    TArray<float> RichAnalysisSamples;
+    TArray<float> PreviousRichBandDistribution;
     int64 PendingSampleBase = 0;
     int32 ActiveSampleRate = 0;
 

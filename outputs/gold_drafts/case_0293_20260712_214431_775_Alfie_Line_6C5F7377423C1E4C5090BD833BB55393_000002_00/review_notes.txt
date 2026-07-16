@@ -1,0 +1,21 @@
+case: case_0293_20260712_214431_775_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000002_00
+transcript: Our sandwiches are five dollars, chips two. Need anything else?
+audio: 5.257s @ 24000 Hz
+speech regions: 3
+pause boundaries: 9
+pause-driven region breaks: 2
+word heads: 10
+dense visemes: 39
+draft flags: 2
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading

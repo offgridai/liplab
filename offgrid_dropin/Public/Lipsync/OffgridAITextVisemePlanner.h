@@ -82,14 +82,28 @@ struct FOffgridAIExpectedPhone
     int32 FirstVisibleEventIndex = INDEX_NONE;
     int32 PronunciationVariantIndex = 0;
     int32 PronunciationVariantCount = 1;
+    bool bUsesFallbackPronunciation = false;
     TCHAR BoundaryAfterWord = TCHAR(0);
     float WeightSeconds = 0.075f;
+};
+
+struct FOffgridAIPlannedSyllable
+{
+    int32 SyllableIndex = INDEX_NONE;
+    int32 WordSyllableIndex = INDEX_NONE;
+    int32 WordIndex = INDEX_NONE;
+    int32 SpeechRegionIndex = 0;
+    int32 SentenceIndex = 0;
+    int32 PhoneBeginIndex = INDEX_NONE;
+    int32 PhoneEndIndex = INDEX_NONE; // Exclusive.
+    int32 NucleusPhoneIndex = INDEX_NONE;
 };
 
 struct FOffgridAITextVisemePlan
 {
     TArray<FOffgridAITextVisemeEvent> Events;
     TArray<FOffgridAIExpectedPhone> ExpectedPhones;
+    TArray<FOffgridAIPlannedSyllable> Syllables;
     float EstimatedDurationSeconds = 0.0f;
     // Word metadata used for text planning and sentence diagnostics.
     TArray<int32> WordSpeechRegionIndices;

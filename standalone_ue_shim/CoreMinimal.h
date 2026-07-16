@@ -9,6 +9,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -108,7 +109,18 @@ public:
     template <typename Pred>
     void Sort(Pred pred)
     {
-        std::sort(data_.begin(), data_.end(), pred);
+        if constexpr (std::is_pointer_v<T>)
+        {
+            // Unreal's TArray::Sort dereferences pointer elements before
+            // invoking the predicate.
+            std::sort(data_.begin(), data_.end(), [&pred](T a, T b) {
+                return pred(*a, *b);
+            });
+        }
+        else
+        {
+            std::sort(data_.begin(), data_.end(), pred);
+        }
     }
 
     reference operator[](int32 index) { return data_[static_cast<size_t>(index)]; }

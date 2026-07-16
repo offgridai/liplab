@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0307_20260713_142103_908_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000000_00",
-  "created_utc": "2026-07-13T21:37:18.592150+00:00",
+  "created_utc": "2026-07-15T20:24:46.278341+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 125,
+    "speech_merge_gap_ms": 120,
     "source_run_dir": "outputs/offline_gold/latest/case_0307_20260713_142103_908_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000000_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-13T21:37:18.592251+00:00"
+    "reviewed_utc": "2026-07-15T20:24:46.278427+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -46,13 +46,13 @@
     {
       "index": 0,
       "start": 0.0,
-      "end": 0.63,
+      "end": 0.64,
       "word_start_index": 0,
       "word_end_index": 1,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -61,13 +61,13 @@
     {
       "index": 1,
       "start": 1.01,
-      "end": 2.38,
+      "end": 2.39,
       "word_start_index": 2,
       "word_end_index": 8,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -102,10 +102,10 @@
       "pause_class": "region_break",
       "split_applied": true,
       "split_reason": "comma_with_lull",
-      "direct_word_gap_seconds": 0.38,
-      "phone_gap_seconds": 0.38,
-      "wave_silence_seconds": 0.38,
-      "acoustic_gap_seconds": 0.38,
+      "direct_word_gap_seconds": 0.37,
+      "phone_gap_seconds": 0.37,
+      "wave_silence_seconds": 0.37,
+      "acoustic_gap_seconds": 0.37,
       "speech_region_index_before": 0,
       "speech_region_index_after": 1
     },
@@ -234,7 +234,7 @@
       "word": "there",
       "mfa_word": "there",
       "start": 0.29,
-      "end": 0.63,
+      "end": 0.64,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -348,7 +348,7 @@
       "word": "today",
       "mfa_word": "today",
       "start": 2.0,
-      "end": 2.38,
+      "end": 2.39,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -530,7 +530,7 @@
       "word": "there",
       "mfa_word": "there",
       "start": 0.29,
-      "end": 0.63,
+      "end": 0.64,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -644,7 +644,7 @@
       "word": "today",
       "mfa_word": "today",
       "start": 2.0,
-      "end": 2.38,
+      "end": 2.39,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -718,7 +718,7 @@
       "phone": "R",
       "phone_base": "R",
       "start": 0.43,
-      "end": 0.63,
+      "end": 0.64,
       "word_index": 1,
       "word": "there"
     },
@@ -889,7 +889,7 @@
       "phone": "EY1",
       "phone_base": "EY",
       "start": 2.17,
-      "end": 2.38,
+      "end": 2.39,
       "word_index": 8,
       "word": "today"
     }
@@ -928,7 +928,7 @@
     {
       "phone": "R",
       "start": 0.43,
-      "end": 0.63
+      "end": 0.64
     },
     {
       "phone": "HH",
@@ -1023,7 +1023,7 @@
     {
       "phone": "EY1",
       "start": 2.17,
-      "end": 2.38
+      "end": 2.39
     }
   ],
   "wave_silence_spans": [
@@ -1526,8 +1526,8 @@
       "pose": "R",
       "phone": "R",
       "start": 0.43,
-      "center": 0.53,
-      "end": 0.63,
+      "center": 0.535,
+      "end": 0.64,
       "word": "there",
       "mfa_word": "there",
       "word_index": 1,
@@ -2039,8 +2039,8 @@
       "pose": "EY1",
       "phone": "EY1",
       "start": 2.17,
-      "center": 2.275,
-      "end": 2.38,
+      "center": 2.2800000000000002,
+      "end": 2.39,
       "word": "today",
       "mfa_word": "today",
       "word_index": 8,
@@ -2065,8 +2065,8 @@
     {
       "kind": "speech_regions_split_on_pause_boundaries",
       "region_count": 2,
-      "gap_threshold_seconds": 0.125,
-      "largest_split_gap_seconds": 0.38,
+      "gap_threshold_seconds": 0.12,
+      "largest_split_gap_seconds": 0.37,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }
   ],

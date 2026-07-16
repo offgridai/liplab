@@ -11,9 +11,15 @@ A scheduling change should be rejected if it causes any of the following on the 
 
 Regression gating is now hierarchical and follows the review priorities for this project:
 
-1. `speech_*`: overlap and sentence-boundary ownership between predicted speech spans and approved gold speech regions.
-2. `word_*`: overlap and timing of predicted word windows against approved gold word windows.
-3. `phoneme_*` and `intra_word_*`: phoneme coverage and timing once speech and words are already owned correctly.
+1. `streaming_region_boundary_pair_*`: a streaming gap is correct only when its
+   close and following resume both match the same MFA gap within 100 ms. The
+   complete-pair F1 is the primary speech-region segmentation metric. Initial
+   open and final close are reported separately because they do not form a gap
+   pair.
+2. `speech_*`: overlap and boundary timing for cases whose streaming and gold
+   region counts already agree.
+3. `word_*`: overlap and timing of predicted word windows against approved gold word windows.
+4. `phoneme_*` and `intra_word_*`: phoneme coverage and timing once speech and words are already owned correctly.
 
 Non-gating detector and cursor metrics are retained only when they explain the active runtime path. They must be labeled diagnostic and must not be mistaken for the regression contract.
 

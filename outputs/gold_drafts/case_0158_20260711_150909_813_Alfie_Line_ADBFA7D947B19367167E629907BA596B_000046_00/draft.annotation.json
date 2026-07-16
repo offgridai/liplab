@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "case_id": "case_0158_20260711_150909_813_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000046_00",
-  "created_utc": "2026-07-12T14:15:36.885015+00:00",
+  "created_utc": "2026-07-15T20:24:45.009016+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
     "chunk_ms": 600000,
     "mfa_num_jobs": 4,
-    "speech_merge_gap_ms": 125,
+    "speech_merge_gap_ms": 120,
     "source_run_dir": "outputs/offline_gold/latest/case_0158_20260711_150909_813_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000046_00",
     "mfa_align_dir": "outputs/mfa_align/latest"
   },
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-12T14:15:36.885138+00:00"
+    "reviewed_utc": "2026-07-15T20:24:45.009121+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -46,13 +46,13 @@
     {
       "index": 0,
       "start": 0.0,
-      "end": 5.32,
+      "end": 1.45,
       "word_start_index": 0,
-      "word_end_index": 7,
+      "word_end_index": 1,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -60,6 +60,36 @@
     },
     {
       "index": 1,
+      "start": 1.57,
+      "end": 3.83,
+      "word_start_index": 2,
+      "word_end_index": 5,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    },
+    {
+      "index": 2,
+      "start": 3.95,
+      "end": 5.33,
+      "word_start_index": 6,
+      "word_end_index": 7,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    },
+    {
+      "index": 3,
       "start": 5.88,
       "end": 7.52,
       "word_start_index": 8,
@@ -67,7 +97,7 @@
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
-      "merge_gap_seconds": 0.125,
+      "merge_gap_seconds": 0.12,
       "approval": {
         "status": "approved_gold",
         "reviewed": true
@@ -99,15 +129,15 @@
       "next_word": "earth",
       "mark": ",",
       "mark_sequence": ",",
-      "pause_class": "soft_pause",
-      "split_applied": false,
-      "split_reason": "none",
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "comma_with_lull",
       "direct_word_gap_seconds": 0.1200000000000001,
       "phone_gap_seconds": 0.1200000000000001,
       "wave_silence_seconds": 0.1200000000000001,
       "acoustic_gap_seconds": 0.1200000000000001,
       "speech_region_index_before": 0,
-      "speech_region_index_after": 0
+      "speech_region_index_after": 1
     },
     {
       "word_index": 2,
@@ -123,8 +153,8 @@
       "phone_gap_seconds": 0.050000000000000266,
       "wave_silence_seconds": 0.050000000000000266,
       "acoustic_gap_seconds": 0.050000000000000266,
-      "speech_region_index_before": 0,
-      "speech_region_index_after": 0
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
     },
     {
       "word_index": 3,
@@ -136,12 +166,12 @@
       "pause_class": "soft_pause",
       "split_applied": false,
       "split_reason": "none",
-      "direct_word_gap_seconds": 0.06000000000000005,
-      "phone_gap_seconds": 0.06000000000000005,
-      "wave_silence_seconds": 0.06000000000000005,
-      "acoustic_gap_seconds": 0.06000000000000005,
-      "speech_region_index_before": 0,
-      "speech_region_index_after": 0
+      "direct_word_gap_seconds": 0.04999999999999982,
+      "phone_gap_seconds": 0.04999999999999982,
+      "wave_silence_seconds": 0.04999999999999982,
+      "acoustic_gap_seconds": 0.04999999999999982,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
     },
     {
       "word_index": 4,
@@ -157,8 +187,8 @@
       "phone_gap_seconds": 0.0,
       "wave_silence_seconds": 0.0,
       "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 0,
-      "speech_region_index_after": 0
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
     },
     {
       "word_index": 5,
@@ -167,15 +197,15 @@
       "next_word": "uranus",
       "mark": ",",
       "mark_sequence": ",",
-      "pause_class": "soft_pause",
-      "split_applied": false,
-      "split_reason": "none",
-      "direct_word_gap_seconds": 0.10999999999999988,
-      "phone_gap_seconds": 0.10999999999999988,
-      "wave_silence_seconds": 0.10999999999999988,
-      "acoustic_gap_seconds": 0.10999999999999988,
-      "speech_region_index_before": 0,
-      "speech_region_index_after": 0
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "comma_with_lull",
+      "direct_word_gap_seconds": 0.1200000000000001,
+      "phone_gap_seconds": 0.1200000000000001,
+      "wave_silence_seconds": 0.1200000000000001,
+      "acoustic_gap_seconds": 0.1200000000000001,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 2
     },
     {
       "word_index": 6,
@@ -191,8 +221,8 @@
       "phone_gap_seconds": 0.08000000000000007,
       "wave_silence_seconds": 0.08000000000000007,
       "acoustic_gap_seconds": 0.08000000000000007,
-      "speech_region_index_before": 0,
-      "speech_region_index_after": 0
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 2
     },
     {
       "word_index": 7,
@@ -204,12 +234,12 @@
       "pause_class": "region_break",
       "split_applied": true,
       "split_reason": "hard_punctuation_with_lull",
-      "direct_word_gap_seconds": 0.5599999999999996,
-      "phone_gap_seconds": 0.5599999999999996,
-      "wave_silence_seconds": 0.5599999999999996,
-      "acoustic_gap_seconds": 0.5599999999999996,
-      "speech_region_index_before": 0,
-      "speech_region_index_after": 1
+      "direct_word_gap_seconds": 0.5499999999999998,
+      "phone_gap_seconds": 0.5499999999999998,
+      "wave_silence_seconds": 0.5499999999999998,
+      "acoustic_gap_seconds": 0.5499999999999998,
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 3
     },
     {
       "word_index": 8,
@@ -225,8 +255,8 @@
       "phone_gap_seconds": 0.0,
       "wave_silence_seconds": 0.0,
       "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 1,
-      "speech_region_index_after": 1
+      "speech_region_index_before": 3,
+      "speech_region_index_after": 3
     },
     {
       "word_index": 9,
@@ -242,8 +272,8 @@
       "phone_gap_seconds": 0.0,
       "wave_silence_seconds": 0.0,
       "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 1,
-      "speech_region_index_after": 1
+      "speech_region_index_before": 3,
+      "speech_region_index_after": 3
     },
     {
       "word_index": 10,
@@ -259,8 +289,8 @@
       "phone_gap_seconds": 0.0,
       "wave_silence_seconds": 0.0,
       "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 1,
-      "speech_region_index_after": 1
+      "speech_region_index_before": 3,
+      "speech_region_index_after": 3
     }
   ],
   "gold_words": [
@@ -270,7 +300,6 @@
       "mfa_word": "mercury",
       "start": 0.0,
       "end": 0.74,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -289,7 +318,6 @@
       "mfa_word": "venus",
       "start": 0.81,
       "end": 1.45,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -308,7 +336,6 @@
       "mfa_word": "earth",
       "start": 1.57,
       "end": 2.03,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -319,15 +346,14 @@
         ","
       ],
       "boundary_mark_after": ",",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 3,
       "word": "mars",
       "mfa_word": "mars",
       "start": 2.08,
-      "end": 2.67,
-      "phrase_index": -1,
+      "end": 2.68,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -338,7 +364,7 @@
         ","
       ],
       "boundary_mark_after": ",",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 4,
@@ -346,7 +372,6 @@
       "mfa_word": "jupiter",
       "start": 2.73,
       "end": 3.23,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -357,7 +382,7 @@
         ","
       ],
       "boundary_mark_after": ",",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 5,
@@ -365,7 +390,6 @@
       "mfa_word": "saturn",
       "start": 3.23,
       "end": 3.83,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -376,15 +400,14 @@
         ","
       ],
       "boundary_mark_after": ",",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 6,
       "word": "uranus",
       "mfa_word": "uranus",
-      "start": 3.94,
+      "start": 3.95,
       "end": 4.61,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -395,15 +418,14 @@
         ","
       ],
       "boundary_mark_after": ",",
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "word_index": 7,
       "word": "neptune",
       "mfa_word": "neptune",
       "start": 4.69,
-      "end": 5.32,
-      "phrase_index": -1,
+      "end": 5.33,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -414,7 +436,7 @@
         "."
       ],
       "boundary_mark_after": ".",
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "word_index": 8,
@@ -422,7 +444,6 @@
       "mfa_word": "basic",
       "start": 5.88,
       "end": 6.3,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -431,7 +452,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "word_index": 9,
@@ -439,7 +460,6 @@
       "mfa_word": "solar",
       "start": 6.3,
       "end": 6.72,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -448,7 +468,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "word_index": 10,
@@ -456,7 +476,6 @@
       "mfa_word": "system",
       "start": 6.72,
       "end": 7.11,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -465,7 +484,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "word_index": 11,
@@ -473,7 +492,6 @@
       "mfa_word": "tour",
       "start": 7.11,
       "end": 7.52,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -484,7 +502,7 @@
         "."
       ],
       "boundary_mark_after": ".",
-      "speech_region_index": 1
+      "speech_region_index": 3
     }
   ],
   "word_heads": [
@@ -494,7 +512,7 @@
       "start": 0.0,
       "end": 0.18,
       "pose": "M",
-      "phrase_index": 0,
+      "speech_region_index": 0,
       "sentence_index": -1,
       "source_phone": "M",
       "source_phone_index": 0,
@@ -510,7 +528,7 @@
       "start": 0.81,
       "end": 0.96,
       "pose": "V",
-      "phrase_index": 0,
+      "speech_region_index": 0,
       "sentence_index": -1,
       "source_phone": "V",
       "source_phone_index": 0,
@@ -526,7 +544,7 @@
       "start": 1.57,
       "end": 1.8,
       "pose": "ER1",
-      "phrase_index": 0,
+      "speech_region_index": 1,
       "sentence_index": -1,
       "source_phone": "ER1",
       "source_phone_index": 0,
@@ -542,7 +560,7 @@
       "start": 2.08,
       "end": 2.21,
       "pose": "M",
-      "phrase_index": 0,
+      "speech_region_index": 1,
       "sentence_index": -1,
       "source_phone": "M",
       "source_phone_index": 0,
@@ -558,7 +576,7 @@
       "start": 2.73,
       "end": 2.81,
       "pose": "JH",
-      "phrase_index": 0,
+      "speech_region_index": 1,
       "sentence_index": -1,
       "source_phone": "JH",
       "source_phone_index": 0,
@@ -574,7 +592,7 @@
       "start": 3.23,
       "end": 3.4,
       "pose": "S",
-      "phrase_index": 0,
+      "speech_region_index": 1,
       "sentence_index": -1,
       "source_phone": "S",
       "source_phone_index": 0,
@@ -587,10 +605,10 @@
     {
       "word_index": 6,
       "word": "uranus",
-      "start": 3.94,
+      "start": 3.95,
       "end": 4.01,
       "pose": "Y",
-      "phrase_index": 0,
+      "speech_region_index": 2,
       "sentence_index": -1,
       "source_phone": "Y",
       "source_phone_index": 0,
@@ -606,7 +624,7 @@
       "start": 4.69,
       "end": 4.78,
       "pose": "N",
-      "phrase_index": 0,
+      "speech_region_index": 2,
       "sentence_index": -1,
       "source_phone": "N",
       "source_phone_index": 0,
@@ -622,7 +640,7 @@
       "start": 5.88,
       "end": 5.93,
       "pose": "B",
-      "phrase_index": 1,
+      "speech_region_index": 3,
       "sentence_index": -1,
       "source_phone": "B",
       "source_phone_index": 0,
@@ -638,7 +656,7 @@
       "start": 6.3,
       "end": 6.44,
       "pose": "S",
-      "phrase_index": 1,
+      "speech_region_index": 3,
       "sentence_index": -1,
       "source_phone": "S",
       "source_phone_index": 0,
@@ -654,7 +672,7 @@
       "start": 6.72,
       "end": 6.84,
       "pose": "S",
-      "phrase_index": 1,
+      "speech_region_index": 3,
       "sentence_index": -1,
       "source_phone": "S",
       "source_phone_index": 0,
@@ -670,7 +688,7 @@
       "start": 7.11,
       "end": 7.18,
       "pose": "T",
-      "phrase_index": 1,
+      "speech_region_index": 3,
       "sentence_index": -1,
       "source_phone": "T",
       "source_phone_index": 0,
@@ -688,7 +706,6 @@
       "mfa_word": "mercury",
       "start": 0.0,
       "end": 0.74,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -707,7 +724,6 @@
       "mfa_word": "venus",
       "start": 0.81,
       "end": 1.45,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -726,7 +742,6 @@
       "mfa_word": "earth",
       "start": 1.57,
       "end": 2.03,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -737,15 +752,14 @@
         ","
       ],
       "boundary_mark_after": ",",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 3,
       "word": "mars",
       "mfa_word": "mars",
       "start": 2.08,
-      "end": 2.67,
-      "phrase_index": -1,
+      "end": 2.68,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -756,7 +770,7 @@
         ","
       ],
       "boundary_mark_after": ",",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 4,
@@ -764,7 +778,6 @@
       "mfa_word": "jupiter",
       "start": 2.73,
       "end": 3.23,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -775,7 +788,7 @@
         ","
       ],
       "boundary_mark_after": ",",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 5,
@@ -783,7 +796,6 @@
       "mfa_word": "saturn",
       "start": 3.23,
       "end": 3.83,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -794,15 +806,14 @@
         ","
       ],
       "boundary_mark_after": ",",
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "word_index": 6,
       "word": "uranus",
       "mfa_word": "uranus",
-      "start": 3.94,
+      "start": 3.95,
       "end": 4.61,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -813,15 +824,14 @@
         ","
       ],
       "boundary_mark_after": ",",
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "word_index": 7,
       "word": "neptune",
       "mfa_word": "neptune",
       "start": 4.69,
-      "end": 5.32,
-      "phrase_index": -1,
+      "end": 5.33,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -832,7 +842,7 @@
         "."
       ],
       "boundary_mark_after": ".",
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "word_index": 8,
@@ -840,7 +850,6 @@
       "mfa_word": "basic",
       "start": 5.88,
       "end": 6.3,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -849,7 +858,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "word_index": 9,
@@ -857,7 +866,6 @@
       "mfa_word": "solar",
       "start": 6.3,
       "end": 6.72,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -866,7 +874,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "word_index": 10,
@@ -874,7 +882,6 @@
       "mfa_word": "system",
       "start": 6.72,
       "end": 7.11,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -883,7 +890,7 @@
       },
       "boundary_marks_after": [],
       "boundary_mark_after": "",
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "word_index": 11,
@@ -891,7 +898,6 @@
       "mfa_word": "tour",
       "start": 7.11,
       "end": 7.52,
-      "phrase_index": -1,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -902,7 +908,7 @@
         "."
       ],
       "boundary_mark_after": ".",
-      "speech_region_index": 1
+      "speech_region_index": 3
     }
   ],
   "mfa_phones": [
@@ -1055,7 +1061,7 @@
       "phone": "Z",
       "phone_base": "Z",
       "start": 2.5,
-      "end": 2.67,
+      "end": 2.68,
       "word_index": 3,
       "word": "mars"
     },
@@ -1162,7 +1168,7 @@
       "index_in_word": 0,
       "phone": "Y",
       "phone_base": "Y",
-      "start": 3.94,
+      "start": 3.95,
       "end": 4.01,
       "word_index": 6,
       "word": "uranus"
@@ -1271,7 +1277,7 @@
       "phone": "N",
       "phone_base": "N",
       "start": 5.2,
-      "end": 5.32,
+      "end": 5.33,
       "word_index": 7,
       "word": "neptune"
     },
@@ -1522,7 +1528,7 @@
     {
       "phone": "Z",
       "start": 2.5,
-      "end": 2.67
+      "end": 2.68
     },
     {
       "phone": "JH",
@@ -1581,7 +1587,7 @@
     },
     {
       "phone": "Y",
-      "start": 3.94,
+      "start": 3.95,
       "end": 4.01
     },
     {
@@ -1642,7 +1648,7 @@
     {
       "phone": "N",
       "start": 5.2,
-      "end": 5.32
+      "end": 5.33
     },
     {
       "phone": "B",
@@ -1788,7 +1794,6 @@
       "pose": "22_MBP",
       "word": "mercury",
       "word_index": 0,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.010163,
       "strength": 1.0,
@@ -1798,10 +1803,9 @@
     },
     {
       "index": 1,
-      "pose": "17_Rr",
+      "pose": "10_Or",
       "word": "mercury",
       "word_index": 0,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.030488,
       "strength": 0.92,
@@ -1814,7 +1818,6 @@
       "pose": "13_KGY_TDS",
       "word": "mercury",
       "word_index": 0,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.050813,
       "strength": 0.34,
@@ -1827,7 +1830,6 @@
       "pose": "02_TDS_KGY-Ee-",
       "word": "mercury",
       "word_index": 0,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.071138,
       "strength": 0.4,
@@ -1837,10 +1839,9 @@
     },
     {
       "index": 4,
-      "pose": "17_Rr",
+      "pose": "10_Or",
       "word": "mercury",
       "word_index": 0,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.091463,
       "strength": 0.5,
@@ -1853,7 +1854,6 @@
       "pose": "03_Ee",
       "word": "mercury",
       "word_index": 0,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.111789,
       "strength": 0.5,
@@ -1866,7 +1866,6 @@
       "pose": "20_FV",
       "word": "venus",
       "word_index": 1,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.129268,
       "strength": 0.96,
@@ -1879,7 +1878,6 @@
       "pose": "03_Ee",
       "word": "venus",
       "word_index": 1,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.143902,
       "strength": 0.92,
@@ -1892,7 +1890,6 @@
       "pose": "23_Tongue_LNTDS",
       "word": "venus",
       "word_index": 1,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.158537,
       "strength": 0.46,
@@ -1902,23 +1899,21 @@
     },
     {
       "index": 9,
-      "pose": "07_Aa",
+      "pose": "18_Uh",
       "word": "venus",
       "word_index": 1,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.173171,
       "strength": 0.5,
       "source_phone": "AH",
       "source_phone_index": 3,
-      "generator": "cmu_open_vowel"
+      "generator": "cmu_central_vowel"
     },
     {
       "index": 10,
       "pose": "21_FV-Ee-",
       "word": "venus",
       "word_index": 1,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.187805,
       "strength": 0.42,
@@ -1928,10 +1923,9 @@
     },
     {
       "index": 11,
-      "pose": "17_Rr",
+      "pose": "10_Or",
       "word": "earth",
       "word_index": 2,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.207317,
       "strength": 0.92,
@@ -1944,7 +1938,6 @@
       "pose": "24_Tongue_Th",
       "word": "earth",
       "word_index": 2,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.231707,
       "strength": 0.62,
@@ -1957,7 +1950,6 @@
       "pose": "22_MBP",
       "word": "mars",
       "word_index": 3,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.25,
       "strength": 1.0,
@@ -1970,7 +1962,6 @@
       "pose": "07_Aa",
       "word": "mars",
       "word_index": 3,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.262195,
       "strength": 0.92,
@@ -1983,7 +1974,6 @@
       "pose": "17_Rr",
       "word": "mars",
       "word_index": 3,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.27439,
       "strength": 0.78,
@@ -1996,7 +1986,6 @@
       "pose": "21_FV-Ee-",
       "word": "mars",
       "word_index": 3,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.286585,
       "strength": 0.42,
@@ -2009,7 +1998,6 @@
       "pose": "14_ChJjSh",
       "word": "jupiter",
       "word_index": 4,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.302846,
       "strength": 0.42,
@@ -2022,7 +2010,6 @@
       "pose": "11_Oo",
       "word": "jupiter",
       "word_index": 4,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.323171,
       "strength": 0.92,
@@ -2035,7 +2022,6 @@
       "pose": "22_MBP",
       "word": "jupiter",
       "word_index": 4,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.343496,
       "strength": 1.0,
@@ -2045,23 +2031,21 @@
     },
     {
       "index": 20,
-      "pose": "07_Aa",
+      "pose": "18_Uh",
       "word": "jupiter",
       "word_index": 4,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.363821,
       "strength": 0.5,
       "source_phone": "AH",
       "source_phone_index": 3,
-      "generator": "cmu_open_vowel"
+      "generator": "cmu_central_vowel"
     },
     {
       "index": 21,
       "pose": "01_TDS-Ah-",
       "word": "jupiter",
       "word_index": 4,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.384146,
       "strength": 0.4,
@@ -2071,10 +2055,9 @@
     },
     {
       "index": 22,
-      "pose": "17_Rr",
+      "pose": "10_Or",
       "word": "jupiter",
       "word_index": 4,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.404472,
       "strength": 0.5,
@@ -2087,7 +2070,6 @@
       "pose": "21_FV-Ee-",
       "word": "saturn",
       "word_index": 5,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.421951,
       "strength": 0.42,
@@ -2097,23 +2079,21 @@
     },
     {
       "index": 24,
-      "pose": "07_Aa",
+      "pose": "08_Ah",
       "word": "saturn",
       "word_index": 5,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.436585,
       "strength": 0.92,
       "source_phone": "AE",
       "source_phone_index": 1,
-      "generator": "cmu_open_vowel"
+      "generator": "cmu_ah_vowel"
     },
     {
       "index": 25,
       "pose": "01_TDS-Ah-",
       "word": "saturn",
       "word_index": 5,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.451219,
       "strength": 0.4,
@@ -2123,10 +2103,9 @@
     },
     {
       "index": 26,
-      "pose": "17_Rr",
+      "pose": "10_Or",
       "word": "saturn",
       "word_index": 5,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.465854,
       "strength": 0.5,
@@ -2139,7 +2118,6 @@
       "pose": "23_Tongue_LNTDS",
       "word": "saturn",
       "word_index": 5,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.480488,
       "strength": 0.46,
@@ -2152,7 +2130,6 @@
       "pose": "02_TDS_KGY-Ee-",
       "word": "uranus",
       "word_index": 6,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.496516,
       "strength": 0.4,
@@ -2165,7 +2142,6 @@
       "pose": "11_Oo",
       "word": "uranus",
       "word_index": 6,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.513937,
       "strength": 0.92,
@@ -2178,7 +2154,6 @@
       "pose": "17_Rr",
       "word": "uranus",
       "word_index": 6,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.531359,
       "strength": 0.78,
@@ -2188,23 +2163,21 @@
     },
     {
       "index": 31,
-      "pose": "07_Aa",
+      "pose": "18_Uh",
       "word": "uranus",
       "word_index": 6,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.548781,
       "strength": 0.5,
       "source_phone": "AH",
       "source_phone_index": 3,
-      "generator": "cmu_open_vowel"
+      "generator": "cmu_central_vowel"
     },
     {
       "index": 32,
       "pose": "23_Tongue_LNTDS",
       "word": "uranus",
       "word_index": 6,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.566202,
       "strength": 0.46,
@@ -2214,23 +2187,21 @@
     },
     {
       "index": 33,
-      "pose": "07_Aa",
+      "pose": "18_Uh",
       "word": "uranus",
       "word_index": 6,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.583624,
       "strength": 0.5,
       "source_phone": "AH",
       "source_phone_index": 5,
-      "generator": "cmu_open_vowel"
+      "generator": "cmu_central_vowel"
     },
     {
       "index": 34,
       "pose": "21_FV-Ee-",
       "word": "uranus",
       "word_index": 6,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.601045,
       "strength": 0.42,
@@ -2243,7 +2214,6 @@
       "pose": "23_Tongue_LNTDS",
       "word": "neptune",
       "word_index": 7,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.617886,
       "strength": 0.46,
@@ -2256,7 +2226,6 @@
       "pose": "06_Eh",
       "word": "neptune",
       "word_index": 7,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.634146,
       "strength": 0.92,
@@ -2269,7 +2238,6 @@
       "pose": "22_MBP",
       "word": "neptune",
       "word_index": 7,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.650406,
       "strength": 1.0,
@@ -2282,7 +2250,6 @@
       "pose": "01_TDS-Ah-",
       "word": "neptune",
       "word_index": 7,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.666667,
       "strength": 0.4,
@@ -2295,7 +2262,6 @@
       "pose": "11_Oo",
       "word": "neptune",
       "word_index": 7,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.682927,
       "strength": 0.5,
@@ -2308,7 +2274,6 @@
       "pose": "23_Tongue_LNTDS",
       "word": "neptune",
       "word_index": 7,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.699187,
       "strength": 0.46,
@@ -2321,7 +2286,6 @@
       "pose": "22_MBP",
       "word": "basic",
       "word_index": 8,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.714634,
       "strength": 1.0,
@@ -2334,7 +2298,6 @@
       "pose": "06_Eh",
       "word": "basic",
       "word_index": 8,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.729268,
       "strength": 0.92,
@@ -2347,7 +2310,6 @@
       "pose": "21_FV-Ee-",
       "word": "basic",
       "word_index": 8,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.743902,
       "strength": 0.42,
@@ -2357,23 +2319,21 @@
     },
     {
       "index": 44,
-      "pose": "03_Ee",
+      "pose": "04_Ih",
       "word": "basic",
       "word_index": 8,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.758537,
       "strength": 0.5,
       "source_phone": "IH",
       "source_phone_index": 3,
-      "generator": "cmu_front_vowel"
+      "generator": "cmu_ih_vowel"
     },
     {
       "index": 45,
       "pose": "13_KGY_TDS",
       "word": "basic",
       "word_index": 8,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.773171,
       "strength": 0.34,
@@ -2386,7 +2346,6 @@
       "pose": "21_FV-Ee-",
       "word": "solar",
       "word_index": 9,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.789634,
       "strength": 0.42,
@@ -2399,7 +2358,6 @@
       "pose": "09_Oh",
       "word": "solar",
       "word_index": 9,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.807927,
       "strength": 0.92,
@@ -2412,7 +2370,6 @@
       "pose": "23_Tongue_LNTDS",
       "word": "solar",
       "word_index": 9,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.826219,
       "strength": 0.46,
@@ -2422,10 +2379,9 @@
     },
     {
       "index": 49,
-      "pose": "17_Rr",
+      "pose": "10_Or",
       "word": "solar",
       "word_index": 9,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.844512,
       "strength": 0.5,
@@ -2438,7 +2394,6 @@
       "pose": "21_FV-Ee-",
       "word": "system",
       "word_index": 10,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.861789,
       "strength": 0.42,
@@ -2448,23 +2403,21 @@
     },
     {
       "index": 51,
-      "pose": "03_Ee",
+      "pose": "04_Ih",
       "word": "system",
       "word_index": 10,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.878049,
       "strength": 0.92,
       "source_phone": "IH",
       "source_phone_index": 1,
-      "generator": "cmu_front_vowel"
+      "generator": "cmu_ih_vowel"
     },
     {
       "index": 52,
       "pose": "21_FV-Ee-",
       "word": "system",
       "word_index": 10,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.894309,
       "strength": 0.42,
@@ -2477,7 +2430,6 @@
       "pose": "01_TDS-Ah-",
       "word": "system",
       "word_index": 10,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.910569,
       "strength": 0.4,
@@ -2487,23 +2439,21 @@
     },
     {
       "index": 54,
-      "pose": "07_Aa",
+      "pose": "18_Uh",
       "word": "system",
       "word_index": 10,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.926829,
       "strength": 0.5,
       "source_phone": "AH",
       "source_phone_index": 4,
-      "generator": "cmu_open_vowel"
+      "generator": "cmu_central_vowel"
     },
     {
       "index": 55,
       "pose": "22_MBP",
       "word": "system",
       "word_index": 10,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.943089,
       "strength": 1.0,
@@ -2516,7 +2466,6 @@
       "pose": "01_TDS-Ah-",
       "word": "tour",
       "word_index": 11,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.95935,
       "strength": 0.4,
@@ -2526,23 +2475,21 @@
     },
     {
       "index": 57,
-      "pose": "11_Oo",
+      "pose": "18_Uh",
       "word": "tour",
       "word_index": 11,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.97561,
       "strength": 0.92,
       "source_phone": "UH",
       "source_phone_index": 1,
-      "generator": "cmu_oo_vowel"
+      "generator": "cmu_uh_vowel"
     },
     {
       "index": 58,
       "pose": "17_Rr",
       "word": "tour",
       "word_index": 11,
-      "phrase_index": -1,
       "sentence_index": -1,
       "text_center_norm": 0.99187,
       "strength": 0.78,
@@ -2563,7 +2510,6 @@
       "word": "mercury",
       "mfa_word": "mercury",
       "word_index": 0,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2591,7 +2537,6 @@
       "word": "mercury",
       "mfa_word": "mercury",
       "word_index": 0,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2619,7 +2564,6 @@
       "word": "mercury",
       "mfa_word": "mercury",
       "word_index": 0,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2647,7 +2591,6 @@
       "word": "mercury",
       "mfa_word": "mercury",
       "word_index": 0,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2675,7 +2618,6 @@
       "word": "mercury",
       "mfa_word": "mercury",
       "word_index": 0,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2703,7 +2645,6 @@
       "word": "mercury",
       "mfa_word": "mercury",
       "word_index": 0,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2731,7 +2672,6 @@
       "word": "venus",
       "mfa_word": "venus",
       "word_index": 1,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2759,7 +2699,6 @@
       "word": "venus",
       "mfa_word": "venus",
       "word_index": 1,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2787,7 +2726,6 @@
       "word": "venus",
       "mfa_word": "venus",
       "word_index": 1,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2815,7 +2753,6 @@
       "word": "venus",
       "mfa_word": "venus",
       "word_index": 1,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2843,7 +2780,6 @@
       "word": "venus",
       "mfa_word": "venus",
       "word_index": 1,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2871,7 +2807,6 @@
       "word": "earth",
       "mfa_word": "earth",
       "word_index": 2,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2886,7 +2821,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 12,
@@ -2899,7 +2834,6 @@
       "word": "earth",
       "mfa_word": "earth",
       "word_index": 2,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2914,7 +2848,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 13,
@@ -2927,7 +2861,6 @@
       "word": "mars",
       "mfa_word": "mars",
       "word_index": 3,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2942,7 +2875,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 14,
@@ -2955,7 +2888,6 @@
       "word": "mars",
       "mfa_word": "mars",
       "word_index": 3,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2970,7 +2902,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 15,
@@ -2983,7 +2915,6 @@
       "word": "mars",
       "mfa_word": "mars",
       "word_index": 3,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2998,7 +2929,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 16,
@@ -3006,12 +2937,11 @@
       "pose": "Z",
       "phone": "Z",
       "start": 2.5,
-      "center": 2.585,
-      "end": 2.67,
+      "center": 2.59,
+      "end": 2.68,
       "word": "mars",
       "mfa_word": "mars",
       "word_index": 3,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3026,7 +2956,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 17,
@@ -3039,7 +2969,6 @@
       "word": "jupiter",
       "mfa_word": "jupiter",
       "word_index": 4,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3054,7 +2983,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 18,
@@ -3067,7 +2996,6 @@
       "word": "jupiter",
       "mfa_word": "jupiter",
       "word_index": 4,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3082,7 +3010,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 19,
@@ -3095,7 +3023,6 @@
       "word": "jupiter",
       "mfa_word": "jupiter",
       "word_index": 4,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3110,7 +3037,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 20,
@@ -3123,7 +3050,6 @@
       "word": "jupiter",
       "mfa_word": "jupiter",
       "word_index": 4,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3138,7 +3064,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 21,
@@ -3151,7 +3077,6 @@
       "word": "jupiter",
       "mfa_word": "jupiter",
       "word_index": 4,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3166,7 +3091,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 22,
@@ -3179,7 +3104,6 @@
       "word": "jupiter",
       "mfa_word": "jupiter",
       "word_index": 4,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3194,7 +3118,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 23,
@@ -3207,7 +3131,6 @@
       "word": "saturn",
       "mfa_word": "saturn",
       "word_index": 5,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3222,7 +3145,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 24,
@@ -3235,7 +3158,6 @@
       "word": "saturn",
       "mfa_word": "saturn",
       "word_index": 5,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3250,7 +3172,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 25,
@@ -3263,7 +3185,6 @@
       "word": "saturn",
       "mfa_word": "saturn",
       "word_index": 5,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3278,7 +3199,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 26,
@@ -3291,7 +3212,6 @@
       "word": "saturn",
       "mfa_word": "saturn",
       "word_index": 5,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3306,7 +3226,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 27,
@@ -3319,7 +3239,6 @@
       "word": "saturn",
       "mfa_word": "saturn",
       "word_index": 5,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3334,20 +3253,19 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 1
     },
     {
       "index": 28,
       "id": "Y",
       "pose": "Y",
       "phone": "Y",
-      "start": 3.94,
-      "center": 3.9749999999999996,
+      "start": 3.95,
+      "center": 3.98,
       "end": 4.01,
       "word": "uranus",
       "mfa_word": "uranus",
       "word_index": 6,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3362,7 +3280,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "index": 29,
@@ -3375,7 +3293,6 @@
       "word": "uranus",
       "mfa_word": "uranus",
       "word_index": 6,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3390,7 +3307,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "index": 30,
@@ -3403,7 +3320,6 @@
       "word": "uranus",
       "mfa_word": "uranus",
       "word_index": 6,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3418,7 +3334,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "index": 31,
@@ -3431,7 +3347,6 @@
       "word": "uranus",
       "mfa_word": "uranus",
       "word_index": 6,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3446,7 +3361,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "index": 32,
@@ -3459,7 +3374,6 @@
       "word": "uranus",
       "mfa_word": "uranus",
       "word_index": 6,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3474,7 +3388,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "index": 33,
@@ -3487,7 +3401,6 @@
       "word": "uranus",
       "mfa_word": "uranus",
       "word_index": 6,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3502,7 +3415,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "index": 34,
@@ -3515,7 +3428,6 @@
       "word": "uranus",
       "mfa_word": "uranus",
       "word_index": 6,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3530,7 +3442,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "index": 35,
@@ -3543,7 +3455,6 @@
       "word": "neptune",
       "mfa_word": "neptune",
       "word_index": 7,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3558,7 +3469,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "index": 36,
@@ -3571,7 +3482,6 @@
       "word": "neptune",
       "mfa_word": "neptune",
       "word_index": 7,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3586,7 +3496,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "index": 37,
@@ -3599,7 +3509,6 @@
       "word": "neptune",
       "mfa_word": "neptune",
       "word_index": 7,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3614,7 +3523,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "index": 38,
@@ -3627,7 +3536,6 @@
       "word": "neptune",
       "mfa_word": "neptune",
       "word_index": 7,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3642,7 +3550,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "index": 39,
@@ -3655,7 +3563,6 @@
       "word": "neptune",
       "mfa_word": "neptune",
       "word_index": 7,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3670,7 +3577,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "index": 40,
@@ -3678,12 +3585,11 @@
       "pose": "N",
       "phone": "N",
       "start": 5.2,
-      "center": 5.26,
-      "end": 5.32,
+      "center": 5.265000000000001,
+      "end": 5.33,
       "word": "neptune",
       "mfa_word": "neptune",
       "word_index": 7,
-      "phrase_index": 0,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3698,7 +3604,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 0
+      "speech_region_index": 2
     },
     {
       "index": 41,
@@ -3711,7 +3617,6 @@
       "word": "basic",
       "mfa_word": "basic",
       "word_index": 8,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3726,7 +3631,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 42,
@@ -3739,7 +3644,6 @@
       "word": "basic",
       "mfa_word": "basic",
       "word_index": 8,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3754,7 +3658,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 43,
@@ -3767,7 +3671,6 @@
       "word": "basic",
       "mfa_word": "basic",
       "word_index": 8,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3782,7 +3685,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 44,
@@ -3795,7 +3698,6 @@
       "word": "basic",
       "mfa_word": "basic",
       "word_index": 8,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3810,7 +3712,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 45,
@@ -3823,7 +3725,6 @@
       "word": "basic",
       "mfa_word": "basic",
       "word_index": 8,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3838,7 +3739,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 46,
@@ -3851,7 +3752,6 @@
       "word": "solar",
       "mfa_word": "solar",
       "word_index": 9,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3866,7 +3766,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 47,
@@ -3879,7 +3779,6 @@
       "word": "solar",
       "mfa_word": "solar",
       "word_index": 9,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3894,7 +3793,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 48,
@@ -3907,7 +3806,6 @@
       "word": "solar",
       "mfa_word": "solar",
       "word_index": 9,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3922,7 +3820,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 49,
@@ -3935,7 +3833,6 @@
       "word": "solar",
       "mfa_word": "solar",
       "word_index": 9,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3950,7 +3847,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 50,
@@ -3963,7 +3860,6 @@
       "word": "system",
       "mfa_word": "system",
       "word_index": 10,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -3978,7 +3874,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 51,
@@ -3991,7 +3887,6 @@
       "word": "system",
       "mfa_word": "system",
       "word_index": 10,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4006,7 +3901,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 52,
@@ -4019,7 +3914,6 @@
       "word": "system",
       "mfa_word": "system",
       "word_index": 10,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4034,7 +3928,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 53,
@@ -4047,7 +3941,6 @@
       "word": "system",
       "mfa_word": "system",
       "word_index": 10,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4062,7 +3955,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 54,
@@ -4075,7 +3968,6 @@
       "word": "system",
       "mfa_word": "system",
       "word_index": 10,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4090,7 +3982,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 55,
@@ -4103,7 +3995,6 @@
       "word": "system",
       "mfa_word": "system",
       "word_index": 10,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4118,7 +4009,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 56,
@@ -4131,7 +4022,6 @@
       "word": "tour",
       "mfa_word": "tour",
       "word_index": 11,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4146,7 +4036,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 57,
@@ -4159,7 +4049,6 @@
       "word": "tour",
       "mfa_word": "tour",
       "word_index": 11,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4174,7 +4063,7 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     },
     {
       "index": 58,
@@ -4187,7 +4076,6 @@
       "word": "tour",
       "mfa_word": "tour",
       "word_index": 11,
-      "phrase_index": 1,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -4202,24 +4090,24 @@
       },
       "notes": [],
       "flags": [],
-      "speech_region_index": 1
+      "speech_region_index": 3
     }
   ],
   "flags": [
     {
       "kind": "speech_regions_split_on_pause_boundaries",
-      "region_count": 2,
-      "gap_threshold_seconds": 0.125,
-      "largest_split_gap_seconds": 0.56,
+      "region_count": 4,
+      "gap_threshold_seconds": 0.12,
+      "largest_split_gap_seconds": 0.55,
       "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
     }
   ],
   "notes": [],
   "summary": {
     "word_count": 12,
-    "speech_region_count": 2,
+    "speech_region_count": 4,
     "pause_boundary_count": 11,
-    "pause_region_break_count": 1,
+    "pause_region_break_count": 3,
     "word_head_count": 12,
     "viseme_count": 59,
     "flag_count": 1,
