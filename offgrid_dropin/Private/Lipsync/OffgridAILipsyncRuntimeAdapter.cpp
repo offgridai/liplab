@@ -9,6 +9,8 @@ static constexpr float InterWordSeconds = 0.020f;
 static constexpr float MaxCommitLeadSec = 0.160f;
 static constexpr float MinLiveLeadSec = 0.030f;
 static constexpr float MinEventSpacingSec = 0.035f;
+static constexpr float MinRegionTailCompactionSpacingSec = 0.001f;
+static constexpr float MaxRegionTailCompactionOverrunSec = 0.020f;
 static constexpr float NominalPriorPlaybackRate = 0.90f;
 static constexpr float FocusedPriorPlaybackRate = 1.20f;
 static constexpr float MinAnchorMatchScore = 0.75f;
@@ -835,6 +837,8 @@ static void UpdateSimpleCommittedTrack(
                 : 0.0f;
             const bool bDeclaredPauseBoundary = bFirstEventInWord
                 && DeclaredPauseSec > 0.001f;
+            const bool bPauseBoundaryNeedsResolution = bDeclaredPauseBoundary
+                && State.LastResolvedPauseBoundaryWordIndex != PreviousWordIndex;
             const bool bSoftListBoundary = bFirstEventInWord
                 && Plan.WordBoundaryPauseClassAfter.IsValidIndex(PreviousWordIndex)
                 && Plan.WordBoundaryPauseClassAfter[PreviousWordIndex]
@@ -868,38 +872,65 @@ static void UpdateSimpleCommittedTrack(
             // the boundary becomes a new speech region or remains continuous.
             if (Input.bEnableFocusedWordStartAlignment
                 && (EventTextRegionIndex > State.ActiveTextSpeechRegionIndex
-                    || bDeclaredPauseBoundary))
+                    || bPauseBoundaryNeedsResolution))
             {
                 const float BoundaryCandidate =
                     PriorToAudio(State, Prior.EventCenters[EventIndex]);
                 const float ContinuityProbeSec = BoundaryCandidate
                     + FMath::Max(DeclaredPauseSec, TextRegionMergeEvidenceSec);
-                const FOffgridAIStreamingAudioFeatureFrame* ContinuityFrame = nullptr;
+                bool bObservedQuietAfterProbe = false;
+                bool bObservedSpeechAfterProbe = false;
+                float ObservedResumeSec = -1.0f;
                 if (Input.AudioFeatureFrames)
                 {
                     for (const auto& Frame : *Input.AudioFeatureFrames)
                     {
                         if (Frame.AudioBufferCenterSec + 0.001f < ContinuityProbeSec)
                             continue;
-                        ContinuityFrame = &Frame;
+                        if (Frame.AudioBufferCenterSec > Input.ObservedAudioBufferEndSec + 0.001f)
+                            break;
+                        if (!Frame.bLearnedSpeech)
+                        {
+                            bObservedQuietAfterProbe = true;
+                            continue;
+                        }
+                        const bool bStrongVirtualResume =
+                            (Frame.Flux >= 0.060f && Frame.RMSNorm >= 0.020f)
+                            || (Frame.RMSNorm >= 0.150f
+                                && Frame.SpeechEvidence >= 0.200f);
+                        if (bObservedQuietAfterProbe && !bStrongVirtualResume)
+                            continue;
+                        bObservedSpeechAfterProbe = true;
+                        if (bObservedQuietAfterProbe)
+                            ObservedResumeSec = Frame.AudioBufferCenterSec;
                         break;
                     }
                 }
                 if (!Region.bEnded
-                    && ContinuityFrame
-                    && ContinuityFrame->bLearnedSpeech)
+                    && bObservedSpeechAfterProbe)
                 {
                     // Punctuation may propose a text region without an
-                    // acoustic pause. Once continuous speech is observed well
-                    // beyond that boundary, keep the single audio region and
-                    // advance transcript ownership without inventing a pause.
+                    // independently decoded region. Continuous evidence keeps
+                    // the existing timing map; quiet followed by learned speech
+                    // is a virtual resume and becomes the local origin for only
+                    // the uncommitted suffix.
                     State.ActiveTextSpeechRegionIndex = EventTextRegionIndex;
+                    State.LastResolvedPauseBoundaryWordIndex = PreviousWordIndex;
+                    if (ObservedResumeSec >= 0.0f)
+                    {
+                        State.ActiveTextRegionAudioStartSec = ObservedResumeSec;
+                        State.TimelinePriorAnchorSec = Prior.EventCenters.IsValidIndex(EventIndex)
+                            ? Prior.EventCenters[EventIndex]
+                            : Prior.TotalSec;
+                        State.TimelineAudioAnchorSec = ObservedResumeSec;
+                    }
                 }
                 else
                 {
                     const int32 NextRegionIndex = State.ActiveSpeechRegionIndex + 1;
                     if (Regions.IsValidIndex(NextRegionIndex))
                     {
+                        State.LastResolvedPauseBoundaryWordIndex = PreviousWordIndex;
                         AnchorSimpleCursorToRegion(
                             Input, Plan, Prior, EventIndex, NextRegionIndex, Regions[NextRegionIndex], State);
                         continue;
@@ -935,7 +966,35 @@ static void UpdateSimpleCommittedTrack(
                 Candidate = FMath::Max(Candidate, LastCenter + MinEventSpacingSec);
 
             const float RegionEnd = CausalRegionEnd(Region);
-            if (Region.bEnded && Candidate > RegionEnd - 0.010f)
+            bool bUsedRegionTailCompaction = false;
+            if (Input.bEnableFocusedWordStartAlignment
+                && Region.bEnded
+                && Candidate > RegionEnd - 0.010f)
+            {
+                int32 RemainingTextRegionEventCount = 0;
+                for (int32 TailIndex = EventIndex; TailIndex < Plan.Events.Num(); ++TailIndex)
+                {
+                    if (Plan.Events[TailIndex].SpeechRegionIndex != EventTextRegionIndex)
+                        break;
+                    ++RemainingTextRegionEventCount;
+                }
+                const float CompactedCandidate = RegionEnd + MaxRegionTailCompactionOverrunSec
+                    - MinRegionTailCompactionSpacingSec
+                        * static_cast<float>(FMath::Max(RemainingTextRegionEventCount - 1, 0));
+                const float EarliestCandidate = LastCenter >= 0.0f
+                    ? LastCenter + MinRegionTailCompactionSpacingSec
+                    : Region.AudioBufferStartSec;
+                if (RemainingTextRegionEventCount > 0
+                    && CompactedCandidate >= EarliestCandidate - 0.001f
+                    && CompactedCandidate >= Region.AudioBufferStartSec - 0.001f)
+                {
+                    Candidate = FMath::Max(CompactedCandidate, EarliestCandidate);
+                    bUsedRegionTailCompaction = true;
+                }
+            }
+            if (Region.bEnded
+                && Candidate > RegionEnd - 0.010f
+                && !bUsedRegionTailCompaction)
             {
                 const int32 NextRegionIndex = State.ActiveSpeechRegionIndex + 1;
                 if (!Regions.IsValidIndex(NextRegionIndex))
@@ -951,7 +1010,7 @@ static void UpdateSimpleCommittedTrack(
             }
 
             const float KnownSpeechFrontier = Region.bEnded
-                ? RegionEnd
+                ? (bUsedRegionTailCompaction ? Candidate : RegionEnd)
                 : FMath::Min(
                     FMath::Max(
                         Region.AudioBufferLastSpeechSec + 0.030f,
@@ -982,6 +1041,8 @@ static void UpdateSimpleCommittedTrack(
             if (bSoftListBoundary
                 && State.LastListRestartWordIndex == EventWordIndex)
                 Reason = FName(TEXT("list_prosodic_restart_commit"));
+            else if (bUsedRegionTailCompaction)
+                Reason = FName(TEXT("region_tail_compaction_commit"));
             else if (EventIndex == 0)
                 Reason = FName(TEXT("initial_region_anchor_commit"));
             else if (FMath::Abs(Candidate - Region.AudioBufferStartSec) < 0.050f)

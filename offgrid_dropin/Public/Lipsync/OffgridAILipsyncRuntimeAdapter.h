@@ -172,6 +172,7 @@ struct FOffgridAIBoundaryPlaybackState
     TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow> PendingSyllableAssignments;
     float LastConsumedListRestartSec = -1.0f;
     int32 LastListRestartWordIndex = INDEX_NONE;
+    int32 LastResolvedPauseBoundaryWordIndex = INDEX_NONE;
 
     int32 SchedulerNextEventIndex = INDEX_NONE;
     int32 SchedulerNextPhoneIndex = INDEX_NONE;
