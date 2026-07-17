@@ -95,6 +95,7 @@ constexpr float DetectorSoftBridgeHighBandMin = 0.24f;
 constexpr float DetectorSoftBridgeCentroidMin = 0.28f;
 constexpr float DetectorSoftBridgeRMSNormMin = 0.018f;
 constexpr float DetectorSoftBridgeEvidenceMin = 0.100f;
+constexpr int32 DetectorListMinimumPauseFrames = 10;
 
 static float DetectorSpeechEvidence(float RMSNorm, float Flux, float Periodicity, float MidBandNorm, float HighBandNorm, float SpectralCentroidNorm)
 {
@@ -285,6 +286,7 @@ void FOffgridAIStreamingSpeechDetector::Reset()
     ActiveSampleRate = 0;
     SpeechPeakRMS = 0.0001f;
     NoiseFloorRMS = 0.0001f;
+    bListGapSensitive = false;
 }
 
 void FOffgridAIStreamingSpeechDetector::CommitPendingSoftLull()
@@ -1406,6 +1408,7 @@ void FOffgridAIStreamingSpeechDetector::ProcessAnalysisFrame(float FrameStartSec
         CommitPendingSoftLull();
     }
 
+    Frame.bListGapSensitive = bListGapSensitive;
     FeatureFrames.Add(Frame);
 
     ObservedAudioBufferEndSec = FMath::Max(ObservedAudioBufferEndSec, FrameEndSeconds);
@@ -1554,7 +1557,12 @@ void FOffgridAIStreamingSpeechDetector::DecodeLearnedSpeechFrame(int32 FrameInde
     {
         LearnedQuietCandidateStartFrame = FrameIndex;
     }
-    if (FrameIndex - LearnedQuietCandidateStartFrame + 1 < StreamingRegionMinimumPauseFrames)
+    const bool bListSensitiveQuietRun =
+        FeatureFrames[LearnedQuietCandidateStartFrame].bListGapSensitive;
+    const int32 MinimumPauseFrames = bListSensitiveQuietRun
+        ? DetectorListMinimumPauseFrames
+        : StreamingRegionMinimumPauseFrames;
+    if (FrameIndex - LearnedQuietCandidateStartFrame + 1 < MinimumPauseFrames)
     {
         return;
     }

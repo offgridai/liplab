@@ -21,6 +21,7 @@ struct FOffgridAILipsyncRuntimeUpdateInput
     float CurrentPlaybackSec = 0.0f;
     float PrerollSec = 0.350f;
     float ObservedAudioBufferEndSec = 0.0f;
+    bool bEnableFocusedWordStartAlignment = false;
     bool bInputStreamClosed = false;
     bool bPlaybackFinalized = false;
 
@@ -144,6 +145,7 @@ struct FOffgridAILipsyncRuntimeBeginInput
     FName NPCID = NAME_None;
     FName LineID = NAME_None;
     float PrerollSec = 0.350f;
+    bool bEnableFocusedWordStartAlignment = false;
 };
 
 // Complete mutable state for the single monotonic scheduler.
@@ -164,7 +166,17 @@ struct FOffgridAIBoundaryPlaybackState
     float LastMatchedSyllableConfidence = 0.0f;
     int32 BoundedSyllableRebaseCount = 0;
     int32 LastAnalyzedFeatureFrameCount = 0;
+    int32 PendingMatchedSyllableIndex = INDEX_NONE;
+    float PendingMatchedSyllableAudioSec = -1.0f;
+    int32 PendingMatchedStableUpdates = 0;
     TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow> PendingSyllableAssignments;
+    float LastConsumedProsodicRestartSec = -1.0f;
+    int32 LastListRestartWordIndex = INDEX_NONE;
+    int32 LastResolvedListBoundaryWordIndex = INDEX_NONE;
+    int32 PendingListBoundaryWordIndex = INDEX_NONE;
+    float PendingListSearchStartSec = -1.0f;
+    float PendingListQuietStartSec = -1.0f;
+    int32 LastResolvedPauseBoundaryWordIndex = INDEX_NONE;
 
     int32 SchedulerNextEventIndex = INDEX_NONE;
     int32 SchedulerNextPhoneIndex = INDEX_NONE;
@@ -209,6 +221,7 @@ private:
     FName LineID = NAME_None;
     FString DialogueText;
     float PrerollSec = 0.350f;
+    bool bEnableFocusedWordStartAlignment = false;
     float PlaybackSec = 0.0f;
     bool bBegun = false;
     bool bPlaybackStarted = false;

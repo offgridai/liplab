@@ -8,75 +8,6 @@ static float SmoothStep01(float X)
     return T * T * (3.0f - 2.0f * T);
 }
 
-static bool IsPose(FName PoseID, const TCHAR* Literal)
-{
-    return PoseID == FName(Literal);
-}
-
-static bool IsVowelPose(FName PoseID)
-{
-    return IsPose(PoseID, TEXT("07_Aa")) || IsPose(PoseID, TEXT("08_Ah")) || IsPose(PoseID, TEXT("06_Eh"))
-        || IsPose(PoseID, TEXT("03_Ee")) || IsPose(PoseID, TEXT("04_Ih")) || IsPose(PoseID, TEXT("05_Ay"))
-        || IsPose(PoseID, TEXT("09_Oh")) || IsPose(PoseID, TEXT("10_Or")) || IsPose(PoseID, TEXT("11_Oo"))
-        || IsPose(PoseID, TEXT("12_Ww-Oo-")) || IsPose(PoseID, TEXT("18_Uh"));
-}
-
-
-static void EnvelopeForPose(FName PoseID, float& OutAttack, float& OutRelease, float& OutHoldHalf)
-{
-    OutAttack = 0.060f;
-    OutRelease = 0.075f;
-    OutHoldHalf = 0.012f;
-    if (IsPose(PoseID, TEXT("22_MBP")))
-    {
-        OutAttack = 0.022f;
-        OutRelease = 0.085f;
-        OutHoldHalf = 0.040f;
-        return;
-    }
-    if (IsPose(PoseID, TEXT("20_FV")))
-    {
-        OutAttack = 0.028f;
-        OutRelease = 0.090f;
-        OutHoldHalf = 0.034f;
-        return;
-    }
-    if (IsPose(PoseID, TEXT("14_ChJjSh")))
-    {
-        OutAttack = 0.034f;
-        OutRelease = 0.060f;
-        OutHoldHalf = 0.022f;
-        return;
-    }
-    if (IsPose(PoseID, TEXT("12_Ww-Oo-")) || IsPose(PoseID, TEXT("11_Oo")) || IsPose(PoseID, TEXT("10_Or")))
-    {
-        OutAttack = 0.080f;
-        OutRelease = 0.105f;
-        OutHoldHalf = 0.022f;
-        return;
-    }
-    if (IsVowelPose(PoseID))
-    {
-        OutAttack = 0.075f;
-        OutRelease = 0.095f;
-        OutHoldHalf = 0.018f;
-        return;
-    }
-}
-
-static float PeakForPose(FName PoseID, float SourceStrength)
-{
-    float Peak = FMath::Clamp(SourceStrength, 0.0f, 1.0f);
-    if (IsPose(PoseID, TEXT("22_MBP"))) return 1.0f;
-    if (IsPose(PoseID, TEXT("20_FV"))) return 1.0f;
-    if (IsPose(PoseID, TEXT("14_ChJjSh"))) return SourceStrength >= 0.72f ? FMath::Max(Peak, 0.88f) : FMath::Min(Peak, 0.58f);
-    if (IsPose(PoseID, TEXT("12_Ww-Oo-")) || IsPose(PoseID, TEXT("11_Oo")) || IsPose(PoseID, TEXT("10_Or"))) return FMath::Max(Peak, 0.88f);
-    if (IsPose(PoseID, TEXT("07_Aa")) || IsPose(PoseID, TEXT("08_Ah")) || IsPose(PoseID, TEXT("09_Oh"))) return FMath::Max(Peak, 0.82f);
-    if (IsPose(PoseID, TEXT("03_Ee")) || IsPose(PoseID, TEXT("05_Ay"))) return FMath::Max(Peak, 0.78f);
-    if (IsVowelPose(PoseID)) return FMath::Max(Peak, 0.64f);
-    return Peak;
-}
-
 static bool SameContinuousSpeechGroup(const FOffgridAICommittedVisemeEvent* A, const FOffgridAICommittedVisemeEvent* B)
 {
     if (!A || !B) return false;
@@ -94,12 +25,20 @@ static bool SameContinuousSpeechGroup(const FOffgridAICommittedVisemeEvent* A, c
     return true;
 }
 
-static float EventWeightAt(const FOffgridAICommittedVisemeEvent& E, const FOffgridAICommittedVisemeEvent* Prev, const FOffgridAICommittedVisemeEvent* Next, float PlaybackSeconds)
+static float EventWeightAt(
+    const FOffgridAICommittedVisemeEvent& E,
+    const FOffgridAICommittedVisemeEvent* Prev,
+    const FOffgridAICommittedVisemeEvent* Next,
+    float PlaybackSeconds,
+    float RegionStartSeconds,
+    float RegionEndSeconds)
 {
-    float Attack = 0.060f;
-    float Release = 0.075f;
-    float HoldHalf = 0.012f;
-    EnvelopeForPose(E.PoseID, Attack, Release, HoldHalf);
+    // Strength is the planner's authoritative presentation magnitude. Rendering
+    // uses one envelope for every pose and does not reinterpret strength by
+    // phoneme or pose family.
+    constexpr float Attack = 0.055f;
+    constexpr float Release = 0.070f;
+    constexpr float HoldHalf = 0.030f;
 
     const float Center = E.FinalRenderCenterSeconds;
     const float PeakStart = Center - HoldHalf;
@@ -132,6 +71,12 @@ static float EventWeightAt(const FOffgridAICommittedVisemeEvent& E, const FOffgr
         }
     }
 
+    // The speech detector owns animation gating. Neighbor blending may fill
+    // soft gaps inside a region, but it must never leak into an inter-region
+    // pause or anticipate a resume.
+    AttackStart = FMath::Max(AttackStart, RegionStartSeconds);
+    ReleaseEnd = FMath::Min(ReleaseEnd, RegionEndSeconds);
+
     float Shape = 0.0f;
     if (PlaybackSeconds < AttackStart || PlaybackSeconds > ReleaseEnd)
     {
@@ -149,7 +94,7 @@ static float EventWeightAt(const FOffgridAICommittedVisemeEvent& E, const FOffgr
     {
         Shape = 1.0f - SmoothStep01((PlaybackSeconds - PeakEnd) / FMath::Max(ReleaseEnd - PeakEnd, 0.001f));
     }
-    return Shape * PeakForPose(E.PoseID, E.Strength);
+    return Shape * FMath::Clamp(E.Strength, 0.0f, 1.0f);
 }
 }
 
@@ -168,7 +113,17 @@ TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const 
         if (!FMath::IsFinite(E.FinalRenderCenterSeconds)) continue;
         const FOffgridAICommittedVisemeEvent* Prev = I > 0 ? &Track.Events[I - 1] : nullptr;
         const FOffgridAICommittedVisemeEvent* Next = I + 1 < Track.Events.Num() ? &Track.Events[I + 1] : nullptr;
-        const float W = EventWeightAt(E, Prev, Next, PlaybackSeconds);
+        float RegionStartSeconds = Track.SpeechStartSeconds;
+        float RegionEndSeconds = TNumericLimits<float>::Max();
+        for (const auto& Region : Track.SpeechRegions)
+        {
+            if (Region.SpeechRegionIndex != E.SpeechRegionIndex) continue;
+            RegionStartSeconds = Region.StartSeconds;
+            if (Region.bEnded) RegionEndSeconds = Region.EndSeconds;
+            break;
+        }
+        const float W = EventWeightAt(
+            E, Prev, Next, PlaybackSeconds, RegionStartSeconds, RegionEndSeconds);
         if (W <= 0.012f) continue;
         FOffgridAISubmittedVisemeSample S;
         S.EventIndex = E.EventIndex;
@@ -182,13 +137,38 @@ TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const 
         S.SourceStrength = E.Strength;
         Out.Add(S);
     }
+    // Keep one clearly readable primary articulation at a time. Neighbors are
+    // retained for coarticulation, but cannot visually compete with the current
+    // strongest pose. This is presentation-only: it does not move, remove, or
+    // reorder committed events.
+    int32 PrimaryIndex = INDEX_NONE;
+    float PrimaryWeight = 0.0f;
+    for (int32 I = 0; I < Out.Num(); ++I)
+    {
+        if (Out[I].SubmittedWeight > PrimaryWeight)
+        {
+            PrimaryWeight = Out[I].SubmittedWeight;
+            PrimaryIndex = I;
+        }
+    }
+    if (PrimaryIndex != INDEX_NONE)
+    {
+        constexpr float NeighborToPrimaryRatio = 0.20f;
+        const FName PrimaryPose = Out[PrimaryIndex].PoseID;
+        const float NeighborCap = PrimaryWeight * NeighborToPrimaryRatio;
+        for (int32 I = 0; I < Out.Num(); ++I)
+        {
+            if (I == PrimaryIndex || Out[I].PoseID == PrimaryPose) continue;
+            Out[I].SubmittedWeight = FMath::Min(Out[I].SubmittedWeight, NeighborCap);
+        }
+    }
     return Out;
 }
 
 TMap<FName, float> FOffgridAIVisemePerformer::CollapseByPoseID(const TArray<FOffgridAISubmittedVisemeSample>& Samples)
 {
-    // Baseline renderer: no dominance/coarticulation suppression.  Multiple
-    // overlapping committed visemes collapse by PoseID using max weight only.
+    // Multiple events for the same pose collapse by maximum weight. Cross-pose
+    // clarity has already been handled once by Sample().
     TMap<FName, float> Out;
     for (const FOffgridAISubmittedVisemeSample& S : Samples)
     {

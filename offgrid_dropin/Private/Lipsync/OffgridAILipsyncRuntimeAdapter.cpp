@@ -9,9 +9,25 @@ static constexpr float InterWordSeconds = 0.020f;
 static constexpr float MaxCommitLeadSec = 0.160f;
 static constexpr float MinLiveLeadSec = 0.030f;
 static constexpr float MinEventSpacingSec = 0.035f;
+static constexpr float MinRegionTailCompactionSpacingSec = 0.001f;
+static constexpr float MaxRegionTailCompactionOverrunSec = 0.020f;
+static constexpr float MaxAtomicWordTailOverrunSec = 0.040f;
 static constexpr float NominalPriorPlaybackRate = 0.90f;
+static constexpr float FocusedPriorPlaybackRate = 1.05f;
+static constexpr float FocusedMinimumAdaptiveRate = FocusedPriorPlaybackRate;
+static constexpr float FocusedMaximumAdaptiveRate = 1.20f;
+static constexpr float FocusedAdaptiveRateBlend = 0.50f;
+static constexpr float FocusedMinimumRateSpanSec = 0.180f;
+static constexpr float HardVirtualResumeMinimumQuietSec = 0.080f;
 static constexpr float MinAnchorMatchScore = 0.75f;
 static constexpr float MaxSyllableRebaseSec = 0.120f;
+static constexpr float TextRegionMergeEvidenceSec = 0.300f;
+static constexpr float ListRestartMinimumValleySec = 0.020f;
+static constexpr float ListRestartMaximumValleySec = 0.180f;
+static constexpr float ListRestartMaximumValleyRMSNorm = 0.020f;
+static constexpr float ListRestartMinimumReboundRatio = 3.0f;
+static constexpr float ListRestartMinimumFlux = 0.060f;
+static constexpr int32 DenseListMinimumBoundaryCount = 6;
 
 static float SpanForPose(const FName& PoseID)
 {
@@ -123,6 +139,304 @@ static float PriorToAudio(const FOffgridAIBoundaryPlaybackState& State, float Pr
         + (PriorSec - State.TimelinePriorAnchorSec) / FMath::Max(State.TimelineRate, 0.10f);
 }
 
+static bool IsListGapSensitiveAtCursor(
+    const FOffgridAITextVisemePlan& Plan,
+    const FOffgridAIBoundaryPlaybackState& State)
+{
+    if (Plan.Events.Num() == 0 || Plan.WordBoundaryPauseClassAfter.Num() == 0)
+        return false;
+
+    const int32 EventIndex = FMath::Clamp(State.NextTextEventIndex, 0, Plan.Events.Num() - 1);
+    const int32 WordIndex = Plan.Events[EventIndex].WordIndex;
+    if (WordIndex < 0)
+        return false;
+
+    int32 SentenceStart = 0;
+    for (int32 Index = WordIndex - 1; Index >= 0; --Index)
+    {
+        if (Plan.WordBoundaryPauseClassAfter.IsValidIndex(Index)
+            && Plan.WordBoundaryPauseClassAfter[Index]
+                == EOffgridAIBoundaryPauseClass::HardBreakPause)
+        {
+            SentenceStart = Index + 1;
+            break;
+        }
+    }
+
+    int32 SentenceEnd = Plan.WordBoundaryPauseClassAfter.Num() - 1;
+    for (int32 Index = WordIndex; Index < Plan.WordBoundaryPauseClassAfter.Num(); ++Index)
+    {
+        if (Plan.WordBoundaryPauseClassAfter[Index]
+            == EOffgridAIBoundaryPauseClass::HardBreakPause)
+        {
+            SentenceEnd = Index;
+            break;
+        }
+    }
+
+    int32 FirstListBoundary = INDEX_NONE;
+    for (int32 Index = SentenceStart; Index <= SentenceEnd; ++Index)
+    {
+        if (Plan.WordBoundaryPauseClassAfter[Index]
+            == EOffgridAIBoundaryPauseClass::SoftListPause)
+        {
+            FirstListBoundary = Index;
+            break;
+        }
+    }
+
+    // Enter as the cursor reaches the first comma-delimited item and remain
+    // sensitive through its sentence-final boundary. Audio still decides
+    // whether any actual quiet run becomes a split.
+    return FirstListBoundary != INDEX_NONE
+        && WordIndex >= FirstListBoundary
+        && WordIndex <= SentenceEnd;
+}
+
+static bool IsRecognizedListActive(
+    const FOffgridAITextVisemePlan& Plan,
+    const FOffgridAIBoundaryPlaybackState& State)
+{
+    if (Plan.Events.Num() == 0 || Plan.WordBoundaryPauseClassAfter.Num() == 0)
+        return false;
+
+    const int32 EventIndex = FMath::Clamp(State.NextTextEventIndex, 0, Plan.Events.Num() - 1);
+    const int32 CursorWordIndex = Plan.Events[EventIndex].WordIndex;
+    const int32 LatchedListWordIndex = State.PendingListBoundaryWordIndex != INDEX_NONE
+        ? State.PendingListBoundaryWordIndex
+        : State.LastResolvedListBoundaryWordIndex;
+
+    int32 SentenceStart = 0;
+    while (SentenceStart < Plan.WordBoundaryPauseClassAfter.Num())
+    {
+        int32 SentenceEnd = Plan.WordBoundaryPauseClassAfter.Num() - 1;
+        int32 FirstListBoundary = INDEX_NONE;
+        int32 SoftBoundaryCount = 0;
+        for (int32 Index = SentenceStart;
+            Index < Plan.WordBoundaryPauseClassAfter.Num();
+            ++Index)
+        {
+            const EOffgridAIBoundaryPauseClass PauseClass =
+                Plan.WordBoundaryPauseClassAfter[Index];
+            if (PauseClass == EOffgridAIBoundaryPauseClass::SoftListPause)
+            {
+                if (FirstListBoundary == INDEX_NONE)
+                    FirstListBoundary = Index;
+                ++SoftBoundaryCount;
+            }
+            if (PauseClass == EOffgridAIBoundaryPauseClass::HardBreakPause)
+            {
+                SentenceEnd = Index;
+                break;
+            }
+        }
+
+        if (SoftBoundaryCount >= DenseListMinimumBoundaryCount
+            && FirstListBoundary != INDEX_NONE)
+        {
+            if (CursorWordIndex >= FirstListBoundary && CursorWordIndex <= SentenceEnd)
+                return true;
+
+            // The text scheduler may reach the following sentence before all
+            // of the list audio has arrived. Once a list boundary is pending
+            // or resolved, retain sensitivity until its real hard break has
+            // been acoustically resolved; do not leak it into later speech.
+            if (LatchedListWordIndex >= FirstListBoundary
+                && LatchedListWordIndex <= SentenceEnd + 1
+                && State.LastResolvedPauseBoundaryWordIndex < SentenceEnd)
+            {
+                return true;
+            }
+        }
+
+        SentenceStart = SentenceEnd + 1;
+    }
+    return false;
+}
+
+static int32 ListBoundaryCountInSentence(
+    const FOffgridAITextVisemePlan& Plan,
+    int32 WordIndex)
+{
+    if (WordIndex < 0 || Plan.WordBoundaryPauseClassAfter.Num() == 0)
+        return 0;
+
+    int32 SentenceStart = 0;
+    for (int32 Index = WordIndex - 1; Index >= 0; --Index)
+    {
+        if (Plan.WordBoundaryPauseClassAfter.IsValidIndex(Index)
+            && Plan.WordBoundaryPauseClassAfter[Index]
+                == EOffgridAIBoundaryPauseClass::HardBreakPause)
+        {
+            SentenceStart = Index + 1;
+            break;
+        }
+    }
+
+    int32 SentenceEnd = Plan.WordBoundaryPauseClassAfter.Num() - 1;
+    for (int32 Index = WordIndex; Index < Plan.WordBoundaryPauseClassAfter.Num(); ++Index)
+    {
+        if (Plan.WordBoundaryPauseClassAfter[Index]
+            == EOffgridAIBoundaryPauseClass::HardBreakPause)
+        {
+            SentenceEnd = Index;
+            break;
+        }
+    }
+
+    int32 Count = 0;
+    for (int32 Index = SentenceStart; Index <= SentenceEnd; ++Index)
+    {
+        if (Plan.WordBoundaryPauseClassAfter[Index]
+            == EOffgridAIBoundaryPauseClass::SoftListPause)
+        {
+            ++Count;
+        }
+    }
+    return Count;
+}
+
+static bool IsFirstListBoundaryInSentence(
+    const FOffgridAITextVisemePlan& Plan,
+    int32 BoundaryWordIndex)
+{
+    if (BoundaryWordIndex < 0)
+        return false;
+
+    int32 SentenceStart = 0;
+    for (int32 Index = BoundaryWordIndex - 1; Index >= 0; --Index)
+    {
+        if (Plan.WordBoundaryPauseClassAfter.IsValidIndex(Index)
+            && Plan.WordBoundaryPauseClassAfter[Index]
+                == EOffgridAIBoundaryPauseClass::HardBreakPause)
+        {
+            SentenceStart = Index + 1;
+            break;
+        }
+    }
+    for (int32 Index = SentenceStart; Index < BoundaryWordIndex; ++Index)
+    {
+        if (Plan.WordBoundaryPauseClassAfter.IsValidIndex(Index)
+            && Plan.WordBoundaryPauseClassAfter[Index]
+                == EOffgridAIBoundaryPauseClass::SoftListPause)
+        {
+            return false;
+        }
+    }
+    return Plan.WordBoundaryPauseClassAfter.IsValidIndex(BoundaryWordIndex)
+        && Plan.WordBoundaryPauseClassAfter[BoundaryWordIndex]
+            == EOffgridAIBoundaryPauseClass::SoftListPause;
+}
+
+static bool IsLastListBoundaryInSentence(
+    const FOffgridAITextVisemePlan& Plan,
+    int32 BoundaryWordIndex)
+{
+    if (!Plan.WordBoundaryPauseClassAfter.IsValidIndex(BoundaryWordIndex)
+        || Plan.WordBoundaryPauseClassAfter[BoundaryWordIndex]
+            != EOffgridAIBoundaryPauseClass::SoftListPause)
+    {
+        return false;
+    }
+
+    for (int32 Index = BoundaryWordIndex + 1;
+        Index < Plan.WordBoundaryPauseClassAfter.Num();
+        ++Index)
+    {
+        const EOffgridAIBoundaryPauseClass PauseClass =
+            Plan.WordBoundaryPauseClassAfter[Index];
+        if (PauseClass == EOffgridAIBoundaryPauseClass::SoftListPause)
+            return false;
+        if (PauseClass == EOffgridAIBoundaryPauseClass::HardBreakPause)
+            break;
+    }
+    return true;
+}
+
+static bool FindTrailingListQuietRun(
+    const FOffgridAILipsyncRuntimeUpdateInput& Input,
+    float SearchStartSec,
+    float& OutQuietStartSec)
+{
+    if (!Input.AudioFeatureFrames)
+        return false;
+
+    float QuietStartSec = -1.0f;
+    for (const auto& Frame : *Input.AudioFeatureFrames)
+    {
+        if (Frame.AudioBufferCenterSec < SearchStartSec - 0.001f)
+            continue;
+        if (Frame.AudioBufferCenterSec > Input.ObservedAudioBufferEndSec + 0.001f)
+            break;
+        if (!Frame.bLearnedSpeech)
+        {
+            if (QuietStartSec < 0.0f)
+                QuietStartSec = Frame.AudioBufferCenterSec;
+        }
+        else
+        {
+            QuietStartSec = -1.0f;
+        }
+    }
+    OutQuietStartSec = QuietStartSec;
+    return QuietStartSec >= 0.0f;
+}
+
+static bool FindProsodicRestart(
+    const FOffgridAILipsyncRuntimeUpdateInput& Input,
+    float SearchStartSec,
+    float LastConsumedSec,
+    float MaximumValleyRMSNorm,
+    float MinimumReboundRatio,
+    float& OutRestartSec)
+{
+    if (!Input.AudioFeatureFrames || Input.AudioFeatureFrames->Num() < 5)
+        return false;
+
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& Frames =
+        *Input.AudioFeatureFrames;
+    for (int32 ValleyIndex = 0; ValleyIndex < Frames.Num(); ++ValleyIndex)
+    {
+        const auto& Valley = Frames[ValleyIndex];
+        if (!Valley.bLocalRMSValley
+            || Valley.AudioBufferCenterSec < SearchStartSec - 0.001f
+            || Valley.AudioBufferCenterSec <= LastConsumedSec + 0.001f
+            || Valley.RMSNorm > MaximumValleyRMSNorm)
+            continue;
+
+        const float ValleyRMS = FMath::Max(Valley.RMS, 0.0000001f);
+        float PeakFlux = 0.0f;
+        int32 FirstRestartIndex = INDEX_NONE;
+        for (int32 FrameIndex = ValleyIndex + 1; FrameIndex < Frames.Num(); ++FrameIndex)
+        {
+            const auto& Frame = Frames[FrameIndex];
+            const float DelaySec = Frame.AudioBufferCenterSec - Valley.AudioBufferCenterSec;
+            if (DelaySec > ListRestartMaximumValleySec + 0.001f)
+                break;
+            PeakFlux = FMath::Max(PeakFlux, Frame.Flux);
+            if (FirstRestartIndex == INDEX_NONE
+                && DelaySec >= ListRestartMinimumValleySec - 0.001f
+                && Frame.RMS >= ValleyRMS * MinimumReboundRatio
+                && (Frame.bStrongOnsetAnchor || Frame.SpeechEvidence >= 0.230f
+                    || Frame.Flux >= 0.040f))
+            {
+                FirstRestartIndex = FrameIndex;
+            }
+        }
+        if (FirstRestartIndex != INDEX_NONE
+            && PeakFlux >= ListRestartMinimumFlux)
+        {
+            const auto& Restart = Frames[FirstRestartIndex];
+            if (Restart.AudioBufferCenterSec <= Input.ObservedAudioBufferEndSec + 0.001f)
+            {
+                OutRestartSec = Restart.AudioBufferCenterSec;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 static void UpdateSyllableAnchor(
     const FOffgridAILipsyncRuntimeUpdateInput& Input,
     const FRuntimePrior& Prior,
@@ -147,12 +461,69 @@ static void UpdateSyllableAnchor(
     Config.PostrollSec = 1.500f;
     const TArray<FOffgridAIAudioLandmarkObservation> Evidence =
         FOffgridAIStreamingEvidenceSurface::Analyze(*Input.AudioFeatureFrames, Config);
+
+    if (!Input.bEnableFocusedWordStartAlignment)
+    {
+        const TArray<FOffgridAIStreamingSyllablePositionEstimate> HistoricalAnchors =
+            FOffgridAIStreamingSyllablePositionEstimator::EstimateHistoricalAnchors(
+                *Input.TextPlan,
+                Evidence,
+                *Input.SpeechRegions,
+                2,
+                MinAnchorMatchScore);
+        const float HistoricalRegionEnd = ActiveAudioRegion.bEnded
+            ? CausalRegionEnd(ActiveAudioRegion)
+            : Input.ObservedAudioBufferEndSec;
+        const FOffgridAIStreamingSyllablePositionEstimate* Historical = nullptr;
+        for (const auto& Anchor : HistoricalAnchors)
+        {
+            if (Anchor.DecisionSec > Input.ObservedAudioBufferEndSec + 0.001f
+                || Anchor.SyllableIndex <= State.LastMatchedSyllableIndex
+                || Anchor.NucleusPhoneIndex > NextPhoneIndex + 6
+                || Anchor.AudioCenterSec < ActiveAudioRegion.AudioBufferStartSec - 0.001f
+                || Anchor.AudioCenterSec > HistoricalRegionEnd + 0.001f)
+                continue;
+            if (!Historical || Anchor.SyllableIndex > Historical->SyllableIndex)
+                Historical = &Anchor;
+        }
+        if (!Historical || !Prior.PhoneCenters.IsValidIndex(Historical->NucleusPhoneIndex))
+            return;
+
+        const float PriorCenter = Prior.PhoneCenters[Historical->NucleusPhoneIndex];
+        const float PredictedAudioCenter = PriorToAudio(State, PriorCenter);
+        const float CorrectionSec = FMath::Clamp(
+            Historical->AudioCenterSec - PredictedAudioCenter,
+            -MaxSyllableRebaseSec,
+            MaxSyllableRebaseSec);
+        State.TimelinePriorAnchorSec = PriorCenter;
+        State.TimelineAudioAnchorSec = PredictedAudioCenter + CorrectionSec;
+        State.LastMatchedSyllableIndex = Historical->SyllableIndex;
+        State.LastMatchedSyllablePhoneIndex = Historical->NucleusPhoneIndex;
+        State.LastMatchedSyllableAudioSec = Historical->AudioCenterSec;
+        State.LastMatchedSyllableConfidence = Historical->Confidence;
+        ++State.BoundedSyllableRebaseCount;
+
+        FOffgridAIRuntimeSyllableAssignmentDiagnosticRow Row;
+        Row.LineID = Input.LineID;
+        Row.AudioSpeechRegionIndex = ActiveAudioRegionIndex;
+        Row.TextSpeechRegionIndex = ActiveTextRegionIndex;
+        Row.PhoneIndex = Historical->NucleusPhoneIndex;
+        Row.ObservedAudioSec = Historical->AudioCenterSec;
+        Row.Prominence = Historical->MatchScore;
+        Row.Confidence = Historical->Confidence;
+        Row.SkipCount = FMath::Max(Historical->NucleusPhoneIndex - NextPhoneIndex, 0);
+        Row.AnchorKind = FName(TEXT("bounded_syllable_rebase"));
+        Row.TimelineCorrectionSec = CorrectionSec;
+        State.PendingSyllableAssignments.Add(Row);
+        return;
+    }
+
     const TArray<FOffgridAIStreamingSyllablePositionEstimate> Anchors =
         FOffgridAIStreamingSyllablePositionEstimator::EstimateHistoricalAnchors(
             *Input.TextPlan,
             Evidence,
             *Input.SpeechRegions,
-            2,
+            1,
             MinAnchorMatchScore);
 
     const float RegionEnd = ActiveAudioRegion.bEnded
@@ -164,39 +535,85 @@ static void UpdateSyllableAnchor(
         if (Anchor.DecisionSec > Input.ObservedAudioBufferEndSec + 0.001f
             || Anchor.SyllableIndex <= State.LastMatchedSyllableIndex
             || Anchor.NucleusPhoneIndex > NextPhoneIndex + 6
+            || Anchor.MatchScore < MinAnchorMatchScore
+            || Anchor.SpeechRegionIndex != ActiveTextRegionIndex
             || Anchor.AudioCenterSec < ActiveAudioRegion.AudioBufferStartSec - 0.001f
             || Anchor.AudioCenterSec > RegionEnd + 0.001f)
             continue;
         if (!Selected || Anchor.SyllableIndex > Selected->SyllableIndex)
             Selected = &Anchor;
     }
-    if (!Selected || !Prior.PhoneCenters.IsValidIndex(Selected->NucleusPhoneIndex))
+    if (!Selected)
+    {
+        State.PendingMatchedSyllableIndex = INDEX_NONE;
+        State.PendingMatchedSyllableAudioSec = -1.0f;
+        State.PendingMatchedStableUpdates = 0;
+        return;
+    }
+    const FOffgridAIStreamingSyllablePositionEstimate& SelectedAnchor = *Selected;
+    if (!Prior.PhoneCenters.IsValidIndex(SelectedAnchor.NucleusPhoneIndex)
+        || SelectedAnchor.NucleusPhoneIndex > NextPhoneIndex + 6)
         return;
 
-    const float PriorCenter = Prior.PhoneCenters[Selected->NucleusPhoneIndex];
+    const float PriorCenter = Prior.PhoneCenters[SelectedAnchor.NucleusPhoneIndex];
     const float PredictedAudioCenter = PriorToAudio(State, PriorCenter);
     const float CorrectionSec = FMath::Clamp(
-        Selected->AudioCenterSec - PredictedAudioCenter,
+        SelectedAnchor.AudioCenterSec - PredictedAudioCenter,
         -MaxSyllableRebaseSec,
         MaxSyllableRebaseSec);
+    float UpdatedRate = State.TimelineRate;
+    const int32 NextWordIndex = Input.TextPlan->ExpectedPhones.IsValidIndex(NextPhoneIndex)
+        ? Input.TextPlan->ExpectedPhones[NextPhoneIndex].WordIndex
+        : INDEX_NONE;
+    const bool bDenseListSentence =
+        ListBoundaryCountInSentence(*Input.TextPlan, NextWordIndex)
+            >= DenseListMinimumBoundaryCount;
+    if (!bDenseListSentence
+        && Prior.PhoneCenters.IsValidIndex(State.LastMatchedSyllablePhoneIndex)
+        && State.LastMatchedSyllableAudioSec
+            >= ActiveAudioRegion.AudioBufferStartSec - 0.001f)
+    {
+        const float PriorSpanSec = PriorCenter
+            - Prior.PhoneCenters[State.LastMatchedSyllablePhoneIndex];
+        const float AudioSpanSec = SelectedAnchor.AudioCenterSec
+            - State.LastMatchedSyllableAudioSec;
+        if (PriorSpanSec >= FocusedMinimumRateSpanSec
+            && AudioSpanSec >= FocusedMinimumRateSpanSec)
+        {
+            const float MeasuredRate = FMath::Clamp(
+                PriorSpanSec / AudioSpanSec,
+                FocusedMinimumAdaptiveRate,
+                FocusedMaximumAdaptiveRate);
+            UpdatedRate = FMath::Clamp(
+                State.TimelineRate
+                    + (MeasuredRate - State.TimelineRate)
+                        * FocusedAdaptiveRateBlend,
+                FocusedMinimumAdaptiveRate,
+                FocusedMaximumAdaptiveRate);
+        }
+    }
 
     State.TimelinePriorAnchorSec = PriorCenter;
     State.TimelineAudioAnchorSec = PredictedAudioCenter + CorrectionSec;
-    State.LastMatchedSyllableIndex = Selected->SyllableIndex;
-    State.LastMatchedSyllablePhoneIndex = Selected->NucleusPhoneIndex;
-    State.LastMatchedSyllableAudioSec = Selected->AudioCenterSec;
-    State.LastMatchedSyllableConfidence = Selected->Confidence;
+    State.TimelineRate = UpdatedRate;
+    State.LastMatchedSyllableIndex = SelectedAnchor.SyllableIndex;
+    State.LastMatchedSyllablePhoneIndex = SelectedAnchor.NucleusPhoneIndex;
+    State.LastMatchedSyllableAudioSec = SelectedAnchor.AudioCenterSec;
+    State.LastMatchedSyllableConfidence = SelectedAnchor.Confidence;
+    State.PendingMatchedSyllableIndex = INDEX_NONE;
+    State.PendingMatchedSyllableAudioSec = -1.0f;
+    State.PendingMatchedStableUpdates = 0;
     ++State.BoundedSyllableRebaseCount;
 
     FOffgridAIRuntimeSyllableAssignmentDiagnosticRow Row;
     Row.LineID = Input.LineID;
     Row.AudioSpeechRegionIndex = ActiveAudioRegionIndex;
     Row.TextSpeechRegionIndex = ActiveTextRegionIndex;
-    Row.PhoneIndex = Selected->NucleusPhoneIndex;
-    Row.ObservedAudioSec = Selected->AudioCenterSec;
-    Row.Prominence = Selected->MatchScore;
-    Row.Confidence = Selected->Confidence;
-    Row.SkipCount = FMath::Max(Selected->NucleusPhoneIndex - NextPhoneIndex, 0);
+    Row.PhoneIndex = SelectedAnchor.NucleusPhoneIndex;
+    Row.ObservedAudioSec = SelectedAnchor.AudioCenterSec;
+    Row.Prominence = SelectedAnchor.MatchScore;
+    Row.Confidence = SelectedAnchor.Confidence;
+    Row.SkipCount = FMath::Max(SelectedAnchor.NucleusPhoneIndex - NextPhoneIndex, 0);
     Row.AnchorKind = FName(TEXT("bounded_syllable_rebase"));
     Row.TimelineCorrectionSec = CorrectionSec;
     State.PendingSyllableAssignments.Add(Row);
@@ -294,6 +711,7 @@ void FOffgridAILipsyncRuntimeSession::BeginLine(const FOffgridAILipsyncRuntimeBe
     LineID = Input.LineID;
     DialogueText = Input.DialogueText;
     PrerollSec = FMath::Max(Input.PrerollSec, 0.0f);
+    bEnableFocusedWordStartAlignment = Input.bEnableFocusedWordStartAlignment;
     TextPlan = FOffgridAITextVisemePlanner::BuildPlan(FText::FromString(DialogueText));
     CommittedTrack.NPCID = NPCID;
     CommittedTrack.LineID = LineID;
@@ -308,6 +726,9 @@ void FOffgridAILipsyncRuntimeSession::PushAudioPCM16(
     int64 ChunkStartSample)
 {
     if (!bBegun) return;
+    Detector.SetListGapSensitivity(
+        bEnableFocusedWordStartAlignment
+        && IsRecognizedListActive(TextPlan, PlaybackState));
     Detector.AppendPCM16(PCMChunk, BytesToUse, SampleRate, NumChannels, ChunkStartSample);
     RefreshResolvedSpeechRegions();
     ++PCMChunkCount;
@@ -344,6 +765,7 @@ void FOffgridAILipsyncRuntimeSession::Update(float CurrentPlaybackSec)
     Input.CurrentPlaybackSec = PlaybackSec;
     Input.PrerollSec = PrerollSec;
     Input.ObservedAudioBufferEndSec = Detector.GetObservedAudioBufferEndSec();
+    Input.bEnableFocusedWordStartAlignment = bEnableFocusedWordStartAlignment;
     Input.bInputStreamClosed = bInputStreamClosed;
     Input.NPCID = NPCID;
     Input.LineID = LineID;
@@ -368,6 +790,7 @@ void FOffgridAILipsyncRuntimeSession::Finalize(float FinalPlaybackSec)
     Input.CurrentPlaybackSec = PlaybackSec;
     Input.PrerollSec = PrerollSec;
     Input.ObservedAudioBufferEndSec = Detector.GetObservedAudioBufferEndSec();
+    Input.bEnableFocusedWordStartAlignment = bEnableFocusedWordStartAlignment;
     Input.bInputStreamClosed = true;
     Input.bPlaybackFinalized = true;
     Input.NPCID = NPCID;
@@ -504,7 +927,34 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(
     }
 }
 
+static float RefinedRegionOnsetSec(
+    const FOffgridAILipsyncRuntimeUpdateInput& Input,
+    const FOffgridAIStreamingSpeechRegion& Region)
+{
+    float AnchorSec = Region.AudioBufferStartSec;
+    if (!Input.AudioFeatureFrames || Input.AudioFeatureFrames->Num() < 5) return AnchorSec;
+
+    FOffgridAIStreamingEvidenceSurfaceConfig Config;
+    Config.PrerollSec = FMath::Max(Input.PrerollSec, 0.100f);
+    Config.PostrollSec = 0.250f;
+    const TArray<FOffgridAIAudioLandmarkObservation> Evidence =
+        FOffgridAIStreamingEvidenceSurface::Analyze(*Input.AudioFeatureFrames, Config);
+    const FOffgridAIAudioLandmarkObservation* Best = nullptr;
+    for (const auto& Observation : Evidence)
+    {
+        if (Observation.Type != EOffgridAIAudioLandmarkType::Resume
+            || Observation.DecisionSec > Input.ObservedAudioBufferEndSec + 0.001f
+            || FMath::Abs(Observation.CenterSec - Region.AudioBufferStartSec) > 0.100f)
+            continue;
+        if (!Best || FMath::Abs(Observation.CenterSec - Region.AudioBufferStartSec)
+                < FMath::Abs(Best->CenterSec - Region.AudioBufferStartSec))
+            Best = &Observation;
+    }
+    return Best ? Best->CenterSec : AnchorSec;
+}
+
 static void AnchorSimpleCursorToRegion(
+    const FOffgridAILipsyncRuntimeUpdateInput& Input,
     const FOffgridAITextVisemePlan& Plan,
     const FRuntimePrior& Prior,
     int32 EventIndex,
@@ -516,12 +966,34 @@ static void AnchorSimpleCursorToRegion(
     State.ActiveTextSpeechRegionIndex = Plan.Events.IsValidIndex(EventIndex)
         ? Plan.Events[EventIndex].SpeechRegionIndex
         : INDEX_NONE;
-    State.ActiveTextRegionAudioStartSec = Region.AudioBufferStartSec;
+    const float RegionAnchorSec = Input.bEnableFocusedWordStartAlignment
+        ? RefinedRegionOnsetSec(Input, Region)
+        : Region.AudioBufferStartSec;
+    State.ActiveTextRegionAudioStartSec = RegionAnchorSec;
     State.TimelinePriorAnchorSec = Prior.EventCenters.IsValidIndex(EventIndex)
         ? Prior.EventCenters[EventIndex]
         : Prior.TotalSec;
-    State.TimelineAudioAnchorSec = Region.AudioBufferStartSec;
-    State.TimelineRate = NominalPriorPlaybackRate;
+    if (Input.bEnableFocusedWordStartAlignment
+        && Plan.Events.IsValidIndex(EventIndex))
+    {
+        const int32 WordIndex = Plan.Events[EventIndex].WordIndex;
+        if (Plan.WordPhoneBeginIndices.IsValidIndex(WordIndex))
+        {
+            const int32 WordBeginPhoneIndex = Plan.WordPhoneBeginIndices[WordIndex];
+            if (Prior.PhoneStarts.IsValidIndex(WordBeginPhoneIndex))
+            {
+                // Every observed resume is a new local timing origin. Preserve
+                // only the current word's leading-phone time; rewinding to the
+                // sentence-level text-region start would skip acoustic regions
+                // when a list contains several real pauses.
+                State.TimelinePriorAnchorSec = Prior.PhoneStarts[WordBeginPhoneIndex];
+            }
+        }
+    }
+    State.TimelineAudioAnchorSec = RegionAnchorSec;
+    State.TimelineRate = Input.bEnableFocusedWordStartAlignment
+        ? FocusedPriorPlaybackRate
+        : NominalPriorPlaybackRate;
     State.bPlayheadStarted = true;
     // Region onset is authoritative. Stable syllable evidence may subsequently
     // move only the uncommitted suffix.
@@ -540,6 +1012,18 @@ static void UpdateSimpleCommittedTrack(
 
     InOutTrack.NPCID = Input.NPCID;
     InOutTrack.LineID = Input.LineID;
+    InOutTrack.SpeechRegions.Reset();
+    for (const auto& Region : Regions)
+    {
+        FOffgridAICommittedVisemeTrack::FSpeechRegion TrackRegion;
+        TrackRegion.SpeechRegionIndex = Region.SpeechRegionIndex;
+        TrackRegion.StartSeconds = Region.AudioBufferStartSec;
+        TrackRegion.EndSeconds = Region.bEnded
+            ? FMath::Max(Region.AudioBufferStartSec, CausalRegionEnd(Region) - 0.020f)
+            : CausalRegionEnd(Region);
+        TrackRegion.bEnded = Region.bEnded;
+        InOutTrack.SpeechRegions.Add(TrackRegion);
+    }
     bInOutTrackBuilt = true;
     State.SchedulerBlockReason = NAME_None;
 
@@ -555,7 +1039,7 @@ static void UpdateSimpleCommittedTrack(
     else
     {
         if (!State.bPlayheadStarted)
-            AnchorSimpleCursorToRegion(Plan, Prior, EventIndex, 0, Regions[0], State);
+            AnchorSimpleCursorToRegion(Input, Plan, Prior, EventIndex, 0, Regions[0], State);
 
         float LastCenter = LastCommittedCenter(InOutTrack);
         while (EventIndex < Plan.Events.Num())
@@ -568,18 +1052,305 @@ static void UpdateSimpleCommittedTrack(
 
             const FOffgridAIStreamingSpeechRegion& Region =
                 Regions[State.ActiveSpeechRegionIndex];
+            const int32 EventTextRegionIndex = Plan.Events[EventIndex].SpeechRegionIndex;
+            const int32 EventWordIndex = Plan.Events[EventIndex].WordIndex;
+            const bool bFirstEventInWord = EventIndex == 0
+                || Plan.Events[EventIndex - 1].WordIndex != EventWordIndex;
+            const int32 PreviousWordIndex = EventIndex > 0
+                ? Plan.Events[EventIndex - 1].WordIndex
+                : INDEX_NONE;
+            const float DeclaredPauseSec =
+                Plan.WordBoundaryPauseSecondsAfter.IsValidIndex(PreviousWordIndex)
+                ? FMath::Max(
+                    Plan.WordBoundaryPauseSecondsAfter[PreviousWordIndex],
+                    0.0f)
+                : 0.0f;
+            const bool bDeclaredPauseBoundary = bFirstEventInWord
+                && DeclaredPauseSec > 0.001f;
+            const bool bPauseBoundaryNeedsResolution = bDeclaredPauseBoundary
+                && State.LastResolvedPauseBoundaryWordIndex != PreviousWordIndex;
+            const bool bSoftListBoundary = bFirstEventInWord
+                && Plan.WordBoundaryPauseClassAfter.IsValidIndex(PreviousWordIndex)
+                && Plan.WordBoundaryPauseClassAfter[PreviousWordIndex]
+                    == EOffgridAIBoundaryPauseClass::SoftListPause;
+            const bool bHardBreakBoundary = bFirstEventInWord
+                && Plan.WordBoundaryPauseClassAfter.IsValidIndex(PreviousWordIndex)
+                && Plan.WordBoundaryPauseClassAfter[PreviousWordIndex]
+                    == EOffgridAIBoundaryPauseClass::HardBreakPause;
+            const bool bCommaBoundary = bFirstEventInWord
+                && Plan.WordBoundaryPunctuationAfter.IsValidIndex(PreviousWordIndex)
+                && Plan.WordBoundaryPunctuationAfter[PreviousWordIndex] == TEXT(',');
+            const bool bStrictHardBreakBoundary = bHardBreakBoundary
+                && !bCommaBoundary;
+            const bool bDenseListEntryBoundary = bSoftListBoundary
+                && ListBoundaryCountInSentence(Plan, EventWordIndex)
+                    >= DenseListMinimumBoundaryCount
+                && (IsFirstListBoundaryInSentence(Plan, PreviousWordIndex)
+                    || IsLastListBoundaryInSentence(Plan, PreviousWordIndex));
+            if (Input.bEnableFocusedWordStartAlignment
+                && bSoftListBoundary
+                && State.LastResolvedListBoundaryWordIndex != EventWordIndex)
+            {
+                if (State.PendingListBoundaryWordIndex != EventWordIndex)
+                {
+                    State.PendingListBoundaryWordIndex = EventWordIndex;
+                    State.PendingListSearchStartSec = InOutTrack.Events.Num() > 0
+                        ? InOutTrack.Events.Last().RenderEndSeconds - 0.010f
+                        : Region.AudioBufferStartSec;
+                    State.PendingListQuietStartSec = -1.0f;
+                }
+                float RestartSec = -1.0f;
+                const bool bFoundRestart = FindProsodicRestart(
+                        Input,
+                        State.PendingListSearchStartSec,
+                        State.LastConsumedProsodicRestartSec,
+                        ListRestartMaximumValleyRMSNorm,
+                        ListRestartMinimumReboundRatio,
+                        RestartSec);
+                const bool bRestartBelongsToActiveRegion = bFoundRestart
+                    // Once the active decoded region has ended, a restart
+                    // beyond its endpoint belongs to a later region.  Let the
+                    // ordinary region handoff own that onset instead of
+                    // allowing a comma boundary to steal it.
+                    && (!Region.bEnded
+                        || RestartSec <= CausalRegionEnd(Region) + 0.001f);
+                if (bRestartBelongsToActiveRegion)
+                {
+                    State.TimelinePriorAnchorSec = Prior.EventCenters.IsValidIndex(EventIndex)
+                        ? Prior.EventCenters[EventIndex]
+                        : Prior.TotalSec;
+                    State.TimelineAudioAnchorSec = RestartSec;
+                    State.LastConsumedProsodicRestartSec = RestartSec;
+                    State.LastListRestartWordIndex = EventWordIndex;
+                    State.LastResolvedListBoundaryWordIndex = EventWordIndex;
+                    State.PendingListBoundaryWordIndex = INDEX_NONE;
+                    State.PendingListSearchStartSec = -1.0f;
+                    State.PendingListQuietStartSec = -1.0f;
+                }
+                else if (bFoundRestart)
+                {
+                    // A later decoded region owns this landmark. Resolve the
+                    // comma without rebasing so the ordinary region handoff
+                    // below can anchor the word.
+                    State.LastResolvedListBoundaryWordIndex = EventWordIndex;
+                    State.PendingListBoundaryWordIndex = INDEX_NONE;
+                    State.PendingListSearchStartSec = -1.0f;
+                    State.PendingListQuietStartSec = -1.0f;
+                }
+                else if (bDenseListEntryBoundary)
+                {
+                    float QuietStartSec = -1.0f;
+                    const bool bEndsInQuiet = FindTrailingListQuietRun(
+                        Input,
+                        State.PendingListSearchStartSec,
+                        QuietStartSec);
+                    if (bEndsInQuiet)
+                    {
+                        if (State.PendingListQuietStartSec < 0.0f)
+                            State.PendingListQuietStartSec = QuietStartSec;
+                        if (!Input.bInputStreamClosed)
+                        {
+                            State.SchedulerBlockReason = FName(
+                                TEXT("waiting_for_list_prosodic_restart"));
+                            break;
+                        }
+
+                        // A closed stream resolves a terminal quiet run
+                        // without fabricating a pause. During live playback,
+                        // persistent quiet remains pending until either a
+                        // restart arrives or the detector closes the region;
+                        // residual tail speech cannot release the next word.
+                        State.LastResolvedListBoundaryWordIndex = EventWordIndex;
+                        State.PendingListBoundaryWordIndex = INDEX_NONE;
+                        State.PendingListSearchStartSec = -1.0f;
+                        State.PendingListQuietStartSec = -1.0f;
+                    }
+                }
+            }
+
+            // Transcript identity and punctuation identify places where an
+            // acoustic pause may occur; only observed audio decides whether
+            // the boundary becomes a new speech region or remains continuous.
+            if (Input.bEnableFocusedWordStartAlignment
+                && (EventTextRegionIndex > State.ActiveTextSpeechRegionIndex
+                    || bPauseBoundaryNeedsResolution))
+            {
+                // A sentence or short final tag can share one decoded speech
+                // region with the preceding phrase. A valley and acoustic
+                // reattack after the last rendered event can resolve that
+                // punctuation boundary without inventing another scheduler
+                // or a text-owned time. A decoded successor still takes
+                // precedence once the current region has ended.
+                bool bResolvedWithinFinalRegion = false;
+                const int32 NextRegionIndex = State.ActiveSpeechRegionIndex + 1;
+                if (Region.bEnded
+                    && Input.bInputStreamClosed
+                    && !Regions.IsValidIndex(NextRegionIndex))
+                {
+                    const float SearchStartSec = InOutTrack.Events.Num() > 0
+                        ? InOutTrack.Events.Last().RenderEndSeconds - 0.010f
+                        : Region.AudioBufferStartSec;
+                    float RestartSec = -1.0f;
+                    if (FindProsodicRestart(
+                            Input,
+                            SearchStartSec,
+                            State.LastConsumedProsodicRestartSec,
+                            0.200f,
+                            2.0f,
+                            RestartSec))
+                    {
+                        State.ActiveTextSpeechRegionIndex = EventTextRegionIndex;
+                        State.LastResolvedPauseBoundaryWordIndex = PreviousWordIndex;
+                        State.ActiveTextRegionAudioStartSec = RestartSec;
+                        State.TimelinePriorAnchorSec = Prior.EventCenters.IsValidIndex(EventIndex)
+                            ? Prior.EventCenters[EventIndex]
+                            : Prior.TotalSec;
+                        State.TimelineAudioAnchorSec = RestartSec;
+                        State.LastConsumedProsodicRestartSec = RestartSec;
+                        bResolvedWithinFinalRegion = true;
+                    }
+                    else
+                    {
+                        // With the complete stream available, absence of both
+                        // a decoded successor and a qualifying reattack means
+                        // the punctuation remained inside this final acoustic
+                        // region. Preserve identity and finish monotonically;
+                        // the final-tail path below supplies only bounded
+                        // placement, never a second timing scheduler.
+                        State.ActiveTextSpeechRegionIndex = EventTextRegionIndex;
+                        State.LastResolvedPauseBoundaryWordIndex = PreviousWordIndex;
+                        bResolvedWithinFinalRegion = true;
+                    }
+                }
+
+                if (bResolvedWithinFinalRegion)
+                {
+                    // Continue below and let the ordinary audio frontier gate
+                    // commit the reanchored suffix.
+                }
+                else
+                {
+                    if (bHardBreakBoundary)
+                    {
+                        // A locally learned speaking rate belongs only to the
+                        // phrase that produced its anchors. Do not extrapolate
+                        // it across unresolved sentence punctuation.
+                        State.TimelineRate = FocusedPriorPlaybackRate;
+                    }
+                    const float BoundaryCandidate =
+                        PriorToAudio(State, Prior.EventCenters[EventIndex]);
+                    const float ContinuityProbeSec = BoundaryCandidate
+                        + FMath::Max(DeclaredPauseSec, TextRegionMergeEvidenceSec);
+                    bool bObservedQuietAfterProbe = false;
+                    bool bObservedSpeechAfterProbe = false;
+                    float ObservedResumeSec = -1.0f;
+                    float ObservedQuietStartSec = -1.0f;
+                    if (Input.AudioFeatureFrames)
+                    {
+                        for (const auto& Frame : *Input.AudioFeatureFrames)
+                        {
+                            if (Frame.AudioBufferCenterSec + 0.001f < ContinuityProbeSec)
+                                continue;
+                            if (Frame.AudioBufferCenterSec > Input.ObservedAudioBufferEndSec + 0.001f)
+                                break;
+                            if (!Frame.bLearnedSpeech || Frame.RMSNorm <= 0.030f)
+                            {
+                                bObservedQuietAfterProbe = true;
+                                if (ObservedQuietStartSec < 0.0f)
+                                    ObservedQuietStartSec = Frame.AudioBufferCenterSec;
+                                continue;
+                            }
+                            const bool bStrongVirtualResume =
+                                (Frame.Flux >= 0.060f && Frame.RMSNorm >= 0.020f)
+                                || (Frame.RMSNorm >= 0.150f
+                                    && Frame.SpeechEvidence >= 0.200f);
+                            const float ContiguousQuietSec = ObservedQuietStartSec >= 0.0f
+                                ? Frame.AudioBufferCenterSec - ObservedQuietStartSec
+                                : 0.0f;
+                            const bool bQualifiedVirtualResume =
+                                bObservedQuietAfterProbe
+                                && bStrongVirtualResume
+                                && (!bStrictHardBreakBoundary
+                                    || ContiguousQuietSec
+                                        >= HardVirtualResumeMinimumQuietSec);
+                            if (bObservedQuietAfterProbe && !bQualifiedVirtualResume)
+                            {
+                                // A weak or too-short reattack ends this quiet
+                                // run. It must not remain armed and steal a
+                                // later onset from the preceding speech.
+                                bObservedQuietAfterProbe = false;
+                                ObservedQuietStartSec = -1.0f;
+                                if (bHardBreakBoundary)
+                                    continue;
+                            }
+                            if (bStrictHardBreakBoundary && !bQualifiedVirtualResume)
+                                continue;
+                            bObservedSpeechAfterProbe = true;
+                            if (bQualifiedVirtualResume)
+                                ObservedResumeSec = Frame.AudioBufferCenterSec;
+                            break;
+                        }
+                    }
+                    if (!Region.bEnded
+                        && bObservedSpeechAfterProbe
+                        // Continuous speech shortly after a duration-prior
+                        // probe is not sufficient to erase a sentence
+                        // boundary: a short prior can otherwise commit the
+                        // next sentence into the current phrase. Hard breaks
+                        // require an observed quiet-to-speech restart (or a
+                        // decoded region handoff).
+                        && (!bStrictHardBreakBoundary || ObservedResumeSec >= 0.0f))
+                    {
+                    // Punctuation may propose a text region without an
+                    // independently decoded region. Continuous evidence keeps
+                    // the existing timing map; quiet followed by learned speech
+                    // is a virtual resume and becomes the local origin for only
+                    // the uncommitted suffix.
+                    State.ActiveTextSpeechRegionIndex = EventTextRegionIndex;
+                    State.LastResolvedPauseBoundaryWordIndex = PreviousWordIndex;
+                    if (ObservedResumeSec >= 0.0f)
+                    {
+                        State.ActiveTextRegionAudioStartSec = ObservedResumeSec;
+                        State.TimelinePriorAnchorSec = Prior.EventCenters.IsValidIndex(EventIndex)
+                            ? Prior.EventCenters[EventIndex]
+                            : Prior.TotalSec;
+                        State.TimelineAudioAnchorSec = ObservedResumeSec;
+                    }
+                    }
+                    else
+                    {
+                        if (Regions.IsValidIndex(NextRegionIndex))
+                        {
+                            State.LastResolvedPauseBoundaryWordIndex = PreviousWordIndex;
+                            AnchorSimpleCursorToRegion(
+                                Input, Plan, Prior, EventIndex, NextRegionIndex, Regions[NextRegionIndex], State);
+                            continue;
+                        }
+                        State.SchedulerBlockReason = FName(TEXT("waiting_for_speech_resume"));
+                        break;
+                    }
+                }
+            }
             const int32 NextPhoneIndex = Plan.Events[EventIndex].SourcePhoneGlobalIndex;
 
             // Syllable evidence may move only the uncommitted suffix. It never
-            // changes event identity, event order, or the audio gate.
-            UpdateSyllableAnchor(
-                Input,
-                Prior,
-                NextPhoneIndex,
-                State.ActiveSpeechRegionIndex,
-                Plan.Events[EventIndex].SpeechRegionIndex,
-                Region,
-                State);
+            // changes event identity, event order, or the audio gate. Region
+            // onset owns the first visible event; pulse evidence starts after
+            // that priority-zero anchor has committed.
+            const bool bFirstEventInTextRegion = EventIndex == 0
+                || Plan.Events[EventIndex - 1].SpeechRegionIndex
+                    != EventTextRegionIndex;
+            if (!Input.bEnableFocusedWordStartAlignment || !bFirstEventInTextRegion)
+            {
+                UpdateSyllableAnchor(
+                    Input,
+                    Prior,
+                    NextPhoneIndex,
+                    State.ActiveSpeechRegionIndex,
+                    Plan.Events[EventIndex].SpeechRegionIndex,
+                    Region,
+                    State);
+            }
 
             float Candidate = PriorToAudio(State, Prior.EventCenters[EventIndex]);
             Candidate = FMath::Max(Candidate, Region.AudioBufferStartSec);
@@ -587,7 +1358,63 @@ static void UpdateSimpleCommittedTrack(
                 Candidate = FMath::Max(Candidate, LastCenter + MinEventSpacingSec);
 
             const float RegionEnd = CausalRegionEnd(Region);
-            if (Region.bEnded && Candidate > RegionEnd - 0.010f)
+            bool bUsedRegionTailCompaction = false;
+            if (Input.bEnableFocusedWordStartAlignment
+                && Region.bEnded
+                && Candidate > RegionEnd - 0.010f)
+            {
+                const bool bFinalClosedRegion = Input.bInputStreamClosed
+                    && State.ActiveSpeechRegionIndex == Regions.Num() - 1;
+                int32 RemainingCompactionEventCount = 0;
+                for (int32 TailIndex = EventIndex; TailIndex < Plan.Events.Num(); ++TailIndex)
+                {
+                    if (!bFinalClosedRegion
+                        && Plan.Events[TailIndex].WordIndex != EventWordIndex)
+                        break;
+                    ++RemainingCompactionEventCount;
+                }
+                const bool bWordAlreadyCommittedToActiveRegion =
+                    InOutTrack.Events.Num() > 0
+                    && InOutTrack.Events.Last().WordIndex == EventWordIndex
+                    && InOutTrack.Events.Last().SpeechRegionIndex
+                        == State.ActiveSpeechRegionIndex;
+                const float TailCompactionSpacing = MinRegionTailCompactionSpacingSec;
+                float CompactedCandidate = RegionEnd
+                    + (bFinalClosedRegion ? 0.0f : MaxRegionTailCompactionOverrunSec)
+                    - TailCompactionSpacing
+                        * static_cast<float>(FMath::Max(RemainingCompactionEventCount - 1, 0));
+                const float EarliestCandidate = LastCenter >= 0.0f
+                    ? LastCenter + TailCompactionSpacing
+                    : Region.AudioBufferStartSec;
+                if (bFinalClosedRegion)
+                    CompactedCandidate = FMath::Max(CompactedCandidate, EarliestCandidate);
+                else if (bWordAlreadyCommittedToActiveRegion
+                    && EarliestCandidate
+                        <= RegionEnd + MaxAtomicWordTailOverrunSec + 0.001f)
+                {
+                    CompactedCandidate = FMath::Max(CompactedCandidate, EarliestCandidate);
+                }
+                // Before the final closed region, tail compaction is only a
+                // recovery for one stranded terminal pose in the current
+                // word. Compressing a larger live suffix can consume a later
+                // word that belongs to the next acoustic region. Once the
+                // complete stream proves there is no successor, the same
+                // bounded monotonic path may finish the final suffix.
+                if ((RemainingCompactionEventCount == 1
+                        || bWordAlreadyCommittedToActiveRegion
+                        || bFinalClosedRegion)
+                    && CompactedCandidate >= EarliestCandidate - 0.001f
+                    && CompactedCandidate >= Region.AudioBufferStartSec - 0.001f
+                    && (!bFinalClosedRegion
+                        || CompactedCandidate <= Input.ObservedAudioBufferEndSec + 0.001f))
+                {
+                    Candidate = FMath::Max(CompactedCandidate, EarliestCandidate);
+                    bUsedRegionTailCompaction = true;
+                }
+            }
+            if (Region.bEnded
+                && Candidate > RegionEnd - 0.010f
+                && !bUsedRegionTailCompaction)
             {
                 const int32 NextRegionIndex = State.ActiveSpeechRegionIndex + 1;
                 if (!Regions.IsValidIndex(NextRegionIndex))
@@ -598,12 +1425,12 @@ static void UpdateSimpleCommittedTrack(
                     break;
                 }
                 AnchorSimpleCursorToRegion(
-                    Plan, Prior, EventIndex, NextRegionIndex, Regions[NextRegionIndex], State);
+                    Input, Plan, Prior, EventIndex, NextRegionIndex, Regions[NextRegionIndex], State);
                 continue;
             }
 
             const float KnownSpeechFrontier = Region.bEnded
-                ? RegionEnd
+                ? (bUsedRegionTailCompaction ? Candidate : RegionEnd)
                 : FMath::Min(
                     FMath::Max(
                         Region.AudioBufferLastSpeechSec + 0.030f,
@@ -631,7 +1458,12 @@ static void UpdateSimpleCommittedTrack(
             }
 
             FName Reason = FName(TEXT("duration_prior_commit"));
-            if (EventIndex == 0)
+            if (bSoftListBoundary
+                && State.LastListRestartWordIndex == EventWordIndex)
+                Reason = FName(TEXT("list_prosodic_restart_commit"));
+            else if (bUsedRegionTailCompaction)
+                Reason = FName(TEXT("region_tail_compaction_commit"));
+            else if (EventIndex == 0)
                 Reason = FName(TEXT("initial_region_anchor_commit"));
             else if (FMath::Abs(Candidate - Region.AudioBufferStartSec) < 0.050f)
                 Reason = FName(TEXT("resume_region_anchor_commit"));
