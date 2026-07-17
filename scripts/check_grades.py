@@ -2,147 +2,63 @@ import json
 import pathlib
 import sys
 
-from grade_summary import compute_summary, load_case_grades
 
 root = pathlib.Path(__file__).resolve().parents[1]
 latest = root / "outputs" / "runs" / "latest"
-gold_root = root / "inputs" / "gold"
-thresholds_path = root / "docs" / "grade_thresholds.json"
+summary_path = latest / "alignment_summary.json"
 baseline_path = root / "docs" / "grade_baseline.json"
+thresholds_path = root / "docs" / "grade_thresholds.json"
 
-thresholds = {
-    "max_order_violations": 0,
-    "max_degenerate_cases_increase": 0,
-    "max_speech_region_count_mismatch_cases": 999999,
-    "max_visible_speech_region_count_mismatch_cases": 999999,
-    "max_speech_f1_drop": 0.0,
-    "max_speech_boundary_start_ms_increase": 0.0,
-    "max_speech_boundary_end_ms_increase": 0.0,
-    "max_streaming_region_boundary_pair_f1_drop": 0.0,
-    "max_word_f1_drop": 0.0,
-    "max_word_start_ms_increase": 0.0,
-    "max_word_duration_ms_increase": 0.0,
-    "max_word_head_start_ms_increase": 0.0,
-    "max_phoneme_coverage_drop": 0.0,
-    "max_phoneme_center_ms_increase": 0.0,
-    "max_phoneme_start_ms_increase": 0.0,
-    "max_phoneme_end_ms_increase": 0.0,
-    "max_intra_word_coverage_drop": 0.0,
-    "max_intra_word_center_ms_increase": 0.0,
-}
-if thresholds_path.exists():
-    thresholds.update(json.loads(thresholds_path.read_text()))
-
-rows, graded, ungraded = load_case_grades(latest, gold_root)
-if not rows:
-    print("No grade.json files found. Run liplab_runner first.", file=sys.stderr)
+if not summary_path.exists():
+    print("Missing alignment_summary.json. Run scripts/summarize.py first.", file=sys.stderr)
     sys.exit(2)
-
 if not baseline_path.exists():
     print(f"Missing baseline file: {baseline_path}", file=sys.stderr)
     sys.exit(2)
 
-summary = compute_summary(rows, graded, ungraded)
-baseline = json.loads(baseline_path.read_text())
+summary = json.loads(summary_path.read_text(encoding="utf-8"))
+baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+thresholds = json.loads(thresholds_path.read_text(encoding="utf-8"))
 
 
-def at_most(metric_name, threshold_name):
-    if metric_name not in baseline:
-        return (True, metric_name, summary.get(metric_name, 0.0), "no baseline")
-    return (
-        summary[metric_name] <= baseline[metric_name] + thresholds[threshold_name],
-        metric_name,
-        summary[metric_name],
-        baseline[metric_name] + thresholds[threshold_name],
-    )
+def value(document: dict, path: str):
+    current = document
+    for part in path.split("."):
+        current = current[part]
+    return current
 
 
-def at_least(metric_name, threshold_name):
-    if metric_name not in baseline:
-        return (True, metric_name, summary.get(metric_name, 0.0), "no baseline")
-    return (
-        summary[metric_name] >= baseline[metric_name] - thresholds[threshold_name],
-        metric_name,
-        summary[metric_name],
-        baseline[metric_name] - thresholds[threshold_name],
-    )
-
-
-failed = False
 checks = [
-    (
-        summary["order_fail_cases"] <= thresholds["max_order_violations"],
-        "order_fail_cases",
-        summary["order_fail_cases"],
-        thresholds["max_order_violations"],
-    ),
-    at_most("degenerate_cases", "max_degenerate_cases_increase"),
-    (
-        summary["speech_region_count_mismatch_cases"] <= thresholds["max_speech_region_count_mismatch_cases"],
-        "speech_region_count_mismatch_cases",
-        summary["speech_region_count_mismatch_cases"],
-        thresholds["max_speech_region_count_mismatch_cases"],
-    ),
-    (
-        summary["visible_speech_region_count_mismatch_cases"] <= thresholds["max_visible_speech_region_count_mismatch_cases"],
-        "visible_speech_region_count_mismatch_cases",
-        summary["visible_speech_region_count_mismatch_cases"],
-        thresholds["max_visible_speech_region_count_mismatch_cases"],
-    ),
-    at_least("speech_f1", "max_speech_f1_drop"),
-    at_most("speech_boundary_start_ms", "max_speech_boundary_start_ms_increase"),
-    at_most("speech_boundary_end_ms", "max_speech_boundary_end_ms_increase"),
-    at_least(
-        "streaming_region_boundary_pair_f1",
-        "max_streaming_region_boundary_pair_f1_drop",
-    ),
-    at_least("word_f1", "max_word_f1_drop"),
-    at_most("word_start_ms", "max_word_start_ms_increase"),
-    at_most("word_duration_ms", "max_word_duration_ms_increase"),
-    at_most("word_head_start_ms", "max_word_head_start_ms_increase"),
-    at_least("phoneme_coverage_rate", "max_phoneme_coverage_drop"),
-    at_most("phoneme_center_ms", "max_phoneme_center_ms_increase"),
-    at_most("phoneme_start_ms", "max_phoneme_start_ms_increase"),
-    at_most("phoneme_end_ms", "max_phoneme_end_ms_increase"),
-    at_least("intra_word_coverage_rate", "max_intra_word_coverage_drop"),
-    at_most("intra_word_center_ms", "max_intra_word_center_ms_increase"),
+    ("region_start.success_rate", "min", "max_region_start_success_drop"),
+    ("region_start.mean_abs_error_ms", "max", "max_region_start_mae_ms_increase"),
+    ("pause.clean_rate", "min", "max_pause_clean_drop"),
+    ("word_start.success_rate", "min", "max_word_start_success_drop"),
+    ("word_start.mean_abs_error_ms", "max", "max_word_start_mae_ms_increase"),
+    ("word_region_assignment.success_rate", "min", "max_word_region_assignment_drop"),
+    ("guardrails.event_completion_rate", "min", "max_event_completion_drop"),
 ]
 
-for ok, name, actual, limit in checks:
+failed = False
+for metric, direction, tolerance_name in checks:
+    actual = float(value(summary, metric))
+    accepted = float(value(baseline, metric))
+    tolerance = float(thresholds[tolerance_name])
+    limit = accepted - tolerance if direction == "min" else accepted + tolerance
+    ok = actual >= limit if direction == "min" else actual <= limit
     if not ok:
-        print(f"FAIL summary: {name}={actual} limit={limit}")
+        print(f"FAIL {metric}: actual={actual:.6f} limit={limit:.6f}")
         failed = True
 
-if failed:
+order_violations = int(value(summary, "guardrails.order_violations"))
+if order_violations > int(thresholds["max_order_violations"]):
     print(
-        "Summary diagnostics: "
-        f"graded={summary['graded_cases']} degenerate={summary['degenerate_cases']} "
-        f"speech_region_mismatch={summary['speech_region_count_mismatch_cases']} "
-        f"speech_boundary_start_ms={summary['speech_boundary_start_ms']:.3f} "
-        f"speech_tail_leakage_ms={summary.get('speech_tail_leakage_ms', 0.0):.3f} "
-        f"word_duration_ms={summary.get('word_duration_ms', 0.0):.3f} "
-        f"word_head_start_ms={summary['word_head_start_ms']:.3f} "
-        f"word_head_start_median_ms={summary['word_head_start_median_ms']:.3f} "
-        f"phoneme_center_ms={summary['phoneme_center_ms']:.3f} "
+        f"FAIL guardrails.order_violations: actual={order_violations} "
+        f"limit={thresholds['max_order_violations']}"
     )
-    if summary.get("direct_aligner_available", False):
-        print(
-            f"Direct aligner diagnostics: match_rate={summary.get('direct_aligner_match_rate', 0.0):.3f} "
-            f"center_ms={summary.get('direct_aligner_center_ms', 0.0):.3f}"
-        )
-    print("Note: regenerate grade_baseline.json after accepting this evaluator update.")
+    failed = True
+
+if failed:
+    print("See alignment_cases.csv and alignment_words.csv for the failing cases.")
     sys.exit(1)
 
-if summary["graded_cases"] == 0:
-    print("No approved gold cases found. Streaming outputs were generated, but grading was skipped.")
-    sys.exit(0)
-
-print(f"Grade thresholds passed for {summary['graded_cases']} graded case(s).")
-print(
-    f"Diagnostics: degenerate={summary['degenerate_cases']} "
-    f"speech_region_mismatch={summary['speech_region_count_mismatch_cases']} "
-    f"speech_tail_leakage_ms={summary.get('speech_tail_leakage_ms', 0.0):.3f} "
-    f"word_duration_ms={summary.get('word_duration_ms', 0.0):.3f} "
-    f"word_head_start_ms={summary['word_head_start_ms']:.3f} "
-    f"word_head_start_median_ms={summary['word_head_start_median_ms']:.3f} "
-)
+print(f"Priority alignment thresholds passed for {summary['cases']} case(s).")

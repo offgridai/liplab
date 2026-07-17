@@ -91,11 +91,11 @@ if not "%~2"=="" set "LIPLAB_EVIDENCE_POSTROLL_MS=%~2"
 echo Using preroll !LIPLAB_PREROLL_MS! ms, evidence postroll !LIPLAB_EVIDENCE_POSTROLL_MS! ms
 
 if exist "!BUILD_DIR!\liplab_runner.exe" (
-    "!BUILD_DIR!\liplab_runner.exe" . --preroll-ms !LIPLAB_PREROLL_MS! --evidence-postroll-ms !LIPLAB_EVIDENCE_POSTROLL_MS!
+    "!BUILD_DIR!\liplab_runner.exe" . --preroll-ms !LIPLAB_PREROLL_MS! --evidence-postroll-ms !LIPLAB_EVIDENCE_POSTROLL_MS! --focused-alignment
 ) else if exist build\Release\liplab_runner.exe (
-    build\Release\liplab_runner.exe . --preroll-ms !LIPLAB_PREROLL_MS! --evidence-postroll-ms !LIPLAB_EVIDENCE_POSTROLL_MS!
+    build\Release\liplab_runner.exe . --preroll-ms !LIPLAB_PREROLL_MS! --evidence-postroll-ms !LIPLAB_EVIDENCE_POSTROLL_MS! --focused-alignment
 ) else if exist build\liplab_runner.exe (
-    build\liplab_runner.exe . --preroll-ms !LIPLAB_PREROLL_MS! --evidence-postroll-ms !LIPLAB_EVIDENCE_POSTROLL_MS!
+    build\liplab_runner.exe . --preroll-ms !LIPLAB_PREROLL_MS! --evidence-postroll-ms !LIPLAB_EVIDENCE_POSTROLL_MS! --focused-alignment
 ) else (
     echo liplab_runner.exe not found under !BUILD_DIR!, build\Release, or build\
     exit /b 1

@@ -51,7 +51,8 @@ scripts\verify.bat
 
 This configures and builds with Visual Studio CMake/Ninja, validates gold,
 streams the complete corpus with a 350 ms preroll and 1500 ms retained
-postroll, summarizes results, and checks regression thresholds.
+postroll through the focused alignment runtime, summarizes results, and checks
+regression thresholds.
 
 Manual execution after a build:
 
@@ -89,6 +90,11 @@ Each case directory under `outputs/runs/latest` contains:
 - `runtime_boundary_state.csv` and
   `runtime_syllable_anchor_diagnostics.csv`
 - evidence, matcher, runtime-health, playback-health, and final grade files
+
+The corpus summary exposes only the priority scorecard in
+`alignment_summary.json`; `alignment_cases.csv` and `alignment_words.csv`
+identify failures for review. The more detailed per-case grades remain
+available as diagnostics.
 
 Generated case directories are replaced on every run so removed diagnostics
 cannot survive as stale output.

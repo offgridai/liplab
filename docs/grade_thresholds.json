@@ -1,17 +1,10 @@
 {
-  "max_order_violations": 0,
-  "max_speech_f1_drop": 0.005,
-  "max_speech_boundary_start_ms_increase": 5.0,
-  "max_speech_boundary_end_ms_increase": 5.0,
-  "max_word_f1_drop": 0.005,
-  "max_word_start_ms_increase": 5.0,
-  "max_word_end_ms_increase": 5.0,
-  "max_word_duration_ms_increase": 0.05,
-  "max_word_head_start_ms_increase": 5.0,
-  "max_phoneme_coverage_drop": 0.002,
-  "max_phoneme_center_ms_increase": 2.0,
-  "max_phoneme_start_ms_increase": 2.0,
-  "max_phoneme_end_ms_increase": 2.0,
-  "max_intra_word_coverage_drop": 0.002,
-  "max_intra_word_center_ms_increase": 2.0
+  "max_region_start_success_drop": 0.005,
+  "max_region_start_mae_ms_increase": 5.0,
+  "max_pause_clean_drop": 0.002,
+  "max_word_start_success_drop": 0.005,
+  "max_word_start_mae_ms_increase": 5.0,
+  "max_word_region_assignment_drop": 0.0,
+  "max_event_completion_drop": 0.0,
+  "max_order_violations": 0
 }

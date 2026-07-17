@@ -5,4 +5,4 @@ candidates = [root/'build-ninja'/bin_name, root/'build'/bin_name, root/'build'/'
 exe = next((p for p in candidates if p.exists()), None)
 if not exe:
     raise SystemExit('liplab_runner not built; run cmake first')
-raise SystemExit(subprocess.call([str(exe), str(root)]))
+raise SystemExit(subprocess.call([str(exe), str(root), "--focused-alignment"]))

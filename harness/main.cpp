@@ -4138,6 +4138,7 @@ static std::string focus_alignment_grade_json(
     {
         const auto& row = regions[index];
         out << "    {\"region_index\": " << row.region_index
+            << ", \"word_index\": " << row.word_index
             << ", \"word\": \"" << row.word << "\", \"phone\": \"" << row.phone
             << "\", \"gold_center\": " << row.gold_center
             << ", \"runtime_center\": " << row.runtime_center
