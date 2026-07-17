@@ -86,7 +86,10 @@ changing pause cleanliness or boundary agreement.
 3. `word_start.success_rate`: each word's first viseme is assigned to the
    correct MFA region and centered within 100 ms of its first MFA phoneme.
 4. `word_region_assignment.success_rate`: every planned event for the word was
-   committed and every committed event maps to the word's MFA region.
+   committed, all committed events belong to one runtime speech region, and
+   that complete region maps to the word's MFA region. A word split across two
+   runtime regions fails even when both runtime regions overlap the same MFA
+   region.
 
 Region- and word-start mean absolute errors remain alongside the success rates
 as timing diagnostics. Event completion and event order are hard guardrails.
@@ -141,4 +144,53 @@ python scripts\summarize.py
 ```
 
 The scorecard and review tables are written as `alignment_summary.json`,
-`alignment_cases.csv`, and `alignment_words.csv` under `outputs/runs/latest`.
+`alignment_cases.csv`, `alignment_words.csv`, and `alignment_boundaries.csv`
+under `outputs/runs/latest`.
+
+`alignment_boundaries.csv` keeps distinct failure mechanisms separate for every
+adjacent word boundary:
+
+- whether MFA requires a pause boundary and whether the runtime produced one;
+- punctuation class (`list_comma`, `standard_comma`, hard stop, or other);
+- early post-pause admission and authoritative rendered-animation leakage;
+- incomplete or split adjacent words;
+- owned-word tail recovery use and whether recovered events enter the pause.
+
+The corpus summary also reports recovery distortion guardrails: owned-tail
+transitions compressed below 20 ms, commits beyond the normal 160 ms lead, and
+events shifted at least 150 ms from their text-duration prior. These are audit
+metrics, not acceptance thresholds, until the recovery path is redesigned.
+
+## Shared implementation identity and Offgrid diagnostics
+
+The authoritative transplant exposes an implementation version and diagnostic
+schema version through `FOffgridAILipsyncRuntimeSession`. Hosts emit both values
+so a captured log can be tied to the exact shared implementation that produced
+it.
+
+Offgrid's focused final diagnostics are:
+
+- `diagnostic_summary.txt`: completion and whole-word runtime integrity totals.
+- `word_region_integrity.csv`: punctuation context, planned/committed viseme
+  counts, the complete runtime-region set, first/last event timing, maximum
+  commit lead, and an integrity verdict for every word.
+- `speech_regions.csv`: detector-owned region bounds and the first/last words
+  assigned to each region.
+- `boundary_scheduler_trace.csv`: compact scheduler state changes around waits,
+  commits, and region handoffs.
+
+These runtime-only files intentionally do not claim MFA correctness. MFA remains
+the offline gold comparison in Liplab; Offgrid reports the evidence required to
+grade the captured WAV afterward.
+
+Word ownership is a scheduler invariant, independent of punctuation class. When
+a decoded region has closed, any untouched word is admitted only if its complete
+viseme sequence fits that region; otherwise the whole word moves to the decoded
+successor. If that successor has not opened yet, the word remains untouched
+until either speech resumes or the input stream conclusively ends. List commas,
+standard commas, and hard punctuation still influence pause detection, but
+never word indivisibility. Once the first event commits, a fail-closed guard
+prevents any suffix from being published with a different runtime region.
+If a region closes after a word has begun, the already-owned word's remaining
+visemes are completed at that region's bounded tail before the scheduler may
+advance to a successor region.

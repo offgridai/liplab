@@ -1,4 +1,5 @@
 #include "Lipsync/OffgridAILipsyncRuntimeAdapter.h"
+#include "Lipsync/OffgridAILipsyncVersion.h"
 
 #include "Lipsync/OffgridAIStreamingEvidenceSurface.h"
 #include "Lipsync/OffgridAIStreamingSyllablePositionEstimator.h"
@@ -7,6 +8,7 @@ namespace
 {
 static constexpr float InterWordSeconds = 0.020f;
 static constexpr float MaxCommitLeadSec = 0.160f;
+static constexpr float StandardCommaMaxCommitLeadSec = 0.120f;
 static constexpr float MinLiveLeadSec = 0.030f;
 static constexpr float MinEventSpacingSec = 0.035f;
 static constexpr float MinRegionTailCompactionSpacingSec = 0.001f;
@@ -138,6 +140,28 @@ static float PriorToAudio(const FOffgridAIBoundaryPlaybackState& State, float Pr
 {
     return State.TimelineAudioAnchorSec
         + (PriorSec - State.TimelinePriorAnchorSec) / FMath::Max(State.TimelineRate, 0.10f);
+}
+
+static bool IsStandardCommaBoundary(
+    const FOffgridAITextVisemePlan& Plan,
+    int32 BoundaryWordIndex)
+{
+    if (!Plan.WordBoundaryPunctuationAfter.IsValidIndex(BoundaryWordIndex)
+        || Plan.WordBoundaryPunctuationAfter[BoundaryWordIndex] != TEXT(','))
+        return false;
+
+    for (int32 Index = BoundaryWordIndex + 1;
+        Index < Plan.WordBoundaryPunctuationAfter.Num();
+        ++Index)
+    {
+        if (Plan.WordBoundaryPunctuationAfter[Index] == TCHAR(0))
+            continue;
+
+        // Another comma one word later is a list comma. More than one word
+        // before the next punctuation makes this a standard comma.
+        return Index > BoundaryWordIndex + 1;
+    }
+    return false;
 }
 
 static bool IsListGapSensitiveAtCursor(
@@ -675,6 +699,16 @@ static void FillCommittedEvent(
 }
 }
 
+const TCHAR* FOffgridAILipsyncRuntimeSession::GetImplementationVersion()
+{
+    return OFFGRIDAI_LIPSYNC_IMPLEMENTATION_VERSION;
+}
+
+int32 FOffgridAILipsyncRuntimeSession::GetDiagnosticSchemaVersion()
+{
+    return OFFGRIDAI_LIPSYNC_DIAGNOSTIC_SCHEMA_VERSION;
+}
+
 void FOffgridAILipsyncRuntimeSession::Reset()
 {
     NPCID = NAME_None;
@@ -1070,6 +1104,8 @@ static void UpdateSimpleCommittedTrack(
                 Regions[State.ActiveSpeechRegionIndex];
             const int32 EventTextRegionIndex = Plan.Events[EventIndex].SpeechRegionIndex;
             const int32 EventWordIndex = Plan.Events[EventIndex].WordIndex;
+            const bool bWordFollowsStandardComma =
+                IsStandardCommaBoundary(Plan, EventWordIndex - 1);
             const bool bFirstEventInWord = EventIndex == 0
                 || Plan.Events[EventIndex - 1].WordIndex != EventWordIndex;
             const int32 PreviousWordIndex = EventIndex > 0
@@ -1103,6 +1139,68 @@ static void UpdateSimpleCommittedTrack(
                     >= DenseListMinimumBoundaryCount
                 && (IsFirstListBoundaryInSentence(Plan, PreviousWordIndex)
                     || IsLastListBoundaryInSentence(Plan, PreviousWordIndex));
+
+            // A word that has already published its first event owns that
+            // runtime region. If the region closes with an uncommitted suffix,
+            // finish the suffix at the owner's tail before considering any
+            // successor region. This is the constructive half of the
+            // fail-closed invariant below: it prevents a valid ownership guard
+            // from turning a late boundary decision into a permanent stall.
+            const bool bWordOwnedByActiveRegion = !bFirstEventInWord
+                && InOutTrack.Events.Num() > 0
+                && InOutTrack.Events.Last().WordIndex == EventWordIndex
+                && InOutTrack.Events.Last().SpeechRegionIndex
+                    == State.ActiveSpeechRegionIndex;
+            if (bWordOwnedByActiveRegion && Region.bEnded)
+            {
+                const int32 SuffixBeginEventIndex = EventIndex;
+                int32 WordEndEventIndex = EventIndex;
+                while (WordEndEventIndex + 1 < Plan.Events.Num()
+                    && Plan.Events[WordEndEventIndex + 1].WordIndex
+                        == EventWordIndex)
+                {
+                    ++WordEndEventIndex;
+                }
+                const int32 RemainingEventCount =
+                    WordEndEventIndex - EventIndex + 1;
+                const float OwnerRegionEnd = CausalRegionEnd(Region);
+                const float FirstCenter = FMath::Max(
+                    LastCenter + MinRegionTailCompactionSpacingSec,
+                    OwnerRegionEnd
+                        - MinRegionTailCompactionSpacingSec
+                            * static_cast<float>(RemainingEventCount - 1));
+                const float LastSuffixCenter = FirstCenter
+                    + MinRegionTailCompactionSpacingSec
+                        * static_cast<float>(RemainingEventCount - 1);
+                if (LastSuffixCenter
+                    <= OwnerRegionEnd + MaxAtomicWordTailOverrunSec + 0.001f)
+                {
+                    while (EventIndex <= WordEndEventIndex)
+                    {
+                        const float Center = FirstCenter
+                            + MinRegionTailCompactionSpacingSec
+                                * static_cast<float>(
+                                    EventIndex - SuffixBeginEventIndex);
+                        FOffgridAICommittedVisemeEvent Event;
+                        FillCommittedEvent(
+                            Input,
+                            Plan,
+                            Prior,
+                            State,
+                            EventIndex,
+                            State.ActiveSpeechRegionIndex,
+                            Center,
+                            FName(TEXT("owned_word_tail_commit")),
+                            Event);
+                        InOutTrack.Events.Add(Event);
+                        LastCenter = Center;
+                        ++EventIndex;
+                        State.NextTextEventIndex = EventIndex;
+                    }
+                    continue;
+                }
+            }
+
             if (Input.bEnableFocusedWordStartAlignment
                 && bSoftListBoundary
                 && State.LastResolvedListBoundaryWordIndex != EventWordIndex)
@@ -1374,6 +1472,60 @@ static void UpdateSimpleCommittedTrack(
                 Candidate = FMath::Max(Candidate, LastCenter + MinEventSpacingSec);
 
             const float RegionEnd = CausalRegionEnd(Region);
+
+            // A closed region makes ownership decidable for every untouched
+            // word, regardless of punctuation. Require its complete projected
+            // viseme sequence to fit before committing the first event;
+            // otherwise move the whole word to the decoded successor. Pause
+            // classes influence boundary detection, never word indivisibility.
+            if (bFirstEventInWord && Region.bEnded)
+            {
+                int32 WordEndEventIndex = EventIndex;
+                while (WordEndEventIndex + 1 < Plan.Events.Num()
+                    && Plan.Events[WordEndEventIndex + 1].WordIndex
+                        == EventWordIndex)
+                {
+                    ++WordEndEventIndex;
+                }
+                float WordEndCandidate = PriorToAudio(
+                    State,
+                    Prior.EventCenters[WordEndEventIndex]);
+                WordEndCandidate = FMath::Max(
+                    WordEndCandidate,
+                    Candidate + MinEventSpacingSec
+                        * static_cast<float>(WordEndEventIndex - EventIndex));
+                if (WordEndCandidate > RegionEnd - 0.010f)
+                {
+                    const int32 NextRegionIndex = State.ActiveSpeechRegionIndex + 1;
+                    if (Regions.IsValidIndex(NextRegionIndex))
+                    {
+                        AnchorSimpleCursorToRegion(
+                            Input,
+                            Plan,
+                            Prior,
+                            EventIndex,
+                            NextRegionIndex,
+                            Regions[NextRegionIndex],
+                            State);
+                        continue;
+                    }
+
+                    if (!Input.bInputStreamClosed)
+                    {
+                        // The current region has conclusively closed, but its
+                        // successor has not opened yet. Do not publish a
+                        // prefix of this word into the old region while
+                        // waiting: keep the complete word untouched until the
+                        // resume makes its ownership decidable. A definitively
+                        // closed input instead falls through to the bounded
+                        // final-tail completion path below.
+                        State.SchedulerBlockReason = FName(
+                            TEXT("whole_word_waiting_for_speech_resume"));
+                        break;
+                    }
+                }
+            }
+
             bool bUsedRegionTailCompaction = false;
             if (Input.bEnableFocusedWordStartAlignment
                 && Region.bEnded
@@ -1451,7 +1603,10 @@ static void UpdateSimpleCommittedTrack(
                     FMath::Max(
                         Region.AudioBufferLastSpeechSec + 0.030f,
                         Region.AudioBufferStartSec),
-                    Input.CurrentPlaybackSec + MaxCommitLeadSec);
+                    Input.CurrentPlaybackSec
+                        + (bWordFollowsStandardComma
+                            ? StandardCommaMaxCommitLeadSec
+                            : MaxCommitLeadSec));
             State.SchedulerNextEventIndex = EventIndex;
             State.SchedulerNextPhoneIndex = NextPhoneIndex;
             State.SchedulerCandidateCenterSec = Candidate;
@@ -1485,6 +1640,20 @@ static void UpdateSimpleCommittedTrack(
                 Reason = FName(TEXT("resume_region_anchor_commit"));
             else if (NextPhoneIndex == State.LastMatchedSyllablePhoneIndex)
                 Reason = FName(TEXT("bounded_syllable_rebase_commit"));
+
+            // Word ownership is immutable once its first event commits. The
+            // admission logic above should always resolve the complete word
+            // before a region handoff. Fail closed if any future scheduling
+            // path attempts to publish a suffix into another region.
+            if (InOutTrack.Events.Num() > 0
+                && InOutTrack.Events.Last().WordIndex == EventWordIndex
+                && InOutTrack.Events.Last().SpeechRegionIndex
+                    != State.ActiveSpeechRegionIndex)
+            {
+                State.SchedulerBlockReason = FName(
+                    TEXT("word_region_invariant_guard"));
+                break;
+            }
 
             FOffgridAICommittedVisemeEvent Event;
             FillCommittedEvent(
