@@ -189,6 +189,9 @@ struct FOffgridAIBoundaryPlaybackState
 class OFFGRIDAI_API FOffgridAILipsyncRuntimeSession
 {
 public:
+    static const TCHAR* GetImplementationVersion();
+    static int32 GetDiagnosticSchemaVersion();
+
     void Reset();
     void BeginLine(const FOffgridAILipsyncRuntimeBeginInput& Input);
     void PushAudioPCM16(const TArray<uint8>& PCMChunk, int32 BytesToUse, int32 SampleRate, int32 NumChannels, int64 ChunkStartSample = -1);

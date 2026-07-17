@@ -4079,19 +4079,39 @@ static std::string focus_alignment_grade_json(
             within_region_early_drift_max_ms,
             std::max(0.0, region_error - word_error) * 1000.0);
     }
+    struct PauseBoundaryRow
+    {
+        int region_before = -1;
+        int region_after = -1;
+        double start = 0.0;
+        double end = 0.0;
+        int samples = 0;
+        int active_samples = 0;
+    };
     int pause_samples = 0;
     int active_pause_samples = 0;
+    std::vector<PauseBoundaryRow> pause_boundaries;
     for (size_t index = 0; index + 1 < gold_speech.size(); ++index)
     {
+        PauseBoundaryRow boundary;
+        boundary.region_before = gold_speech[index].index;
+        boundary.region_after = gold_speech[index + 1].index;
+        boundary.start = gold_speech[index].end;
+        boundary.end = gold_speech[index + 1].start;
         for (double seconds = gold_speech[index].end;
              seconds + 0.0005 < gold_speech[index + 1].start;
              seconds += 0.001)
         {
             ++pause_samples;
+            ++boundary.samples;
             if (FOffgridAIVisemePerformer::Sample(
                     track, static_cast<float>(seconds), true).Num() > 0)
+            {
                 ++active_pause_samples;
+                ++boundary.active_samples;
+            }
         }
+        pause_boundaries.push_back(boundary);
     }
 
     std::ostringstream out;
@@ -4133,6 +4153,25 @@ static std::string focus_alignment_grade_json(
         << "  \"pause_duration_ms\": " << pause_samples << ",\n"
         << "  \"pause_animation_leakage_ms\": " << active_pause_samples << ",\n"
         << "  \"pause_clean_rate\": " << pause_clean_rate << ",\n"
+        << "  \"pause_boundaries\": [\n";
+    for (size_t index = 0; index < pause_boundaries.size(); ++index)
+    {
+        const auto& boundary = pause_boundaries[index];
+        out << "    {\"region_before\": " << boundary.region_before
+            << ", \"region_after\": " << boundary.region_after
+            << ", \"start\": " << boundary.start
+            << ", \"end\": " << boundary.end
+            << ", \"duration_ms\": " << boundary.samples
+            << ", \"animation_leakage_ms\": " << boundary.active_samples
+            << ", \"clean_rate\": "
+            << (boundary.samples > 0
+                ? 1.0 - static_cast<double>(boundary.active_samples)
+                    / static_cast<double>(boundary.samples)
+                : 1.0)
+            << "}"
+            << (index + 1 < pause_boundaries.size() ? "," : "") << "\n";
+    }
+    out << "  ],\n"
         << "  \"region_heads\": [\n";
     for (size_t index = 0; index < regions.size(); ++index)
     {
@@ -4192,6 +4231,7 @@ static std::string region_ownership_grade_json(
         std::vector<int> runtime_regions;
         std::vector<int> runtime_mapped_mfa_regions;
         bool runtime_region_integrity = false;
+        bool runtime_mfa_first_event_correct = false;
         bool runtime_mfa_majority_correct = false;
         bool runtime_mfa_strict_correct = false;
     };
@@ -4289,10 +4329,26 @@ static std::string region_ownership_grade_json(
         }
         row.runtime_region = mode_for_word(track, row.word_index);
         row.runtime_mapped_mfa_region = map_runtime_region_to_mfa(row.runtime_region);
-        row.runtime_region_integrity = row.committed_events > 0 && row.runtime_regions.size() == 1;
+        const int sole_runtime_region = row.runtime_regions.size() == 1
+            ? row.runtime_regions.front()
+            : -1;
+        const int events_in_sole_runtime_region = static_cast<int>(std::count_if(
+            track.Events.begin(), track.Events.end(), [&](const auto& event) {
+                return event.WordIndex == row.word_index
+                    && event.SpeechRegionIndex == sole_runtime_region;
+            }));
+        row.runtime_region_integrity = row.committed_events > 0
+            && sole_runtime_region >= 0
+            && events_in_sole_runtime_region == row.committed_events;
+        const auto first_runtime_event = std::find_if(
+            track.Events.begin(), track.Events.end(), [&](const auto& event) {
+                return event.WordIndex == row.word_index;
+            });
+        row.runtime_mfa_first_event_correct = first_runtime_event != track.Events.end()
+            && map_runtime_region_to_mfa(first_runtime_event->SpeechRegionIndex) == row.mfa_region;
         row.runtime_mfa_majority_correct = row.committed_events > 0
             && row.runtime_mapped_mfa_region == row.mfa_region;
-        row.runtime_mfa_strict_correct = row.committed_events > 0
+        row.runtime_mfa_strict_correct = row.runtime_region_integrity
             && !row.runtime_mapped_mfa_regions.empty()
             && std::all_of(
                 row.runtime_mapped_mfa_regions.begin(),
@@ -4382,6 +4438,10 @@ static std::string region_ownership_grade_json(
     std::ostringstream out;
     out << std::fixed << std::setprecision(6);
     out << "{\n"
+        << "  \"lipsync_implementation_version\": \""
+        << FOffgridAILipsyncRuntimeSession::GetImplementationVersion() << "\",\n"
+        << "  \"lipsync_diagnostic_schema_version\": "
+        << FOffgridAILipsyncRuntimeSession::GetDiagnosticSchemaVersion() << ",\n"
         << "  \"mfa_word_count\": " << words.size() << ",\n"
         << "  \"transcript_planned_word_count\": " << planned_word_count << ",\n"
         << "  \"runtime_committed_word_count\": " << committed_word_count << ",\n"
@@ -4418,6 +4478,7 @@ static std::string region_ownership_grade_json(
         for (size_t region_index = 0; region_index < row.runtime_mapped_mfa_regions.size(); ++region_index)
             out << (region_index > 0 ? ", " : "") << row.runtime_mapped_mfa_regions[region_index];
         out << "], \"runtime_region_integrity\": " << (row.runtime_region_integrity ? "true" : "false")
+            << ", \"runtime_mfa_first_event_correct\": " << (row.runtime_mfa_first_event_correct ? "true" : "false")
             << ", \"runtime_mfa_majority_correct\": " << (row.runtime_mfa_majority_correct ? "true" : "false")
             << ", \"runtime_mfa_strict_correct\": " << (row.runtime_mfa_strict_correct ? "true" : "false")
             << "}" << (index + 1 < words.size() ? "," : "") << "\n";
@@ -4431,6 +4492,8 @@ static std::string grade_json(const GradeReport& grade_report)
     std::ostringstream out;
     out << std::fixed << std::setprecision(3);
     out << "{\n"
+        << "  \"lipsync_implementation_version\": \""
+        << FOffgridAILipsyncRuntimeSession::GetImplementationVersion() << "\",\n"
         << "  \"gold_available\": " << (grade_report.gold_available ? "true" : "false") << ",\n"
         << "  \"gold_status\": \"" << grade_report.gold_status << "\",\n"
         << "  \"reference_count\": " << grade_report.reference_count << ",\n"

@@ -25,6 +25,58 @@ static bool SameContinuousSpeechGroup(const FOffgridAICommittedVisemeEvent* A, c
     return true;
 }
 
+static bool IsPerceptuallyImportant(const FOffgridAICommittedVisemeEvent& Event)
+{
+    const FString Phone = Event.SourcePhoneBase.ToUpper();
+
+    // Unknown-word fallbacks remain visible. The filter only removes CMU
+    // phones whose articulation is predominantly hidden inside the mouth.
+    if (Phone.IsEmpty() || Phone == TEXT("UNK")) return true;
+
+    // Vowel aperture, spreading, and rounding are visible speech cues.
+    if (Phone == TEXT("AA") || Phone == TEXT("AE") || Phone == TEXT("AH")
+        || Phone == TEXT("AO") || Phone == TEXT("AW") || Phone == TEXT("AY")
+        || Phone == TEXT("EH") || Phone == TEXT("ER") || Phone == TEXT("EY")
+        || Phone == TEXT("IH") || Phone == TEXT("IY") || Phone == TEXT("OW")
+        || Phone == TEXT("OY") || Phone == TEXT("UH") || Phone == TEXT("UW"))
+        return true;
+
+    // Retain consonant classes with reliable external lip, tooth, tongue-tip,
+    // or lip-rounding contrasts. Voicing distinctions share one visual pose.
+    return Phone == TEXT("P") || Phone == TEXT("B") || Phone == TEXT("M")
+        || Phone == TEXT("F") || Phone == TEXT("V")
+        || Phone == TEXT("TH") || Phone == TEXT("DH")
+        || Phone == TEXT("W") || Phone == TEXT("R") || Phone == TEXT("L")
+        || Phone == TEXT("SH") || Phone == TEXT("ZH")
+        || Phone == TEXT("CH") || Phone == TEXT("JH");
+}
+
+static const FOffgridAICommittedVisemeEvent* FindPreviousRenderedEvent(
+    const FOffgridAICommittedVisemeTrack& Track,
+    int32 EventIndex)
+{
+    for (int32 I = EventIndex - 1; I >= 0; --I)
+    {
+        const FOffgridAICommittedVisemeEvent& Candidate = Track.Events[I];
+        if (Candidate.bIsRenderable && IsPerceptuallyImportant(Candidate))
+            return &Candidate;
+    }
+    return nullptr;
+}
+
+static const FOffgridAICommittedVisemeEvent* FindNextRenderedEvent(
+    const FOffgridAICommittedVisemeTrack& Track,
+    int32 EventIndex)
+{
+    for (int32 I = EventIndex + 1; I < Track.Events.Num(); ++I)
+    {
+        const FOffgridAICommittedVisemeEvent& Candidate = Track.Events[I];
+        if (Candidate.bIsRenderable && IsPerceptuallyImportant(Candidate))
+            return &Candidate;
+    }
+    return nullptr;
+}
+
 static float EventWeightAt(
     const FOffgridAICommittedVisemeEvent& E,
     const FOffgridAICommittedVisemeEvent* Prev,
@@ -110,9 +162,10 @@ TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const 
     {
         const FOffgridAICommittedVisemeEvent& E = Track.Events[I];
         if (!E.bIsRenderable) continue;
+        if (!IsPerceptuallyImportant(E)) continue;
         if (!FMath::IsFinite(E.FinalRenderCenterSeconds)) continue;
-        const FOffgridAICommittedVisemeEvent* Prev = I > 0 ? &Track.Events[I - 1] : nullptr;
-        const FOffgridAICommittedVisemeEvent* Next = I + 1 < Track.Events.Num() ? &Track.Events[I + 1] : nullptr;
+        const FOffgridAICommittedVisemeEvent* Prev = FindPreviousRenderedEvent(Track, I);
+        const FOffgridAICommittedVisemeEvent* Next = FindNextRenderedEvent(Track, I);
         float RegionStartSeconds = Track.SpeechStartSeconds;
         float RegionEndSeconds = TNumericLimits<float>::Max();
         for (const auto& Region : Track.SpeechRegions)

@@ -8,7 +8,8 @@ Corpus acceptance follows the product priorities directly:
 3. Word starts: the first visible event must belong to the word's MFA region
    and be centered within 100 ms of its corresponding MFA phoneme.
 4. Word-region assignment: every planned event for a word must be committed,
-   and all of its events must map to the word's MFA region.
+   all events must belong to one runtime speech region, and that complete
+   region must map to the word's MFA region. Split words always fail.
 
 The first three are reported as `region_start.success_rate`,
 `pause.clean_rate`, and `word_start.success_rate`. Region- and word-start mean
