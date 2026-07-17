@@ -27,6 +27,7 @@ static constexpr float ListRestartMaximumValleySec = 0.180f;
 static constexpr float ListRestartMaximumValleyRMSNorm = 0.020f;
 static constexpr float ListRestartMinimumReboundRatio = 3.0f;
 static constexpr float ListRestartMinimumFlux = 0.060f;
+static constexpr int32 RecognizedListMinimumBoundaryCount = 1;
 static constexpr int32 DenseListMinimumBoundaryCount = 6;
 
 static float SpanForPose(const FName& PoseID)
@@ -231,7 +232,7 @@ static bool IsRecognizedListActive(
             }
         }
 
-        if (SoftBoundaryCount >= DenseListMinimumBoundaryCount
+        if (SoftBoundaryCount >= RecognizedListMinimumBoundaryCount
             && FirstListBoundary != INDEX_NONE)
         {
             if (CursorWordIndex >= FirstListBoundary && CursorWordIndex <= SentenceEnd)
@@ -416,6 +417,7 @@ static bool FindProsodicRestart(
             PeakFlux = FMath::Max(PeakFlux, Frame.Flux);
             if (FirstRestartIndex == INDEX_NONE
                 && DelaySec >= ListRestartMinimumValleySec - 0.001f
+                && Frame.bLearnedSpeech
                 && Frame.RMS >= ValleyRMS * MinimumReboundRatio
                 && (Frame.bStrongOnsetAnchor || Frame.SpeechEvidence >= 0.230f
                     || Frame.Flux >= 0.040f))
@@ -940,16 +942,30 @@ static float RefinedRegionOnsetSec(
     const TArray<FOffgridAIAudioLandmarkObservation> Evidence =
         FOffgridAIStreamingEvidenceSurface::Analyze(*Input.AudioFeatureFrames, Config);
     const FOffgridAIAudioLandmarkObservation* Best = nullptr;
+    const FOffgridAIAudioLandmarkObservation* ForwardFallback = nullptr;
     for (const auto& Observation : Evidence)
     {
         if (Observation.Type != EOffgridAIAudioLandmarkType::Resume
-            || Observation.DecisionSec > Input.ObservedAudioBufferEndSec + 0.001f
-            || FMath::Abs(Observation.CenterSec - Region.AudioBufferStartSec) > 0.100f)
+            || Observation.DecisionSec > Input.ObservedAudioBufferEndSec + 0.001f)
             continue;
-        if (!Best || FMath::Abs(Observation.CenterSec - Region.AudioBufferStartSec)
-                < FMath::Abs(Best->CenterSec - Region.AudioBufferStartSec))
-            Best = &Observation;
+        const float OffsetSec = Observation.CenterSec - Region.AudioBufferStartSec;
+        if (FMath::Abs(OffsetSec) <= 0.100f)
+        {
+            if (!Best || FMath::Abs(OffsetSec)
+                    < FMath::Abs(Best->CenterSec - Region.AudioBufferStartSec))
+                Best = &Observation;
+        }
+        else if (OffsetSec > 0.100f
+            && OffsetSec <= 0.250f
+            && Observation.Score >= 0.500f
+            && (!ForwardFallback
+                || Observation.CenterSec < ForwardFallback->CenterSec))
+        {
+            ForwardFallback = &Observation;
+        }
     }
+    if (!Best)
+        Best = ForwardFallback;
     return Best ? Best->CenterSec : AnchorSec;
 }
 
