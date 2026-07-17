@@ -95,8 +95,7 @@ constexpr float DetectorSoftBridgeHighBandMin = 0.24f;
 constexpr float DetectorSoftBridgeCentroidMin = 0.28f;
 constexpr float DetectorSoftBridgeRMSNormMin = 0.018f;
 constexpr float DetectorSoftBridgeEvidenceMin = 0.100f;
-constexpr int32 DetectorListMinimumPauseFrames = 12;
-constexpr float DetectorListConfirmedSoftLullMinSec = 0.150f;
+constexpr int32 DetectorListMinimumPauseFrames = 10;
 
 static float DetectorSpeechEvidence(float RMSNorm, float Flux, float Periodicity, float MidBandNorm, float HighBandNorm, float SpectralCentroidNorm)
 {
@@ -1560,24 +1559,7 @@ void FOffgridAIStreamingSpeechDetector::DecodeLearnedSpeechFrame(int32 FrameInde
     }
     const bool bListSensitiveQuietRun =
         FeatureFrames[LearnedQuietCandidateStartFrame].bListGapSensitive;
-    const float QuietStartSec =
-        FeatureFrames[LearnedQuietCandidateStartFrame].AudioBufferStartSec;
-    const float QuietEndSec = Frame.AudioBufferEndSec;
-    bool bConfirmedListSoftLull = false;
-    if (bListSensitiveQuietRun)
-    {
-        for (const FOffgridAIStreamingSoftLullCandidate& Lull : SoftLullCandidates)
-        {
-            if (Lull.LullDurationSec >= DetectorListConfirmedSoftLullMinSec
-                && Lull.LullEndSec >= QuietStartSec
-                && Lull.LullStartSec <= QuietEndSec)
-            {
-                bConfirmedListSoftLull = true;
-                break;
-            }
-        }
-    }
-    const int32 MinimumPauseFrames = bConfirmedListSoftLull
+    const int32 MinimumPauseFrames = bListSensitiveQuietRun
         ? DetectorListMinimumPauseFrames
         : StreamingRegionMinimumPauseFrames;
     if (FrameIndex - LearnedQuietCandidateStartFrame + 1 < MinimumPauseFrames)

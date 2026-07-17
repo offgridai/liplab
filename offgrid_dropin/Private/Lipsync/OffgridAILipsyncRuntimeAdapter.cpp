@@ -11,6 +11,7 @@ static constexpr float MinLiveLeadSec = 0.030f;
 static constexpr float MinEventSpacingSec = 0.035f;
 static constexpr float MinRegionTailCompactionSpacingSec = 0.001f;
 static constexpr float MaxRegionTailCompactionOverrunSec = 0.020f;
+static constexpr float MaxAtomicWordTailOverrunSec = 0.040f;
 static constexpr float NominalPriorPlaybackRate = 0.90f;
 static constexpr float FocusedPriorPlaybackRate = 1.05f;
 static constexpr float FocusedMinimumAdaptiveRate = FocusedPriorPlaybackRate;
@@ -192,6 +193,67 @@ static bool IsListGapSensitiveAtCursor(
         && WordIndex <= SentenceEnd;
 }
 
+static bool IsRecognizedListActive(
+    const FOffgridAITextVisemePlan& Plan,
+    const FOffgridAIBoundaryPlaybackState& State)
+{
+    if (Plan.Events.Num() == 0 || Plan.WordBoundaryPauseClassAfter.Num() == 0)
+        return false;
+
+    const int32 EventIndex = FMath::Clamp(State.NextTextEventIndex, 0, Plan.Events.Num() - 1);
+    const int32 CursorWordIndex = Plan.Events[EventIndex].WordIndex;
+    const int32 LatchedListWordIndex = State.PendingListBoundaryWordIndex != INDEX_NONE
+        ? State.PendingListBoundaryWordIndex
+        : State.LastResolvedListBoundaryWordIndex;
+
+    int32 SentenceStart = 0;
+    while (SentenceStart < Plan.WordBoundaryPauseClassAfter.Num())
+    {
+        int32 SentenceEnd = Plan.WordBoundaryPauseClassAfter.Num() - 1;
+        int32 FirstListBoundary = INDEX_NONE;
+        int32 SoftBoundaryCount = 0;
+        for (int32 Index = SentenceStart;
+            Index < Plan.WordBoundaryPauseClassAfter.Num();
+            ++Index)
+        {
+            const EOffgridAIBoundaryPauseClass PauseClass =
+                Plan.WordBoundaryPauseClassAfter[Index];
+            if (PauseClass == EOffgridAIBoundaryPauseClass::SoftListPause)
+            {
+                if (FirstListBoundary == INDEX_NONE)
+                    FirstListBoundary = Index;
+                ++SoftBoundaryCount;
+            }
+            if (PauseClass == EOffgridAIBoundaryPauseClass::HardBreakPause)
+            {
+                SentenceEnd = Index;
+                break;
+            }
+        }
+
+        if (SoftBoundaryCount >= DenseListMinimumBoundaryCount
+            && FirstListBoundary != INDEX_NONE)
+        {
+            if (CursorWordIndex >= FirstListBoundary && CursorWordIndex <= SentenceEnd)
+                return true;
+
+            // The text scheduler may reach the following sentence before all
+            // of the list audio has arrived. Once a list boundary is pending
+            // or resolved, retain sensitivity until its real hard break has
+            // been acoustically resolved; do not leak it into later speech.
+            if (LatchedListWordIndex >= FirstListBoundary
+                && LatchedListWordIndex <= SentenceEnd + 1
+                && State.LastResolvedPauseBoundaryWordIndex < SentenceEnd)
+            {
+                return true;
+            }
+        }
+
+        SentenceStart = SentenceEnd + 1;
+    }
+    return false;
+}
+
 static int32 ListBoundaryCountInSentence(
     const FOffgridAITextVisemePlan& Plan,
     int32 WordIndex)
@@ -264,6 +326,31 @@ static bool IsFirstListBoundaryInSentence(
     return Plan.WordBoundaryPauseClassAfter.IsValidIndex(BoundaryWordIndex)
         && Plan.WordBoundaryPauseClassAfter[BoundaryWordIndex]
             == EOffgridAIBoundaryPauseClass::SoftListPause;
+}
+
+static bool IsLastListBoundaryInSentence(
+    const FOffgridAITextVisemePlan& Plan,
+    int32 BoundaryWordIndex)
+{
+    if (!Plan.WordBoundaryPauseClassAfter.IsValidIndex(BoundaryWordIndex)
+        || Plan.WordBoundaryPauseClassAfter[BoundaryWordIndex]
+            != EOffgridAIBoundaryPauseClass::SoftListPause)
+    {
+        return false;
+    }
+
+    for (int32 Index = BoundaryWordIndex + 1;
+        Index < Plan.WordBoundaryPauseClassAfter.Num();
+        ++Index)
+    {
+        const EOffgridAIBoundaryPauseClass PauseClass =
+            Plan.WordBoundaryPauseClassAfter[Index];
+        if (PauseClass == EOffgridAIBoundaryPauseClass::SoftListPause)
+            return false;
+        if (PauseClass == EOffgridAIBoundaryPauseClass::HardBreakPause)
+            break;
+    }
+    return true;
 }
 
 static bool FindTrailingListQuietRun(
@@ -641,7 +728,7 @@ void FOffgridAILipsyncRuntimeSession::PushAudioPCM16(
     if (!bBegun) return;
     Detector.SetListGapSensitivity(
         bEnableFocusedWordStartAlignment
-        && IsListGapSensitiveAtCursor(TextPlan, PlaybackState));
+        && IsRecognizedListActive(TextPlan, PlaybackState));
     Detector.AppendPCM16(PCMChunk, BytesToUse, SampleRate, NumChannels, ChunkStartSample);
     RefreshResolvedSpeechRegions();
     ++PCMChunkCount;
@@ -990,10 +1077,16 @@ static void UpdateSimpleCommittedTrack(
                 && Plan.WordBoundaryPauseClassAfter.IsValidIndex(PreviousWordIndex)
                 && Plan.WordBoundaryPauseClassAfter[PreviousWordIndex]
                     == EOffgridAIBoundaryPauseClass::HardBreakPause;
+            const bool bCommaBoundary = bFirstEventInWord
+                && Plan.WordBoundaryPunctuationAfter.IsValidIndex(PreviousWordIndex)
+                && Plan.WordBoundaryPunctuationAfter[PreviousWordIndex] == TEXT(',');
+            const bool bStrictHardBreakBoundary = bHardBreakBoundary
+                && !bCommaBoundary;
             const bool bDenseListEntryBoundary = bSoftListBoundary
                 && ListBoundaryCountInSentence(Plan, EventWordIndex)
                     >= DenseListMinimumBoundaryCount
-                && IsFirstListBoundaryInSentence(Plan, PreviousWordIndex);
+                && (IsFirstListBoundaryInSentence(Plan, PreviousWordIndex)
+                    || IsLastListBoundaryInSentence(Plan, PreviousWordIndex));
             if (Input.bEnableFocusedWordStartAlignment
                 && bSoftListBoundary
                 && State.LastResolvedListBoundaryWordIndex != EventWordIndex)
@@ -1055,18 +1148,18 @@ static void UpdateSimpleCommittedTrack(
                     {
                         if (State.PendingListQuietStartSec < 0.0f)
                             State.PendingListQuietStartSec = QuietStartSec;
-                        if (!Input.bInputStreamClosed
-                            && Input.ObservedAudioBufferEndSec
-                                <= State.PendingListQuietStartSec
-                                    + ListRestartMaximumValleySec + 0.001f)
+                        if (!Input.bInputStreamClosed)
                         {
                             State.SchedulerBlockReason = FName(
                                 TEXT("waiting_for_list_prosodic_restart"));
                             break;
                         }
 
-                        // An expired quiet run or a closed stream resolves
-                        // the comma without fabricating a pause.
+                        // A closed stream resolves a terminal quiet run
+                        // without fabricating a pause. During live playback,
+                        // persistent quiet remains pending until either a
+                        // restart arrives or the detector closes the region;
+                        // residual tail speech cannot release the next word.
                         State.LastResolvedListBoundaryWordIndex = EventWordIndex;
                         State.PendingListBoundaryWordIndex = INDEX_NONE;
                         State.PendingListSearchStartSec = -1.0f;
@@ -1177,7 +1270,7 @@ static void UpdateSimpleCommittedTrack(
                             const bool bQualifiedVirtualResume =
                                 bObservedQuietAfterProbe
                                 && bStrongVirtualResume
-                                && (!bHardBreakBoundary
+                                && (!bStrictHardBreakBoundary
                                     || ContiguousQuietSec
                                         >= HardVirtualResumeMinimumQuietSec);
                             if (bObservedQuietAfterProbe && !bQualifiedVirtualResume)
@@ -1190,7 +1283,7 @@ static void UpdateSimpleCommittedTrack(
                                 if (bHardBreakBoundary)
                                     continue;
                             }
-                            if (bHardBreakBoundary && !bQualifiedVirtualResume)
+                            if (bStrictHardBreakBoundary && !bQualifiedVirtualResume)
                                 continue;
                             bObservedSpeechAfterProbe = true;
                             if (bQualifiedVirtualResume)
@@ -1206,7 +1299,7 @@ static void UpdateSimpleCommittedTrack(
                         // next sentence into the current phrase. Hard breaks
                         // require an observed quiet-to-speech restart (or a
                         // decoded region handoff).
-                        && (!bHardBreakBoundary || ObservedResumeSec >= 0.0f))
+                        && (!bStrictHardBreakBoundary || ObservedResumeSec >= 0.0f))
                     {
                     // Punctuation may propose a text region without an
                     // independently decoded region. Continuous evidence keeps
@@ -1280,22 +1373,36 @@ static void UpdateSimpleCommittedTrack(
                         break;
                     ++RemainingCompactionEventCount;
                 }
+                const bool bWordAlreadyCommittedToActiveRegion =
+                    InOutTrack.Events.Num() > 0
+                    && InOutTrack.Events.Last().WordIndex == EventWordIndex
+                    && InOutTrack.Events.Last().SpeechRegionIndex
+                        == State.ActiveSpeechRegionIndex;
+                const float TailCompactionSpacing = MinRegionTailCompactionSpacingSec;
                 float CompactedCandidate = RegionEnd
                     + (bFinalClosedRegion ? 0.0f : MaxRegionTailCompactionOverrunSec)
-                    - MinRegionTailCompactionSpacingSec
+                    - TailCompactionSpacing
                         * static_cast<float>(FMath::Max(RemainingCompactionEventCount - 1, 0));
                 const float EarliestCandidate = LastCenter >= 0.0f
-                    ? LastCenter + MinRegionTailCompactionSpacingSec
+                    ? LastCenter + TailCompactionSpacing
                     : Region.AudioBufferStartSec;
                 if (bFinalClosedRegion)
                     CompactedCandidate = FMath::Max(CompactedCandidate, EarliestCandidate);
+                else if (bWordAlreadyCommittedToActiveRegion
+                    && EarliestCandidate
+                        <= RegionEnd + MaxAtomicWordTailOverrunSec + 0.001f)
+                {
+                    CompactedCandidate = FMath::Max(CompactedCandidate, EarliestCandidate);
+                }
                 // Before the final closed region, tail compaction is only a
                 // recovery for one stranded terminal pose in the current
                 // word. Compressing a larger live suffix can consume a later
                 // word that belongs to the next acoustic region. Once the
                 // complete stream proves there is no successor, the same
                 // bounded monotonic path may finish the final suffix.
-                if ((RemainingCompactionEventCount == 1 || bFinalClosedRegion)
+                if ((RemainingCompactionEventCount == 1
+                        || bWordAlreadyCommittedToActiveRegion
+                        || bFinalClosedRegion)
                     && CompactedCandidate >= EarliestCandidate - 0.001f
                     && CompactedCandidate >= Region.AudioBufferStartSec - 0.001f
                     && (!bFinalClosedRegion
