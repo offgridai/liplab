@@ -31,6 +31,10 @@ Important distinction:
 - Likewise, a detected speech-region end is discovered in ingested-audio time.
   It must not cause the region's remaining viseme suffix to be dropped until
   audible playback has actually reached that region end.
+- If a word has already started in that region, the shared scheduler preserves
+  its atomic ownership with the bounded tail-compaction rule documented in
+  `docs/focused_alignment.md`. LineCoach must not independently move or split
+  that word.
 
 LineCoach should not contain:
 
