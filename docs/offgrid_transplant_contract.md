@@ -35,6 +35,10 @@ Important distinction:
   its atomic ownership with the bounded tail-compaction rule documented in
   `docs/focused_alignment.md`. LineCoach must not independently move or split
   that word.
+- A terminal `final_speech_closed_with_unplayed_suffix` block reason is a host
+  lifecycle failure even if the visual result appears mostly complete. Capture
+  the implementation version, observed audio end, close/finalize order, and
+  audible playback time so the same WAV can be compared with the harness.
 
 LineCoach should not contain:
 
