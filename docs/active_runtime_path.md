@@ -36,7 +36,10 @@ records acoustic evidence inside this scheduler; it does not own time.
 The scheduler also enforces atomic word ownership at closed region tails. Once
 a word has begun in a region, its remaining ordered events may use bounded tail
 compaction (1 ms minimum spacing and at most 40 ms overrun) rather than splitting
-the word across regions. See `docs/focused_alignment.md`.
+the word across regions. This recovery is deferred until a decoded successor
+exists. If stream closure instead proves the region is final, the single
+final-tail completion path owns the entire remaining suffix. See
+`docs/focused_alignment.md`.
 
 ## Diagnostic contract
 
@@ -50,6 +53,8 @@ The harness retains metrics that explain one of these active stages:
 - committed viseme timing, coverage, monotonicity, and uncommitted suffixes.
 - strict word-to-region ownership, word-region integrity, and inter-word
   boundary agreement against MFA.
+- implementation-versioned terminal scheduler state, including incomplete
+  final suffixes and live/harness lifecycle divergence.
 
 Offline tuning programs and metrics for deleted runtime modes are intentionally
 not retained.

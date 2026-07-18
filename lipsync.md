@@ -66,10 +66,12 @@ Neither component chooses a transcript phone or viseme.
    no more than 160 ms ahead of audible playback.
 5. If a stable monotonic syllable assignment becomes available, move the
    timeline anchor by at most 120 ms. Only uncommitted events are affected.
-6. At a confirmed region end, stop committing into that region. Carry the next
-   uncommitted transcript event to the next observed region.
-7. If the final region closes before the plan is exhausted, leave the remaining
-   suffix uncommitted rather than bursting it after speech.
+6. At a confirmed region end, stop admitting untouched words into that region.
+   A word that already owns the region remains pending until a decoded successor
+   exists, then may finish through bounded atomic tail compaction.
+7. If stream closure proves that the active region is final, distribute the
+   complete remaining suffix through the one bounded final-tail completion path.
+   Do not first consume the endpoint with per-word recovery.
 
 Late recovery may move the uncommitted cursor forward to a small live lead. It
 never reorders events or changes identity.
@@ -78,7 +80,8 @@ never reorders events or changes identity.
 
 - committed events are append-only and strictly monotonic,
 - audio never substitutes or suppresses transcript identity,
-- no event is committed outside an observed speech region,
+- bounded owned-word and final-tail completion may use only the known audio tail;
+  no independent post-audio scheduler exists,
 - one scheduler owns all placement,
 - optional syllable correction is bounded and cannot affect committed events,
 - stream closure and audible playback completion are separate events.

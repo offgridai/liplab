@@ -2701,7 +2701,7 @@ static std::string speech_csv(const TArray<FOffgridAIStreamingSpeechRegion>& spe
 static std::string occupancy_frames_csv(const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames)
 {
     std::ostringstream out;
-    out << "index,start,end,center,rms,rms_norm,delta_rms,flux,zcr,low_band,mid_band,high_band,centroid,periodicity,evidence,open_threshold,close_threshold,in_speech_before,in_speech_after,open_candidate,keep_open,strong_onset,strong_quiet,low_evidence,endpoint_active,silence_accum,endpoint_start,active_speech_region_start,active_speech_region_end,frame_started_speech_region,frame_closed_speech_region,frame_bridged_speech_region,decision,local_rms_peak,local_rms_valley,local_flux_peak,derived_pause_family,derived_pause_confidence,learned_speech_probability,learned_speech\n";
+    out << "index,start,end,center,rms,rms_norm,delta_rms,flux,zcr,low_band,mid_band,high_band,centroid,periodicity,evidence,open_threshold,close_threshold,in_speech_before,in_speech_after,open_candidate,keep_open,strong_onset,strong_quiet,low_evidence,endpoint_active,silence_accum,endpoint_start,active_speech_region_start,active_speech_region_end,frame_started_speech_region,frame_closed_speech_region,frame_bridged_speech_region,decision,local_rms_peak,local_rms_valley,local_flux_peak,derived_pause_family,derived_pause_confidence,list_gap_sensitive,learned_speech_probability,learned_speech\n";
     out << std::fixed << std::setprecision(6);
     for (int32 i = 0; i < frames.Num(); ++i)
     {
@@ -2744,6 +2744,7 @@ static std::string occupancy_frames_csv(const TArray<FOffgridAIStreamingAudioFea
             << (f.bLocalFluxPeak ? 1 : 0) << ','
             << derived_pause_family(f) << ','
             << derived_pause_confidence(f) << ','
+            << (f.bListGapSensitive ? 1 : 0) << ','
             << f.LearnedSpeechProbability << ','
             << (f.bLearnedSpeech ? 1 : 0) << '\n';
     }
@@ -4029,6 +4030,37 @@ static std::string focus_alignment_grade_json(
         regions.push_back(word);
     }
 
+    // Priority-0 perceptual target: the first animated pose in a speech
+    // region should peak on the first syllable nucleus, even when that pose
+    // depicts a consonant onset (for example W in "what").
+    auto is_vowel_phone = [](const std::string& phone) {
+        static const std::vector<std::string> vowels = {
+            "AA", "AE", "AH", "AO", "AW", "AY", "EH", "ER",
+            "EY", "IH", "IY", "OW", "OY", "UH", "UW"
+        };
+        return std::find(vowels.begin(), vowels.end(), phone) != vowels.end();
+    };
+    std::vector<CenterRow> region_nuclei;
+    for (const auto& region : regions)
+    {
+        const auto nucleus = std::find_if(handmade.begin(), handmade.end(), [&](const HandmadeLabel& label) {
+            return label.word_index == region.word_index
+                && label.speech_region_index == region.region_index
+                && is_vowel_phone(label.source_phone_base);
+        });
+        const auto first_event = std::find_if(track.Events.begin(), track.Events.end(), [&](const auto& event) {
+            return event.bIsRenderable && event.WordIndex == region.word_index;
+        });
+        if (nucleus == handmade.end() || first_event == track.Events.end()) continue;
+        region_nuclei.push_back({
+            region.word_index,
+            region.region_index,
+            nucleus->word,
+            nucleus->source_phone_base,
+            0.5 * (nucleus->start + nucleus->end),
+            first_event->FinalRenderCenterSeconds });
+    }
+
     auto mean_abs_ms = [](const std::vector<CenterRow>& rows) {
         double total = 0.0;
         for (const auto& row : rows)
@@ -4138,6 +4170,9 @@ static std::string focus_alignment_grade_json(
         << "  \"matched_region_head_count\": " << regions.size() << ",\n"
         << "  \"region_head_coverage_rate\": " << region_head_coverage_rate << ",\n"
         << "  \"region_head_mean_abs_ms\": " << mean_abs_ms(regions) << ",\n"
+        << "  \"expected_region_nucleus_count\": " << expected_region_indices.size() << ",\n"
+        << "  \"matched_region_nucleus_count\": " << region_nuclei.size() << ",\n"
+        << "  \"region_nucleus_mean_abs_ms\": " << mean_abs_ms(region_nuclei) << ",\n"
         << "  \"expected_region_resume_count\": " << expected_region_resume_count << ",\n"
         << "  \"region_resume_in_pause_count\": " << region_resume_in_pause_count << ",\n"
         << "  \"region_resume_in_pause_rate\": "
@@ -4185,6 +4220,18 @@ static std::string focus_alignment_grade_json(
             << ", \"is_resume\": " << (is_region_resume(row) ? "true" : "false")
             << ", \"resume_in_pause_ms\": " << region_resume_in_pause_ms(row) << "}"
             << (index + 1 < regions.size() ? "," : "") << "\n";
+    }
+    out << "  ],\n  \"region_nuclei\": [\n";
+    for (size_t index = 0; index < region_nuclei.size(); ++index)
+    {
+        const auto& row = region_nuclei[index];
+        out << "    {\"region_index\": " << row.region_index
+            << ", \"word_index\": " << row.word_index
+            << ", \"word\": \"" << row.word << "\", \"nucleus_phone\": \"" << row.phone
+            << "\", \"gold_nucleus_center\": " << row.gold_center
+            << ", \"first_viseme_center\": " << row.runtime_center
+            << ", \"error_ms\": " << (row.runtime_center - row.gold_center) * 1000.0 << "}"
+            << (index + 1 < region_nuclei.size() ? "," : "") << "\n";
     }
     out << "  ],\n  \"word_heads\": [\n";
     for (size_t index = 0; index < words.size(); ++index)

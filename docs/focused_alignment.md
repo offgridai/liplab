@@ -61,7 +61,11 @@ decoded region handoff.
 A word must not be divided across speech regions merely because its duration
 prior reaches a closed region tail. Once any event from a word has committed to
 the active region, the scheduler may compact the remaining events of that word
-monotonically into the same tail.
+monotonically into the same tail, but only after a decoded successor region is
+actually available. If the region closes before either a successor appears or
+the PCM stream closes, the suffix remains pending. This prevents a provisionally
+final region from consuming its endpoint before final-line completion knows how
+many events remain.
 
 The recovery is deliberately bounded:
 
@@ -71,6 +75,11 @@ The recovery is deliberately bounded:
   speech end,
 - a word that cannot satisfy that bound is handed to the next observed region.
 
+When stream closure proves that the active region is final, one final-tail path
+distributes the complete remaining transcript suffix monotonically over the
+known audio tail. The per-word recovery path does not run first. This ordering
+is required to prevent `final_speech_closed_with_unplayed_suffix` failures.
+
 This repaired the corpus splits in `friendship`, `park`, and `and` without
 changing pause cleanliness or boundary agreement.
 
@@ -78,43 +87,46 @@ changing pause cleanliness or boundary agreement.
 
 `scripts/summarize_alignment.py` produces one priority-ordered scorecard:
 
-1. `region_start.success_rate`: the first viseme in each MFA speech region is
-   assigned to that region and its center is within 100 ms of the corresponding
-   MFA phoneme center.
-2. `pause.clean_rate`: the duration-weighted share of MFA inter-region silence
-   with no visible animation.
-3. `word_start.success_rate`: each word's first viseme is assigned to the
-   correct MFA region and centered within 100 ms of its first MFA phoneme.
-4. `word_region_assignment.success_rate`: every planned event for the word was
-   committed, all committed events belong to one runtime speech region, and
-   that complete region maps to the word's MFA region. A word split across two
-   runtime regions fails even when both runtime regions overlap the same MFA
-   region.
+1. `strict_region_segmentation.exact_boundary_rate`: every adjacent-word
+   boundary must agree at the MFA, transcript-plan, and physical runtime levels.
+2. `strict_three_level_word_assignment.success_rate`: every planned event for
+   a word must commit, the complete word must occupy one runtime region, and
+   transcript, physical runtime, and MFA must map that region identically.
+3. `strict_region_nucleus_alignment.success_rate`: the first rendered pose of
+   each MFA region must belong to the correct complete word and fall within
+   50 ms of that word's first syllable nucleus.
 
-Region- and word-start mean absolute errors remain alongside the success rates
-as timing diagnostics. Event completion and event order are hard guardrails.
-All other case-level measurements are diagnostic and do not define acceptance.
+`pause.clean_rate` remains the animation-hold guardrail. Legacy region-head and
+word-head measurements remain diagnostic only. Event completion and event order
+are hard guardrails.
 
 ## Accepted corpus result
 
-The accepted focused run covers 344 cases and 3619 MFA words:
+The accepted focused run covers 350 cases and 3696 MFA words:
 
 | Metric | Result |
 | --- | ---: |
-| Region-start success (owned and within 100 ms) | 92.6% |
-| Region-head MAE | 59.0 ms |
-| Pause cleanliness | 97.66% |
-| Word-start success (owned and within 100 ms) | 66.1% |
-| Word-head MAE | 126.1 ms |
-| Complete, strict word-to-region assignment | 98.26% |
+| Exact three-level boundaries | 3241 / 3346 (96.86%) |
+| Cases with perfect three-level segmentation | 285 / 350 (81.43%) |
+| Complete three-level word assignment | 3642 / 3696 (98.54%) |
+| Region nucleus alignment within 50 ms | 510 / 847 (60.21%) |
+| Region nucleus MAE | 74.1 ms |
+| Pause cleanliness | 98.62% |
 | Event completion | 100.00% |
 | Ordering violations | 0 |
 
-Relative to the immediately preceding focused result, incorrect words fell
-from 66 to 63, affected cases from 35 to 32, and split words from 3 to 0.
-Region-head MAE improved from 60.4 ms to 59.0 ms and word-head MAE improved
-from 126.6 ms to 126.1 ms. Pause cleanliness and runtime/MFA boundary agreement
-did not regress.
+The six July 18 Offgrid captures are included as cases 0353 through 0358. They
+add 77 words: all 77 pass complete three-level ownership, 70 of 71 boundaries
+agree, and 12 of 15 region nuclei fall within 50 ms. The focused harness commits
+all 261 planned events for these lines.
+
+The corresponding live v7 logs expose an integration discrepancy that remains
+open: three lines finish with `final_speech_closed_with_unplayed_suffix`, for a
+combined 256 of 261 committed events, even though the exact stored WAVs complete
+in the harness. A host capture with that terminal reason is not considered a
+successful lifecycle result. Investigation should compare the live
+`ObservedAudioBufferEndSec`, close/finalize ordering, and final playback clock
+against the harness before changing scheduling policy again.
 
 ## Rejected experiment
 

@@ -29,12 +29,11 @@ def value(document: dict, path: str):
 
 
 checks = [
-    ("region_start.success_rate", "min", "max_region_start_success_drop"),
-    ("region_start.mean_abs_error_ms", "max", "max_region_start_mae_ms_increase"),
+    ("strict_region_segmentation.exact_boundary_rate", "min", "max_strict_region_drop"),
+    ("strict_three_level_word_assignment.success_rate", "min", "max_strict_word_assignment_drop"),
+    ("strict_region_nucleus_alignment.success_rate", "min", "max_region_nucleus_success_drop"),
+    ("strict_region_nucleus_alignment.mean_abs_error_ms", "max", "max_region_nucleus_mae_ms_increase"),
     ("pause.clean_rate", "min", "max_pause_clean_drop"),
-    ("word_start.success_rate", "min", "max_word_start_success_drop"),
-    ("word_start.mean_abs_error_ms", "max", "max_word_start_mae_ms_increase"),
-    ("word_region_assignment.success_rate", "min", "max_word_region_assignment_drop"),
     ("guardrails.event_completion_rate", "min", "max_event_completion_drop"),
 ]
 

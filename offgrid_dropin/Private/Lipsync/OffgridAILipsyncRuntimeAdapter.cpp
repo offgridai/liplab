@@ -1151,7 +1151,13 @@ static void UpdateSimpleCommittedTrack(
                 && InOutTrack.Events.Last().WordIndex == EventWordIndex
                 && InOutTrack.Events.Last().SpeechRegionIndex
                     == State.ActiveSpeechRegionIndex;
-            if (bWordOwnedByActiveRegion && Region.bEnded)
+            const bool bFinalClosedRegion = Input.bInputStreamClosed
+                && State.ActiveSpeechRegionIndex == Regions.Num() - 1;
+            const bool bSuccessorRegionAvailable =
+                Regions.IsValidIndex(State.ActiveSpeechRegionIndex + 1);
+            if (bWordOwnedByActiveRegion
+                && Region.bEnded
+                && bSuccessorRegionAvailable)
             {
                 const int32 SuffixBeginEventIndex = EventIndex;
                 int32 WordEndEventIndex = EventIndex;
@@ -1448,9 +1454,9 @@ static void UpdateSimpleCommittedTrack(
             const int32 NextPhoneIndex = Plan.Events[EventIndex].SourcePhoneGlobalIndex;
 
             // Syllable evidence may move only the uncommitted suffix. It never
-            // changes event identity, event order, or the audio gate. Region
-            // onset owns the first visible event; pulse evidence starts after
-            // that priority-zero anchor has committed.
+            // changes event identity, event order, or the audio gate. The
+            // region-head pose is positioned from the transcript nucleus
+            // below; pulse-based rebasing starts after that anchor commits.
             const bool bFirstEventInTextRegion = EventIndex == 0
                 || Plan.Events[EventIndex - 1].SpeechRegionIndex
                     != EventTextRegionIndex;
@@ -1470,6 +1476,31 @@ static void UpdateSimpleCommittedTrack(
             Candidate = FMath::Max(Candidate, Region.AudioBufferStartSec);
             if (LastCenter >= 0.0f)
                 Candidate = FMath::Max(Candidate, LastCenter + MinEventSpacingSec);
+
+            const bool bFirstEventInAudioRegion = InOutTrack.Events.Num() == 0
+                || InOutTrack.Events.Last().SpeechRegionIndex
+                    != State.ActiveSpeechRegionIndex;
+            if (Input.bEnableFocusedWordStartAlignment
+                && bFirstEventInAudioRegion)
+            {
+                const auto FirstSyllable = std::find_if(
+                    Plan.Syllables.begin(),
+                    Plan.Syllables.end(),
+                    [&](const FOffgridAIPlannedSyllable& Syllable) {
+                        return Syllable.WordIndex == EventWordIndex;
+                    });
+                if (FirstSyllable != Plan.Syllables.end()
+                    && Prior.PhoneCenters.IsValidIndex(
+                        FirstSyllable->NucleusPhoneIndex))
+                {
+                    Candidate = FMath::Max(
+                        Candidate,
+                        PriorToAudio(
+                            State,
+                            Prior.PhoneCenters[
+                                FirstSyllable->NucleusPhoneIndex]));
+                }
+            }
 
             const float RegionEnd = CausalRegionEnd(Region);
 
@@ -1531,8 +1562,6 @@ static void UpdateSimpleCommittedTrack(
                 && Region.bEnded
                 && Candidate > RegionEnd - 0.010f)
             {
-                const bool bFinalClosedRegion = Input.bInputStreamClosed
-                    && State.ActiveSpeechRegionIndex == Regions.Num() - 1;
                 int32 RemainingCompactionEventCount = 0;
                 for (int32 TailIndex = EventIndex; TailIndex < Plan.Events.Num(); ++TailIndex)
                 {
