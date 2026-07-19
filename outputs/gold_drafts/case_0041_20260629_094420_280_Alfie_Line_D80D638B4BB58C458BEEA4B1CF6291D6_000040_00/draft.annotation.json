@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "case_id": "case_0041_20260629_094420_280_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000040_00",
-  "created_utc": "2026-07-15T20:24:43.743177+00:00",
+  "created_utc": "2026-07-18T19:33:44.963640+00:00",
   "generator": {
     "kind": "liplab_gold_mfa_phase1",
     "buffer_ms": 600000,
@@ -15,7 +15,7 @@
     "status": "approved_gold",
     "reviewed": true,
     "reviewer": "auto_mfa_phone_export",
-    "reviewed_utc": "2026-07-15T20:24:43.743241+00:00"
+    "reviewed_utc": "2026-07-18T19:33:44.963761+00:00"
   },
   "review_layers": {
     "speech_regions": {
@@ -48,7 +48,7 @@
       "start": 0.06,
       "end": 3.16,
       "word_start_index": 0,
-      "word_end_index": 9,
+      "word_end_index": 8,
       "sentence_start_index": -1,
       "sentence_end_index": -1,
       "source": "mfa_word_aligned_pause_regions",
@@ -195,23 +195,6 @@
       "acoustic_gap_seconds": 0.0,
       "speech_region_index_before": 0,
       "speech_region_index_after": 0
-    },
-    {
-      "word_index": 8,
-      "word": "the",
-      "next_word_index": 9,
-      "next_word": "world",
-      "mark": "!",
-      "mark_sequence": "!",
-      "pause_class": "none",
-      "split_applied": false,
-      "split_reason": "none",
-      "direct_word_gap_seconds": 0.0,
-      "phone_gap_seconds": 0.0,
-      "wave_silence_seconds": 0.0,
-      "acoustic_gap_seconds": 0.0,
-      "speech_region_index_before": 0,
-      "speech_region_index_after": 0
     }
   ],
   "gold_words": [
@@ -268,7 +251,7 @@
       "word": "the",
       "mfa_word": "the",
       "start": 0.9,
-      "end": 0.98,
+      "end": 1.01,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -282,9 +265,9 @@
     {
       "word_index": 4,
       "word": "second",
-      "mfa_word": "second",
-      "start": 0.98,
-      "end": 1.47,
+      "mfa_word": "second-largest",
+      "start": 1.01,
+      "end": 1.93,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -298,22 +281,6 @@
     {
       "word_index": 5,
       "word": "largest",
-      "mfa_word": "largest",
-      "start": 1.47,
-      "end": 1.93,
-      "sentence_index": -1,
-      "source": "mfa_word_interval",
-      "approval": {
-        "status": "draft_auto",
-        "reviewed": false
-      },
-      "boundary_marks_after": [],
-      "boundary_mark_after": "",
-      "speech_region_index": 0
-    },
-    {
-      "word_index": 6,
-      "word": "rainforest",
       "mfa_word": "rainforest",
       "start": 1.93,
       "end": 2.59,
@@ -328,8 +295,8 @@
       "speech_region_index": 0
     },
     {
-      "word_index": 7,
-      "word": "in",
+      "word_index": 6,
+      "word": "rainforest",
       "mfa_word": "in",
       "start": 2.59,
       "end": 2.67,
@@ -344,11 +311,27 @@
       "speech_region_index": 0
     },
     {
-      "word_index": 8,
-      "word": "the",
+      "word_index": 7,
+      "word": "in",
       "mfa_word": "the",
       "start": 2.67,
       "end": 2.75,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 8,
+      "word": "the",
+      "mfa_word": "world",
+      "start": 2.75,
+      "end": 3.16,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -359,22 +342,6 @@
         "!"
       ],
       "boundary_mark_after": "!",
-      "speech_region_index": 0
-    },
-    {
-      "word_index": 9,
-      "word": "world",
-      "mfa_word": "world",
-      "start": 2.75,
-      "end": 3.16,
-      "sentence_index": -1,
-      "source": "mfa_word_interval",
-      "approval": {
-        "status": "draft_auto",
-        "reviewed": false
-      },
-      "boundary_marks_after": [],
-      "boundary_mark_after": "",
       "speech_region_index": 0
     }
   ],
@@ -446,12 +413,12 @@
     {
       "word_index": 4,
       "word": "second",
-      "start": 0.98,
-      "end": 1.47,
-      "pose": "spn",
+      "start": 1.01,
+      "end": 1.2,
+      "pose": "S",
       "speech_region_index": 0,
       "sentence_index": -1,
-      "source_phone": "spn",
+      "source_phone": "S",
       "source_phone_index": 0,
       "alignment_reason": "mfa_textgrid_phone",
       "approval": {
@@ -462,22 +429,6 @@
     {
       "word_index": 5,
       "word": "largest",
-      "start": 1.47,
-      "end": 1.54,
-      "pose": "L",
-      "speech_region_index": 0,
-      "sentence_index": -1,
-      "source_phone": "L",
-      "source_phone_index": 0,
-      "alignment_reason": "mfa_textgrid_phone",
-      "approval": {
-        "status": "draft_auto",
-        "reviewed": false
-      }
-    },
-    {
-      "word_index": 6,
-      "word": "rainforest",
       "start": 1.93,
       "end": 2.01,
       "pose": "R",
@@ -492,8 +443,8 @@
       }
     },
     {
-      "word_index": 7,
-      "word": "in",
+      "word_index": 6,
+      "word": "rainforest",
       "start": 2.59,
       "end": 2.63,
       "pose": "IH0",
@@ -508,8 +459,8 @@
       }
     },
     {
-      "word_index": 8,
-      "word": "the",
+      "word_index": 7,
+      "word": "in",
       "start": 2.67,
       "end": 2.7,
       "pose": "DH",
@@ -524,8 +475,8 @@
       }
     },
     {
-      "word_index": 9,
-      "word": "world",
+      "word_index": 8,
+      "word": "the",
       "start": 2.75,
       "end": 2.88,
       "pose": "W",
@@ -594,7 +545,7 @@
       "word": "the",
       "mfa_word": "the",
       "start": 0.9,
-      "end": 0.98,
+      "end": 1.01,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -608,9 +559,9 @@
     {
       "word_index": 4,
       "word": "second",
-      "mfa_word": "second",
-      "start": 0.98,
-      "end": 1.47,
+      "mfa_word": "second-largest",
+      "start": 1.01,
+      "end": 1.93,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -624,22 +575,6 @@
     {
       "word_index": 5,
       "word": "largest",
-      "mfa_word": "largest",
-      "start": 1.47,
-      "end": 1.93,
-      "sentence_index": -1,
-      "source": "mfa_word_interval",
-      "approval": {
-        "status": "draft_auto",
-        "reviewed": false
-      },
-      "boundary_marks_after": [],
-      "boundary_mark_after": "",
-      "speech_region_index": 0
-    },
-    {
-      "word_index": 6,
-      "word": "rainforest",
       "mfa_word": "rainforest",
       "start": 1.93,
       "end": 2.59,
@@ -654,8 +589,8 @@
       "speech_region_index": 0
     },
     {
-      "word_index": 7,
-      "word": "in",
+      "word_index": 6,
+      "word": "rainforest",
       "mfa_word": "in",
       "start": 2.59,
       "end": 2.67,
@@ -670,11 +605,27 @@
       "speech_region_index": 0
     },
     {
-      "word_index": 8,
-      "word": "the",
+      "word_index": 7,
+      "word": "in",
       "mfa_word": "the",
       "start": 2.67,
       "end": 2.75,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 8,
+      "word": "the",
+      "mfa_word": "world",
+      "start": 2.75,
+      "end": 3.16,
       "sentence_index": -1,
       "source": "mfa_word_interval",
       "approval": {
@@ -685,22 +636,6 @@
         "!"
       ],
       "boundary_mark_after": "!",
-      "speech_region_index": 0
-    },
-    {
-      "word_index": 9,
-      "word": "world",
-      "mfa_word": "world",
-      "start": 2.75,
-      "end": 3.16,
-      "sentence_index": -1,
-      "source": "mfa_word_interval",
-      "approval": {
-        "status": "draft_auto",
-        "reviewed": false
-      },
-      "boundary_marks_after": [],
-      "boundary_mark_after": "",
       "speech_region_index": 0
     }
   ],
@@ -716,7 +651,7 @@
     },
     {
       "index_in_word": 1,
-      "phone": "AH0",
+      "phone": "AH1",
       "phone_base": "AH",
       "start": 0.11,
       "end": 0.16,
@@ -809,81 +744,117 @@
       "phone": "AH0",
       "phone_base": "AH",
       "start": 0.95,
-      "end": 0.98,
+      "end": 1.01,
       "word_index": 3,
       "word": "the"
     },
     {
       "index_in_word": 0,
-      "phone": "spn",
-      "phone_base": "SPN",
-      "start": 0.98,
-      "end": 1.47,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 1.01,
+      "end": 1.2,
       "word_index": 4,
       "word": "second"
     },
     {
-      "index_in_word": 0,
-      "phone": "L",
-      "phone_base": "L",
-      "start": 1.47,
-      "end": 1.54,
-      "word_index": 5,
-      "word": "largest"
+      "index_in_word": 1,
+      "phone": "EH1",
+      "phone_base": "EH",
+      "start": 1.2,
+      "end": 1.27,
+      "word_index": 4,
+      "word": "second"
     },
     {
-      "index_in_word": 1,
+      "index_in_word": 2,
+      "phone": "K",
+      "phone_base": "K",
+      "start": 1.27,
+      "end": 1.35,
+      "word_index": 4,
+      "word": "second"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 1.35,
+      "end": 1.4,
+      "word_index": 4,
+      "word": "second"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 1.4,
+      "end": 1.46,
+      "word_index": 4,
+      "word": "second"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 1.46,
+      "end": 1.54,
+      "word_index": 4,
+      "word": "second"
+    },
+    {
+      "index_in_word": 6,
       "phone": "AA1",
       "phone_base": "AA",
       "start": 1.54,
       "end": 1.61,
-      "word_index": 5,
-      "word": "largest"
+      "word_index": 4,
+      "word": "second"
     },
     {
-      "index_in_word": 2,
+      "index_in_word": 7,
       "phone": "R",
       "phone_base": "R",
       "start": 1.61,
       "end": 1.69,
-      "word_index": 5,
-      "word": "largest"
+      "word_index": 4,
+      "word": "second"
     },
     {
-      "index_in_word": 3,
+      "index_in_word": 8,
       "phone": "JH",
       "phone_base": "JH",
       "start": 1.69,
       "end": 1.76,
-      "word_index": 5,
-      "word": "largest"
+      "word_index": 4,
+      "word": "second"
     },
     {
-      "index_in_word": 4,
+      "index_in_word": 9,
       "phone": "AH0",
       "phone_base": "AH",
       "start": 1.76,
       "end": 1.81,
-      "word_index": 5,
-      "word": "largest"
+      "word_index": 4,
+      "word": "second"
     },
     {
-      "index_in_word": 5,
+      "index_in_word": 10,
       "phone": "S",
       "phone_base": "S",
       "start": 1.81,
       "end": 1.86,
-      "word_index": 5,
-      "word": "largest"
+      "word_index": 4,
+      "word": "second"
     },
     {
-      "index_in_word": 6,
+      "index_in_word": 11,
       "phone": "T",
       "phone_base": "T",
       "start": 1.86,
       "end": 1.93,
-      "word_index": 5,
-      "word": "largest"
+      "word_index": 4,
+      "word": "second"
     },
     {
       "index_in_word": 0,
@@ -891,8 +862,8 @@
       "phone_base": "R",
       "start": 1.93,
       "end": 2.01,
-      "word_index": 6,
-      "word": "rainforest"
+      "word_index": 5,
+      "word": "largest"
     },
     {
       "index_in_word": 1,
@@ -900,8 +871,8 @@
       "phone_base": "AY",
       "start": 2.01,
       "end": 2.1,
-      "word_index": 6,
-      "word": "rainforest"
+      "word_index": 5,
+      "word": "largest"
     },
     {
       "index_in_word": 2,
@@ -909,8 +880,8 @@
       "phone_base": "N",
       "start": 2.1,
       "end": 2.17,
-      "word_index": 6,
-      "word": "rainforest"
+      "word_index": 5,
+      "word": "largest"
     },
     {
       "index_in_word": 3,
@@ -918,8 +889,8 @@
       "phone_base": "F",
       "start": 2.17,
       "end": 2.27,
-      "word_index": 6,
-      "word": "rainforest"
+      "word_index": 5,
+      "word": "largest"
     },
     {
       "index_in_word": 4,
@@ -927,8 +898,8 @@
       "phone_base": "AO",
       "start": 2.27,
       "end": 2.34,
-      "word_index": 6,
-      "word": "rainforest"
+      "word_index": 5,
+      "word": "largest"
     },
     {
       "index_in_word": 5,
@@ -936,8 +907,8 @@
       "phone_base": "R",
       "start": 2.34,
       "end": 2.43,
-      "word_index": 6,
-      "word": "rainforest"
+      "word_index": 5,
+      "word": "largest"
     },
     {
       "index_in_word": 6,
@@ -945,8 +916,8 @@
       "phone_base": "AH",
       "start": 2.43,
       "end": 2.47,
-      "word_index": 6,
-      "word": "rainforest"
+      "word_index": 5,
+      "word": "largest"
     },
     {
       "index_in_word": 7,
@@ -954,8 +925,8 @@
       "phone_base": "S",
       "start": 2.47,
       "end": 2.53,
-      "word_index": 6,
-      "word": "rainforest"
+      "word_index": 5,
+      "word": "largest"
     },
     {
       "index_in_word": 8,
@@ -963,8 +934,8 @@
       "phone_base": "T",
       "start": 2.53,
       "end": 2.59,
-      "word_index": 6,
-      "word": "rainforest"
+      "word_index": 5,
+      "word": "largest"
     },
     {
       "index_in_word": 0,
@@ -972,8 +943,8 @@
       "phone_base": "IH",
       "start": 2.59,
       "end": 2.63,
-      "word_index": 7,
-      "word": "in"
+      "word_index": 6,
+      "word": "rainforest"
     },
     {
       "index_in_word": 1,
@@ -981,8 +952,8 @@
       "phone_base": "N",
       "start": 2.63,
       "end": 2.67,
-      "word_index": 7,
-      "word": "in"
+      "word_index": 6,
+      "word": "rainforest"
     },
     {
       "index_in_word": 0,
@@ -990,8 +961,8 @@
       "phone_base": "DH",
       "start": 2.67,
       "end": 2.7,
-      "word_index": 8,
-      "word": "the"
+      "word_index": 7,
+      "word": "in"
     },
     {
       "index_in_word": 1,
@@ -999,8 +970,8 @@
       "phone_base": "AH",
       "start": 2.7,
       "end": 2.75,
-      "word_index": 8,
-      "word": "the"
+      "word_index": 7,
+      "word": "in"
     },
     {
       "index_in_word": 0,
@@ -1008,8 +979,8 @@
       "phone_base": "W",
       "start": 2.75,
       "end": 2.88,
-      "word_index": 9,
-      "word": "world"
+      "word_index": 8,
+      "word": "the"
     },
     {
       "index_in_word": 1,
@@ -1017,8 +988,8 @@
       "phone_base": "ER",
       "start": 2.88,
       "end": 2.99,
-      "word_index": 9,
-      "word": "world"
+      "word_index": 8,
+      "word": "the"
     },
     {
       "index_in_word": 2,
@@ -1026,8 +997,8 @@
       "phone_base": "L",
       "start": 2.99,
       "end": 3.07,
-      "word_index": 9,
-      "word": "world"
+      "word_index": 8,
+      "word": "the"
     },
     {
       "index_in_word": 3,
@@ -1035,8 +1006,8 @@
       "phone_base": "D",
       "start": 3.07,
       "end": 3.16,
-      "word_index": 9,
-      "word": "world"
+      "word_index": 8,
+      "word": "the"
     }
   ],
   "mfa_non_silence_phone_intervals": [
@@ -1046,7 +1017,7 @@
       "end": 0.11
     },
     {
-      "phone": "AH0",
+      "phone": "AH1",
       "start": 0.11,
       "end": 0.16
     },
@@ -1098,16 +1069,36 @@
     {
       "phone": "AH0",
       "start": 0.95,
-      "end": 0.98
+      "end": 1.01
     },
     {
-      "phone": "spn",
-      "start": 0.98,
-      "end": 1.47
+      "phone": "S",
+      "start": 1.01,
+      "end": 1.2
+    },
+    {
+      "phone": "EH1",
+      "start": 1.2,
+      "end": 1.27
+    },
+    {
+      "phone": "K",
+      "start": 1.27,
+      "end": 1.35
+    },
+    {
+      "phone": "AH0",
+      "start": 1.35,
+      "end": 1.4
+    },
+    {
+      "phone": "N",
+      "start": 1.4,
+      "end": 1.46
     },
     {
       "phone": "L",
-      "start": 1.47,
+      "start": 1.46,
       "end": 1.54
     },
     {
@@ -1253,7 +1244,7 @@
       "word_index": 0,
       "sentence_index": -1,
       "text_center_norm": 0.051724,
-      "strength": 0.5,
+      "strength": 1.0,
       "source_phone": "AH",
       "source_phone_index": 1,
       "generator": "cmu_central_vowel"
@@ -1277,7 +1268,7 @@
       "word_index": 1,
       "sentence_index": -1,
       "text_center_norm": 0.1,
-      "strength": 0.92,
+      "strength": 1.0,
       "source_phone": "AA",
       "source_phone_index": 1,
       "generator": "cmu_open_vowel"
@@ -1301,7 +1292,7 @@
       "word_index": 1,
       "sentence_index": -1,
       "text_center_norm": 0.162069,
-      "strength": 0.5,
+      "strength": 1.0,
       "source_phone": "OW",
       "source_phone_index": 4,
       "generator": "cmu_oh_vowel"
@@ -1325,7 +1316,7 @@
       "word_index": 2,
       "sentence_index": -1,
       "text_center_norm": 0.206897,
-      "strength": 0.92,
+      "strength": 1.0,
       "source_phone": "AE",
       "source_phone_index": 1,
       "generator": "cmu_ah_vowel"
@@ -1361,7 +1352,7 @@
       "word_index": 3,
       "sentence_index": -1,
       "text_center_norm": 0.293103,
-      "strength": 0.92,
+      "strength": 1.0,
       "source_phone": "AH",
       "source_phone_index": 1,
       "generator": "cmu_central_vowel"
@@ -1385,7 +1376,7 @@
       "word_index": 4,
       "sentence_index": -1,
       "text_center_norm": 0.344828,
-      "strength": 0.92,
+      "strength": 1.0,
       "source_phone": "EH",
       "source_phone_index": 1,
       "generator": "cmu_eh_vowel"
@@ -1409,7 +1400,7 @@
       "word_index": 4,
       "sentence_index": -1,
       "text_center_norm": 0.390805,
-      "strength": 0.5,
+      "strength": 1.0,
       "source_phone": "AH",
       "source_phone_index": 3,
       "generator": "cmu_central_vowel"
@@ -1457,7 +1448,7 @@
       "word_index": 5,
       "sentence_index": -1,
       "text_center_norm": 0.477832,
-      "strength": 0.92,
+      "strength": 1.0,
       "source_phone": "AA",
       "source_phone_index": 1,
       "generator": "cmu_open_vowel"
@@ -1493,7 +1484,7 @@
       "word_index": 5,
       "sentence_index": -1,
       "text_center_norm": 0.536946,
-      "strength": 0.5,
+      "strength": 1.0,
       "source_phone": "AH",
       "source_phone_index": 4,
       "generator": "cmu_central_vowel"
@@ -1541,7 +1532,7 @@
       "word_index": 6,
       "sentence_index": -1,
       "text_center_norm": 0.62069,
-      "strength": 0.94,
+      "strength": 1.0,
       "source_phone": "AY",
       "source_phone_index": 1,
       "generator": "cmu_ay"
@@ -1577,7 +1568,7 @@
       "word_index": 6,
       "sentence_index": -1,
       "text_center_norm": 0.689655,
-      "strength": 0.92,
+      "strength": 1.0,
       "source_phone": "AO",
       "source_phone_index": 4,
       "generator": "cmu_oh_vowel"
@@ -1601,7 +1592,7 @@
       "word_index": 6,
       "sentence_index": -1,
       "text_center_norm": 0.735632,
-      "strength": 0.5,
+      "strength": 1.0,
       "source_phone": "AH",
       "source_phone_index": 6,
       "generator": "cmu_central_vowel"
@@ -1637,7 +1628,7 @@
       "word_index": 7,
       "sentence_index": -1,
       "text_center_norm": 0.810345,
-      "strength": 0.5,
+      "strength": 1.0,
       "source_phone": "IH",
       "source_phone_index": 0,
       "generator": "cmu_ih_vowel"
@@ -1673,7 +1664,7 @@
       "word_index": 8,
       "sentence_index": -1,
       "text_center_norm": 0.913793,
-      "strength": 0.92,
+      "strength": 1.0,
       "source_phone": "AH",
       "source_phone_index": 1,
       "generator": "cmu_central_vowel"
@@ -1697,7 +1688,7 @@
       "word_index": 9,
       "sentence_index": -1,
       "text_center_norm": 0.956897,
-      "strength": 0.92,
+      "strength": 1.0,
       "source_phone": "ER",
       "source_phone_index": 1,
       "generator": "cmu_rhotic_vowel"
@@ -1757,9 +1748,9 @@
     },
     {
       "index": 1,
-      "id": "AH0",
-      "pose": "AH0",
-      "phone": "AH0",
+      "id": "AH1",
+      "pose": "AH1",
+      "phone": "AH1",
       "start": 0.11,
       "center": 0.135,
       "end": 0.16,
@@ -1770,7 +1761,7 @@
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
-      "source_phone": "AH0",
+      "source_phone": "AH1",
       "source_phone_index": 1,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
@@ -2031,8 +2022,8 @@
       "pose": "AH0",
       "phone": "AH0",
       "start": 0.95,
-      "center": 0.965,
-      "end": 0.98,
+      "center": 0.98,
+      "end": 1.01,
       "word": "the",
       "mfa_word": "the",
       "word_index": 3,
@@ -2054,20 +2045,20 @@
     },
     {
       "index": 12,
-      "id": "spn",
-      "pose": "spn",
-      "phone": "spn",
-      "start": 0.98,
-      "center": 1.225,
-      "end": 1.47,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 1.01,
+      "center": 1.105,
+      "end": 1.2,
       "word": "second",
-      "mfa_word": "second",
+      "mfa_word": "second-largest",
       "word_index": 4,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
-      "source_phone": "spn",
+      "source_phone": "S",
       "source_phone_index": 0,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
@@ -2081,47 +2072,20 @@
     },
     {
       "index": 13,
-      "id": "L",
-      "pose": "L",
-      "phone": "L",
-      "start": 1.47,
-      "center": 1.505,
-      "end": 1.54,
-      "word": "largest",
-      "mfa_word": "largest",
-      "word_index": 5,
+      "id": "EH1",
+      "pose": "EH1",
+      "phone": "EH1",
+      "start": 1.2,
+      "center": 1.2349999999999999,
+      "end": 1.27,
+      "word": "second",
+      "mfa_word": "second-largest",
+      "word_index": 4,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
-      "source_phone": "L",
-      "source_phone_index": 0,
-      "source_phone_class": "cmu_arpa",
-      "mapped_to_observed_speech": true,
-      "approval": {
-        "status": "approved_gold",
-        "reviewed": true
-      },
-      "notes": [],
-      "flags": [],
-      "speech_region_index": 0
-    },
-    {
-      "index": 14,
-      "id": "AA1",
-      "pose": "AA1",
-      "phone": "AA1",
-      "start": 1.54,
-      "center": 1.5750000000000002,
-      "end": 1.61,
-      "word": "largest",
-      "mfa_word": "largest",
-      "word_index": 5,
-      "sentence_index": -1,
-      "strength": 1.0,
-      "commit_reason": "mfa_phone_interval",
-      "alignment_reason": "mfa_textgrid_phone",
-      "source_phone": "AA1",
+      "source_phone": "EH1",
       "source_phone_index": 1,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
@@ -2134,21 +2098,21 @@
       "speech_region_index": 0
     },
     {
-      "index": 15,
-      "id": "R",
-      "pose": "R",
-      "phone": "R",
-      "start": 1.61,
-      "center": 1.65,
-      "end": 1.69,
-      "word": "largest",
-      "mfa_word": "largest",
-      "word_index": 5,
+      "index": 14,
+      "id": "K",
+      "pose": "K",
+      "phone": "K",
+      "start": 1.27,
+      "center": 1.31,
+      "end": 1.35,
+      "word": "second",
+      "mfa_word": "second-largest",
+      "word_index": 4,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
-      "source_phone": "R",
+      "source_phone": "K",
       "source_phone_index": 2,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
@@ -2161,21 +2125,21 @@
       "speech_region_index": 0
     },
     {
-      "index": 16,
-      "id": "JH",
-      "pose": "JH",
-      "phone": "JH",
-      "start": 1.69,
-      "center": 1.725,
-      "end": 1.76,
-      "word": "largest",
-      "mfa_word": "largest",
-      "word_index": 5,
+      "index": 15,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 1.35,
+      "center": 1.375,
+      "end": 1.4,
+      "word": "second",
+      "mfa_word": "second-largest",
+      "word_index": 4,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
-      "source_phone": "JH",
+      "source_phone": "AH0",
       "source_phone_index": 3,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
@@ -2188,21 +2152,21 @@
       "speech_region_index": 0
     },
     {
-      "index": 17,
-      "id": "AH0",
-      "pose": "AH0",
-      "phone": "AH0",
-      "start": 1.76,
-      "center": 1.7850000000000001,
-      "end": 1.81,
-      "word": "largest",
-      "mfa_word": "largest",
-      "word_index": 5,
+      "index": 16,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 1.4,
+      "center": 1.43,
+      "end": 1.46,
+      "word": "second",
+      "mfa_word": "second-largest",
+      "word_index": 4,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
-      "source_phone": "AH0",
+      "source_phone": "N",
       "source_phone_index": 4,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
@@ -2215,21 +2179,21 @@
       "speech_region_index": 0
     },
     {
-      "index": 18,
-      "id": "S",
-      "pose": "S",
-      "phone": "S",
-      "start": 1.81,
-      "center": 1.835,
-      "end": 1.86,
-      "word": "largest",
-      "mfa_word": "largest",
-      "word_index": 5,
+      "index": 17,
+      "id": "L",
+      "pose": "L",
+      "phone": "L",
+      "start": 1.46,
+      "center": 1.5,
+      "end": 1.54,
+      "word": "second",
+      "mfa_word": "second-largest",
+      "word_index": 4,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
-      "source_phone": "S",
+      "source_phone": "L",
       "source_phone_index": 5,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
@@ -2242,21 +2206,21 @@
       "speech_region_index": 0
     },
     {
-      "index": 19,
-      "id": "T",
-      "pose": "T",
-      "phone": "T",
-      "start": 1.86,
-      "center": 1.895,
-      "end": 1.93,
-      "word": "largest",
-      "mfa_word": "largest",
-      "word_index": 5,
+      "index": 18,
+      "id": "AA1",
+      "pose": "AA1",
+      "phone": "AA1",
+      "start": 1.54,
+      "center": 1.5750000000000002,
+      "end": 1.61,
+      "word": "second",
+      "mfa_word": "second-largest",
+      "word_index": 4,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
       "alignment_reason": "mfa_textgrid_phone",
-      "source_phone": "T",
+      "source_phone": "AA1",
       "source_phone_index": 6,
       "source_phone_class": "cmu_arpa",
       "mapped_to_observed_speech": true,
@@ -2269,16 +2233,151 @@
       "speech_region_index": 0
     },
     {
+      "index": 19,
+      "id": "R",
+      "pose": "R",
+      "phone": "R",
+      "start": 1.61,
+      "center": 1.65,
+      "end": 1.69,
+      "word": "second",
+      "mfa_word": "second-largest",
+      "word_index": 4,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "R",
+      "source_phone_index": 7,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
       "index": 20,
+      "id": "JH",
+      "pose": "JH",
+      "phone": "JH",
+      "start": 1.69,
+      "center": 1.725,
+      "end": 1.76,
+      "word": "second",
+      "mfa_word": "second-largest",
+      "word_index": 4,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "JH",
+      "source_phone_index": 8,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 21,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 1.76,
+      "center": 1.7850000000000001,
+      "end": 1.81,
+      "word": "second",
+      "mfa_word": "second-largest",
+      "word_index": 4,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 9,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 22,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 1.81,
+      "center": 1.835,
+      "end": 1.86,
+      "word": "second",
+      "mfa_word": "second-largest",
+      "word_index": 4,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 10,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 23,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 1.86,
+      "center": 1.895,
+      "end": 1.93,
+      "word": "second",
+      "mfa_word": "second-largest",
+      "word_index": 4,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 11,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 24,
       "id": "R",
       "pose": "R",
       "phone": "R",
       "start": 1.93,
       "center": 1.9699999999999998,
       "end": 2.01,
-      "word": "rainforest",
+      "word": "largest",
       "mfa_word": "rainforest",
-      "word_index": 6,
+      "word_index": 5,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2296,16 +2395,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 21,
+      "index": 25,
       "id": "AY1",
       "pose": "AY1",
       "phone": "AY1",
       "start": 2.01,
       "center": 2.0549999999999997,
       "end": 2.1,
-      "word": "rainforest",
+      "word": "largest",
       "mfa_word": "rainforest",
-      "word_index": 6,
+      "word_index": 5,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2323,16 +2422,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 22,
+      "index": 26,
       "id": "N",
       "pose": "N",
       "phone": "N",
       "start": 2.1,
       "center": 2.135,
       "end": 2.17,
-      "word": "rainforest",
+      "word": "largest",
       "mfa_word": "rainforest",
-      "word_index": 6,
+      "word_index": 5,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2350,16 +2449,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 23,
+      "index": 27,
       "id": "F",
       "pose": "F",
       "phone": "F",
       "start": 2.17,
       "center": 2.2199999999999998,
       "end": 2.27,
-      "word": "rainforest",
+      "word": "largest",
       "mfa_word": "rainforest",
-      "word_index": 6,
+      "word_index": 5,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2377,16 +2476,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 24,
+      "index": 28,
       "id": "AO2",
       "pose": "AO2",
       "phone": "AO2",
       "start": 2.27,
       "center": 2.3049999999999997,
       "end": 2.34,
-      "word": "rainforest",
+      "word": "largest",
       "mfa_word": "rainforest",
-      "word_index": 6,
+      "word_index": 5,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2404,16 +2503,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 25,
+      "index": 29,
       "id": "R",
       "pose": "R",
       "phone": "R",
       "start": 2.34,
       "center": 2.385,
       "end": 2.43,
-      "word": "rainforest",
+      "word": "largest",
       "mfa_word": "rainforest",
-      "word_index": 6,
+      "word_index": 5,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2431,16 +2530,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 26,
+      "index": 30,
       "id": "AH0",
       "pose": "AH0",
       "phone": "AH0",
       "start": 2.43,
       "center": 2.45,
       "end": 2.47,
-      "word": "rainforest",
+      "word": "largest",
       "mfa_word": "rainforest",
-      "word_index": 6,
+      "word_index": 5,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2458,16 +2557,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 27,
+      "index": 31,
       "id": "S",
       "pose": "S",
       "phone": "S",
       "start": 2.47,
       "center": 2.5,
       "end": 2.53,
-      "word": "rainforest",
+      "word": "largest",
       "mfa_word": "rainforest",
-      "word_index": 6,
+      "word_index": 5,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2485,16 +2584,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 28,
+      "index": 32,
       "id": "T",
       "pose": "T",
       "phone": "T",
       "start": 2.53,
       "center": 2.5599999999999996,
       "end": 2.59,
-      "word": "rainforest",
+      "word": "largest",
       "mfa_word": "rainforest",
-      "word_index": 6,
+      "word_index": 5,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2512,16 +2611,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 29,
+      "index": 33,
       "id": "IH0",
       "pose": "IH0",
       "phone": "IH0",
       "start": 2.59,
       "center": 2.61,
       "end": 2.63,
-      "word": "in",
+      "word": "rainforest",
       "mfa_word": "in",
-      "word_index": 7,
+      "word_index": 6,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2539,16 +2638,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 30,
+      "index": 34,
       "id": "N",
       "pose": "N",
       "phone": "N",
       "start": 2.63,
       "center": 2.65,
       "end": 2.67,
-      "word": "in",
+      "word": "rainforest",
       "mfa_word": "in",
-      "word_index": 7,
+      "word_index": 6,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2566,16 +2665,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 31,
+      "index": 35,
       "id": "DH",
       "pose": "DH",
       "phone": "DH",
       "start": 2.67,
       "center": 2.685,
       "end": 2.7,
-      "word": "the",
+      "word": "in",
       "mfa_word": "the",
-      "word_index": 8,
+      "word_index": 7,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2593,16 +2692,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 32,
+      "index": 36,
       "id": "AH1",
       "pose": "AH1",
       "phone": "AH1",
       "start": 2.7,
       "center": 2.725,
       "end": 2.75,
-      "word": "the",
+      "word": "in",
       "mfa_word": "the",
-      "word_index": 8,
+      "word_index": 7,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2620,16 +2719,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 33,
+      "index": 37,
       "id": "W",
       "pose": "W",
       "phone": "W",
       "start": 2.75,
       "center": 2.815,
       "end": 2.88,
-      "word": "world",
+      "word": "the",
       "mfa_word": "world",
-      "word_index": 9,
+      "word_index": 8,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2647,16 +2746,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 34,
+      "index": 38,
       "id": "ER1",
       "pose": "ER1",
       "phone": "ER1",
       "start": 2.88,
       "center": 2.935,
       "end": 2.99,
-      "word": "world",
+      "word": "the",
       "mfa_word": "world",
-      "word_index": 9,
+      "word_index": 8,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2674,16 +2773,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 35,
+      "index": 39,
       "id": "L",
       "pose": "L",
       "phone": "L",
       "start": 2.99,
       "center": 3.0300000000000002,
       "end": 3.07,
-      "word": "world",
+      "word": "the",
       "mfa_word": "world",
-      "word_index": 9,
+      "word_index": 8,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2701,16 +2800,16 @@
       "speech_region_index": 0
     },
     {
-      "index": 36,
+      "index": 40,
       "id": "D",
       "pose": "D",
       "phone": "D",
       "start": 3.07,
       "center": 3.115,
       "end": 3.16,
-      "word": "world",
+      "word": "the",
       "mfa_word": "world",
-      "word_index": 9,
+      "word_index": 8,
       "sentence_index": -1,
       "strength": 1.0,
       "commit_reason": "mfa_phone_interval",
@@ -2730,10 +2829,52 @@
   ],
   "flags": [
     {
-      "kind": "transcript_boundary_word_count_mismatch",
-      "count_transcript_words": 9,
-      "count_mfa_words": 10,
-      "note": "Transcript word count did not match MFA word count while attaching punctuation boundaries."
+      "kind": "word_count_mismatch",
+      "count_mfa_words": 9,
+      "count_transcript_words": 10,
+      "note": "MFA word count does not match transcript-owned word count."
+    },
+    {
+      "kind": "word_text_mismatch",
+      "word_index": 4,
+      "mfa_word": "second-largest",
+      "transcript_word": "second",
+      "note": "Transcript and MFA word text differ at this position."
+    },
+    {
+      "kind": "word_text_mismatch",
+      "word_index": 5,
+      "mfa_word": "rainforest",
+      "transcript_word": "largest",
+      "note": "Transcript and MFA word text differ at this position."
+    },
+    {
+      "kind": "word_text_mismatch",
+      "word_index": 6,
+      "mfa_word": "in",
+      "transcript_word": "rainforest",
+      "note": "Transcript and MFA word text differ at this position."
+    },
+    {
+      "kind": "word_text_mismatch",
+      "word_index": 7,
+      "mfa_word": "the",
+      "transcript_word": "in",
+      "note": "Transcript and MFA word text differ at this position."
+    },
+    {
+      "kind": "word_text_mismatch",
+      "word_index": 8,
+      "mfa_word": "world",
+      "transcript_word": "the",
+      "note": "Transcript and MFA word text differ at this position."
+    },
+    {
+      "kind": "implausibly_short_word",
+      "word_index": 6,
+      "word": "rainforest",
+      "duration_seconds": 0.08,
+      "note": "A relatively long word was aligned to an implausibly short duration."
     },
     {
       "kind": "transcript_boundary_word_text_mismatch",
@@ -2773,23 +2914,25 @@
   ],
   "notes": [],
   "summary": {
-    "word_count": 10,
+    "word_count": 9,
     "speech_region_count": 1,
-    "pause_boundary_count": 9,
+    "pause_boundary_count": 8,
     "pause_region_break_count": 0,
-    "word_head_count": 10,
-    "viseme_count": 37,
-    "flag_count": 6,
+    "word_head_count": 9,
+    "viseme_count": 41,
+    "flag_count": 12,
     "flags_by_kind": {
-      "transcript_boundary_word_count_mismatch": 1,
+      "word_count_mismatch": 1,
+      "word_text_mismatch": 5,
+      "implausibly_short_word": 1,
       "transcript_boundary_word_text_mismatch": 5
     },
     "commit_reasons": {
-      "mfa_phone_interval": 37
+      "mfa_phone_interval": 41
     },
     "alignment_reasons": {
-      "mfa_textgrid_phone": 37
+      "mfa_textgrid_phone": 41
     },
-    "mapped_to_observed_speech_count": 37
+    "mapped_to_observed_speech_count": 41
   }
 }

@@ -79,6 +79,14 @@ def main() -> int:
         focus = load_json(focus_path)
         ownership = load_json(ownership_path)
         grade = load_json(grade_path)
+        word_nucleus_path = focus_path.parent / "runtime_word_start_nucleus_grade.json"
+        word_nucleus = load_json(word_nucleus_path) if word_nucleus_path.exists() else {}
+        nearby_nucleus_path = (
+            focus_path.parent / "performed_word_head_nearby_nucleus_grade.json"
+        )
+        nearby_nucleus = (
+            load_json(nearby_nucleus_path) if nearby_nucleus_path.exists() else {}
+        )
         current_case_name = focus_path.parent.name
         gold_dir = root / "inputs" / "gold" / current_case_name
         gold_boundaries = load_csv(gold_dir / "boundaries.csv")
@@ -90,6 +98,7 @@ def main() -> int:
         }
         detected_speech = load_csv(focus_path.parent / "speech_regions.csv")
         committed_rows = load_csv(focus_path.parent / "committed.csv")
+        word_onset_rows = load_csv(focus_path.parent / "word_onset_diagnostics.csv")
         ownership_words = {
             int(word["word_index"]): word for word in ownership.get("words", [])
         }
@@ -445,6 +454,23 @@ def main() -> int:
         planned_events = int(focus.get("planned_event_count", 0))
         committed_events = int(focus.get("committed_event_count", 0))
         assignment_expected = int(ownership.get("mfa_word_count", len(ownership_words)))
+        animation_onset_expected = len(word_onset_rows)
+        animation_onset_matched = 0
+        animation_onset_successes = 0
+        animation_onset_errors: list[float] = []
+        for onset in word_onset_rows:
+            if as_bool(onset.get("missing_event", False)):
+                continue
+            word_index = int(onset.get("word_index", -1))
+            owner = ownership_words.get(word_index, {})
+            error_ms = abs(float(onset.get("error_ms", 0.0)))
+            animation_onset_matched += 1
+            animation_onset_errors.append(error_ms)
+            if (
+                bool(owner.get("runtime_mfa_first_event_correct", False))
+                and error_ms <= START_TOLERANCE_MS
+            ):
+                animation_onset_successes += 1
         case_boundaries = [
             row for row in boundaries_out if row["case_name"] == current_case_name
         ]
@@ -476,6 +502,28 @@ def main() -> int:
             "word_start_successes": word_successes,
             "word_start_success_rate": ratio(word_successes, word_expected),
             "word_start_mean_abs_error_ms": ratio(sum(word_errors), len(word_errors), 0.0),
+            "animation_onset_expected": animation_onset_expected,
+            "animation_onset_matched": animation_onset_matched,
+            "animation_onset_successes": animation_onset_successes,
+            "animation_onset_mean_abs_error_ms": ratio(
+                sum(animation_onset_errors), animation_onset_matched, 0.0
+            ),
+            "word_nucleus_target_count": int(word_nucleus.get("target_count", 0)),
+            "word_nucleus_observation_count": int(word_nucleus.get("observation_count", 0)),
+            "word_nucleus_match_count": int(word_nucleus.get("matched_count", 0)),
+            "word_nucleus_mean_abs_error_ms": float(
+                word_nucleus.get("mean_abs_error_ms", 0.0)
+            ),
+            "nearby_nucleus_target_count": int(nearby_nucleus.get("target_count", 0)),
+            "nearby_nucleus_observation_count": int(
+                nearby_nucleus.get("raw_observation_count", 0)
+            ),
+            "nearby_nucleus_match_count": int(
+                nearby_nucleus.get("raw_matched_count", 0)
+            ),
+            "nearby_nucleus_mean_abs_error_ms": float(
+                nearby_nucleus.get("raw_mean_abs_error_ms", 0.0)
+            ),
             "word_region_expected": assignment_expected,
             "word_region_successes": assignment_successes,
             "word_region_assignment_rate": ratio(assignment_successes, assignment_expected),
@@ -588,6 +636,30 @@ def main() -> int:
         float(row["word_start_mean_abs_error_ms"]) * int(row["word_start_matched"])
         for row in cases
     )
+    animation_onset_expected = totals("animation_onset_expected")
+    animation_onset_matched = totals("animation_onset_matched")
+    animation_onset_successes = totals("animation_onset_successes")
+    animation_onset_error_total = sum(
+        float(row["animation_onset_mean_abs_error_ms"])
+        * int(row["animation_onset_matched"])
+        for row in cases
+    )
+    word_nucleus_targets = totals("word_nucleus_target_count")
+    word_nucleus_observations = totals("word_nucleus_observation_count")
+    word_nucleus_matches = totals("word_nucleus_match_count")
+    word_nucleus_error_total = sum(
+        float(row["word_nucleus_mean_abs_error_ms"])
+        * int(row["word_nucleus_match_count"])
+        for row in cases
+    )
+    nearby_nucleus_targets = totals("nearby_nucleus_target_count")
+    nearby_nucleus_observations = totals("nearby_nucleus_observation_count")
+    nearby_nucleus_matches = totals("nearby_nucleus_match_count")
+    nearby_nucleus_error_total = sum(
+        float(row["nearby_nucleus_mean_abs_error_ms"])
+        * int(row["nearby_nucleus_match_count"])
+        for row in cases
+    )
 
     summary = {
         "cases": len(cases),
@@ -619,11 +691,47 @@ def main() -> int:
             "leakage_ms": pause_leakage,
             "clean_rate": 1.0 - ratio(pause_leakage, pause_duration, 0.0),
         },
-        "word_start": {
+        "word_animation_onset": {
+            "expected": animation_onset_expected,
+            "matched": animation_onset_matched,
+            "successful": animation_onset_successes,
+            "success_rate": ratio(
+                animation_onset_successes, animation_onset_expected
+            ),
+            "mean_abs_error_ms": ratio(
+                animation_onset_error_total, animation_onset_matched, 0.0
+            ),
+            "tolerance_ms": START_TOLERANCE_MS,
+        },
+        "legacy_word_head_pose_center": {
             "expected": word_expected,
             "successful": word_successes,
             "success_rate": ratio(word_successes, word_expected),
             "mean_abs_error_ms": ratio(word_error_total, matched_word_count, 0.0),
+        },
+        "performed_word_start_nucleus": {
+            "expected": word_nucleus_targets,
+            "observed": word_nucleus_observations,
+            "matched": word_nucleus_matches,
+            "precision": ratio(
+                word_nucleus_matches, word_nucleus_observations, 0.0
+            ),
+            "recall": ratio(word_nucleus_matches, word_nucleus_targets, 0.0),
+            "mean_abs_error_ms": ratio(
+                word_nucleus_error_total, word_nucleus_matches, 0.0
+            ),
+        },
+        "performed_word_head_nearby_nucleus": {
+            "mfa_nuclei": nearby_nucleus_targets,
+            "performed_word_heads": nearby_nucleus_observations,
+            "matched": nearby_nucleus_matches,
+            "precision": ratio(
+                nearby_nucleus_matches, nearby_nucleus_observations, 0.0
+            ),
+            "recall": ratio(nearby_nucleus_matches, nearby_nucleus_targets, 0.0),
+            "mean_abs_error_ms": ratio(
+                nearby_nucleus_error_total, nearby_nucleus_matches, 0.0
+            ),
         },
         "word_region_assignment": {
             "expected": assignment_expected,
@@ -747,13 +855,27 @@ def main() -> int:
     summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
     print(
-        f"P0 region starts: {summary['region_start']['success_rate']:.3f} "
+        f"Region starts: {summary['region_start']['success_rate']:.3f} "
         f"({summary['region_start']['mean_abs_error_ms']:.1f} ms MAE)"
     )
-    print(f"P1 pause clean: {summary['pause']['clean_rate']:.3f}")
+    print(f"Pause clean: {summary['pause']['clean_rate']:.3f}")
     print(
-        f"P2 word starts: {summary['word_start']['success_rate']:.3f} "
-        f"({summary['word_start']['mean_abs_error_ms']:.1f} ms MAE)"
+        f"P1 word animation onset: "
+        f"{summary['word_animation_onset']['success_rate']:.3f} "
+        f"({summary['word_animation_onset']['mean_abs_error_ms']:.1f} ms MAE)"
+    )
+    word_nucleus = summary["performed_word_start_nucleus"]
+    nearby_nucleus = summary["performed_word_head_nearby_nucleus"]
+    print(
+        "Acoustic word-head anchors: "
+        f"precision={nearby_nucleus['precision']:.3f} "
+        f"({nearby_nucleus['mean_abs_error_ms']:.1f} ms MAE)"
+    )
+    print(
+        "P2 correct word-head nuclei: "
+        f"precision={word_nucleus['precision']:.3f} "
+        f"recall={word_nucleus['recall']:.3f} "
+        f"({word_nucleus['mean_abs_error_ms']:.1f} ms matched MAE)"
     )
     print(f"Word-region assignment: {summary['word_region_assignment']['success_rate']:.3f}")
     print(

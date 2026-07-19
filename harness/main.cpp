@@ -188,6 +188,7 @@ struct ProsodicPeakObservation
     double family_score = 0.0;
     double score = 0.0;
     double error_ms = 0.0;
+    int speech_region_index = -1;
     bool matched = false;
 };
 
@@ -204,6 +205,7 @@ struct ProsodicPeakReport
     double p90_abs_error_ms = 0.0;
     double mean_decision_latency_ms = 0.0;
     int raw_observation_count = 0;
+    int raw_ungradeable_observation_count = 0;
     int raw_matched_count = 0;
     double raw_precision = 0.0;
     double raw_recall = 0.0;
@@ -215,13 +217,6 @@ struct EvidenceIngredientTarget
     std::string type;
     double start = 0.0;
     double end = 0.0;
-};
-
-struct EvidenceConditioningTarget
-{
-    std::string type;
-    int phone_index = -1;
-    double prior_center = 0.0;
 };
 
 struct EvidenceIngredientTypeReport
@@ -253,50 +248,12 @@ struct EvidenceIngredientReport
     std::map<std::string, EvidenceIngredientTypeReport> by_type;
 };
 
-struct SyllablePositionReport
-{
-    bool available = false;
-    int target_count = 0;
-    int estimate_count = 0;
-    int timing_match_count = 0;
-    int exact_position_count = 0;
-    int within_one_count = 0;
-    int word_match_count = 0;
-    int confident_count = 0;
-    int confident_exact_count = 0;
-    double timing_precision = 0.0;
-    double timing_recall = 0.0;
-    double exact_position_rate = 0.0;
-    double within_one_rate = 0.0;
-    double word_position_rate = 0.0;
-    double mean_abs_syllable_error = 0.0;
-    double confident_coverage = 0.0;
-    double confident_exact_rate = 0.0;
-    double median_decision_latency_ms = 0.0;
-    double p90_decision_latency_ms = 0.0;
-    double median_anchor_gap_ms = 0.0;
-    double p90_anchor_gap_ms = 0.0;
-};
-
 struct SyllableCandidateSetReport
 {
     bool available = false;
     int matched_pulse_count = 0;
     int unmatched_pulse_count = 0;
     std::array<int, 6> hit_counts{};
-};
-
-struct SyllableAssignmentReport
-{
-    bool available = false;
-    int target_count = 0;
-    int assignment_count = 0;
-    int timing_matched_count = 0;
-    int exact_count = 0;
-    int within_one_count = 0;
-    double exact_precision = 0.0;
-    double exact_recall = 0.0;
-    double within_one_accuracy = 0.0;
 };
 
 struct BoundaryAlignmentReport
@@ -513,7 +470,15 @@ static std::string read_text(const fs::path& path)
     std::ifstream file(path);
     std::ostringstream out;
     out << file.rdbuf();
-    return out.str();
+    std::string text = out.str();
+    if (text.size() >= 3
+        && static_cast<unsigned char>(text[0]) == 0xEF
+        && static_cast<unsigned char>(text[1]) == 0xBB
+        && static_cast<unsigned char>(text[2]) == 0xBF)
+    {
+        text.erase(0, 3);
+    }
+    return text;
 }
 
 static void write_text(const fs::path& path, const std::string& text)
@@ -1298,33 +1263,77 @@ static ProsodicPeakReport grade_prosodic_peaks(
     {
         if (target.has_gold) gold_intervals.emplace_back(target.gold_start, target.gold_end);
     }
-    std::vector<bool> used_gold(gold_intervals.size(), false);
     std::vector<double> raw_errors;
     report.raw_observation_count = static_cast<int>(raw_peaks.size());
-    for (const ProsodicPeakObservation& peak : raw_peaks)
+
+    // Both streams are chronological.  A nearest-unused greedy match can
+    // consume a later vowel for an early peak and manufacture one FP plus one
+    // FN in dense speech.  Find the monotonic assignment with the most matches,
+    // breaking ties by total distance outside the MFA interval.
+    struct MatchScore
     {
-        int best_index = -1;
-        double best_error = 0.100001;
-        for (size_t target_index = 0; target_index < gold_intervals.size(); ++target_index)
+        int count = 0;
+        double error = 0.0;
+    };
+    const size_t peak_count = raw_peaks.size();
+    const size_t target_count = gold_intervals.size();
+    std::vector<std::vector<MatchScore>> dp(
+        peak_count + 1, std::vector<MatchScore>(target_count + 1));
+    std::vector<std::vector<char>> choice(
+        peak_count + 1, std::vector<char>(target_count + 1, 'p'));
+    auto Better = [](const MatchScore& A, const MatchScore& B)
+    {
+        return A.count > B.count || (A.count == B.count && A.error < B.error);
+    };
+    for (size_t i = 1; i <= peak_count; ++i)
+    {
+        for (size_t j = 1; j <= target_count; ++j)
         {
-            if (used_gold[target_index]) continue;
-            const auto [start, end] = gold_intervals[target_index];
-            const double error = peak.peak_sec < start
-                ? start - peak.peak_sec
-                : (peak.peak_sec > end ? peak.peak_sec - end : 0.0);
-            if (error < best_error)
+            MatchScore best = dp[i - 1][j];
+            char best_choice = 'p';
+            if (Better(dp[i][j - 1], best))
             {
-                best_error = error;
-                best_index = static_cast<int>(target_index);
+                best = dp[i][j - 1];
+                best_choice = 't';
             }
-        }
-        if (best_index >= 0)
-        {
-            used_gold[static_cast<size_t>(best_index)] = true;
-            ++report.raw_matched_count;
-            raw_errors.push_back(best_error * 1000.0);
+            const auto [start, end] = gold_intervals[j - 1];
+            const double error = raw_peaks[i - 1].peak_sec < start
+                ? start - raw_peaks[i - 1].peak_sec
+                : (raw_peaks[i - 1].peak_sec > end ? raw_peaks[i - 1].peak_sec - end : 0.0);
+            MatchScore matched = dp[i - 1][j - 1];
+            ++matched.count;
+            matched.error += error;
+            if (error <= 0.100 && Better(matched, best))
+            {
+                best = matched;
+                best_choice = 'm';
+            }
+            dp[i][j] = best;
+            choice[i][j] = best_choice;
         }
     }
+    size_t i = peak_count;
+    size_t j = target_count;
+    while (i > 0 && j > 0)
+    {
+        if (choice[i][j] == 'm')
+        {
+            const auto [start, end] = gold_intervals[j - 1];
+            const double peak = raw_peaks[i - 1].peak_sec;
+            raw_errors.push_back((peak < start ? start - peak : (peak > end ? peak - end : 0.0)) * 1000.0);
+            --i;
+            --j;
+        }
+        else if (choice[i][j] == 't')
+        {
+            --j;
+        }
+        else
+        {
+            --i;
+        }
+    }
+    report.raw_matched_count = dp[peak_count][target_count].count;
     report.raw_precision = report.raw_observation_count > 0
         ? static_cast<double>(report.raw_matched_count) / report.raw_observation_count : 0.0;
     report.raw_recall = report.target_count > 0
@@ -1340,6 +1349,41 @@ static bool is_gold_vowel_phone(const std::string& phone_base)
         "EY", "IH", "IY", "OW", "OY", "UH", "UW"
     };
     return std::find(vowels.begin(), vowels.end(), phone_base) != vowels.end();
+}
+
+// Audio-only nucleus grading must use MFA's vowel intervals directly. Mapping
+// transcript vowel ordinals onto the MFA phone sequence is appropriate for
+// transcript-assignment diagnostics, but pronunciation disagreements can put
+// those ordinals on consonants and corrupt an acoustic detector score.
+static std::vector<ProsodicPeakTarget> build_mfa_nucleus_targets(
+    const std::vector<GoldPhoneTiming>& gold_phones)
+{
+    std::vector<ProsodicPeakTarget> targets;
+    for (const GoldPhoneTiming& phone : gold_phones)
+    {
+        if (!is_gold_vowel_phone(phone.phone_base)) continue;
+        ProsodicPeakTarget target;
+        target.target_index = static_cast<int>(targets.size());
+        target.expected_phone_index = phone.global_phone_index;
+        target.global_phone_index = phone.global_phone_index;
+        target.word_index = phone.word_index;
+        target.speech_region_index = phone.speech_region_index;
+        target.word = phone.word;
+        target.phone = phone.phone;
+        target.vowel_family = prosodic_vowel_family(phone.phone_base);
+        if (!phone.phone.empty()
+            && std::isdigit(static_cast<unsigned char>(phone.phone.back())) != 0)
+        {
+            target.stress = phone.phone.back() - '0';
+        }
+        target.gold_start = phone.start;
+        target.gold_end = phone.end;
+        target.gold_center = 0.5 * (phone.start + phone.end);
+        target.prior_center = target.gold_center;
+        target.has_gold = true;
+        targets.push_back(std::move(target));
+    }
+    return targets;
 }
 
 static std::vector<EvidenceIngredientTarget> build_evidence_ingredient_targets(
@@ -1402,131 +1446,6 @@ static std::vector<EvidenceIngredientTarget> build_evidence_ingredient_targets(
         return a.type == b.type && std::abs(a.start - b.start) <= 0.030;
     }), targets.end());
     return targets;
-}
-
-static std::vector<EvidenceConditioningTarget> build_evidence_conditioning_targets(
-    const FOffgridAITextVisemePlan& plan,
-    const FOffgridAICommittedVisemeTrack& committed)
-{
-    std::map<int32, std::pair<double, int>> centers_by_phone;
-    for (const FOffgridAICommittedVisemeEvent& event : committed.Events)
-    {
-        if (event.SourcePhoneIndex < 0 || !event.bMappedToObservedSpeech) continue;
-        auto& aggregate = centers_by_phone[event.SourcePhoneIndex];
-        aggregate.first += event.FinalRenderCenterSeconds;
-        ++aggregate.second;
-    }
-
-    std::vector<EvidenceConditioningTarget> targets;
-    for (const FOffgridAIExpectedPhone& phone : plan.ExpectedPhones)
-    {
-        const auto center_it = centers_by_phone.find(phone.PhoneIndex);
-        if (center_it == centers_by_phone.end() || center_it->second.second <= 0) continue;
-        const double prior_center = center_it->second.first / center_it->second.second;
-        const std::string base = to_std(phone.BasePhone);
-        if (phone.bIsVowel)
-        {
-            targets.push_back({ "pulse", phone.PhoneIndex, prior_center });
-            if (base == "AA" || base == "AE" || base == "AH" || base == "AW" || base == "AY")
-                targets.push_back({ "open", phone.PhoneIndex, prior_center });
-            else if (base == "EH" || base == "ER" || base == "EY" || base == "IH" || base == "IY")
-                targets.push_back({ "front", phone.PhoneIndex, prior_center });
-        }
-        if (base == "F" || base == "V")
-        {
-            targets.push_back({ "fv", phone.PhoneIndex, prior_center });
-        }
-        else if (base == "S" || base == "Z" || base == "SH" || base == "ZH"
-            || base == "CH" || base == "JH")
-        {
-            targets.push_back({ "sibilant", phone.PhoneIndex, prior_center });
-        }
-        else if (base == "M" || base == "B" || base == "P")
-        {
-            targets.push_back({ "mbp", phone.PhoneIndex, prior_center });
-        }
-        else if (base == "W" || base == "Y")
-        {
-            targets.push_back({ "glide", phone.PhoneIndex, prior_center });
-        }
-        else if (base == "AO" || base == "OW" || base == "OY" || base == "UH" || base == "UW")
-        {
-            targets.push_back({ "round", phone.PhoneIndex, prior_center });
-        }
-    }
-    std::sort(targets.begin(), targets.end(), [](const auto& a, const auto& b) {
-        if (a.type != b.type) return a.type < b.type;
-        if (a.prior_center != b.prior_center) return a.prior_center < b.prior_center;
-        return a.phone_index < b.phone_index;
-    });
-    return targets;
-}
-
-static TArray<FOffgridAIAudioLandmarkObservation> condition_evidence_observations(
-    const TArray<FOffgridAIAudioLandmarkObservation>& raw_observations,
-    const TArray<FOffgridAIAudioLandmarkObservation>& permissive_candidates,
-    const std::vector<EvidenceConditioningTarget>& targets,
-    double postroll_sec,
-    double preroll_sec)
-{
-    TArray<FOffgridAIAudioLandmarkObservation> selected;
-    std::map<std::string, std::vector<const FOffgridAIAudioLandmarkObservation*>> candidates_by_type;
-    for (const FOffgridAIAudioLandmarkObservation& candidate : permissive_candidates)
-    {
-        const std::string type = to_std(FOffgridAIStreamingEvidenceSurface::LandmarkTypeToString(candidate.Type));
-        if (type == "pulse" || type == "fv" || type == "sibilant"
-            || type == "mbp" || type == "glide" || type == "round"
-            || type == "open" || type == "front")
-        {
-            candidates_by_type[type].push_back(&candidate);
-        }
-    }
-
-    // Pulses are already more reliable than the runtime timing prior. Preserve
-    // them unchanged; assigning them to expected vowels belongs to the later
-    // syllable pass.
-    for (const FOffgridAIAudioLandmarkObservation& observation : raw_observations)
-    {
-        if (observation.Type != EOffgridAIAudioLandmarkType::SyllabicPulse) continue;
-        selected.Add(observation);
-    }
-
-    std::map<std::string, double> last_selected_center;
-    for (const EvidenceConditioningTarget& target : targets)
-    {
-        if (target.type == "pulse") continue;
-        const auto candidate_it = candidates_by_type.find(target.type);
-        if (candidate_it == candidates_by_type.end()) continue;
-        const double earliest = target.prior_center - postroll_sec;
-        const double latest = target.prior_center + preroll_sec;
-        const double previous = last_selected_center.count(target.type)
-            ? last_selected_center[target.type]
-            : -1.0e9;
-        const FOffgridAIAudioLandmarkObservation* best = nullptr;
-        double best_utility = -1.0e9;
-        for (const FOffgridAIAudioLandmarkObservation* candidate : candidate_it->second)
-        {
-            if (candidate->CenterSec <= previous || candidate->CenterSec < earliest || candidate->CenterSec > latest)
-            {
-                continue;
-            }
-            const double distance_scale = candidate->CenterSec < target.prior_center
-                ? std::max(postroll_sec, 0.001)
-                : std::max(preroll_sec, 0.001);
-            const double normalized_distance = std::abs(candidate->CenterSec - target.prior_center) / distance_scale;
-            const double utility = static_cast<double>(candidate->Score) - normalized_distance * 0.30;
-            if (utility > best_utility)
-            {
-                best = candidate;
-                best_utility = utility;
-            }
-        }
-        if (best == nullptr) continue;
-        selected.Add(*best);
-        last_selected_center[target.type] = best->CenterSec;
-    }
-    selected.Sort([](const auto& a, const auto& b) { return a.CenterSec < b.CenterSec; });
-    return selected;
 }
 
 static EvidenceIngredientReport grade_evidence_ingredients(
@@ -1966,198 +1885,6 @@ static std::string syllable_candidate_set_grade_json(const SyllableCandidateSetR
     return out.str();
 }
 
-static SyllableAssignmentReport grade_syllable_assignments(
-    const std::vector<ProsodicPeakTarget>& targets,
-    const TArray<FOffgridAIStreamingSyllablePositionEstimate>& assignments)
-{
-    SyllableAssignmentReport report;
-    report.available = !targets.empty();
-    report.target_count = static_cast<int>(std::count_if(
-        targets.begin(), targets.end(), [](const auto& target) { return target.has_gold; }));
-    report.assignment_count = assignments.Num();
-    std::vector<bool> used_targets(targets.size(), false);
-    for (const auto& assignment : assignments)
-    {
-        int best_target = INDEX_NONE;
-        double best_error = 0.100001;
-        for (size_t target_index = 0; target_index < targets.size(); ++target_index)
-        {
-            if (used_targets[target_index] || !targets[target_index].has_gold) continue;
-            const double error = assignment.AudioCenterSec < targets[target_index].gold_start
-                ? targets[target_index].gold_start - assignment.AudioCenterSec
-                : (assignment.AudioCenterSec > targets[target_index].gold_end
-                    ? assignment.AudioCenterSec - targets[target_index].gold_end : 0.0);
-            if (error < best_error)
-            {
-                best_error = error;
-                best_target = static_cast<int>(target_index);
-            }
-        }
-        if (best_target == INDEX_NONE) continue;
-        used_targets[static_cast<size_t>(best_target)] = true;
-        ++report.timing_matched_count;
-        const int error = FMath::Abs(assignment.SyllableIndex - best_target);
-        if (error == 0) ++report.exact_count;
-        if (error <= 1) ++report.within_one_count;
-    }
-    report.exact_precision = report.assignment_count > 0
-        ? static_cast<double>(report.exact_count) / report.assignment_count : 0.0;
-    report.exact_recall = report.target_count > 0
-        ? static_cast<double>(report.exact_count) / report.target_count : 0.0;
-    report.within_one_accuracy = report.assignment_count > 0
-        ? static_cast<double>(report.within_one_count) / report.assignment_count : 0.0;
-    return report;
-}
-
-static std::string syllable_assignment_grade_json(const SyllableAssignmentReport& report)
-{
-    std::ostringstream out;
-    out << std::fixed << std::setprecision(6)
-        << "{\n"
-        << "  \"available\": " << (report.available ? "true" : "false") << ",\n"
-        << "  \"target_count\": " << report.target_count << ",\n"
-        << "  \"assignment_count\": " << report.assignment_count << ",\n"
-        << "  \"timing_matched_count\": " << report.timing_matched_count << ",\n"
-        << "  \"exact_count\": " << report.exact_count << ",\n"
-        << "  \"within_one_count\": " << report.within_one_count << ",\n"
-        << "  \"exact_precision\": " << report.exact_precision << ",\n"
-        << "  \"exact_recall\": " << report.exact_recall << ",\n"
-        << "  \"within_one_accuracy\": " << report.within_one_accuracy << "\n"
-        << "}\n";
-    return out.str();
-}
-
-static SyllablePositionReport grade_syllable_positions(
-    const std::vector<ProsodicPeakTarget>& targets,
-    const TArray<FOffgridAIStreamingSyllablePositionEstimate>& estimates)
-{
-    SyllablePositionReport report;
-    report.available = !targets.empty();
-    report.target_count = static_cast<int>(targets.size());
-    report.estimate_count = estimates.Num();
-    std::vector<bool> timing_matched(targets.size(), false);
-    std::vector<double> decision_latencies_ms;
-    std::vector<double> anchor_gaps_ms;
-    double syllable_error_sum = 0.0;
-    double previous_anchor_center = -1.0;
-    for (const auto& estimate : estimates)
-    {
-        if (estimate.SyllableIndex < 0
-            || static_cast<size_t>(estimate.SyllableIndex) >= targets.size()) continue;
-        const auto& assigned = targets[static_cast<size_t>(estimate.SyllableIndex)];
-        const double timing_error = estimate.AudioCenterSec < assigned.gold_start
-            ? assigned.gold_start - estimate.AudioCenterSec
-            : (estimate.AudioCenterSec > assigned.gold_end
-                ? estimate.AudioCenterSec - assigned.gold_end
-                : 0.0);
-        if (assigned.has_gold && timing_error <= 0.100)
-        {
-            ++report.timing_match_count;
-            timing_matched[static_cast<size_t>(estimate.SyllableIndex)] = true;
-        }
-        decision_latencies_ms.push_back(FMath::Max(
-            static_cast<double>(estimate.DecisionSec - estimate.AudioCenterSec),
-            0.0) * 1000.0);
-        if (previous_anchor_center >= 0.0)
-            anchor_gaps_ms.push_back((estimate.AudioCenterSec - previous_anchor_center) * 1000.0);
-        previous_anchor_center = estimate.AudioCenterSec;
-
-        int actual_index = INDEX_NONE;
-        double actual_distance = std::numeric_limits<double>::max();
-        for (size_t target_index = 0; target_index < targets.size(); ++target_index)
-        {
-            if (!targets[target_index].has_gold) continue;
-            const double distance = std::abs(targets[target_index].gold_center - estimate.AudioCenterSec);
-            if (distance < actual_distance)
-            {
-                actual_distance = distance;
-                actual_index = static_cast<int>(target_index);
-            }
-        }
-        if (actual_index == INDEX_NONE) continue;
-        const int syllable_error = std::abs(estimate.SyllableIndex - actual_index);
-        syllable_error_sum += syllable_error;
-        if (syllable_error == 0) ++report.exact_position_count;
-        if (syllable_error <= 1) ++report.within_one_count;
-        if (assigned.word_index == targets[static_cast<size_t>(actual_index)].word_index)
-            ++report.word_match_count;
-        if (estimate.Confidence >= 0.35f)
-        {
-            ++report.confident_count;
-            if (syllable_error == 0) ++report.confident_exact_count;
-        }
-    }
-    const int unique_timing_matches = static_cast<int>(std::count(timing_matched.begin(), timing_matched.end(), true));
-    report.timing_precision = report.estimate_count > 0
-        ? static_cast<double>(report.timing_match_count) / report.estimate_count : 0.0;
-    report.timing_recall = report.target_count > 0
-        ? static_cast<double>(unique_timing_matches) / report.target_count : 0.0;
-    report.exact_position_rate = report.estimate_count > 0
-        ? static_cast<double>(report.exact_position_count) / report.estimate_count : 0.0;
-    report.within_one_rate = report.estimate_count > 0
-        ? static_cast<double>(report.within_one_count) / report.estimate_count : 0.0;
-    report.word_position_rate = report.estimate_count > 0
-        ? static_cast<double>(report.word_match_count) / report.estimate_count : 0.0;
-    report.mean_abs_syllable_error = report.estimate_count > 0
-        ? syllable_error_sum / report.estimate_count : 0.0;
-    report.confident_coverage = report.estimate_count > 0
-        ? static_cast<double>(report.confident_count) / report.estimate_count : 0.0;
-    report.confident_exact_rate = report.confident_count > 0
-        ? static_cast<double>(report.confident_exact_count) / report.confident_count : 0.0;
-    report.median_decision_latency_ms = percentile_ms(decision_latencies_ms, 0.50);
-    report.p90_decision_latency_ms = percentile_ms(decision_latencies_ms, 0.90);
-    report.median_anchor_gap_ms = percentile_ms(anchor_gaps_ms, 0.50);
-    report.p90_anchor_gap_ms = percentile_ms(anchor_gaps_ms, 0.90);
-    return report;
-}
-
-static std::string syllable_position_estimates_csv(
-    const TArray<FOffgridAIStreamingSyllablePositionEstimate>& estimates)
-{
-    std::ostringstream out;
-    out << "syllable_index,nucleus_phone_index,word_index,speech_region_index,audio_center,decision,match_score,confidence\n";
-    out << std::fixed << std::setprecision(6);
-    for (const auto& estimate : estimates)
-    {
-        out << estimate.SyllableIndex << ',' << estimate.NucleusPhoneIndex << ','
-            << estimate.WordIndex << ',' << estimate.SpeechRegionIndex << ','
-            << estimate.AudioCenterSec << ',' << estimate.DecisionSec << ','
-            << estimate.MatchScore << ',' << estimate.Confidence << '\n';
-    }
-    return out.str();
-}
-
-static std::string syllable_position_grade_json(const SyllablePositionReport& report)
-{
-    std::ostringstream out;
-    out << std::fixed << std::setprecision(6)
-        << "{\n"
-        << "  \"available\": " << (report.available ? "true" : "false") << ",\n"
-        << "  \"target_count\": " << report.target_count << ",\n"
-        << "  \"estimate_count\": " << report.estimate_count << ",\n"
-        << "  \"timing_match_count\": " << report.timing_match_count << ",\n"
-        << "  \"exact_position_count\": " << report.exact_position_count << ",\n"
-        << "  \"within_one_count\": " << report.within_one_count << ",\n"
-        << "  \"word_match_count\": " << report.word_match_count << ",\n"
-        << "  \"confident_count\": " << report.confident_count << ",\n"
-        << "  \"confident_exact_count\": " << report.confident_exact_count << ",\n"
-        << "  \"timing_precision\": " << report.timing_precision << ",\n"
-        << "  \"timing_recall\": " << report.timing_recall << ",\n"
-        << "  \"exact_position_rate\": " << report.exact_position_rate << ",\n"
-        << "  \"within_one_rate\": " << report.within_one_rate << ",\n"
-        << "  \"word_position_rate\": " << report.word_position_rate << ",\n"
-        << "  \"mean_abs_syllable_error\": " << report.mean_abs_syllable_error << ",\n"
-        << "  \"confident_coverage\": " << report.confident_coverage << ",\n"
-        << "  \"confident_exact_rate\": " << report.confident_exact_rate << ",\n"
-        << "  \"median_decision_latency_ms\": " << report.median_decision_latency_ms << ",\n"
-        << "  \"p90_decision_latency_ms\": " << report.p90_decision_latency_ms << ",\n"
-        << "  \"median_anchor_gap_ms\": " << report.median_anchor_gap_ms << ",\n"
-        << "  \"p90_anchor_gap_ms\": " << report.p90_anchor_gap_ms << "\n"
-        << "}\n";
-    return out.str();
-}
-
-
 static std::vector<ProsodicPeakObservation> runtime_syllable_assignment_observations(
     const std::vector<ProsodicPeakTarget>& targets,
     const TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow>& rows,
@@ -2198,11 +1925,108 @@ static std::vector<ProsodicPeakObservation> runtime_syllable_assignment_observat
     return observations;
 }
 
+static std::vector<ProsodicPeakTarget> word_start_nucleus_targets(
+    const std::vector<ProsodicPeakTarget>& syllable_targets)
+{
+    std::vector<ProsodicPeakTarget> targets;
+    std::set<int> seen_words;
+    for (const ProsodicPeakTarget& source : syllable_targets)
+    {
+        if (source.word_index < 0 || !seen_words.insert(source.word_index).second)
+            continue;
+        ProsodicPeakTarget target = source;
+        target.target_index = static_cast<int>(targets.size());
+        targets.push_back(std::move(target));
+    }
+    return targets;
+}
+
+// The active runtime contract is narrower than generic syllable
+// assignment: the first actually renderable viseme of each word must be
+// centered on that word's own first MFA-aligned nucleus. Grade the performed
+// event, not merely the detector row, so playhead clamping, ordering floors, or
+// later retiming cannot silently dilute an otherwise correct correspondence.
+static std::vector<ProsodicPeakObservation> runtime_word_start_nucleus_observations(
+    const std::vector<ProsodicPeakTarget>& targets,
+    const TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow>& rows,
+    const FOffgridAICommittedVisemeTrack& track)
+{
+    std::map<int, int> target_by_phone_index;
+    for (const ProsodicPeakTarget& target : targets)
+        target_by_phone_index[target.expected_phone_index] = target.target_index;
+
+    std::vector<ProsodicPeakObservation> observations;
+    for (const FOffgridAIRuntimeSyllableAssignmentDiagnosticRow& row : rows)
+    {
+        if (row.AnchorKind != FName(TEXT("audio_word_start_prior"))) continue;
+        const auto target_it = target_by_phone_index.find(row.PhoneIndex);
+        if (target_it == target_by_phone_index.end()) continue;
+
+        const FOffgridAICommittedVisemeEvent* anchor_event = nullptr;
+        for (const auto& event : track.Events)
+        {
+            if (event.WordIndex != row.WordIndex
+                || !event.bIsRenderable
+                || event.bCanceledByWordHandoff
+                || event.AcousticAnchorKind
+                    != FName(TEXT("audio_word_start_nucleus")))
+                continue;
+            if (anchor_event == nullptr
+                || FMath::Abs(event.AcousticAnchorErrorSeconds)
+                    < FMath::Abs(anchor_event->AcousticAnchorErrorSeconds))
+                anchor_event = &event;
+        }
+        if (anchor_event == nullptr) continue;
+
+        ProsodicPeakObservation observation;
+        observation.target_index = target_it->second;
+        observation.peak_sec = anchor_event->FinalRenderCenterSeconds;
+        observation.decision_sec = row.ObservedAudioSec + 0.145;
+        observation.prominence = row.Prominence;
+        observation.score = row.Confidence;
+        observation.family_score = row.Confidence;
+        observations.push_back(observation);
+    }
+    return observations;
+}
+
+static std::vector<ProsodicPeakObservation> performed_word_head_anchor_observations(
+    const FOffgridAICommittedVisemeTrack& track)
+{
+    std::map<int32, const FOffgridAICommittedVisemeEvent*> anchor_by_word;
+    for (const auto& event : track.Events)
+    {
+        if (event.WordIndex < 0
+            || !event.bIsRenderable
+            || event.bCanceledByWordHandoff
+            || event.AcousticAnchorKind
+                != FName(TEXT("audio_word_start_nucleus")))
+            continue;
+        const auto existing = anchor_by_word.find(event.WordIndex);
+        if (existing == anchor_by_word.end()
+            || FMath::Abs(event.AcousticAnchorErrorSeconds)
+                < FMath::Abs(existing->second->AcousticAnchorErrorSeconds))
+            anchor_by_word[event.WordIndex] = &event;
+    }
+
+    std::vector<ProsodicPeakObservation> observations;
+    for (const auto& item : anchor_by_word)
+    {
+        ProsodicPeakObservation observation;
+        observation.peak_sec = item.second->FinalRenderCenterSeconds;
+        observation.decision_sec = item.second->CommitPlaybackSeconds;
+        observation.score = 1.0;
+        observation.family_score = 1.0;
+        observations.push_back(observation);
+    }
+    return observations;
+}
+
 static std::string runtime_syllable_anchor_diagnostics_csv(
     const TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow>& rows)
 {
     std::ostringstream out;
-    out << "line_id,update_ordinal,audio_speech_region_index,text_speech_region_index,nucleus_phone_index,pulse_audio_sec,prominence,confidence,skip_count,anchor_kind,timeline_correction_sec\n";
+    out << "line_id,update_ordinal,audio_speech_region_index,text_speech_region_index,nucleus_phone_index,pulse_audio_sec,prominence,confidence,skip_count,anchor_kind,timeline_correction_sec,word_index,word_prior_rate,observed_word_interval_sec,prior_word_interval_sec,canceled_prior_word_event_count\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& row : rows)
     {
@@ -2216,7 +2040,12 @@ static std::string runtime_syllable_anchor_diagnostics_csv(
             << row.Confidence << ','
             << row.SkipCount << ','
             << to_std(row.AnchorKind) << ','
-            << row.TimelineCorrectionSec << '\n';
+            << row.TimelineCorrectionSec << ','
+            << row.WordIndex << ','
+            << row.WordPriorRate << ','
+            << row.ObservedWordIntervalSec << ','
+            << row.PriorWordIntervalSec << ','
+            << row.CanceledPriorWordEventCount << '\n';
     }
     return out.str();
 }
@@ -2237,14 +2066,13 @@ static std::string prosodic_peak_grade_json(const ProsodicPeakReport& report)
         << "  \"p90_abs_error_ms\": " << report.p90_abs_error_ms << ",\n"
         << "  \"mean_decision_latency_ms\": " << report.mean_decision_latency_ms << ",\n"
         << "  \"raw_observation_count\": " << report.raw_observation_count << ",\n"
+        << "  \"raw_ungradeable_observation_count\": " << report.raw_ungradeable_observation_count << ",\n"
         << "  \"raw_matched_count\": " << report.raw_matched_count << ",\n"
         << "  \"raw_precision\": " << report.raw_precision << ",\n"
         << "  \"raw_recall\": " << report.raw_recall << ",\n"
         << "  \"raw_mean_abs_error_ms\": " << report.raw_mean_abs_error_ms << "\n}\n";
     return out.str();
 }
-
-
 
 static std::string audio_landmark_frames_csv(const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames)
 {
@@ -2892,7 +2720,7 @@ static std::string soft_lull_candidates_csv(const TArray<FOffgridAIStreamingSoft
 static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "index,start,center,end,pose,word,word_index,speech_region_index,text_sentence_index,strength,renderable,reason,source_phone_index,source_phone_base,source_phone_class,text_center_norm,text_diagnostic_center,prior_start,prior_center,prior_end,lead_adjusted_center,playback_offset,total_paused_at_commit,min_live_lead_delay,inter_event_floor_delay,total_center_delay,commit_playback,commit_lead,mapped_to_observed_speech,used_initial_speech_anchor,used_resume_anchor,acoustic_anchor_kind,acoustic_anchor_seconds,acoustic_anchor_error_seconds,observed_pause_decay_seconds,observed_resume_onset_seconds,observed_resume_energy_anchor_seconds,boundary_word_index,boundary_mark,boundary_outcome\n";
+    out << "index,start,center,end,pose,word,word_index,speech_region_index,text_sentence_index,strength,renderable,canceled_by_word_handoff,reason,source_phone_index,source_phone_base,source_phone_class,text_center_norm,text_diagnostic_center,prior_start,prior_center,prior_end,lead_adjusted_center,playback_offset,total_paused_at_commit,min_live_lead_delay,inter_event_floor_delay,total_center_delay,commit_playback,commit_lead,mapped_to_observed_speech,used_initial_speech_anchor,used_resume_anchor,acoustic_anchor_kind,acoustic_anchor_seconds,acoustic_anchor_error_seconds,observed_pause_decay_seconds,observed_resume_onset_seconds,observed_resume_energy_anchor_seconds,boundary_word_index,boundary_mark,boundary_outcome\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.Events)
     {
@@ -2907,6 +2735,7 @@ static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
             << event.SentenceIndex << ','
             << event.Strength << ','
             << (event.bIsRenderable ? 1 : 0) << ','
+            << (event.bCanceledByWordHandoff ? 1 : 0) << ','
             << to_std(event.CommitReason) << ','
             << event.SourcePhoneIndex << ','
             << to_std(event.SourcePhoneBase) << ','
@@ -2959,7 +2788,7 @@ static std::string region_drop_diagnostics_csv(
     int32 max_region_index = speech_regions.Num() - 1;
     for (const auto& event : track.Events)
     {
-        if (!event.bIsRenderable) continue;
+        if (!event.bIsRenderable || event.bCanceledByWordHandoff) continue;
         max_region_index = std::max(max_region_index, event.SpeechRegionIndex);
     }
 
@@ -2980,7 +2809,7 @@ static std::string region_drop_diagnostics_csv(
 
         for (const auto& event : track.Events)
         {
-            if (!event.bIsRenderable) continue;
+            if (!event.bIsRenderable || event.bCanceledByWordHandoff) continue;
             if (event.SpeechRegionIndex != region_index) continue;
             ++committed_event_count;
             const double center = static_cast<double>(event.FinalRenderCenterSeconds);
@@ -3023,7 +2852,7 @@ static std::string region_drop_diagnostics_csv(
 static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "event_index,pose,word,word_index,source_phone_index,source_phone_base,source_phone_class,renderable,commit_reason,render_start,render_center,render_end,prior_start,prior_center,prior_end,lead_adjusted_center,playback_offset,total_paused_at_commit,min_live_lead_delay,inter_event_floor_delay,total_center_delay,commit_playback,commit_lead,mapped_to_observed_speech,used_initial_speech_anchor,used_resume_anchor,acoustic_anchor_kind,acoustic_anchor_seconds,acoustic_anchor_error_seconds,observed_pause_decay_seconds,observed_resume_onset_seconds,observed_resume_energy_anchor_seconds,boundary_word_index,boundary_mark,boundary_outcome\n";
+    out << "event_index,pose,word,word_index,source_phone_index,source_phone_base,source_phone_class,renderable,canceled_by_word_handoff,commit_reason,render_start,render_center,render_end,prior_start,prior_center,prior_end,lead_adjusted_center,playback_offset,total_paused_at_commit,min_live_lead_delay,inter_event_floor_delay,total_center_delay,commit_playback,commit_lead,mapped_to_observed_speech,used_initial_speech_anchor,used_resume_anchor,acoustic_anchor_kind,acoustic_anchor_seconds,acoustic_anchor_error_seconds,observed_pause_decay_seconds,observed_resume_onset_seconds,observed_resume_energy_anchor_seconds,boundary_word_index,boundary_mark,boundary_outcome\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.Events)
     {
@@ -3035,6 +2864,7 @@ static std::string commit_decisions_csv(const FOffgridAIAlignedVisemeTrack& trac
             << to_std(event.SourcePhoneBase) << ','
             << to_std(event.SourcePhoneClass) << ','
             << (event.bIsRenderable ? 1 : 0) << ','
+            << (event.bCanceledByWordHandoff ? 1 : 0) << ','
             << to_std(event.CommitReason) << ','
             << event.RenderStartSeconds << ','
             << event.FinalRenderCenterSeconds << ','
@@ -3120,7 +2950,7 @@ static std::string runtime_speech_regions_csv(const TArray<FOffgridAIRuntimeSpee
 static std::string runtime_boundary_state_csv(const TArray<FOffgridAIRuntimeBoundaryDiagnosticRow>& rows)
 {
     std::ostringstream out;
-    out << "line_id,update_ordinal,final_replay,current_playback_sec,b_playhead_started,b_audio_speech_active,active_speech_region_index,active_text_speech_region_index,active_text_region_audio_start_sec,active_region_start_sec,active_region_end_sec,timeline_prior_anchor_sec,timeline_audio_anchor_sec,timeline_rate,last_matched_syllable_index,last_matched_syllable_phone_index,last_matched_syllable_audio_sec,last_matched_syllable_confidence,bounded_syllable_rebase_count,scheduler_next_event_index,scheduler_next_phone_index,scheduler_candidate_center_sec,scheduler_commit_frontier_sec,scheduler_commit_lead_sec,scheduler_block_reason,committed_event_count,diagnostic_kind\n";
+    out << "line_id,update_ordinal,final_replay,current_playback_sec,b_playhead_started,b_audio_speech_active,active_speech_region_index,active_text_speech_region_index,active_region_start_sec,active_region_end_sec,timeline_rate,last_matched_syllable_index,last_matched_syllable_phone_index,last_matched_syllable_audio_sec,last_matched_syllable_confidence,scheduler_next_event_index,scheduler_next_phone_index,scheduler_candidate_center_sec,scheduler_commit_frontier_sec,scheduler_commit_lead_sec,scheduler_block_reason,committed_event_count,diagnostic_kind\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& row : rows)
     {
@@ -3132,17 +2962,13 @@ static std::string runtime_boundary_state_csv(const TArray<FOffgridAIRuntimeBoun
             << (row.bAudioSpeechActive ? 1 : 0) << ','
             << row.ActiveSpeechRegionIndex << ','
             << row.ActiveTextSpeechRegionIndex << ','
-            << row.ActiveTextRegionAudioStartSec << ','
             << row.ActiveRegionStartSec << ','
             << row.ActiveRegionEndSec << ','
-            << row.TimelinePriorAnchorSec << ','
-            << row.TimelineAudioAnchorSec << ','
             << row.TimelineRate << ','
             << row.LastMatchedSyllableIndex << ','
             << row.LastMatchedSyllablePhoneIndex << ','
             << row.LastMatchedSyllableAudioSec << ','
             << row.LastMatchedSyllableConfidence << ','
-            << row.BoundedSyllableRebaseCount << ','
             << row.SchedulerNextEventIndex << ','
             << row.SchedulerNextPhoneIndex << ','
             << row.SchedulerCandidateCenterSec << ','
@@ -3294,7 +3120,8 @@ static std::vector<GradeMatch> compute_monotonic_matches(const FOffgridAIAligned
     std::vector<int> event_indices;
     for (int32 i = 0; i < track.Events.Num(); ++i)
     {
-        if (track.Events[i].bIsRenderable) event_indices.push_back(i);
+        if (track.Events[i].bIsRenderable
+            && !track.Events[i].bCanceledByWordHandoff) event_indices.push_back(i);
     }
     return compute_monotonic_matches_subset(track, handmade, label_indices, event_indices);
 }
@@ -3578,7 +3405,7 @@ static std::vector<TimeSpan> build_predicted_sentence_regions(const FOffgridAIAl
     std::vector<TimeSpan> spans;
     for (const auto& event : track.Events)
     {
-        if (!event.bIsRenderable) continue;
+        if (!event.bIsRenderable || event.bCanceledByWordHandoff) continue;
         if (event.SentenceIndex < 0) continue;
         const double start = static_cast<double>(event.RenderStartSeconds);
         const double end = static_cast<double>(event.RenderEndSeconds);
@@ -3602,7 +3429,7 @@ static std::vector<TimeSpan> build_predicted_clause_regions(const FOffgridAIAlig
     int synthetic_key = -1;
     for (const auto& event : track.Events)
     {
-        if (!event.bIsRenderable) continue;
+        if (!event.bIsRenderable || event.bCanceledByWordHandoff) continue;
         if (event.SpeechRegionIndex < 0) continue;
         const double start = static_cast<double>(event.RenderStartSeconds);
         const double end = static_cast<double>(event.RenderEndSeconds);
@@ -3695,7 +3522,8 @@ static WordOnsetAlignmentReport grade_word_onsets(
         }
 
         const auto event_it = std::find_if(track.Events.begin(), track.Events.end(), [&](const FOffgridAIAlignedVisemeEvent& event) {
-            return event.bIsRenderable && event.WordIndex == word_index;
+            return event.bIsRenderable && !event.bCanceledByWordHandoff
+                && event.WordIndex == word_index;
         });
         if (event_it == track.Events.end())
         {
@@ -3756,7 +3584,9 @@ static IntraWordAlignmentReport grade_intra_word_alignment(
         std::vector<int> event_indices;
         for (int32 i = 0; i < track.Events.Num(); ++i)
         {
-            if (track.Events[i].bIsRenderable && track.Events[i].WordIndex == word_index)
+            if (track.Events[i].bIsRenderable
+                && !track.Events[i].bCanceledByWordHandoff
+                && track.Events[i].WordIndex == word_index)
             {
                 event_indices.push_back(i);
             }
@@ -3813,7 +3643,7 @@ static SpeechRegionContainmentReport grade_speech_region_containment(
     std::vector<double> late_leaks_ms;
     for (const auto& event : track.Events)
     {
-        if (!event.bIsRenderable) continue;
+        if (!event.bIsRenderable || event.bCanceledByWordHandoff) continue;
         ++report.event_count;
         if (!speech_regions.IsValidIndex(event.SpeechRegionIndex))
         {
@@ -3863,7 +3693,8 @@ static GradeReport grade(
     report.committed_count = 0;
     for (const auto& event : track.Events)
     {
-        if (event.bIsRenderable) ++report.committed_count;
+        if (event.bIsRenderable && !event.bCanceledByWordHandoff)
+            ++report.committed_count;
     }
     report.dropped_visemes.dropped_count = 0;
     report.dropped_visemes.dropped_region_closed_count = 0;
@@ -3949,7 +3780,8 @@ static std::string word_onset_diagnostics_csv(
             return word.word_index == label.word_index;
         });
         const auto event_it = std::find_if(track.Events.begin(), track.Events.end(), [&](const FOffgridAIAlignedVisemeEvent& event) {
-            return event.bIsRenderable && event.WordIndex == label.word_index;
+            return event.bIsRenderable && !event.bCanceledByWordHandoff
+                && event.WordIndex == label.word_index;
         });
 
         const double gold_start = gold_it != gold_words.end() ? gold_it->start : label.start;
@@ -4006,7 +3838,7 @@ static std::string focus_alignment_grade_json(
             return row.word_index == label.word_index;
         })) continue;
         const auto event = std::find_if(track.Events.begin(), track.Events.end(), [&](const auto& candidate) {
-            return candidate.bIsRenderable
+            return candidate.bIsRenderable && !candidate.bCanceledByWordHandoff
                 && candidate.WordIndex == label.word_index
                 && (label.source_phone_global_index < 0
                     || candidate.SourcePhoneIndex == label.source_phone_global_index);
@@ -4049,7 +3881,8 @@ static std::string focus_alignment_grade_json(
                 && is_vowel_phone(label.source_phone_base);
         });
         const auto first_event = std::find_if(track.Events.begin(), track.Events.end(), [&](const auto& event) {
-            return event.bIsRenderable && event.WordIndex == region.word_index;
+            return event.bIsRenderable && !event.bCanceledByWordHandoff
+                && event.WordIndex == region.word_index;
         });
         if (nucleus == handmade.end() || first_event == track.Events.end()) continue;
         region_nuclei.push_back({
@@ -4690,7 +4523,6 @@ struct RunnerCliConfig
     StreamConfig stream;
     OutputConfig output;
     bool fast_batch = false;
-    bool focused_alignment = false;
     std::string case_filter;
 };
 
@@ -4779,10 +4611,6 @@ static RunnerCliConfig parse_cli_config(int argc, char** argv)
         else if (arg == "--full-diagnostics")
         {
             cli.output.write_detailed_diagnostics = true;
-        }
-        else if (arg == "--focused-alignment")
-        {
-            cli.focused_alignment = true;
         }
         else if (arg == "--case")
         {
@@ -4953,8 +4781,6 @@ int main(int argc, char** argv)
             begin.LineID = FName(stem);
             begin.NPCID = FName("liplab");
             begin.PrerollSec = stream.buffer_seconds;
-            begin.bEnableFocusedWordStartAlignment =
-                cli.focused_alignment || !cli.case_filter.empty();
             if (!cli.case_filter.empty()) std::cerr << "[case] begin " << stem << std::endl;
             session.BeginLine(begin);
             if (!cli.case_filter.empty()) std::cerr << "[case] stream " << stem << std::endl;
@@ -5008,34 +4834,18 @@ int main(int argc, char** argv)
                 FOffgridAIStreamingEvidenceSurfaceConfig evidence_surface_config;
                 evidence_surface_config.PrerollSec = stream.buffer_seconds;
                 evidence_surface_config.PostrollSec = stream.evidence_postroll_seconds;
+                evidence_surface_config.SpeechRegions = &speech;
                 const TArray<FOffgridAIAudioLandmarkObservation> evidence_observations =
                     FOffgridAIStreamingEvidenceSurface::Analyze(
                         session.GetSpeechDetector().GetFeatureFrames(),
                         evidence_surface_config);
-                FOffgridAIStreamingEvidenceSurfaceConfig conditioned_surface_config = evidence_surface_config;
-                conditioned_surface_config.bPermissivePhoneCandidates = true;
                 const TArray<FOffgridAIAudioLandmarkObservation> permissive_evidence_candidates =
-                    FOffgridAIStreamingEvidenceSurface::Analyze(
-                        session.GetSpeechDetector().GetFeatureFrames(),
-                        conditioned_surface_config);
-                const TArray<FOffgridAIAudioLandmarkObservation> conditioned_evidence_observations =
-                    condition_evidence_observations(
-                        evidence_observations,
-                        permissive_evidence_candidates,
-                        build_evidence_conditioning_targets(plan, committed),
-                        FMath::Min(evidence_surface_config.PostrollSec, 0.650f),
-                        evidence_surface_config.PrerollSec);
+                    evidence_observations;
                 const std::vector<EvidenceIngredientTarget> evidence_targets =
                     build_evidence_ingredient_targets(gold_phones, gold_words, gold_speech, gold_boundaries);
                 const EvidenceIngredientReport evidence_report = grade_evidence_ingredients(
                     evidence_targets,
                     evidence_observations,
-                    gold_speech,
-                    evidence_surface_config.PrerollSec * 1000.0,
-                    evidence_surface_config.PostrollSec * 1000.0);
-                const EvidenceIngredientReport conditioned_evidence_report = grade_evidence_ingredients(
-                    evidence_targets,
-                    conditioned_evidence_observations,
                     gold_speech,
                     evidence_surface_config.PrerollSec * 1000.0,
                     evidence_surface_config.PostrollSec * 1000.0);
@@ -5050,12 +4860,8 @@ int main(int argc, char** argv)
                     evidence_ingredient_observations_csv(evidence_observations));
                 write_text(case_dir / "streaming_evidence_grade.json",
                     evidence_ingredient_grade_json(evidence_report));
-                write_text(case_dir / "streaming_permissive_evidence_candidates.csv",
+                write_text(case_dir / "streaming_evidence_candidates.csv",
                     evidence_ingredient_observations_csv(permissive_evidence_candidates));
-                write_text(case_dir / "streaming_conditioned_evidence_observations.csv",
-                    evidence_ingredient_observations_csv(conditioned_evidence_observations));
-                write_text(case_dir / "streaming_conditioned_evidence_grade.json",
-                    evidence_ingredient_grade_json(conditioned_evidence_report));
                 write_text(case_dir / "streaming_intra_envelope_phone_grade.json",
                     evidence_ingredient_grade_json(intra_envelope_phone_report));
                 if (!cli.case_filter.empty()) std::cerr << "[case] landmark-targets " << stem << std::endl;
@@ -5073,36 +4879,6 @@ int main(int argc, char** argv)
                     syllable_candidate_sets_csv(syllable_candidate_sets));
                 write_text(case_dir / "streaming_syllable_candidate_set_grade.json",
                     syllable_candidate_set_grade_json(syllable_candidate_set_report));
-                const TArray<FOffgridAIStreamingSyllablePositionEstimate> syllable_position_estimates =
-                    FOffgridAIStreamingSyllablePositionEstimator::Estimate(
-                        plan,
-                        permissive_evidence_candidates);
-                const SyllablePositionReport syllable_position_report = grade_syllable_positions(
-                    prosodic_peak_targets,
-                    syllable_position_estimates);
-                const SyllableAssignmentReport syllable_assignment_report =
-                    grade_syllable_assignments(
-                        prosodic_peak_targets,
-                        syllable_position_estimates);
-                write_text(case_dir / "streaming_syllable_positions.csv",
-                    syllable_position_estimates_csv(syllable_position_estimates));
-                write_text(case_dir / "streaming_syllable_position_grade.json",
-                    syllable_position_grade_json(syllable_position_report));
-                write_text(case_dir / "streaming_syllable_assignment_grade.json",
-                    syllable_assignment_grade_json(syllable_assignment_report));
-                const TArray<FOffgridAIStreamingSyllablePositionEstimate> historical_anchors =
-                    FOffgridAIStreamingSyllablePositionEstimator::EstimateHistoricalAnchors(
-                        plan,
-                        permissive_evidence_candidates,
-                        session.GetSpeechDetector().GetSpeechRegions(),
-                        2);
-                const SyllablePositionReport historical_anchor_report = grade_syllable_positions(
-                    prosodic_peak_targets,
-                    historical_anchors);
-                write_text(case_dir / "streaming_historical_syllable_anchors.csv",
-                    syllable_position_estimates_csv(historical_anchors));
-                write_text(case_dir / "streaming_historical_anchor_grade.json",
-                    syllable_position_grade_json(historical_anchor_report));
                 if (!cli.case_filter.empty()) std::cerr << "[case] visible-labels " << stem << std::endl;
                 const auto handmade = build_gold_visible_labels(plan, gold_phones);
                 gold_viseme_count = handmade.size();
@@ -5129,11 +4905,36 @@ int main(int argc, char** argv)
                     prosodic_peak_targets,
                     runtime_syllable_observations,
                     std::vector<ProsodicPeakObservation>());
+                const auto word_start_targets =
+                    word_start_nucleus_targets(prosodic_peak_targets);
+                auto runtime_word_start_observations =
+                    runtime_word_start_nucleus_observations(
+                        word_start_targets,
+                        session.GetRuntimeSyllableAssignmentDiagnosticRows(),
+                        committed);
+                const ProsodicPeakReport runtime_word_start_report =
+                    grade_prosodic_peaks(
+                        word_start_targets,
+                        runtime_word_start_observations,
+                        std::vector<ProsodicPeakObservation>());
+                const auto mfa_nucleus_targets = build_mfa_nucleus_targets(gold_phones);
+                const auto performed_word_head_observations =
+                    performed_word_head_anchor_observations(committed);
+                std::vector<ProsodicPeakObservation> no_assigned_word_heads;
+                const ProsodicPeakReport nearby_nucleus_report =
+                    grade_prosodic_peaks(
+                        mfa_nucleus_targets,
+                        no_assigned_word_heads,
+                        performed_word_head_observations);
                 write_text(case_dir / "runtime_syllable_anchor_diagnostics.csv",
                     runtime_syllable_anchor_diagnostics_csv(
                         session.GetRuntimeSyllableAssignmentDiagnosticRows()));
                 write_text(case_dir / "runtime_syllable_assignment_grade.json",
                     prosodic_peak_grade_json(runtime_syllable_report));
+                write_text(case_dir / "runtime_word_start_nucleus_grade.json",
+                    prosodic_peak_grade_json(runtime_word_start_report));
+                write_text(case_dir / "performed_word_head_nearby_nucleus_grade.json",
+                    prosodic_peak_grade_json(nearby_nucleus_report));
                 write_text(case_dir / "word_onset_diagnostics.csv", word_onset_diagnostics_csv(committed, handmade, gold_words));
                 if (!cli.case_filter.empty()) std::cerr << "[case] reports-done " << stem << std::endl;
             }

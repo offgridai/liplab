@@ -200,7 +200,21 @@ def load_stock_dictionary_entries() -> dict[str, list[str]]:
         if len(parts) < 2:
             continue
         word = normalize_dictionary_word(parts[0])
-        pronunciation = " ".join(parts[1:])
+        # MFA's packaged English dictionary mixes plain ``word phones...``
+        # rows with rows carrying four pronunciation/silence probability
+        # columns.  Those probabilities describe the source dictionary; they
+        # are not phones and cannot be spliced into a derived pronunciation
+        # (for example ``vanilla`` + possessive ``s``).
+        phone_parts = parts[1:]
+        while phone_parts:
+            try:
+                float(phone_parts[0])
+            except ValueError:
+                break
+            phone_parts.pop(0)
+        if not phone_parts:
+            continue
+        pronunciation = " ".join(phone_parts)
         entries.setdefault(word, [])
         if pronunciation not in entries[word]:
             entries[word].append(pronunciation)
@@ -530,7 +544,9 @@ def case_stems() -> list[str]:
 
 
 def read_text(path: pathlib.Path) -> str:
-    return path.read_text(encoding="utf-8").strip()
+    # Several imported Offgrid transcripts carry a UTF-8 BOM.  Treat it as an
+    # encoding marker, not as part of the first word handed to MFA.
+    return path.read_text(encoding="utf-8-sig").strip()
 
 
 def read_json(path: pathlib.Path) -> dict:

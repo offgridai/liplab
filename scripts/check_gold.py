@@ -107,6 +107,51 @@ def validate_manifest(root: pathlib.Path) -> list[str]:
     return errors
 
 
+def validate_spn_quarantine(gold_root: pathlib.Path) -> tuple[list[str], int]:
+    """Reject opaque MFA speech unless it is an explicitly reviewed exception."""
+
+    errors: list[str] = []
+    allowlist_path = gold_root / "spn_allowlist.json"
+    if not allowlist_path.exists():
+        return ["spn_allowlist.json is required"], 0
+    payload = read_json(allowlist_path)
+    if payload.get("schema_version") != 1:
+        errors.append("spn_allowlist.json: schema_version must be 1")
+    expected: set[tuple[str, str]] = set()
+    for entry in payload.get("entries", []):
+        case_id = str(entry.get("case_id", "")).strip()
+        word = str(entry.get("word", "")).strip().lower()
+        reason = str(entry.get("reason", "")).strip()
+        if not case_id or not word or not reason:
+            errors.append("spn_allowlist.json: every entry requires case_id, word, and reason")
+            continue
+        key = (case_id, word)
+        if key in expected:
+            errors.append(f"spn_allowlist.json: duplicate entry {case_id}/{word}")
+        expected.add(key)
+
+    observed: set[tuple[str, str]] = set()
+    interval_count = 0
+    for case_dir in sorted(path for path in gold_root.iterdir() if path.is_dir()):
+        phones_path = case_dir / "phones.csv"
+        if not phones_path.exists():
+            continue
+        with phones_path.open("r", encoding="utf-8-sig", newline="") as handle:
+            for row in csv.DictReader(handle):
+                if str(row.get("phone", "")).strip().lower() != "spn":
+                    continue
+                key = (case_dir.name, str(row.get("word", "")).strip().lower())
+                observed.add(key)
+                interval_count += 1
+                if key not in expected:
+                    errors.append(
+                        f"{case_dir.name}/phones.csv: unreviewed spn for {key[1] or '<empty word>'}"
+                    )
+    for case_id, word in sorted(expected - observed):
+        errors.append(f"spn_allowlist.json: stale entry {case_id}/{word}")
+    return errors, interval_count
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate approved gold packages and optional draft annotation packages.")
     parser.add_argument("--include-drafts", action="store_true")
@@ -124,6 +169,9 @@ def main() -> int:
         errors.extend(validate_monotonic_rows(case_dir / "speech.csv", "start", "end", "speech"))
         approved_count += 1
 
+    spn_errors, spn_count = validate_spn_quarantine(gold_root)
+    errors.extend(spn_errors)
+
     if args.include_drafts:
         for case_id in case_stems():
             draft_path = gold_draft_dir(case_id) / "draft.annotation.json"
@@ -139,7 +187,11 @@ def main() -> int:
         return 1
 
     if args.include_drafts:
-        print(f"Approved gold packages validated for {approved_count} case(s); draft packages validated for {draft_count} case(s).")
+        print(
+            f"Approved gold packages validated for {approved_count} case(s); "
+            f"draft packages validated for {draft_count} case(s); "
+            f"reviewed spn quarantine contains {spn_count} interval(s)."
+        )
     else:
         print(f"Approved gold packages validated for {approved_count} case(s).")
     return 0

@@ -19,6 +19,10 @@ struct FOffgridAICommittedVisemeEvent
     // Strong visible event metadata for diagnostics/render emphasis only. It is not a scheduling landmark.
     bool bIsStrongVisibleEvent = false;
     bool bIsRenderable = true;
+    // The event remains committed for transcript completeness and diagnostics,
+    // but a later acoustically anchored word has authoritatively ended this
+    // word before the event could be displayed.
+    bool bCanceledByWordHandoff = false;
 
     float TextCenterNorm = 0.0f;
     float TextDiagnosticCenterSeconds = 0.0f;

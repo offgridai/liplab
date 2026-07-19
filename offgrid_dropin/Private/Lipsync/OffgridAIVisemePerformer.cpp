@@ -11,6 +11,11 @@ static float SmoothStep01(float X)
 static bool SameContinuousSpeechGroup(const FOffgridAICommittedVisemeEvent* A, const FOffgridAICommittedVisemeEvent* B)
 {
     if (!A || !B) return false;
+    if (A->SourcePhoneClass == FName(TEXT("acoustic_nucleus_beat"))
+        || A->SourcePhoneClass == FName(TEXT("nucleus_gap"))
+        || B->SourcePhoneClass == FName(TEXT("acoustic_nucleus_beat"))
+        || B->SourcePhoneClass == FName(TEXT("nucleus_gap")))
+        return false;
     if (B->bUsedResumeAnchor) return false;
     if (A->SpeechRegionIndex != INDEX_NONE && B->SpeechRegionIndex != INDEX_NONE && A->SpeechRegionIndex != B->SpeechRegionIndex) return false;
 
@@ -58,7 +63,8 @@ static const FOffgridAICommittedVisemeEvent* FindPreviousRenderedEvent(
     for (int32 I = EventIndex - 1; I >= 0; --I)
     {
         const FOffgridAICommittedVisemeEvent& Candidate = Track.Events[I];
-        if (Candidate.bIsRenderable && IsPerceptuallyImportant(Candidate))
+        if (Candidate.bIsRenderable && !Candidate.bCanceledByWordHandoff
+            && IsPerceptuallyImportant(Candidate))
             return &Candidate;
     }
     return nullptr;
@@ -71,7 +77,24 @@ static const FOffgridAICommittedVisemeEvent* FindNextRenderedEvent(
     for (int32 I = EventIndex + 1; I < Track.Events.Num(); ++I)
     {
         const FOffgridAICommittedVisemeEvent& Candidate = Track.Events[I];
-        if (Candidate.bIsRenderable && IsPerceptuallyImportant(Candidate))
+        if (Candidate.bIsRenderable && !Candidate.bCanceledByWordHandoff
+            && IsPerceptuallyImportant(Candidate))
+            return &Candidate;
+    }
+    return nullptr;
+}
+
+static const FOffgridAICommittedVisemeEvent* FindNextRenderedWordEvent(
+    const FOffgridAICommittedVisemeTrack& Track,
+    int32 EventIndex,
+    int32 WordIndex)
+{
+    for (int32 I = EventIndex + 1; I < Track.Events.Num(); ++I)
+    {
+        const FOffgridAICommittedVisemeEvent& Candidate = Track.Events[I];
+        if (Candidate.WordIndex == WordIndex) continue;
+        if (Candidate.bIsRenderable && !Candidate.bCanceledByWordHandoff
+            && IsPerceptuallyImportant(Candidate))
             return &Candidate;
     }
     return nullptr;
@@ -88,9 +111,11 @@ static float EventWeightAt(
     // Strength is the planner's authoritative presentation magnitude. Rendering
     // uses one envelope for every pose and does not reinterpret strength by
     // phoneme or pose family.
-    constexpr float Attack = 0.055f;
-    constexpr float Release = 0.070f;
-    constexpr float HoldHalf = 0.030f;
+    const bool bNucleusIndicator = E.SourcePhoneClass == FName(TEXT("acoustic_nucleus_beat"))
+        || E.SourcePhoneClass == FName(TEXT("nucleus_gap"));
+    const float Attack = bNucleusIndicator ? 0.025f : 0.055f;
+    const float Release = bNucleusIndicator ? 0.025f : 0.070f;
+    const float HoldHalf = bNucleusIndicator ? 0.010f : 0.030f;
 
     const float Center = E.FinalRenderCenterSeconds;
     const float PeakStart = Center - HoldHalf;
@@ -157,15 +182,21 @@ TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const 
     {
         return Out;
     }
-
     for (int32 I = 0; I < Track.Events.Num(); ++I)
     {
         const FOffgridAICommittedVisemeEvent& E = Track.Events[I];
-        if (!E.bIsRenderable) continue;
+        if (!E.bIsRenderable || E.bCanceledByWordHandoff) continue;
         if (!IsPerceptuallyImportant(E)) continue;
         if (!FMath::IsFinite(E.FinalRenderCenterSeconds)) continue;
         const FOffgridAICommittedVisemeEvent* Prev = FindPreviousRenderedEvent(Track, I);
         const FOffgridAICommittedVisemeEvent* Next = FindNextRenderedEvent(Track, I);
+        const FOffgridAICommittedVisemeEvent* NextWord =
+            FindNextRenderedWordEvent(Track, I, E.WordIndex);
+        // The new word cleanly replaces every remaining envelope from the old
+        // word at its first perceptually rendered center.
+        if (NextWord
+            && PlaybackSeconds >= NextWord->FinalRenderCenterSeconds)
+            continue;
         float RegionStartSeconds = Track.SpeechStartSeconds;
         float RegionEndSeconds = TNumericLimits<float>::Max();
         for (const auto& Region : Track.SpeechRegions)
