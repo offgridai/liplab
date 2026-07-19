@@ -883,6 +883,7 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "streaming_syllable_position_grade": _read_json(case_dir / "streaming_syllable_position_grade.json"),
             "streaming_historical_anchor_grade": _read_json(case_dir / "streaming_historical_anchor_grade.json"),
             "runtime_syllable_assignment_grade": _read_json(case_dir / "runtime_syllable_assignment_grade.json"),
+            "runtime_word_start_nucleus_grade": _read_json(case_dir / "runtime_word_start_nucleus_grade.json"),
             "committed_rows": committed_rows,
             "commit_rows": commit_rows,
             "speech_rows": speech_rows,
@@ -1049,6 +1050,9 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
     syllable_position_available = [row for row in bulk if row["streaming_syllable_position_grade"].get("available")]
     historical_anchor_available = [row for row in bulk if row["streaming_historical_anchor_grade"].get("available")]
     runtime_syllable_available = [row for row in bulk if row["runtime_syllable_assignment_grade"].get("available")]
+    runtime_word_start_nucleus_available = [
+        row for row in bulk if row["runtime_word_start_nucleus_grade"].get("available")
+    ]
     playback_health_available = [row for row in bulk if row["playback_health"].get("available")]
     text_predicted_break_count = sum(int(row["text_plan_grade"].get("predicted_region_break_count", 0)) for row in text_available)
     text_reference_break_count = sum(int(row["text_plan_grade"].get("reference_region_break_count", 0)) for row in text_available)
@@ -1504,6 +1508,18 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         count = int(grade.get("matched_count", 0))
         if count > 0:
             runtime_syllable_errors.extend([float(grade.get("mean_abs_error_ms", 0.0))] * count)
+    runtime_word_start_nucleus_targets = sum(
+        int(row["runtime_word_start_nucleus_grade"].get("target_count", 0))
+        for row in runtime_word_start_nucleus_available
+    )
+    runtime_word_start_nucleus_observations = sum(
+        int(row["runtime_word_start_nucleus_grade"].get("observation_count", 0))
+        for row in runtime_word_start_nucleus_available
+    )
+    runtime_word_start_nucleus_matches = sum(
+        int(row["runtime_word_start_nucleus_grade"].get("matched_count", 0))
+        for row in runtime_word_start_nucleus_available
+    )
     summary = {
         **playback_summary,
         **text_plan_summary,
@@ -1579,6 +1595,17 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "runtime_syllable_recall": runtime_syllable_matches / runtime_syllable_targets if runtime_syllable_targets else 0.0,
         "runtime_syllable_error_ms": _mean(runtime_syllable_errors),
         "runtime_syllable_count_ratio": runtime_syllable_observations / runtime_syllable_targets if runtime_syllable_targets else 0.0,
+        "runtime_word_start_nucleus_target_count": runtime_word_start_nucleus_targets,
+        "runtime_word_start_nucleus_observation_count": runtime_word_start_nucleus_observations,
+        "runtime_word_start_nucleus_matched_count": runtime_word_start_nucleus_matches,
+        "runtime_word_start_nucleus_precision": (
+            runtime_word_start_nucleus_matches / runtime_word_start_nucleus_observations
+            if runtime_word_start_nucleus_observations else 0.0
+        ),
+        "runtime_word_start_nucleus_recall": (
+            runtime_word_start_nucleus_matches / runtime_word_start_nucleus_targets
+            if runtime_word_start_nucleus_targets else 0.0
+        ),
         "playback": playback_summary,
         "text_plan_vs_mfa": text_plan_summary,
     }

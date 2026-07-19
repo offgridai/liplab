@@ -2461,6 +2461,103 @@ static std::vector<ProsodicPeakObservation> runtime_syllable_assignment_observat
     return observations;
 }
 
+static std::vector<ProsodicPeakTarget> word_start_nucleus_targets(
+    const std::vector<ProsodicPeakTarget>& syllable_targets)
+{
+    std::vector<ProsodicPeakTarget> targets;
+    std::set<int> seen_words;
+    for (const ProsodicPeakTarget& source : syllable_targets)
+    {
+        if (source.word_index < 0 || !seen_words.insert(source.word_index).second)
+            continue;
+        ProsodicPeakTarget target = source;
+        target.target_index = static_cast<int>(targets.size());
+        targets.push_back(std::move(target));
+    }
+    return targets;
+}
+
+// The primary experimental contract is narrower than generic syllable
+// assignment: the first actually renderable viseme of each word must be
+// centered on that word's own first MFA-aligned nucleus. Grade the performed
+// event, not merely the detector row, so playhead clamping, ordering floors, or
+// later retiming cannot silently dilute an otherwise correct correspondence.
+static std::vector<ProsodicPeakObservation> runtime_word_start_nucleus_observations(
+    const std::vector<ProsodicPeakTarget>& targets,
+    const TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow>& rows,
+    const FOffgridAICommittedVisemeTrack& track)
+{
+    std::map<int, int> target_by_phone_index;
+    for (const ProsodicPeakTarget& target : targets)
+        target_by_phone_index[target.expected_phone_index] = target.target_index;
+
+    std::vector<ProsodicPeakObservation> observations;
+    for (const FOffgridAIRuntimeSyllableAssignmentDiagnosticRow& row : rows)
+    {
+        if (row.AnchorKind != FName(TEXT("audio_word_start_prior"))) continue;
+        const auto target_it = target_by_phone_index.find(row.PhoneIndex);
+        if (target_it == target_by_phone_index.end()) continue;
+
+        const FOffgridAICommittedVisemeEvent* anchor_event = nullptr;
+        for (const auto& event : track.Events)
+        {
+            if (event.WordIndex != row.WordIndex
+                || !event.bIsRenderable
+                || event.bCanceledByWordHandoff
+                || event.AcousticAnchorKind
+                    != FName(TEXT("audio_word_start_nucleus")))
+                continue;
+            if (anchor_event == nullptr
+                || FMath::Abs(event.AcousticAnchorErrorSeconds)
+                    < FMath::Abs(anchor_event->AcousticAnchorErrorSeconds))
+                anchor_event = &event;
+        }
+        if (anchor_event == nullptr) continue;
+
+        ProsodicPeakObservation observation;
+        observation.target_index = target_it->second;
+        observation.peak_sec = anchor_event->FinalRenderCenterSeconds;
+        observation.decision_sec = row.ObservedAudioSec + 0.145;
+        observation.prominence = row.Prominence;
+        observation.score = row.Confidence;
+        observation.family_score = row.Confidence;
+        observations.push_back(observation);
+    }
+    return observations;
+}
+
+static std::vector<ProsodicPeakObservation> performed_word_head_anchor_observations(
+    const FOffgridAICommittedVisemeTrack& track)
+{
+    std::map<int32, const FOffgridAICommittedVisemeEvent*> anchor_by_word;
+    for (const auto& event : track.Events)
+    {
+        if (event.WordIndex < 0
+            || !event.bIsRenderable
+            || event.bCanceledByWordHandoff
+            || event.AcousticAnchorKind
+                != FName(TEXT("audio_word_start_nucleus")))
+            continue;
+        const auto existing = anchor_by_word.find(event.WordIndex);
+        if (existing == anchor_by_word.end()
+            || FMath::Abs(event.AcousticAnchorErrorSeconds)
+                < FMath::Abs(existing->second->AcousticAnchorErrorSeconds))
+            anchor_by_word[event.WordIndex] = &event;
+    }
+
+    std::vector<ProsodicPeakObservation> observations;
+    for (const auto& item : anchor_by_word)
+    {
+        ProsodicPeakObservation observation;
+        observation.peak_sec = item.second->FinalRenderCenterSeconds;
+        observation.decision_sec = item.second->CommitPlaybackSeconds;
+        observation.score = 1.0;
+        observation.family_score = 1.0;
+        observations.push_back(observation);
+    }
+    return observations;
+}
+
 static std::string runtime_syllable_anchor_diagnostics_csv(
     const TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow>& rows)
 {
@@ -5605,11 +5702,36 @@ int main(int argc, char** argv)
                     prosodic_peak_targets,
                     runtime_syllable_observations,
                     std::vector<ProsodicPeakObservation>());
+                const auto word_start_targets =
+                    word_start_nucleus_targets(prosodic_peak_targets);
+                auto runtime_word_start_observations =
+                    runtime_word_start_nucleus_observations(
+                        word_start_targets,
+                        session.GetRuntimeSyllableAssignmentDiagnosticRows(),
+                        committed);
+                const ProsodicPeakReport runtime_word_start_report =
+                    grade_prosodic_peaks(
+                        word_start_targets,
+                        runtime_word_start_observations,
+                        std::vector<ProsodicPeakObservation>());
+                const auto mfa_nucleus_targets = build_mfa_nucleus_targets(gold_phones);
+                const auto performed_word_head_observations =
+                    performed_word_head_anchor_observations(committed);
+                std::vector<ProsodicPeakObservation> no_assigned_word_heads;
+                const ProsodicPeakReport nearby_nucleus_report =
+                    grade_prosodic_peaks(
+                        mfa_nucleus_targets,
+                        no_assigned_word_heads,
+                        performed_word_head_observations);
                 write_text(case_dir / "runtime_syllable_anchor_diagnostics.csv",
                     runtime_syllable_anchor_diagnostics_csv(
                         session.GetRuntimeSyllableAssignmentDiagnosticRows()));
                 write_text(case_dir / "runtime_syllable_assignment_grade.json",
                     prosodic_peak_grade_json(runtime_syllable_report));
+                write_text(case_dir / "runtime_word_start_nucleus_grade.json",
+                    prosodic_peak_grade_json(runtime_word_start_report));
+                write_text(case_dir / "performed_word_head_nearby_nucleus_grade.json",
+                    prosodic_peak_grade_json(nearby_nucleus_report));
                 write_text(case_dir / "word_onset_diagnostics.csv", word_onset_diagnostics_csv(committed, handmade, gold_words));
                 if (!cli.case_filter.empty()) std::cerr << "[case] reports-done " << stem << std::endl;
             }

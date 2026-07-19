@@ -85,10 +85,15 @@ speech boundary.
 `--syllable-paced-visemes` replaces the ordinary duration scheduler with one
 monotonic experimental scheduler. The tuned acoustic-nucleus surface supplies
 the pace, an online beam assigns each stable pulse to an ordered planned
-syllable, and all visible poses owned by that syllable commit atomically. Audio
-still cannot choose pose identity. A short run of transcript syllables skipped
-by the beam is compressed onto the next accepted beat and reported as
-`syllable_paced_missing_beat_recovery`.
+syllable, and transcript-derived priors provide coherent timing inside each
+word. Audio still cannot choose pose identity.
+
+A committed word head is immutable: its first perceptually rendered viseme is
+centered on its accepted acoustic nucleus. One pulse may advance at most one
+whole word, and the runtime may not manufacture intervening word starts from a
+projected transcript schedule. Region close no longer rewrites an accepted
+pulse to the end of a text region or word; doing so was found to introduce
+one-beat phase errors after weak or missed nuclei.
 
 Region transitions constrain assignments and reset acoustic evidence. When an
 acoustic region closes inside a multisyllabic word, its last pulse completes
@@ -98,18 +103,41 @@ transcript punctuation and acoustic region ordinals disagree, the same
 monotonic scheduler continues with the best forward candidate while the audio
 region remains authoritative for ownership.
 
-This is a negative timing experiment, not a production candidate. Across 350
-cases it committed 12,739 of 13,651 planned events (93.32%) and completely
-finished 285 lines. Committed words had 100% single-region integrity and pause
-cleanliness averaged 99.34%. However, only 2,365 of 4,961 emitted syllable
-assignments landed on the corresponding MFA nucleus, from 5,288 transcript
-targets: 47.67% precision and 44.72% recall. Even fully completed lines were
-only 48.24% precise. Mean region-nucleus error was 169.9 ms and mean word-head
-error was 263.6 ms, both materially worse than production.
+When a multisyllabic active word ends at transcript punctuation, an ambiguous
+audio pulse that explicitly includes the word's next syllable candidate is
+assigned to that continuation before the following word may start. This keeps
+boundary-final syllables such as the second vowel of `turkey,` or `veggie.`
+from advancing the scheduler one word early. Punctuation neither creates a
+pause nor supplies its timing; audio-only speech regions still own pause and
+resume, and the preference is inapplicable when the continuation is absent
+from the acoustic candidate beam.
 
-The experiment demonstrates that strong audio-only beat detection does not
-imply reliable online beat-to-transcript identity. A false positive, missed
-reduced vowel, or disagreement between transcript and acoustic region counts
-changes the syllable phase. Region-close reconciliation limits propagation but
-cannot infer which internal syllable was missed. The mode remains opt-in so its
-animation can be reviewed, while ordinary runtime behavior is unchanged.
+Full diagnostics write `runtime_word_start_nucleus_grade.json`. This is the
+P2 experiment score: it maps each direct runtime word assignment to that
+word's first transcript/MFA nucleus, then grades the center of the actually
+rendered anchor viseme. It therefore fails wrong syllable identity, wrong word
+identity, missing words, and any later scheduling shift of an otherwise correct
+audio observation. `scripts\summarize.py` reports its corpus precision, recall,
+and matched center error as `performed_word_start_nucleus`.
+
+The separate `performed_word_head_nearby_nucleus_grade.json` measures the
+weaker but essential acoustic invariant: each performed word head is matched
+to the nearest MFA vowel nucleus without assuming that the runtime chose the
+right transcript word. This exposes phase/identity errors instead of mixing
+them with beat-detection errors. On the current 350-case corpus, 3,452 of 3,595
+performed word heads land inside a real MFA nucleus (96.02% precision); misses
+average 2.50 ms outside the target interval. Correct word/nucleus identity is
+reported only by the stricter P2 score above.
+
+P1 is deliberately simpler and earlier in the product contract: the beginning
+of the first rendered animation for a word (`RenderStartSeconds`) must align
+with MFA's acoustic word onset. The summary reports this independently as
+`word_animation_onset`. A word may therefore satisfy P1 even when its later
+viseme center cannot yet be proven to correspond to the correct MFA nucleus;
+P2 measures that additional benefit.
+
+Strong audio-only beat detection still does not imply reliable online
+beat-to-transcript identity. A false positive, missed reduced vowel, or
+disagreement between transcript and acoustic region counts can change phase.
+The mode remains opt-in so correspondence work can be measured against MFA
+without changing the ordinary runtime scheduler.

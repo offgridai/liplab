@@ -306,14 +306,69 @@ static int32 FitUnplayedEventsToClosedRegions(
             Track.Events[FirstFutureIndex].FinalRenderCenterSeconds;
         const float OriginalLastSec =
             Track.Events[LastFutureIndex].FinalRenderCenterSeconds;
-        if (OriginalLastSec <= RegionEndSec + 0.001f
-            || OriginalFirstSec >= RegionEndSec - 0.001f
-            || OriginalLastSec <= OriginalFirstSec + 0.001f)
+        if (OriginalLastSec <= RegionEndSec + 0.001f)
+            continue;
+
+        // A projected terminal word can land wholly beyond the closed audio
+        // region even though it was committed early enough to be retimed. In
+        // that one case preserve the latest real audio-confirmed word nucleus
+        // and compress the complete unplayed suffix from that anchor. This
+        // keeps every direct word start immutable while making the unmatched
+        // terminal word visible before playback ends.
+        bool bFitTerminalRecoverySuffix = false;
+        if (OriginalFirstSec >= RegionEndSec - 0.001f)
+        {
+            for (int32 EventIndex = FirstFutureIndex - 1;
+                EventIndex >= 0;
+                --EventIndex)
+            {
+                const auto& Event = Track.Events[EventIndex];
+                if (Event.SpeechRegionIndex != RegionIndex) break;
+                if (Event.FinalRenderCenterSeconds
+                        <= CurrentPlaybackSec + 0.001f
+                    || Event.FinalRenderCenterSeconds
+                        >= RegionEndSec - 0.001f
+                    || Event.AcousticAnchorKind
+                        != FName(TEXT("audio_word_start_nucleus"))
+                    || FMath::Abs(Event.AcousticAnchorErrorSeconds) > 0.001f)
+                    continue;
+                FirstFutureIndex = EventIndex;
+                bFitTerminalRecoverySuffix = true;
+                break;
+            }
+            // In a low-preroll host the confirmed nucleus may already have
+            // played by stream close. Preserve the latest still-unplayed event
+            // from that confirmed word instead; committed history remains
+            // immutable and only the future suffix is compressed.
+            if (!bFitTerminalRecoverySuffix)
+            {
+                for (int32 EventIndex = FirstFutureIndex - 1;
+                    EventIndex >= 0;
+                    --EventIndex)
+                {
+                    const auto& Event = Track.Events[EventIndex];
+                    if (Event.SpeechRegionIndex != RegionIndex) break;
+                    if (Event.FinalRenderCenterSeconds
+                            <= CurrentPlaybackSec + 0.001f
+                        || Event.FinalRenderCenterSeconds
+                            >= RegionEndSec - 0.001f)
+                        continue;
+                    FirstFutureIndex = EventIndex;
+                    bFitTerminalRecoverySuffix = true;
+                    break;
+                }
+            }
+        }
+
+        const float FitFirstSec =
+            Track.Events[FirstFutureIndex].FinalRenderCenterSeconds;
+        if (OriginalLastSec <= FitFirstSec + 0.001f
+            || FitFirstSec >= RegionEndSec - 0.001f)
             continue;
 
         const float Scale = FMath::Clamp(
-            (RegionEndSec - OriginalFirstSec)
-                / (OriginalLastSec - OriginalFirstSec),
+            (RegionEndSec - FitFirstSec)
+                / (OriginalLastSec - FitFirstSec),
             0.05f,
             1.0f);
         for (int32 EventIndex = FirstFutureIndex;
@@ -322,20 +377,59 @@ static int32 FitUnplayedEventsToClosedRegions(
         {
             auto& Event = Track.Events[EventIndex];
             if (Event.SpeechRegionIndex != RegionIndex
-                || Event.WordIndex != TailWordIndex
+                || (!bFitTerminalRecoverySuffix
+                    && Event.WordIndex != TailWordIndex)
                 || Event.FinalRenderCenterSeconds
                     <= CurrentPlaybackSec + 0.001f)
                 continue;
             const float OldCenterSec = Event.FinalRenderCenterSeconds;
-            const float NewCenterSec = OriginalFirstSec
-                + (OldCenterSec - OriginalFirstSec) * Scale;
+            const float NewCenterSec = FitFirstSec
+                + (OldCenterSec - FitFirstSec) * Scale;
             Event.RenderStartSeconds = NewCenterSec
                 + (Event.RenderStartSeconds - OldCenterSec) * Scale;
             Event.RenderEndSeconds = NewCenterSec
                 + (Event.RenderEndSeconds - OldCenterSec) * Scale;
             Event.FinalRenderCenterSeconds = NewCenterSec;
-            Event.BoundaryOutcome = FName(TEXT("region_tail_fitted"));
+            Event.BoundaryOutcome = bFitTerminalRecoverySuffix
+                ? FName(TEXT("terminal_recovery_suffix_fitted"))
+                : FName(TEXT("region_tail_fitted"));
             ++FittedEventCount;
+        }
+
+        if (bFitTerminalRecoverySuffix)
+        {
+            float BoundedTerminalAnchorSec = -1.0f;
+            for (int32 EventIndex = FirstFutureIndex;
+                EventIndex <= LastFutureIndex;
+                ++EventIndex)
+            {
+                const auto& Event = Track.Events[EventIndex];
+                if (Event.WordIndex == TailWordIndex
+                    && Event.AcousticAnchorKind
+                        == FName(TEXT("projected_word_start"))
+                    && FMath::Abs(Event.AcousticAnchorErrorSeconds) <= 0.001f)
+                {
+                    BoundedTerminalAnchorSec =
+                        Event.FinalRenderCenterSeconds;
+                    break;
+                }
+            }
+            if (BoundedTerminalAnchorSec >= 0.0f)
+            {
+                for (int32 EventIndex = FirstFutureIndex;
+                    EventIndex <= LastFutureIndex;
+                    ++EventIndex)
+                {
+                    auto& Event = Track.Events[EventIndex];
+                    if (Event.WordIndex != TailWordIndex) continue;
+                    Event.AcousticAnchorKind =
+                        FName(TEXT("bounded_terminal_word_recovery"));
+                    Event.AcousticAnchorSeconds = BoundedTerminalAnchorSec;
+                    Event.AcousticAnchorErrorSeconds =
+                        Event.FinalRenderCenterSeconds
+                        - BoundedTerminalAnchorSec;
+                }
+            }
         }
     }
     return FittedEventCount;
@@ -2211,37 +2305,65 @@ static void UpdateSyllablePacedVisemeTrack(
         if (AudioRegionIndex == INDEX_NONE) continue;
         int32 AssignedSyllableIndex = INDEX_NONE;
         float AssignmentScore = 0.0f;
-        bool bLaterPulseInRegion = false;
-        for (const auto& LaterSet : CandidateSets)
+
+        // At a transcript boundary, prefer an acoustically plausible
+        // unresolved syllable of the active word over launching the following
+        // word. This prevents a boundary-final nucleus (for example the second
+        // vowel in "turkey," or "veggie.") from being relabeled as the next
+        // word head. Punctuation does not create a pause or choose its timing;
+        // it only breaks an otherwise ambiguous transcript correspondence.
+        int32 ActiveWordContinuationSyllableIndex = INDEX_NONE;
+        if (State.LastCommittedWordIndex >= 0
+            && State.LastWordAnchorAudioRegionIndex == AudioRegionIndex)
         {
-            if (LaterSet.AudioCenterSec <= CandidateSet.AudioCenterSec + 0.001f)
-                continue;
-            if (RegionContaining(*Input.SpeechRegions, LaterSet.AudioCenterSec)
-                == AudioRegionIndex)
+            const bool bActiveWordEndsTextRegion =
+                Plan.WordBoundaryPunctuationAfter.IsValidIndex(
+                    State.LastCommittedWordIndex)
+                && Plan.WordBoundaryPunctuationAfter[
+                    State.LastCommittedWordIndex] != TCHAR(0);
+            if (bActiveWordEndsTextRegion)
             {
-                bLaterPulseInRegion = true;
+                for (int32 SyllableIndex = State.LastMatchedSyllableIndex + 1;
+                    SyllableIndex < Plan.Syllables.Num();
+                    ++SyllableIndex)
+                {
+                    const int32 WordIndex =
+                        Plan.Syllables[SyllableIndex].WordIndex;
+                    if (WordIndex == State.LastCommittedWordIndex)
+                    {
+                        ActiveWordContinuationSyllableIndex = SyllableIndex;
+                        break;
+                    }
+                    if (WordIndex > State.LastCommittedWordIndex) break;
+                }
+            }
+        }
+        if (ActiveWordContinuationSyllableIndex != INDEX_NONE)
+        {
+            for (int32 CandidateIndex = 0;
+                CandidateIndex < CandidateSet.SyllableIndices.Num();
+                ++CandidateIndex)
+            {
+                if (CandidateSet.SyllableIndices[CandidateIndex]
+                    != ActiveWordContinuationSyllableIndex)
+                    continue;
+                AssignedSyllableIndex = ActiveWordContinuationSyllableIndex;
+                AssignmentScore = CandidateSet.Scores.IsValidIndex(CandidateIndex)
+                    ? CandidateSet.Scores[CandidateIndex]
+                    : 0.0f;
                 break;
             }
         }
-        const bool bRegionCloseSupported =
-            Input.SpeechRegions->IsValidIndex(AudioRegionIndex)
-            && ((*Input.SpeechRegions)[AudioRegionIndex].bEnded
-                || ((*Input.SpeechRegions)[AudioRegionIndex].ProvisionalEndSec >= 0.0f
-                    && Input.ObservedAudioBufferEndSec
-                        - (*Input.SpeechRegions)[AudioRegionIndex].ProvisionalEndSec
-                        >= 0.100f));
-        const bool bFinalPulseInClosedRegion =
-            bRegionCloseSupported && !bLaterPulseInRegion;
         for (int32 CandidateIndex = 0;
-            CandidateIndex < CandidateSet.SyllableIndices.Num();
+            AssignedSyllableIndex == INDEX_NONE
+                && CandidateIndex < CandidateSet.SyllableIndices.Num();
             ++CandidateIndex)
         {
             const int32 SyllableIndex = CandidateSet.SyllableIndices[CandidateIndex];
-            if (AssignedSyllableIndex != INDEX_NONE
-                && SyllableIndex != AssignedSyllableIndex)
-                continue;
             if (SyllableIndex <= State.LastMatchedSyllableIndex
                 || !Plan.Syllables.IsValidIndex(SyllableIndex)
+                || Plan.Syllables[SyllableIndex].WordIndex
+                    > State.LastCommittedWordIndex + 1
                 || Plan.Syllables[SyllableIndex].SpeechRegionIndex != AudioRegionIndex)
                 continue;
             AssignedSyllableIndex = SyllableIndex;
@@ -2263,7 +2385,9 @@ static void UpdateSyllablePacedVisemeTrack(
             {
                 const int32 SyllableIndex = CandidateSet.SyllableIndices[CandidateIndex];
                 if (SyllableIndex <= State.LastMatchedSyllableIndex
-                    || !Plan.Syllables.IsValidIndex(SyllableIndex))
+                    || !Plan.Syllables.IsValidIndex(SyllableIndex)
+                    || Plan.Syllables[SyllableIndex].WordIndex
+                        > State.LastCommittedWordIndex + 1)
                     continue;
                 AssignedSyllableIndex = SyllableIndex;
                 AssignmentScore = CandidateSet.Scores.IsValidIndex(CandidateIndex)
@@ -2272,97 +2396,31 @@ static void UpdateSyllablePacedVisemeTrack(
                 break;
             }
         }
-        if (bFinalPulseInClosedRegion && AssignedSyllableIndex != INDEX_NONE)
-        {
-            int32 LastSyllableInPlannedRegion = INDEX_NONE;
-            for (int32 SyllableIndex = Plan.Syllables.Num() - 1;
-                SyllableIndex > State.LastMatchedSyllableIndex;
-                --SyllableIndex)
-            {
-                if (Plan.Syllables[SyllableIndex].SpeechRegionIndex
-                    == Plan.Syllables[AssignedSyllableIndex].SpeechRegionIndex)
-                {
-                    LastSyllableInPlannedRegion = SyllableIndex;
-                    break;
-                }
-            }
-            if (LastSyllableInPlannedRegion != INDEX_NONE
-                && LastSyllableInPlannedRegion - State.LastMatchedSyllableIndex <= 2)
-            {
-                AssignedSyllableIndex = LastSyllableInPlannedRegion;
-            }
-            else
-            {
-                const int32 CandidateWordIndex =
-                    Plan.Syllables[AssignedSyllableIndex].WordIndex;
-                while (Plan.Syllables.IsValidIndex(AssignedSyllableIndex + 1)
-                    && Plan.Syllables[AssignedSyllableIndex + 1].WordIndex
-                        == CandidateWordIndex)
-                {
-                    ++AssignedSyllableIndex;
-                }
-            }
-            AssignmentScore = 0.0f;
-            for (int32 CandidateIndex = 0;
-                CandidateIndex < CandidateSet.SyllableIndices.Num();
-                ++CandidateIndex)
-            {
-                if (CandidateSet.SyllableIndices[CandidateIndex]
-                    == AssignedSyllableIndex)
-                {
-                    AssignmentScore = CandidateSet.Scores.IsValidIndex(CandidateIndex)
-                        ? CandidateSet.Scores[CandidateIndex]
-                        : 0.0f;
-                    break;
-                }
-            }
-        }
-        // The final region pulse may need to absorb a detector false negative.
-        // Its target can fall outside the beam's short candidate list; retain
-        // the region-close assignment with zero confidence so the recovery is
-        // visible in diagnostics rather than leaking correspondence forward.
-        if (bFinalPulseInClosedRegion && AssignedSyllableIndex != INDEX_NONE
-            && AssignmentScore == 0.0f)
-        {
-            AssignmentScore = 0.45f;
-        }
         if (AssignedSyllableIndex == INDEX_NONE) continue;
 
-        int32 LastPlannedSyllableInRegion = INDEX_NONE;
-        for (int32 SyllableIndex = Plan.Syllables.Num() - 1;
-            SyllableIndex >= 0;
-            --SyllableIndex)
+        // A stable nucleus may advance at most one whole word. The beam may
+        // skip syllables while resolving a missed or extra pulse, but it has
+        // no authority to launch intervening words from a projected schedule.
+        // Consequently every live word start is owned by its own immutable
+        // accepted nucleus.
+        int32 CandidateAssignedWordIndex =
+            Plan.Syllables[AssignedSyllableIndex].WordIndex;
+        if (CandidateAssignedWordIndex > State.LastCommittedWordIndex + 1)
         {
-            if (Plan.Syllables[SyllableIndex].SpeechRegionIndex == AudioRegionIndex)
+            for (int32 SyllableIndex = State.LastMatchedSyllableIndex + 1;
+                SyllableIndex < Plan.Syllables.Num();
+                ++SyllableIndex)
             {
-                LastPlannedSyllableInRegion = SyllableIndex;
-                break;
+                if (Plan.Syllables[SyllableIndex].WordIndex
+                    == State.LastCommittedWordIndex + 1)
+                {
+                    AssignedSyllableIndex = SyllableIndex;
+                    AssignmentScore = 0.45f;
+                    break;
+                }
             }
         }
-        const bool bWouldEnterFinalRegionPair =
-            LastPlannedSyllableInRegion != INDEX_NONE
-            && Plan.Syllables[AssignedSyllableIndex].SpeechRegionIndex
-                == AudioRegionIndex
-            && LastPlannedSyllableInRegion - AssignedSyllableIndex <= 1;
-        const bool bWouldSplitCurrentWord =
-            Plan.Syllables.IsValidIndex(AssignedSyllableIndex + 1)
-            && Plan.Syllables[AssignedSyllableIndex + 1].WordIndex
-                == Plan.Syllables[AssignedSyllableIndex].WordIndex;
-        const bool bAlreadyStartedRegion =
-            State.LastMatchedSyllableIndex >= 0
-            && Plan.Syllables.IsValidIndex(State.LastMatchedSyllableIndex)
-            && Plan.Syllables[State.LastMatchedSyllableIndex].SpeechRegionIndex
-                == AudioRegionIndex;
-        if (!bRegionCloseSupported
-            && !bLaterPulseInRegion
-            && (bWouldEnterFinalRegionPair || bWouldSplitCurrentWord)
-            && bAlreadyStartedRegion)
-        {
-            // Hold the possible region-final pulse briefly. If the region
-            // closes it reconciles any remaining syllable count locally; if
-            // speech continues, a following pulse proves it was not final.
-            continue;
-        }
+
         State.LastProcessedSyllablePulseSec = CandidateSet.AudioCenterSec;
 
         const FOffgridAIPlannedSyllable& AssignedSyllable =
@@ -2654,6 +2712,7 @@ static void UpdateSyllablePacedVisemeTrack(
     // lower-confidence recovery, never mistaken for an acoustic word start.
     if (Input.bInputStreamClosed
         && State.LastCommittedWordIndex + 1 < Plan.WordPhoneBeginIndices.Num()
+        && State.LastCommittedWordIndex + 2 == Plan.WordPhoneBeginIndices.Num()
         && State.LastWordAnchorAudioSec >= 0.0f)
     {
         const int32 AudioRegionIndex = Input.SpeechRegions->Num() > 0
@@ -2663,20 +2722,57 @@ static void UpdateSyllablePacedVisemeTrack(
             State.AdaptiveWordPriorRate,
             MinimumAdaptiveWordPriorRate,
             MaximumAdaptiveWordPriorRate);
+        const bool bOnlyFinalWordRemains =
+            State.LastCommittedWordIndex + 2
+                == Plan.WordPhoneBeginIndices.Num();
+        float TerminalNucleusRecoverySec = -1.0f;
+        float TerminalNucleusRecoveryScore = -1.0f;
+        if (bOnlyFinalWordRemains
+            && Input.SpeechRegions->IsValidIndex(AudioRegionIndex))
+        {
+            const auto& FinalRegion = (*Input.SpeechRegions)[AudioRegionIndex];
+            const float FinalRegionEndSec = CausalRegionEnd(FinalRegion);
+            for (const auto& Observation : Evidence)
+            {
+                if (Observation.Type
+                        != EOffgridAIAudioLandmarkType::SyllabicPulse
+                    || Observation.CenterSec
+                        <= State.LastMatchedSyllableAudioSec + 0.001f
+                    || Observation.CenterSec
+                        < FinalRegion.AudioBufferStartSec - 0.001f
+                    || Observation.CenterSec > FinalRegionEndSec + 0.001f)
+                    continue;
+                if (Observation.Score > TerminalNucleusRecoveryScore)
+                {
+                    TerminalNucleusRecoverySec = Observation.CenterSec;
+                    TerminalNucleusRecoveryScore = Observation.Score;
+                }
+            }
+        }
         float LastTailRecoveryAnchorSec = -1.0f;
         for (int32 WordIndex = State.LastCommittedWordIndex + 1;
             WordIndex < Plan.WordPhoneBeginIndices.Num();
             ++WordIndex)
         {
+            // Never manufacture a word start from elapsed transcript time.
+            // The sole terminal recovery is legal only when an unmatched
+            // observed nucleus exists in the final audio region.
+            if (TerminalNucleusRecoverySec < 0.0f) break;
             const int32 AnchorEventIndex =
                 FirstPerceptuallyRenderedEventForWord(Plan, WordIndex);
             if (!Prior.EventCenters.IsValidIndex(AnchorEventIndex)) continue;
             const float PriorAnchorSec = Prior.EventCenters[AnchorEventIndex];
             const float ProjectedAnchorSec = State.LastWordAnchorAudioSec
                 + (PriorAnchorSec - State.LastWordAnchorPriorSec) / FixedWordRate;
+            const bool bUseTerminalNucleusRecovery =
+                bOnlyFinalWordRemains
+                && WordIndex + 1 == Plan.WordPhoneBeginIndices.Num()
+                && TerminalNucleusRecoverySec >= 0.0f;
             const float WordAnchorSec = FMath::Max(
                 FMath::Max(
-                    ProjectedAnchorSec,
+                    bUseTerminalNucleusRecovery
+                        ? TerminalNucleusRecoverySec
+                        : ProjectedAnchorSec,
                     Input.CurrentPlaybackSec + MinLiveLeadSec),
                 LastTailRecoveryAnchorSec >= 0.0f
                     ? LastTailRecoveryAnchorSec + 0.001f
@@ -2729,6 +2825,11 @@ static void UpdateSyllablePacedVisemeTrack(
                     FName(TEXT("audio_word_prior_stream_tail_recovery")),
                     Event);
                 Event.AcousticAnchorKind = FName(TEXT("projected_word_start"));
+                if (bUseTerminalNucleusRecovery)
+                {
+                    Event.AcousticAnchorKind =
+                        FName(TEXT("terminal_unmatched_nucleus"));
+                }
                 Event.AcousticAnchorSeconds = WordAnchorSec;
                 Event.AcousticAnchorErrorSeconds = CenterSec - WordAnchorSec;
                 InOutTrack.Events.Add(Event);
@@ -2743,7 +2844,9 @@ static void UpdateSyllablePacedVisemeTrack(
                 ? Plan.WordSpeechRegionIndices[WordIndex]
                 : INDEX_NONE;
             Row.ObservedAudioSec = WordAnchorSec;
-            Row.AnchorKind = FName(TEXT("audio_word_start_prior_stream_tail_recovery"));
+            Row.AnchorKind = bUseTerminalNucleusRecovery
+                ? FName(TEXT("audio_word_start_terminal_nucleus_recovery"))
+                : FName(TEXT("audio_word_start_prior_stream_tail_recovery"));
             Row.WordIndex = WordIndex;
             Row.WordPriorRate = FixedWordRate;
             State.PendingSyllableAssignments.Add(Row);
@@ -2757,6 +2860,28 @@ static void UpdateSyllablePacedVisemeTrack(
         InOutTrack,
         *Input.SpeechRegions,
         Input.CurrentPlaybackSec);
+
+    // Region fitting may replace a projected terminal anchor with its bounded
+    // in-region center. Keep the diagnostic row tied to the performed anchor.
+    for (auto& Row : State.PendingSyllableAssignments)
+    {
+        if (Row.AnchorKind
+            != FName(TEXT("audio_word_start_prior_stream_tail_recovery")))
+            continue;
+        const int32 AnchorEventIndex =
+            FirstPerceptuallyRenderedEventForWord(Plan, Row.WordIndex);
+        for (const auto& Event : InOutTrack.Events)
+        {
+            if (Event.EventIndex != AnchorEventIndex
+                || Event.AcousticAnchorKind
+                    != FName(TEXT("bounded_terminal_word_recovery")))
+                continue;
+            Row.ObservedAudioSec = Event.AcousticAnchorSeconds;
+            Row.AnchorKind =
+                FName(TEXT("audio_word_start_bounded_terminal_recovery"));
+            break;
+        }
+    }
 
     State.SchedulerNextEventIndex = State.NextTextEventIndex;
     State.SchedulerNextPhoneIndex = Plan.Syllables.IsValidIndex(
