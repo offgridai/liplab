@@ -182,16 +182,6 @@ TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const 
     {
         return Out;
     }
-    if (Track.bAudioPulseMouthExperiment)
-    {
-        for (const auto& Lull : Track.AcousticLulls)
-        {
-            if (PlaybackSeconds + 0.001f >= Lull.StartSeconds
-                && PlaybackSeconds < Lull.EndSeconds - 0.001f)
-                return Out;
-        }
-    }
-
     for (int32 I = 0; I < Track.Events.Num(); ++I)
     {
         const FOffgridAICommittedVisemeEvent& E = Track.Events[I];

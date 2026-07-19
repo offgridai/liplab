@@ -1,99 +1,104 @@
-# OffgridAI Lipsync
+# OffgridAI lipsync
 
-## Contract
+## Ownership
 
-OffgridAI Lipsync is a deterministic streaming viseme scheduler.
+- Transcript planning owns phoneme and viseme identity, order, syllables, and
+  relative timing inside a word.
+- Streamed PCM owns speech regions and acoustic timing evidence.
+- The runtime session owns irreversible event commitment.
+- The performer owns pose-envelope sampling.
 
-- The transcript owns phone and viseme identity and order.
-- PCM owns observed speech timing and optional syllable timing evidence.
-- The runtime adapter owns placement and irreversible commitment.
-- The performer owns pose sampling, not scheduling.
-
-The runtime does not consume TTS token timing, predicted word schedules, hint
-streams, MFA, Python, or external inference.
+The runtime does not consume MFA, TTS token timing, hint streams, predicted word
+schedules, Python, or external inference.
 
 ## Pipeline
 
 ```text
-transcript
-  -> text plan: phones, visemes, syllables, relative durations
-streamed PCM
-  -> speech regions and acoustic feature frames
-feature frames
-  -> syllabic pulses and broad phone-family evidence
-text plan + audio evidence
-  -> one monotonic duration cursor with bounded suffix correction
-committed events
-  -> pose weights
+transcript -> CMU phones -> syllables -> ordered viseme packets
+streamed PCM -> speech regions + feature frames -> stable syllabic pulses
+viseme packets + ordered pulse candidates -> one audio-paced scheduler
+committed visemes + speech-region gate -> pose weights
 ```
 
-## Text planning
+## Transcript plan
 
-`FOffgridAITextVisemePlanner`:
+`FOffgridAITextVisemePlanner` resolves CMU pronunciations, emits every planned
+phonetic event in fixed order, groups phones around vowel nuclei, and assigns
+relative phone-duration priors. A small perceptual filter determines which
+events animate, while all phonetic events remain available for correspondence.
 
-- resolves CMU pronunciations, including supported alternatives and unknown-word
-  fallbacks,
-- emits every renderable transcript viseme in fixed order,
-- groups phones into syllables around planned nuclei,
-- assigns relative phone durations and small inter-word spacing,
-- records punctuation and pause hints for diagnostics.
+Punctuation is metadata. At a punctuation boundary it may break an otherwise
+ambiguous candidate tie in favor of an unfinished syllable of the active word.
+It never asserts that a pause exists or supplies pause duration.
 
-Punctuation does not create runtime fences or a second region schedule.
+## Audio analysis
 
-## Streaming analysis
+`FOffgridAIStreamingSpeechDetector` consumes PCM incrementally and publishes
+causal speech-region opens, provisional closes, confirmed closes, resumes, and
+feature frames.
 
-`FOffgridAIStreamingSpeechDetector` consumes PCM incrementally and emits:
+`FOffgridAIStreamingEvidenceSurface` analyzes the retained audio window. The
+default host configuration exposes 350 ms of preroll ahead of audible playback
+and retains 1500 ms behind it. The surface emits stable syllabic pulses and broad
+articulatory evidence without selecting transcript identity.
 
-- speech-region opens, provisional closes, confirmed closes, and resumes,
-- one causal acoustic feature frame per analysis step,
-- refined gap candidates used to explain region decisions.
-
-`FOffgridAIStreamingEvidenceSurface` examines the retained evidence window:
-350 ms of upcoming preroll by default plus 1500 ms of recent postroll. It emits
-syllabic pulses and conservative broad phone-family observations. A permissive
-phone-family mode exists only for corpus evaluation of transcript conditioning.
-
-Neither component chooses a transcript phone or viseme.
+`FOffgridAIStreamingSyllablePositionEstimator` returns a small ordered candidate
+set for each pulse. It does not maintain an alternate global alignment or a
+historical replay controller.
 
 ## Scheduling
 
-`FOffgridAILipsyncRuntimeAdapter` owns one cursor.
+`FOffgridAILipsyncRuntimeSession` runs one scheduler:
 
-1. Wait for the first observed speech region.
-2. Anchor the next uncommitted event to that region's onset.
-3. Advance through relative duration priors at the nominal rate.
-4. Commit an event only when its center is inside the known speech frontier and
-   no more than 160 ms ahead of audible playback.
-5. If a stable monotonic syllable assignment becomes available, move the
-   timeline anchor by at most 120 ms. Only uncommitted events are affected.
-6. At a confirmed region end, stop admitting untouched words into that region.
-   A word that already owns the region remains pending until a decoded successor
-   exists, then may finish through bounded atomic tail compaction.
-7. If stream closure proves that the active region is final, distribute the
-   complete remaining suffix through the one bounded final-tail completion path.
-   Do not first consume the endpoint with per-word recovery.
+1. Wait for a stable pulse owned by a detected speech region.
+2. Match it monotonically to the next plausible transcript syllable.
+3. When it starts a word, center that word's first rendered viseme on the
+   accepted pulse and commit the complete word using relative duration priors.
+4. Learn an inter-word pace from observed anchors; apply the updated rate only
+   to future words, preserving the relative pacing within committed words.
+5. If word B starts before word A finishes, terminate A's still-unplayed tail
+   and launch B cleanly. Played history remains immutable.
+6. If a punctuation-final multisyllabic word has a plausible unfinished
+   syllable in the current candidate set, consume that syllable before allowing
+   the next word to start.
+7. At stream end, permit only the bounded, explicitly diagnosed final-word
+   recovery supported by an unmatched pulse in the final audio region.
 
-Late recovery may move the uncommitted cursor forward to a small live lead. It
-never reorders events or changes identity.
+Every word is atomically owned by one detected speech region. Pose envelopes are
+clamped to that region, so confirmed inter-region gaps remain neutral.
 
 ## Invariants
 
-- committed events are append-only and strictly monotonic,
-- audio never substitutes or suppresses transcript identity,
-- bounded owned-word and final-tail completion may use only the known audio tail;
-  no independent post-audio scheduler exists,
-- one scheduler owns all placement,
-- optional syllable correction is bounded and cannot affect committed events,
-- stream closure and audible playback completion are separate events.
+- committed events remain strictly monotonic,
+- audio never chooses, reorders, or permanently suppresses transcript visemes,
+- a word cannot be split across speech regions,
+- one scheduler owns all placement and recovery,
+- punctuation cannot create pause/resume timing,
+- stream closure and audible playback completion are distinct lifecycle events.
 
-## Runtime lifecycle
+## Host lifecycle
 
 1. `BeginLine`
-2. `PushAudioPCM16` for every chunk
+2. `PushAudioPCM16` for each decoded chunk
 3. `Update(CurrentPlaybackSec)` throughout audible playback
 4. `CloseInputStream` when no more PCM will arrive
-5. continue `Update` while buffered audio plays
+5. continue `Update` while buffered audio drains
 6. `Finalize` only when audible playback ends
 
-See [docs/offgrid_transplant_contract.md](docs/offgrid_transplant_contract.md)
-for the Unreal adapter boundary.
+The begin input contains dialogue, NPC/line identifiers, and preroll only. There
+are no controller-selection flags. See
+[docs/offgrid_transplant_contract.md](docs/offgrid_transplant_contract.md).
+
+## Metrics
+
+The regression scorecard follows the active design:
+
+- speech-region boundary agreement and pause leakage,
+- first performed viseme versus word onset,
+- nearby and exact word-head nucleus correspondence,
+- complete word-to-region ownership,
+- event completion, split words, and ordering violations.
+
+Candidate-set recall is retained because it determines whether the scheduler had
+the correct syllable available. Scores for deleted alternate controllers and
+offline matchers are not retained.

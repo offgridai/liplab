@@ -76,14 +76,6 @@ struct FOffgridAICommittedVisemeTrack
         bool bEnded = false;
     };
 
-    // Presentation-only acoustic gate used by the opt-in pulse-mouth
-    // experiment. It deliberately carries no transcript identity.
-    struct FAcousticLull
-    {
-        float StartSeconds = 0.0f;
-        float EndSeconds = 0.0f;
-    };
-
     FName NPCID = NAME_None;
     FName LineID = NAME_None;
     float SpeechStartSeconds = 0.0f;
@@ -91,11 +83,6 @@ struct FOffgridAICommittedVisemeTrack
     // Detector-owned region bounds used only to gate pose envelopes. Event
     // centers and identity remain immutable once committed.
     TArray<FSpeechRegion> SpeechRegions;
-    bool bAudioPulseMouthExperiment = false;
-    // True when transcript viseme packets are paced by the experimental
-    // acoustic-nucleus-to-syllable controller.
-    bool bSyllablePacedVisemesExperiment = false;
-    TArray<FAcousticLull> AcousticLulls;
     TArray<FOffgridAICommittedVisemeEvent> Events;
 };
 

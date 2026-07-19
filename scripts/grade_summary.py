@@ -876,12 +876,8 @@ def load_case_grades(root: pathlib.Path, gold_root: pathlib.Path | None = None):
             "grade": grade,
             "text_plan_grade": text_plan_grade,
             "streaming_evidence_grade": _read_json(case_dir / "streaming_evidence_grade.json"),
-            "streaming_conditioned_evidence_grade": _read_json(case_dir / "streaming_conditioned_evidence_grade.json"),
             "streaming_intra_envelope_phone_grade": _read_json(case_dir / "streaming_intra_envelope_phone_grade.json"),
             "streaming_syllable_candidate_set_grade": _read_json(case_dir / "streaming_syllable_candidate_set_grade.json"),
-            "streaming_syllable_assignment_grade": _read_json(case_dir / "streaming_syllable_assignment_grade.json"),
-            "streaming_syllable_position_grade": _read_json(case_dir / "streaming_syllable_position_grade.json"),
-            "streaming_historical_anchor_grade": _read_json(case_dir / "streaming_historical_anchor_grade.json"),
             "runtime_syllable_assignment_grade": _read_json(case_dir / "runtime_syllable_assignment_grade.json"),
             "runtime_word_start_nucleus_grade": _read_json(case_dir / "runtime_word_start_nucleus_grade.json"),
             "committed_rows": committed_rows,
@@ -1037,18 +1033,12 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
     # every approved case; region-count qualification applies only to timing.
     text_available = [row for row in graded if row["text_plan_grade"].get("available")]
     evidence_available = [row for row in bulk if row["streaming_evidence_grade"].get("available")]
-    conditioned_evidence_available = [row for row in bulk if row["streaming_conditioned_evidence_grade"].get("available")]
     intra_envelope_phone_available = [
         row for row in bulk if row["streaming_intra_envelope_phone_grade"].get("available")
     ]
     syllable_candidate_set_available = [
         row for row in bulk if row["streaming_syllable_candidate_set_grade"].get("available")
     ]
-    syllable_assignment_available = [
-        row for row in bulk if row["streaming_syllable_assignment_grade"].get("available")
-    ]
-    syllable_position_available = [row for row in bulk if row["streaming_syllable_position_grade"].get("available")]
-    historical_anchor_available = [row for row in bulk if row["streaming_historical_anchor_grade"].get("available")]
     runtime_syllable_available = [row for row in bulk if row["runtime_syllable_assignment_grade"].get("available")]
     runtime_word_start_nucleus_available = [
         row for row in bulk if row["runtime_word_start_nucleus_grade"].get("available")
@@ -1440,10 +1430,6 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         return result
 
     evidence_by_type = aggregate_evidence(evidence_available, "streaming_evidence_grade")
-    conditioned_evidence_by_type = aggregate_evidence(
-        conditioned_evidence_available,
-        "streaming_conditioned_evidence_grade",
-    )
     intra_envelope_phone_by_type = aggregate_evidence(
         intra_envelope_phone_available,
         "streaming_intra_envelope_phone_grade",
@@ -1470,35 +1456,6 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
                 if syllable_candidate_matched_pulses else 0.0
             ),
         }
-    syllable_assignment_targets = sum(
-        int(row["streaming_syllable_assignment_grade"].get("target_count", 0))
-        for row in syllable_assignment_available
-    )
-    syllable_assignment_count = sum(
-        int(row["streaming_syllable_assignment_grade"].get("assignment_count", 0))
-        for row in syllable_assignment_available
-    )
-    syllable_assignment_exact = sum(
-        int(row["streaming_syllable_assignment_grade"].get("exact_count", 0))
-        for row in syllable_assignment_available
-    )
-    syllable_assignment_within_one = sum(
-        int(row["streaming_syllable_assignment_grade"].get("within_one_count", 0))
-        for row in syllable_assignment_available
-    )
-    syllable_position_targets = sum(int(row["streaming_syllable_position_grade"].get("target_count", 0)) for row in syllable_position_available)
-    syllable_position_estimates = sum(int(row["streaming_syllable_position_grade"].get("estimate_count", 0)) for row in syllable_position_available)
-    syllable_position_timing_matches = sum(int(row["streaming_syllable_position_grade"].get("timing_match_count", 0)) for row in syllable_position_available)
-    syllable_position_exact = sum(int(row["streaming_syllable_position_grade"].get("exact_position_count", 0)) for row in syllable_position_available)
-    syllable_position_within_one = sum(int(row["streaming_syllable_position_grade"].get("within_one_count", 0)) for row in syllable_position_available)
-    syllable_position_word_matches = sum(int(row["streaming_syllable_position_grade"].get("word_match_count", 0)) for row in syllable_position_available)
-    syllable_position_confident = sum(int(row["streaming_syllable_position_grade"].get("confident_count", 0)) for row in syllable_position_available)
-    syllable_position_confident_exact = sum(int(row["streaming_syllable_position_grade"].get("confident_exact_count", 0)) for row in syllable_position_available)
-    historical_anchor_targets = sum(int(row["streaming_historical_anchor_grade"].get("target_count", 0)) for row in historical_anchor_available)
-    historical_anchor_estimates = sum(int(row["streaming_historical_anchor_grade"].get("estimate_count", 0)) for row in historical_anchor_available)
-    historical_anchor_timing = sum(int(row["streaming_historical_anchor_grade"].get("timing_match_count", 0)) for row in historical_anchor_available)
-    historical_anchor_exact = sum(int(row["streaming_historical_anchor_grade"].get("exact_position_count", 0)) for row in historical_anchor_available)
-    historical_anchor_within_one = sum(int(row["streaming_historical_anchor_grade"].get("within_one_count", 0)) for row in historical_anchor_available)
     runtime_syllable_targets = sum(int(row["runtime_syllable_assignment_grade"].get("target_count", 0)) for row in runtime_syllable_available)
     runtime_syllable_observations = sum(int(row["runtime_syllable_assignment_grade"].get("observation_count", 0)) for row in runtime_syllable_available)
     runtime_syllable_matches = sum(int(row["runtime_syllable_assignment_grade"].get("matched_count", 0)) for row in runtime_syllable_available)
@@ -1527,47 +1484,12 @@ def compute_summary(rows: list[dict[str, Any]], graded: list[dict[str, Any]], un
         "evidence_surface_preroll_ms": _mean([float(row["streaming_evidence_grade"].get("preroll_ms", 0.0)) for row in evidence_available]),
         "evidence_surface_postroll_ms": _mean([float(row["streaming_evidence_grade"].get("postroll_ms", 0.0)) for row in evidence_available]),
         "evidence_surface_by_type": evidence_by_type,
-        "conditioned_evidence_surface_available_cases": len(conditioned_evidence_available),
-        "conditioned_evidence_surface_by_type": conditioned_evidence_by_type,
         "intra_envelope_phone_available_cases": len(intra_envelope_phone_available),
         "intra_envelope_phone_by_type": intra_envelope_phone_by_type,
         "syllable_candidate_set_available_cases": len(syllable_candidate_set_available),
         "syllable_candidate_set_matched_pulses": syllable_candidate_matched_pulses,
         "syllable_candidate_set_unmatched_pulses": syllable_candidate_unmatched_pulses,
         "syllable_candidate_set_recall_at": syllable_candidate_recall_at,
-        "syllable_assignment_available_cases": len(syllable_assignment_available),
-        "syllable_assignment_target_count": syllable_assignment_targets,
-        "syllable_assignment_count": syllable_assignment_count,
-        "syllable_assignment_exact_precision": (
-            syllable_assignment_exact / syllable_assignment_count
-            if syllable_assignment_count else 0.0
-        ),
-        "syllable_assignment_exact_recall": (
-            syllable_assignment_exact / syllable_assignment_targets
-            if syllable_assignment_targets else 0.0
-        ),
-        "syllable_assignment_within_one_accuracy": (
-            syllable_assignment_within_one / syllable_assignment_count
-            if syllable_assignment_count else 0.0
-        ),
-        "syllable_position_available_cases": len(syllable_position_available),
-        "syllable_position_target_count": syllable_position_targets,
-        "syllable_position_estimate_count": syllable_position_estimates,
-        "syllable_position_timing_precision": syllable_position_timing_matches / syllable_position_estimates if syllable_position_estimates else 0.0,
-        "syllable_position_timing_recall": syllable_position_timing_matches / syllable_position_targets if syllable_position_targets else 0.0,
-        "syllable_position_exact_rate": syllable_position_exact / syllable_position_estimates if syllable_position_estimates else 0.0,
-        "syllable_position_within_one_rate": syllable_position_within_one / syllable_position_estimates if syllable_position_estimates else 0.0,
-        "syllable_position_word_rate": syllable_position_word_matches / syllable_position_estimates if syllable_position_estimates else 0.0,
-        "syllable_position_confident_coverage": syllable_position_confident / syllable_position_estimates if syllable_position_estimates else 0.0,
-        "syllable_position_confident_exact_rate": syllable_position_confident_exact / syllable_position_confident if syllable_position_confident else 0.0,
-        "historical_anchor_available_cases": len(historical_anchor_available),
-        "historical_anchor_count": historical_anchor_estimates,
-        "historical_anchor_exact_rate": historical_anchor_exact / historical_anchor_estimates if historical_anchor_estimates else 0.0,
-        "historical_anchor_within_one_rate": historical_anchor_within_one / historical_anchor_estimates if historical_anchor_estimates else 0.0,
-        "historical_anchor_timing_precision": historical_anchor_timing / historical_anchor_estimates if historical_anchor_estimates else 0.0,
-        "historical_anchor_timing_recall": historical_anchor_timing / historical_anchor_targets if historical_anchor_targets else 0.0,
-        "historical_anchor_median_latency_ms": _mean([float(row["streaming_historical_anchor_grade"].get("median_decision_latency_ms", 0.0)) for row in historical_anchor_available]),
-        "historical_anchor_median_gap_ms": _mean([float(row["streaming_historical_anchor_grade"].get("median_anchor_gap_ms", 0.0)) for row in historical_anchor_available]),
         "streaming_region_boundary_available_cases": len(region_boundary_available),
         "streaming_region_boundary_tolerance_ms": 100.0,
         "streaming_region_boundary_predicted_count": region_boundary_predicted,

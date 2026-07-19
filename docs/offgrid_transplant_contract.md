@@ -33,8 +33,7 @@ Important distinction:
   audible playback has actually reached that region end.
 - If a word has already started in that region, the shared scheduler preserves
   its atomic ownership with the bounded tail-compaction rule documented in
-  `docs/focused_alignment.md`. LineCoach must not independently move or split
-  that word.
+  `lipsync.md`. LineCoach must not independently move or split that word.
 - A terminal `final_speech_closed_with_unplayed_suffix` block reason is a host
   lifecycle failure even if the visual result appears mostly complete. Capture
   the implementation version, observed audio end, close/finalize order, and

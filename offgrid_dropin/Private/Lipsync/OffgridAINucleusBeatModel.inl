@@ -1,4 +1,4 @@
-// Generated from grouped corpus experiments; see docs/nucleus_detection_error_analysis.md.
+// Generated from grouped corpus calibration and validated by the active regression suite.
 
 static constexpr int32 GOffgridAINucleusBeatFeatureCount = 203;
 

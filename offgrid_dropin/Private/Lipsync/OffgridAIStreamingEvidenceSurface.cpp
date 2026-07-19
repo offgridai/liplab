@@ -486,20 +486,10 @@ TArray<FOffgridAIAudioLandmarkObservation> FOffgridAIStreamingEvidenceSurface::A
             OutEnvelope.Add(WeightSum > 0.0f ? WeightedSum / WeightSum : 0.0f);
         }
     };
-    if (Config.bNucleusBeatIndicatorTuning)
-    {
-        // The permissive candidate surface preserves weak reduced nuclei. A
-        // compact temporal ranker below rejects consonantal and duplicate peaks.
-        BuildEnvelope(2, VeryShortEnvelope);
-        BuildEnvelope(3, ShortEnvelope);
-        BuildEnvelope(5, MediumEnvelope);
-        BuildEnvelope(8, SlowEnvelope);
-    }
-    else
-    {
-        BuildEnvelope(4, MediumEnvelope);
-        BuildEnvelope(6, SlowEnvelope);
-    }
+    BuildEnvelope(2, VeryShortEnvelope);
+    BuildEnvelope(3, ShortEnvelope);
+    BuildEnvelope(5, MediumEnvelope);
+    BuildEnvelope(8, SlowEnvelope);
 
     float LastPulseSec = -1000.0f;
     float LastPulseScore = 0.0f;
@@ -507,7 +497,7 @@ TArray<FOffgridAIAudioLandmarkObservation> FOffgridAIStreamingEvidenceSurface::A
     int32 LastPulseFrameIndex = INDEX_NONE;
     int32 LastPulseEpoch = INDEX_NONE;
     const int32 PulseContextFrames = FMath::Min(
-        Config.bNucleusBeatIndicatorTuning ? 14 : 10,
+        14,
         PrerollFrames);
     for (int32 Index = PulseContextFrames; Index + PulseContextFrames < Frames.Num(); ++Index)
     {
@@ -527,44 +517,28 @@ TArray<FOffgridAIAudioLandmarkObservation> FOffgridAIStreamingEvidenceSurface::A
             const bool bPeak = Center >= Envelope[Index - 1] && Center >= Envelope[Index + 1];
             return bPeak ? FMath::Min(Center - LeftFloor, Center - RightFloor) : 0.0f;
         };
-        const float VeryShortDepth = Config.bNucleusBeatIndicatorTuning
-            ? ScaleDepth(VeryShortEnvelope, 2, 10) : 0.0f;
-        const float ShortDepth = Config.bNucleusBeatIndicatorTuning
-            ? ScaleDepth(ShortEnvelope, 3, 10) : 0.0f;
+        const float VeryShortDepth = ScaleDepth(VeryShortEnvelope, 2, 10);
+        const float ShortDepth = ScaleDepth(ShortEnvelope, 3, 10);
         const float MediumDepth = ScaleDepth(
             MediumEnvelope,
-            Config.bNucleusBeatIndicatorTuning ? 5 : 4,
+            5,
             10);
         const float SlowDepth = ScaleDepth(
             SlowEnvelope,
-            Config.bNucleusBeatIndicatorTuning ? 8 : 6,
+            8,
             10);
-        float Prominence = Config.bNucleusBeatIndicatorTuning
-            ? FMath::Max(FMath::Max(VeryShortDepth, ShortDepth), FMath::Max(MediumDepth, SlowDepth))
-            : FMath::Max(
-                Clamp01(MediumDepth / 0.12f),
-                Clamp01(SlowDepth / 0.12f) * 1.05f);
-        const FOffgridAIArticulatoryProbabilityField Field =
-            FOffgridAIAcousticEvidence::BuildArticulatoryProbabilityField(Frames[Index]);
-        const float VowelSupport = Clamp01(Field.Vowel * 0.60f + Frames[Index].Periodicity * 0.40f);
-        if (Config.bNucleusBeatIndicatorTuning)
-        {
-            if (Prominence < 0.005f) continue;
-            Prominence = NucleusBeatProbability(
-                Frames,
-                VeryShortEnvelope,
-                ShortEnvelope,
-                MediumEnvelope,
-                SlowEnvelope,
-                Index);
-            if (Prominence < 0.375f) continue;
-        }
-        else if (Prominence < 0.10f
-            || Frames[Index].SpeechEvidence < 0.18f
-            || VowelSupport < 0.35f)
-        {
-            continue;
-        }
+        float Prominence = FMath::Max(
+            FMath::Max(VeryShortDepth, ShortDepth),
+            FMath::Max(MediumDepth, SlowDepth));
+        if (Prominence < 0.005f) continue;
+        Prominence = NucleusBeatProbability(
+            Frames,
+            VeryShortEnvelope,
+            ShortEnvelope,
+            MediumEnvelope,
+            SlowEnvelope,
+            Index);
+        if (Prominence < 0.375f) continue;
         int32 PulseEpoch = INDEX_NONE;
         if (Config.SpeechRegions)
         {
@@ -591,11 +565,9 @@ TArray<FOffgridAIAudioLandmarkObservation> FOffgridAIStreamingEvidenceSurface::A
         const float PulseSpacingSec = Frames[Index].AudioBufferCenterSec - LastPulseSec;
         bool bDistinctClosePulse = false;
         if (LastPulseFrameIndex != INDEX_NONE
-            && (Config.bNucleusBeatIndicatorTuning || PulseSpacingSec >= 0.060f))
+            && PulseSpacingSec >= 0.0f)
         {
-            const TArray<float>& ValleyEnvelope = Config.bNucleusBeatIndicatorTuning
-                ? ShortEnvelope
-                : MediumEnvelope;
+            const TArray<float>& ValleyEnvelope = ShortEnvelope;
             float InterveningFloor = FMath::Min(
                 ValleyEnvelope[LastPulseFrameIndex],
                 ValleyEnvelope[Index]);
@@ -607,9 +579,9 @@ TArray<FOffgridAIAudioLandmarkObservation> FOffgridAIStreamingEvidenceSurface::A
                 ValleyEnvelope[LastPulseFrameIndex],
                 ValleyEnvelope[Index]);
             bDistinctClosePulse = LowerPeak - InterveningFloor
-                >= (Config.bNucleusBeatIndicatorTuning ? 0.070f : 0.035f);
+                >= 0.070f;
         }
-        const float MinimumPulseSpacingSec = Config.bNucleusBeatIndicatorTuning ? 0.120f : 0.100f;
+        const float MinimumPulseSpacingSec = 0.120f;
         if (PulseSpacingSec < MinimumPulseSpacingSec && !bDistinctClosePulse)
         {
             if (Prominence > LastPulseScore && Out.IsValidIndex(LastPulseOutputIndex))
@@ -713,15 +685,15 @@ TArray<FOffgridAIAudioLandmarkObservation> FOffgridAIStreamingEvidenceSurface::A
         // probability field for later transcript conditioning, but is too
         // ambiguous to publish as an unconditioned landmark.
         { EOffgridAIAudioLandmarkType::Bilabial,
-            Config.bPermissivePhoneCandidates ? 0.58f : 1.10f, 0.070f },
+            0.58f, 0.070f },
         { EOffgridAIAudioLandmarkType::Labiodental,
-            Config.bPermissivePhoneCandidates ? 0.48f : 0.52f, 0.070f },
+            0.48f, 0.070f },
         { EOffgridAIAudioLandmarkType::Glide,
-            Config.bPermissivePhoneCandidates ? 0.56f : 1.10f, 0.070f },
+            0.56f, 0.070f },
         { EOffgridAIAudioLandmarkType::Sibilant,
-            Config.bPermissivePhoneCandidates ? 0.56f : 0.88f, 0.070f },
+            0.56f, 0.070f },
         { EOffgridAIAudioLandmarkType::RoundedVowel,
-            Config.bPermissivePhoneCandidates ? 0.55f : 1.10f, 0.070f }
+            0.55f, 0.070f }
     };
     TArray<TArray<float>> ChannelScores;
     for (const FLandmarkChannel& Channel : Channels)
@@ -729,9 +701,8 @@ TArray<FOffgridAIAudioLandmarkObservation> FOffgridAIStreamingEvidenceSurface::A
         TArray<float> Scores;
         for (const auto& Frame : Frames)
         {
-            Scores.Add(ChannelScore(Channel.Type, Frame, Config.bPermissivePhoneCandidates));
+            Scores.Add(ChannelScore(Channel.Type, Frame, true));
         }
-        if (Config.bPermissivePhoneCandidates)
         {
             const TArray<float> RawScores = Scores;
             for (int32 Index = 0; Index < Scores.Num(); ++Index)
@@ -793,7 +764,6 @@ TArray<FOffgridAIAudioLandmarkObservation> FOffgridAIStreamingEvidenceSurface::A
             {
                 continue;
             }
-            if (Config.bPermissivePhoneCandidates)
             {
                 float MaxPulseDistanceSec = 1000.0f;
                 switch (Channel.Type)

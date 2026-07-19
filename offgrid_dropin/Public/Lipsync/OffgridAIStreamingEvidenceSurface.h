@@ -21,13 +21,6 @@ struct FOffgridAIStreamingEvidenceSurfaceConfig
 {
     float PrerollSec = 0.350f;
     float PostrollSec = 1.500f;
-    // Exposes lower-confidence phone-family candidates for offline grading.
-    // Runtime uses the conservative default.
-    bool bPermissivePhoneCandidates = false;
-    // Opt-in audio-only diagnostic profile. It resolves short, reduced nuclei
-    // more aggressively while rejecting high-frication/high-ZCR peaks. The
-    // production transcript scheduler deliberately retains its baseline surface.
-    bool bNucleusBeatIndicatorTuning = false;
     // Optional confirmed acoustic regions. When supplied, nucleus candidates
     // on opposite sides of a confirmed pause belong to different temporal
     // epochs and cannot suppress or replace one another.
@@ -44,9 +37,8 @@ struct FOffgridAIAudioLandmarkObservation
     float Score = 0.0f;
 };
 
-// Extracts acoustic observations without choosing transcript identity or moving
-// animation. Each decision is limited to the recent postroll and available
-// preroll around the simulated audible playhead.
+// Extracts the acoustic observations consumed by the scheduler without choosing
+// transcript identity or moving animation.
 class OFFGRIDAI_API FOffgridAIStreamingEvidenceSurface
 {
 public:
