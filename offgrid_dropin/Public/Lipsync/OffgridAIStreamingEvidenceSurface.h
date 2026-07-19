@@ -24,6 +24,14 @@ struct FOffgridAIStreamingEvidenceSurfaceConfig
     // Exposes lower-confidence phone-family candidates for offline grading.
     // Runtime uses the conservative default.
     bool bPermissivePhoneCandidates = false;
+    // Opt-in audio-only diagnostic profile. It resolves short, reduced nuclei
+    // more aggressively while rejecting high-frication/high-ZCR peaks. The
+    // production transcript scheduler deliberately retains its baseline surface.
+    bool bNucleusBeatIndicatorTuning = false;
+    // Optional confirmed acoustic regions. When supplied, nucleus candidates
+    // on opposite sides of a confirmed pause belong to different temporal
+    // epochs and cannot suppress or replace one another.
+    const TArray<FOffgridAIStreamingSpeechRegion>* SpeechRegions = nullptr;
 };
 
 struct FOffgridAIAudioLandmarkObservation

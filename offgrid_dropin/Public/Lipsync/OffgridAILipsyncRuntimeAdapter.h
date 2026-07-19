@@ -22,6 +22,11 @@ struct FOffgridAILipsyncRuntimeUpdateInput
     float PrerollSec = 0.350f;
     float ObservedAudioBufferEndSec = 0.0f;
     bool bEnableFocusedWordStartAlignment = false;
+    bool bEnableAudioPulseMouthExperiment = false;
+    // Experimental single scheduler: stable acoustic nuclei advance an
+    // ordered transcript-syllable alignment and release each accepted
+    // syllable's visible poses atomically.
+    bool bEnableSyllablePacedVisemesExperiment = false;
     bool bInputStreamClosed = false;
     bool bPlaybackFinalized = false;
 
@@ -105,6 +110,13 @@ struct FOffgridAIRuntimeSyllableAssignmentDiagnosticRow
     int32 SkipCount = 0;
     FName AnchorKind = NAME_None;
     float TimelineCorrectionSec = 0.0f;
+    // Word-paced experiment diagnostics. A word's rate is immutable once it
+    // starts; an observed interval only updates the rate for later words.
+    int32 WordIndex = INDEX_NONE;
+    float WordPriorRate = 1.0f;
+    float ObservedWordIntervalSec = -1.0f;
+    float PriorWordIntervalSec = -1.0f;
+    int32 CanceledPriorWordEventCount = 0;
 };
 
 // Compact state trace for the single audio-primary scheduler.
@@ -146,6 +158,11 @@ struct FOffgridAILipsyncRuntimeBeginInput
     FName LineID = NAME_None;
     float PrerollSec = 0.350f;
     bool bEnableFocusedWordStartAlignment = false;
+    // Radical diagnostic mode: open fully on each stable acoustic nucleus-pulse
+    // candidate and close fully at the measured valley between candidates.
+    // Transcript timing and identity are deliberately excluded.
+    bool bEnableAudioPulseMouthExperiment = false;
+    bool bEnableSyllablePacedVisemesExperiment = false;
 };
 
 // Complete mutable state for the single monotonic scheduler.
@@ -164,6 +181,12 @@ struct FOffgridAIBoundaryPlaybackState
     int32 LastMatchedSyllablePhoneIndex = INDEX_NONE;
     float LastMatchedSyllableAudioSec = -1.0f;
     float LastMatchedSyllableConfidence = 0.0f;
+    float LastProcessedSyllablePulseSec = -1.0f;
+    int32 LastCommittedWordIndex = INDEX_NONE;
+    int32 LastWordAnchorAudioRegionIndex = INDEX_NONE;
+    float LastWordAnchorAudioSec = -1.0f;
+    float LastWordAnchorPriorSec = -1.0f;
+    float AdaptiveWordPriorRate = 1.0f;
     int32 BoundedSyllableRebaseCount = 0;
     int32 LastAnalyzedFeatureFrameCount = 0;
     int32 PendingMatchedSyllableIndex = INDEX_NONE;
@@ -225,6 +248,8 @@ private:
     FString DialogueText;
     float PrerollSec = 0.350f;
     bool bEnableFocusedWordStartAlignment = false;
+    bool bEnableAudioPulseMouthExperiment = false;
+    bool bEnableSyllablePacedVisemesExperiment = false;
     float PlaybackSec = 0.0f;
     bool bBegun = false;
     bool bPlaybackStarted = false;
