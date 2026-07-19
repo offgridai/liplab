@@ -8,6 +8,12 @@ static float SmoothStep01(float X)
     return T * T * (3.0f - 2.0f * T);
 }
 
+static float MinimumJerk01(float X)
+{
+    const float T = FMath::Clamp(X, 0.0f, 1.0f);
+    return T * T * T * (10.0f + T * (-15.0f + 6.0f * T));
+}
+
 static bool SameContinuousSpeechGroup(const FOffgridAICommittedVisemeEvent* A, const FOffgridAICommittedVisemeEvent* B)
 {
     if (!A || !B) return false;
@@ -84,22 +90,6 @@ static const FOffgridAICommittedVisemeEvent* FindNextRenderedEvent(
     return nullptr;
 }
 
-static const FOffgridAICommittedVisemeEvent* FindNextRenderedWordEvent(
-    const FOffgridAICommittedVisemeTrack& Track,
-    int32 EventIndex,
-    int32 WordIndex)
-{
-    for (int32 I = EventIndex + 1; I < Track.Events.Num(); ++I)
-    {
-        const FOffgridAICommittedVisemeEvent& Candidate = Track.Events[I];
-        if (Candidate.WordIndex == WordIndex) continue;
-        if (Candidate.bIsRenderable && !Candidate.bCanceledByWordHandoff
-            && IsPerceptuallyImportant(Candidate))
-            return &Candidate;
-    }
-    return nullptr;
-}
-
 static float EventWeightAt(
     const FOffgridAICommittedVisemeEvent& E,
     const FOffgridAICommittedVisemeEvent* Prev,
@@ -113,15 +103,24 @@ static float EventWeightAt(
     // phoneme or pose family.
     const bool bNucleusIndicator = E.SourcePhoneClass == FName(TEXT("acoustic_nucleus_beat"))
         || E.SourcePhoneClass == FName(TEXT("nucleus_gap"));
-    const float Attack = bNucleusIndicator ? 0.025f : 0.055f;
-    const float Release = bNucleusIndicator ? 0.025f : 0.070f;
-    const float HoldHalf = bNucleusIndicator ? 0.010f : 0.030f;
-
     const float Center = E.FinalRenderCenterSeconds;
-    const float PeakStart = Center - HoldHalf;
-    const float PeakEnd = Center + HoldHalf;
-    float AttackStart = PeakStart - Attack;
-    float ReleaseEnd = PeakEnd + Release;
+    if (bNucleusIndicator)
+    {
+        constexpr float HalfWidth = 0.035f;
+        const float Start = FMath::Max(Center - HalfWidth, RegionStartSeconds);
+        const float End = FMath::Min(Center + HalfWidth, RegionEndSeconds);
+        if (PlaybackSeconds < Start || PlaybackSeconds > End) return 0.0f;
+        const float Shape = PlaybackSeconds <= Center
+            ? SmoothStep01((PlaybackSeconds - Start) / FMath::Max(Center - Start, 0.001f))
+            : 1.0f - SmoothStep01((PlaybackSeconds - Center) / FMath::Max(End - Center, 0.001f));
+        return Shape * FMath::Clamp(E.Strength, 0.0f, 1.0f);
+    }
+
+    // Normal speech gestures form a continuous minimum-jerk path from one
+    // committed center to the next. Long spans are bounded so a pose does not
+    // anticipate across an acoustically meaningful lull.
+    float AttackStart = Center - 0.090f;
+    float ReleaseEnd = Center + 0.120f;
 
     // Treat committed visemes as states over a continuous speech region, not as
     // isolated impulses. The runtime commits a monotonic text-prior viseme prefix;
@@ -133,8 +132,9 @@ static float EventWeightAt(
         const float PrevCenter = Prev->FinalRenderCenterSeconds;
         if (Center > PrevCenter)
         {
-            const float Boundary = (PrevCenter + Center) * 0.5f;
-            AttackStart = FMath::Min(AttackStart, Boundary);
+            const float Lead = FMath::Clamp(
+                Center - PrevCenter, 0.075f, 0.210f);
+            AttackStart = Center - Lead;
         }
     }
 
@@ -143,8 +143,9 @@ static float EventWeightAt(
         const float NextCenter = Next->FinalRenderCenterSeconds;
         if (NextCenter > Center)
         {
-            const float Boundary = (Center + NextCenter) * 0.5f;
-            ReleaseEnd = FMath::Max(ReleaseEnd, Boundary);
+            const float Tail = FMath::Clamp(
+                NextCenter - Center, 0.090f, 0.210f);
+            ReleaseEnd = Center + Tail;
         }
     }
 
@@ -159,17 +160,17 @@ static float EventWeightAt(
     {
         return 0.0f;
     }
-    if (PlaybackSeconds < PeakStart)
+    if (PlaybackSeconds < Center)
     {
-        Shape = SmoothStep01((PlaybackSeconds - AttackStart) / FMath::Max(PeakStart - AttackStart, 0.001f));
-    }
-    else if (PlaybackSeconds <= PeakEnd)
-    {
-        Shape = 1.0f;
+        Shape = MinimumJerk01(
+            (PlaybackSeconds - AttackStart)
+            / FMath::Max(Center - AttackStart, 0.001f));
     }
     else
     {
-        Shape = 1.0f - SmoothStep01((PlaybackSeconds - PeakEnd) / FMath::Max(ReleaseEnd - PeakEnd, 0.001f));
+        Shape = 1.0f - MinimumJerk01(
+            (PlaybackSeconds - Center)
+            / FMath::Max(ReleaseEnd - Center, 0.001f));
     }
     return Shape * FMath::Clamp(E.Strength, 0.0f, 1.0f);
 }
@@ -190,13 +191,6 @@ TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const 
         if (!FMath::IsFinite(E.FinalRenderCenterSeconds)) continue;
         const FOffgridAICommittedVisemeEvent* Prev = FindPreviousRenderedEvent(Track, I);
         const FOffgridAICommittedVisemeEvent* Next = FindNextRenderedEvent(Track, I);
-        const FOffgridAICommittedVisemeEvent* NextWord =
-            FindNextRenderedWordEvent(Track, I, E.WordIndex);
-        // The new word cleanly replaces every remaining envelope from the old
-        // word at its first perceptually rendered center.
-        if (NextWord
-            && PlaybackSeconds >= NextWord->FinalRenderCenterSeconds)
-            continue;
         float RegionStartSeconds = Track.SpeechStartSeconds;
         float RegionEndSeconds = TNumericLimits<float>::Max();
         for (const auto& Region : Track.SpeechRegions)
@@ -221,31 +215,9 @@ TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const 
         S.SourceStrength = E.Strength;
         Out.Add(S);
     }
-    // Keep one clearly readable primary articulation at a time. Neighbors are
-    // retained for coarticulation, but cannot visually compete with the current
-    // strongest pose. This is presentation-only: it does not move, remove, or
-    // reorder committed events.
-    int32 PrimaryIndex = INDEX_NONE;
-    float PrimaryWeight = 0.0f;
-    for (int32 I = 0; I < Out.Num(); ++I)
-    {
-        if (Out[I].SubmittedWeight > PrimaryWeight)
-        {
-            PrimaryWeight = Out[I].SubmittedWeight;
-            PrimaryIndex = I;
-        }
-    }
-    if (PrimaryIndex != INDEX_NONE)
-    {
-        constexpr float NeighborToPrimaryRatio = 0.20f;
-        const FName PrimaryPose = Out[PrimaryIndex].PoseID;
-        const float NeighborCap = PrimaryWeight * NeighborToPrimaryRatio;
-        for (int32 I = 0; I < Out.Num(); ++I)
-        {
-            if (I == PrimaryIndex || Out[I].PoseID == PrimaryPose) continue;
-            Out[I].SubmittedWeight = FMath::Min(Out[I].SubmittedWeight, NeighborCap);
-        }
-    }
+    // Neighboring gestures remain simultaneously available. The display
+    // solver below supplies inertia, so coarticulation no longer depends on a
+    // winner-takes-most pose switch at every event center.
     return Out;
 }
 
