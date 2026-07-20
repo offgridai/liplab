@@ -82,6 +82,10 @@ struct FOffgridAIRuntimeSyllableAssignmentDiagnosticRow
     float ObservedWordIntervalSec = -1.0f;
     float PriorWordIntervalSec = -1.0f;
     int32 CanceledPriorWordEventCount = 0;
+    float NucleusAudioSec = -1.0f;
+    float VisualAnchorAudioSec = -1.0f;
+    FName VisualAnchorKind = NAME_None;
+    int32 VisualAnchorPhoneIndex = INDEX_NONE;
 };
 
 // Compact state trace for the single audio-primary scheduler.

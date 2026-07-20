@@ -19,6 +19,7 @@ static constexpr float MinimumAdaptiveWordPriorRate = 0.65f;
 static constexpr float MaximumAdaptiveWordPriorRate = 1.65f;
 static constexpr float AdaptiveWordPriorRateBlend = 0.35f;
 static constexpr float MinimumWordRateObservationSec = 0.080f;
+static constexpr float AmbiguousWordHeadLookaheadSec = 0.300f;
 
 static float SpanForPose(const FName& PoseID)
 {
@@ -48,6 +49,117 @@ static FName PhoneClass(const FString& Phone)
         || Phone == TEXT("UH") || Phone == TEXT("UW"))
         return FName(TEXT("round"));
     return FName(TEXT("other"));
+}
+
+static int32 RegionContaining(
+    const TArray<FOffgridAIStreamingSpeechRegion>& Regions,
+    float TimeSec);
+
+static bool VisualLandmarkForPhone(
+    const FString& Phone,
+    EOffgridAIAudioLandmarkType& OutType,
+    float& OutExpectedLeadSec,
+    float& OutVisualLeadSec)
+{
+    if (Phone == TEXT("M") || Phone == TEXT("B") || Phone == TEXT("P"))
+    {
+        OutType = EOffgridAIAudioLandmarkType::Bilabial;
+        OutExpectedLeadSec = 0.100f;
+        OutVisualLeadSec = 0.025f;
+        return true;
+    }
+    if (Phone == TEXT("F") || Phone == TEXT("V"))
+    {
+        OutType = EOffgridAIAudioLandmarkType::Labiodental;
+        OutExpectedLeadSec = 0.100f;
+        OutVisualLeadSec = 0.010f;
+        return true;
+    }
+    if (Phone == TEXT("S") || Phone == TEXT("Z")
+        || Phone == TEXT("SH") || Phone == TEXT("ZH")
+        || Phone == TEXT("CH") || Phone == TEXT("JH"))
+    {
+        OutType = EOffgridAIAudioLandmarkType::Sibilant;
+        OutExpectedLeadSec = 0.100f;
+        OutVisualLeadSec = 0.010f;
+        return true;
+    }
+    if (Phone == TEXT("W") || Phone == TEXT("Y"))
+    {
+        OutType = EOffgridAIAudioLandmarkType::Glide;
+        OutExpectedLeadSec = 0.070f;
+        OutVisualLeadSec = 0.015f;
+        return true;
+    }
+    return false;
+}
+
+static float ResolveTranscriptConditionedVisualAnchor(
+    const FOffgridAITextVisemePlan& Plan,
+    int32 AnchorEventIndex,
+    const TArray<FOffgridAIAudioLandmarkObservation>& Evidence,
+    const TArray<FOffgridAIStreamingSpeechRegion>& SpeechRegions,
+    int32 AudioRegionIndex,
+    float NucleusCenterSec,
+    float PreviousNucleusCenterSec,
+    float ObservedAudioBufferEndSec,
+    FName& OutAnchorKind)
+{
+    OutAnchorKind = FName(TEXT("nucleus"));
+    if (!Plan.Events.IsValidIndex(AnchorEventIndex)) return NucleusCenterSec;
+    EOffgridAIAudioLandmarkType ExpectedType;
+    float ExpectedLeadSec = 0.0f;
+    float VisualLeadSec = 0.0f;
+    if (!VisualLandmarkForPhone(
+            Plan.Events[AnchorEventIndex].SourcePhoneBase.ToUpper(),
+            ExpectedType,
+            ExpectedLeadSec,
+            VisualLeadSec))
+        return NucleusCenterSec;
+
+    const float ExpectedCenterSec = NucleusCenterSec - ExpectedLeadSec;
+    float BestScore = -1.0f;
+    float BestCenterSec = NucleusCenterSec;
+    for (const auto& Observation : Evidence)
+    {
+        if (Observation.Type != ExpectedType
+            || Observation.DecisionSec > ObservedAudioBufferEndSec + 0.001f
+            || Observation.CenterSec < NucleusCenterSec - 0.240f
+            || Observation.CenterSec > NucleusCenterSec + 0.030f
+            || Observation.CenterSec
+                <= PreviousNucleusCenterSec + 0.015f
+            || RegionContaining(SpeechRegions, Observation.CenterSec)
+                != AudioRegionIndex)
+            continue;
+        const float Proximity = FMath::Clamp(
+            1.0f - FMath::Abs(Observation.CenterSec - ExpectedCenterSec)
+                / 0.180f,
+            0.0f,
+            1.0f);
+        const float Score = Observation.Score * 0.70f + Proximity * 0.30f;
+        if (Score <= BestScore) continue;
+        BestScore = Score;
+        BestCenterSec = Observation.CenterSec - VisualLeadSec;
+    }
+    if (BestScore < 0.50f) return NucleusCenterSec;
+    switch (ExpectedType)
+    {
+    case EOffgridAIAudioLandmarkType::Bilabial:
+        OutAnchorKind = FName(TEXT("bilabial_closure"));
+        break;
+    case EOffgridAIAudioLandmarkType::Labiodental:
+        OutAnchorKind = FName(TEXT("labiodental_onset"));
+        break;
+    case EOffgridAIAudioLandmarkType::Sibilant:
+        OutAnchorKind = FName(TEXT("sibilant_onset"));
+        break;
+    case EOffgridAIAudioLandmarkType::Glide:
+        OutAnchorKind = FName(TEXT("glide_transition"));
+        break;
+    default:
+        break;
+    }
+    return BestCenterSec;
 }
 
 static bool IsPerceptuallyImportantPhone(const FString& SourcePhoneBase)
@@ -452,6 +564,7 @@ static void FillCommittedEvent(
     Out.EventIndex = EventIndex;
     Out.PoseID = Source.PoseID;
     Out.Strength = Source.Strength;
+    Out.JawOpenTarget = Source.JawOpenTarget;
     Out.SourceWord = Source.SourceText;
     Out.WordIndex = Source.WordIndex;
     Out.SentenceIndex = Source.SentenceIndex;
@@ -737,8 +850,11 @@ static void UpdateSyllablePacedVisemeTrack(
             Plan, Evidence, 4, 6, 4);
 
     float LastCenter = LastCommittedCenter(InOutTrack);
-    for (const auto& CandidateSet : CandidateSets)
+    for (int32 CandidateSetIndex = 0;
+        CandidateSetIndex < CandidateSets.Num();
+        ++CandidateSetIndex)
     {
+        const auto& CandidateSet = CandidateSets[CandidateSetIndex];
         if (CandidateSet.AudioCenterSec <= State.LastProcessedSyllablePulseSec + 0.001f
             || (!Input.bInputStreamClosed
                 && CandidateSet.DecisionSec + PulseCommitStabilitySec
@@ -788,6 +904,8 @@ static void UpdateSyllablePacedVisemeTrack(
         }
         if (ActiveWordContinuationSyllableIndex != INDEX_NONE)
         {
+            AssignedSyllableIndex = ActiveWordContinuationSyllableIndex;
+            AssignmentScore = 0.45f;
             for (int32 CandidateIndex = 0;
                 CandidateIndex < CandidateSet.SyllableIndices.Num();
                 ++CandidateIndex)
@@ -869,6 +987,61 @@ static void UpdateSyllablePacedVisemeTrack(
             }
         }
 
+        // Do not greedily launch a word from a later syllable.  Hold only
+        // this ambiguous frontier long enough to observe the nearby pulse
+        // budget, then move the correspondence back by the number of
+        // supporting pulses actually present in the same audio region.  This
+        // is a bounded monotonic alignment: it neither revises committed
+        // words nor invents timing from the transcript.
+        const int32 CandidateWordIndex =
+            Plan.Syllables[AssignedSyllableIndex].WordIndex;
+        const bool bBoundaryAfterWord =
+            Plan.WordBoundaryPunctuationAfter.IsValidIndex(CandidateWordIndex)
+            && Plan.WordBoundaryPunctuationAfter[CandidateWordIndex]
+                != TCHAR(0);
+        if (CandidateWordIndex == State.LastCommittedWordIndex + 1
+            && bBoundaryAfterWord)
+        {
+            int32 FirstWordSyllableIndex = AssignedSyllableIndex;
+            for (int32 SyllableIndex = AssignedSyllableIndex - 1;
+                SyllableIndex >= 0;
+                --SyllableIndex)
+            {
+                if (Plan.Syllables[SyllableIndex].WordIndex
+                    != CandidateWordIndex)
+                    break;
+                FirstWordSyllableIndex = SyllableIndex;
+            }
+            if (AssignedSyllableIndex > FirstWordSyllableIndex)
+            {
+                const float FrontierReadySec = CandidateSet.AudioCenterSec
+                    + AmbiguousWordHeadLookaheadSec;
+                if (!Input.bInputStreamClosed
+                    && Input.ObservedAudioBufferEndSec + 0.001f
+                        < FrontierReadySec)
+                    break;
+
+                int32 SupportingFuturePulseCount = 0;
+                for (int32 FutureSetIndex = CandidateSetIndex + 1;
+                    FutureSetIndex < CandidateSets.Num();
+                    ++FutureSetIndex)
+                {
+                    const auto& FutureSet = CandidateSets[FutureSetIndex];
+                    if (FutureSet.AudioCenterSec
+                        > CandidateSet.AudioCenterSec
+                            + AmbiguousWordHeadLookaheadSec)
+                        break;
+                    if (RegionContaining(
+                            *Input.SpeechRegions,
+                            FutureSet.AudioCenterSec) == AudioRegionIndex)
+                        ++SupportingFuturePulseCount;
+                }
+                AssignedSyllableIndex = FMath::Max(
+                    FirstWordSyllableIndex,
+                    AssignedSyllableIndex - SupportingFuturePulseCount);
+            }
+        }
+
         State.LastProcessedSyllablePulseSec = CandidateSet.AudioCenterSec;
 
         const FOffgridAIPlannedSyllable& AssignedSyllable =
@@ -893,6 +1066,18 @@ static void UpdateSyllablePacedVisemeTrack(
             FirstPerceptuallyRenderedEventForWord(Plan, AssignedWordIndex);
         if (!Prior.EventCenters.IsValidIndex(AssignedAnchorEventIndex)) continue;
         const float AssignedPriorAnchorSec = Prior.EventCenters[AssignedAnchorEventIndex];
+        FName AssignedVisualAnchorKind = NAME_None;
+        const float AssignedVisualAnchorSec =
+            ResolveTranscriptConditionedVisualAnchor(
+                Plan,
+                AssignedAnchorEventIndex,
+                Evidence,
+                *Input.SpeechRegions,
+                AudioRegionIndex,
+                CandidateSet.AudioCenterSec,
+                State.LastWordAnchorAudioSec,
+                Input.ObservedAudioBufferEndSec,
+                AssignedVisualAnchorKind);
 
         float ObservedWordIntervalSec = -1.0f;
         float PriorWordIntervalSec = -1.0f;
@@ -941,7 +1126,7 @@ static void UpdateSyllablePacedVisemeTrack(
         auto RecoveryAnchorForWord = [&](int32 WordIndex, float PriorAnchorSec)
         {
             if (WordIndex == AssignedWordIndex)
-                return CandidateSet.AudioCenterSec;
+                return AssignedVisualAnchorSec;
             if (!bRedistributeLateRecovery)
             {
                 return CandidateSet.AudioCenterSec
@@ -1134,6 +1319,17 @@ static void UpdateSyllablePacedVisemeTrack(
             Row.ObservedWordIntervalSec = ObservedWordIntervalSec;
             Row.PriorWordIntervalSec = PriorWordIntervalSec;
             Row.CanceledPriorWordEventCount = CanceledPriorWordEventCount;
+            Row.NucleusAudioSec = WordIndex == AssignedWordIndex
+                ? CandidateSet.AudioCenterSec
+                : -1.0f;
+            Row.VisualAnchorAudioSec = WordAnchorSec;
+            Row.VisualAnchorKind = WordIndex == AssignedWordIndex
+                ? AssignedVisualAnchorKind
+                : FName(TEXT("recovered_prior"));
+            Row.VisualAnchorPhoneIndex = WordIndex == AssignedWordIndex
+                && Plan.Events.IsValidIndex(AssignedAnchorEventIndex)
+                ? Plan.Events[AssignedAnchorEventIndex].SourcePhoneGlobalIndex
+                : INDEX_NONE;
             State.PendingSyllableAssignments.Add(Row);
             State.LastCommittedWordIndex = WordIndex;
         }

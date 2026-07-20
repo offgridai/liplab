@@ -2026,7 +2026,7 @@ static std::string runtime_syllable_anchor_diagnostics_csv(
     const TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow>& rows)
 {
     std::ostringstream out;
-    out << "line_id,update_ordinal,audio_speech_region_index,text_speech_region_index,nucleus_phone_index,pulse_audio_sec,prominence,confidence,skip_count,anchor_kind,timeline_correction_sec,word_index,word_prior_rate,observed_word_interval_sec,prior_word_interval_sec,canceled_prior_word_event_count\n";
+    out << "line_id,update_ordinal,audio_speech_region_index,text_speech_region_index,nucleus_phone_index,pulse_audio_sec,prominence,confidence,skip_count,anchor_kind,timeline_correction_sec,word_index,word_prior_rate,observed_word_interval_sec,prior_word_interval_sec,canceled_prior_word_event_count,nucleus_audio_sec,visual_anchor_audio_sec,visual_anchor_kind,visual_anchor_phone_index\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& row : rows)
     {
@@ -2045,7 +2045,11 @@ static std::string runtime_syllable_anchor_diagnostics_csv(
             << row.WordPriorRate << ','
             << row.ObservedWordIntervalSec << ','
             << row.PriorWordIntervalSec << ','
-            << row.CanceledPriorWordEventCount << '\n';
+            << row.CanceledPriorWordEventCount << ','
+            << row.NucleusAudioSec << ','
+            << row.VisualAnchorAudioSec << ','
+            << to_std(row.VisualAnchorKind) << ','
+            << row.VisualAnchorPhoneIndex << '\n';
     }
     return out.str();
 }
@@ -2365,7 +2369,7 @@ static std::vector<HandmadeLabel> build_gold_visible_labels(
 static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
 {
     std::ostringstream out;
-    out << "index,pose,word,word_index,text_sentence_index,text_center_norm,strength,source_phone,source_phone_index,visual_role,renderable,generator\n";
+    out << "index,pose,word,word_index,text_sentence_index,text_center_norm,strength,jaw_open_target,source_phone,source_phone_index,visual_role,renderable,generator\n";
     out << std::fixed << std::setprecision(6);
     for (int32 i = 0; i < plan.Events.Num(); ++i)
     {
@@ -2378,6 +2382,7 @@ static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
             << event.SentenceIndex << ','
             << center << ','
             << event.Strength << ','
+            << event.JawOpenTarget << ','
             << to_std(event.SourcePhoneBase) << ','
             << event.SourcePhoneIndex << ','
             << visual_phone_role_name(event.VisualRole) << ','
@@ -2720,7 +2725,7 @@ static std::string soft_lull_candidates_csv(const TArray<FOffgridAIStreamingSoft
 static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "index,start,center,end,pose,word,word_index,speech_region_index,text_sentence_index,strength,renderable,canceled_by_word_handoff,reason,source_phone_index,source_phone_base,source_phone_class,text_center_norm,text_diagnostic_center,prior_start,prior_center,prior_end,lead_adjusted_center,playback_offset,total_paused_at_commit,min_live_lead_delay,inter_event_floor_delay,total_center_delay,commit_playback,commit_lead,mapped_to_observed_speech,used_initial_speech_anchor,used_resume_anchor,acoustic_anchor_kind,acoustic_anchor_seconds,acoustic_anchor_error_seconds,observed_pause_decay_seconds,observed_resume_onset_seconds,observed_resume_energy_anchor_seconds,boundary_word_index,boundary_mark,boundary_outcome\n";
+    out << "index,start,center,end,pose,word,word_index,speech_region_index,text_sentence_index,strength,jaw_open_target,renderable,canceled_by_word_handoff,reason,source_phone_index,source_phone_base,source_phone_class,text_center_norm,text_diagnostic_center,prior_start,prior_center,prior_end,lead_adjusted_center,playback_offset,total_paused_at_commit,min_live_lead_delay,inter_event_floor_delay,total_center_delay,commit_playback,commit_lead,mapped_to_observed_speech,used_initial_speech_anchor,used_resume_anchor,acoustic_anchor_kind,acoustic_anchor_seconds,acoustic_anchor_error_seconds,observed_pause_decay_seconds,observed_resume_onset_seconds,observed_resume_energy_anchor_seconds,boundary_word_index,boundary_mark,boundary_outcome\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.Events)
     {
@@ -2734,6 +2739,7 @@ static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
             << event.SpeechRegionIndex << ','
             << event.SentenceIndex << ','
             << event.Strength << ','
+            << event.JawOpenTarget << ','
             << (event.bIsRenderable ? 1 : 0) << ','
             << (event.bCanceledByWordHandoff ? 1 : 0) << ','
             << to_std(event.CommitReason) << ','
@@ -4092,6 +4098,225 @@ static std::string focus_alignment_grade_json(
     return out.str();
 }
 
+static std::array<double, 6> pose_channels(const FOffgridAILipsyncPoseRuntimeState& pose)
+{
+    return {
+        pose.Open,
+        pose.Closed,
+        pose.Wide,
+        pose.Round,
+        pose.Funnel,
+        pose.Teeth
+    };
+}
+
+static std::string presentation_motion_grade_json(
+    const FOffgridAIAlignedVisemeTrack& track)
+{
+    constexpr double frame_seconds = 1.0 / 60.0;
+    double end_seconds = std::max(0.0, static_cast<double>(track.SpeechEndSeconds));
+    for (const auto& event : track.Events)
+    {
+        end_seconds = std::max(
+            end_seconds,
+            static_cast<double>(event.FinalRenderCenterSeconds) + 0.300);
+    }
+
+    FOffgridAILipsyncPoseRuntimeState displayed;
+    std::array<double, 6> previous_channels{};
+    std::array<double, 6> previous_velocity{};
+    double squared_step_sum = 0.0;
+    double squared_acceleration_sum = 0.0;
+    double max_channel_step = 0.0;
+    double max_channel_speed = 0.0;
+    double max_channel_acceleration = 0.0;
+    std::map<std::string, double> previous_driver_weights;
+    std::map<std::string, double> previous_driver_velocity;
+    double driver_squared_step_sum = 0.0;
+    double driver_squared_acceleration_sum = 0.0;
+    double driver_max_pose_step = 0.0;
+    double driver_max_pose_speed = 0.0;
+    double driver_max_pose_acceleration = 0.0;
+    int driver_channel_sample_count = 0;
+    int sample_count = 0;
+    int channel_sample_count = 0;
+    double jaw_peak = 0.0;
+    double jaw_sum = 0.0;
+    double jaw_squared_speed_sum = 0.0;
+    double jaw_max_speed = 0.0;
+    double previous_jaw_speed = 0.0;
+    int jaw_high_aperture_samples = 0;
+    int jaw_velocity_reversals = 0;
+    int jaw_nucleus_samples = 0;
+    double jaw_nucleus_abs_error_sum = 0.0;
+
+    for (double seconds = 0.0; seconds <= end_seconds + 0.0001;
+         seconds += frame_seconds)
+    {
+        const auto samples = FOffgridAIVisemePerformer::Sample(
+            track, static_cast<float>(seconds), true);
+        const auto weights = FOffgridAIVisemePerformer::CollapseByPoseID(samples);
+        std::map<std::string, double> driver_weights;
+        for (const auto& event : track.Events)
+        {
+            if (event.PoseID.IsNone()) continue;
+            driver_weights[to_std(event.PoseID)] = weights.FindRef(event.PoseID);
+        }
+        driver_weights["JawOpen"] = weights.FindRef(TEXT("JawOpen"));
+        if (sample_count > 0)
+        {
+            std::map<std::string, bool> pose_ids;
+            for (const auto& pair : previous_driver_weights) pose_ids[pair.first] = true;
+            for (const auto& pair : driver_weights) pose_ids[pair.first] = true;
+            for (const auto& pose : pose_ids)
+            {
+                const double previous = previous_driver_weights.count(pose.first)
+                    ? previous_driver_weights.at(pose.first) : 0.0;
+                const double current = driver_weights.count(pose.first)
+                    ? driver_weights.at(pose.first) : 0.0;
+                const double step = current - previous;
+                const double velocity = step / frame_seconds;
+                const double old_velocity = previous_driver_velocity.count(pose.first)
+                    ? previous_driver_velocity.at(pose.first) : 0.0;
+                const double acceleration =
+                    (velocity - old_velocity) / frame_seconds;
+                driver_max_pose_step = std::max(
+                    driver_max_pose_step, std::abs(step));
+                driver_max_pose_speed = std::max(
+                    driver_max_pose_speed, std::abs(velocity));
+                driver_max_pose_acceleration = std::max(
+                    driver_max_pose_acceleration, std::abs(acceleration));
+                driver_squared_step_sum += step * step;
+                driver_squared_acceleration_sum += acceleration * acceleration;
+                previous_driver_velocity[pose.first] = velocity;
+                ++driver_channel_sample_count;
+            }
+        }
+        previous_driver_weights = driver_weights;
+        const auto target =
+            FOffgridAIVisemePerformer::BuildPoseStateFromPoseWeights(weights);
+        displayed = FOffgridAIVisemePerformer::StepDisplayedPose(
+            displayed,
+            target,
+            static_cast<float>(frame_seconds),
+            0.035f,
+            false);
+        const auto channels = pose_channels(displayed);
+        const double jaw = displayed.Open;
+        jaw_peak = std::max(jaw_peak, jaw);
+        jaw_sum += jaw;
+        if (jaw >= 0.75) ++jaw_high_aperture_samples;
+        if (sample_count > 0)
+        {
+            const double jaw_speed = (jaw - previous_channels[0]) / frame_seconds;
+            jaw_max_speed = std::max(jaw_max_speed, std::abs(jaw_speed));
+            jaw_squared_speed_sum += jaw_speed * jaw_speed;
+            if (std::abs(jaw_speed) >= 0.05
+                && std::abs(previous_jaw_speed) >= 0.05
+                && jaw_speed * previous_jaw_speed < 0.0)
+            {
+                ++jaw_velocity_reversals;
+            }
+            previous_jaw_speed = jaw_speed;
+        }
+        for (const auto& event : track.Events)
+        {
+            if (event.JawOpenTarget < 0.0f
+                || event.bCanceledByWordHandoff
+                || std::abs(seconds - event.FinalRenderCenterSeconds)
+                    > frame_seconds * 0.5)
+                continue;
+            jaw_nucleus_abs_error_sum += std::abs(
+                jaw - static_cast<double>(event.JawOpenTarget));
+            ++jaw_nucleus_samples;
+        }
+        if (sample_count > 0)
+        {
+            for (size_t channel = 0; channel < channels.size(); ++channel)
+            {
+                const double step = channels[channel] - previous_channels[channel];
+                const double velocity = step / frame_seconds;
+                const double acceleration =
+                    (velocity - previous_velocity[channel]) / frame_seconds;
+                max_channel_step = std::max(max_channel_step, std::abs(step));
+                max_channel_speed = std::max(max_channel_speed, std::abs(velocity));
+                max_channel_acceleration = std::max(
+                    max_channel_acceleration, std::abs(acceleration));
+                squared_step_sum += step * step;
+                squared_acceleration_sum += acceleration * acceleration;
+                previous_velocity[channel] = velocity;
+                ++channel_sample_count;
+            }
+        }
+        previous_channels = channels;
+        ++sample_count;
+    }
+
+    const double rms_channel_step = channel_sample_count > 0
+        ? std::sqrt(squared_step_sum / static_cast<double>(channel_sample_count))
+        : 0.0;
+    const double rms_channel_acceleration = channel_sample_count > 0
+        ? std::sqrt(squared_acceleration_sum / static_cast<double>(channel_sample_count))
+        : 0.0;
+    const double driver_rms_pose_step = driver_channel_sample_count > 0
+        ? std::sqrt(driver_squared_step_sum
+            / static_cast<double>(driver_channel_sample_count))
+        : 0.0;
+    const double driver_rms_pose_acceleration = driver_channel_sample_count > 0
+        ? std::sqrt(driver_squared_acceleration_sum
+            / static_cast<double>(driver_channel_sample_count))
+        : 0.0;
+    const double jaw_mean = sample_count > 0
+        ? jaw_sum / static_cast<double>(sample_count)
+        : 0.0;
+    const double jaw_rms_speed = sample_count > 1
+        ? std::sqrt(jaw_squared_speed_sum
+            / static_cast<double>(sample_count - 1))
+        : 0.0;
+    const double jaw_high_aperture_fraction = sample_count > 0
+        ? static_cast<double>(jaw_high_aperture_samples)
+            / static_cast<double>(sample_count)
+        : 0.0;
+    const double jaw_nucleus_mean_abs_error = jaw_nucleus_samples > 0
+        ? jaw_nucleus_abs_error_sum
+            / static_cast<double>(jaw_nucleus_samples)
+        : 0.0;
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(6)
+        << "{\n"
+        << "  \"sample_rate_hz\": 60.0,\n"
+        << "  \"sample_count\": " << sample_count << ",\n"
+        << "  \"max_channel_step_per_frame\": " << max_channel_step << ",\n"
+        << "  \"rms_channel_step_per_frame\": " << rms_channel_step << ",\n"
+        << "  \"max_channel_speed_per_second\": " << max_channel_speed << ",\n"
+        << "  \"max_channel_acceleration_per_second2\": "
+        << max_channel_acceleration << ",\n"
+        << "  \"rms_channel_acceleration_per_second2\": "
+        << rms_channel_acceleration << ",\n"
+        << "  \"driver_max_pose_step_per_frame\": "
+        << driver_max_pose_step << ",\n"
+        << "  \"driver_rms_pose_step_per_frame\": "
+        << driver_rms_pose_step << ",\n"
+        << "  \"driver_max_pose_speed_per_second\": "
+        << driver_max_pose_speed << ",\n"
+        << "  \"driver_max_pose_acceleration_per_second2\": "
+        << driver_max_pose_acceleration << ",\n"
+        << "  \"driver_rms_pose_acceleration_per_second2\": "
+        << driver_rms_pose_acceleration << ",\n"
+        << "  \"jaw_peak_aperture\": " << jaw_peak << ",\n"
+        << "  \"jaw_mean_aperture\": " << jaw_mean << ",\n"
+        << "  \"jaw_high_aperture_fraction\": "
+        << jaw_high_aperture_fraction << ",\n"
+        << "  \"jaw_max_speed_per_second\": " << jaw_max_speed << ",\n"
+        << "  \"jaw_rms_speed_per_second\": " << jaw_rms_speed << ",\n"
+        << "  \"jaw_velocity_reversals\": " << jaw_velocity_reversals << ",\n"
+        << "  \"jaw_nucleus_sample_count\": " << jaw_nucleus_samples << ",\n"
+        << "  \"jaw_nucleus_mean_abs_target_error\": "
+        << jaw_nucleus_mean_abs_error << "\n"
+        << "}\n";
+    return out.str();
+}
+
 static std::string region_ownership_grade_json(
     const FOffgridAIAlignedVisemeTrack& track,
     const FOffgridAITextVisemePlan& plan,
@@ -4801,6 +5026,8 @@ int main(int argc, char** argv)
             write_text(case_dir / "committed.csv", committed_csv(committed));
             write_text(case_dir / "dropped.csv", dropped_csv(committed));
             write_text(case_dir / "region_drop_diagnostics.csv", region_drop_diagnostics_csv(committed, speech));
+            write_text(case_dir / "presentation_motion_grade.json",
+                presentation_motion_grade_json(committed));
             if (output.write_detailed_diagnostics)
             {
                 write_text(case_dir / "gap_candidates.csv", gap_candidates_csv(gap_candidates));
@@ -4813,6 +5040,27 @@ int main(int argc, char** argv)
                 write_text(case_dir / "stream_tail.csv", stream_tail_csv(session.GetStreamTailDiagnosticRow()));
             }
             GradeReport report;
+            // Raw runtime evidence is useful when diagnosing newly captured
+            // Offgrid lines before they have been promoted into checked-in
+            // gold. Keep this host-side export independent of gold grading.
+            if (output.write_detailed_diagnostics)
+            {
+                FOffgridAIStreamingEvidenceSurfaceConfig evidence_surface_config;
+                evidence_surface_config.PrerollSec = stream.buffer_seconds;
+                evidence_surface_config.PostrollSec = stream.evidence_postroll_seconds;
+                evidence_surface_config.SpeechRegions = &speech;
+                const auto evidence_observations =
+                    FOffgridAIStreamingEvidenceSurface::Analyze(
+                        session.GetSpeechDetector().GetFeatureFrames(),
+                        evidence_surface_config);
+                write_text(case_dir / "streaming_evidence_observations.csv",
+                    evidence_ingredient_observations_csv(evidence_observations));
+                const auto syllable_candidate_sets =
+                    FOffgridAIStreamingSyllablePositionEstimator::EstimateCandidateSets(
+                        plan, evidence_observations);
+                write_text(case_dir / "streaming_syllable_candidate_sets.csv",
+                    syllable_candidate_sets_csv(syllable_candidate_sets));
+            }
             const fs::path gold_case_dir = root / "inputs" / "gold" / stem;
             const fs::path gold_phones_path = gold_case_dir / "phones.csv";
             const fs::path gold_words_path = gold_case_dir / "words.csv";

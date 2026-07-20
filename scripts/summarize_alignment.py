@@ -93,11 +93,22 @@ def main() -> int:
         gold_words = {
             int(row["word_index"]): row for row in load_csv(gold_dir / "words.csv")
         }
+        gold_phones = {
+            (int(row["word_index"]), int(row["phone_index"])): row
+            for row in load_csv(gold_dir / "phones.csv")
+        }
         gold_speech = {
             int(row["index"]): row for row in load_csv(gold_dir / "speech.csv")
         }
         detected_speech = load_csv(focus_path.parent / "speech_regions.csv")
         committed_rows = load_csv(focus_path.parent / "committed.csv")
+        visual_anchor_rows = load_csv(
+            focus_path.parent / "runtime_syllable_anchor_diagnostics.csv"
+        )
+        expected_phones = {
+            int(row["phone_index"]): row
+            for row in load_csv(focus_path.parent / "expected_phones.csv")
+        }
         word_onset_rows = load_csv(focus_path.parent / "word_onset_diagnostics.csv")
         ownership_words = {
             int(word["word_index"]): word for word in ownership.get("words", [])
@@ -211,6 +222,19 @@ def main() -> int:
         word_errors: list[float] = []
         assignment_successes = 0
         three_level_word_successes = 0
+        early_region_theft_count = 0
+        late_region_assignment_count = 0
+        materially_early_intact_word_count = 0
+        max_intact_word_lead_ms = 0.0
+        assigned_last_word_by_runtime_region: dict[int, int] = {}
+        mfa_last_word_by_region: dict[int, int] = {}
+        for expected_word_index, expected_owner in ownership_words.items():
+            expected_region = int(expected_owner.get("mfa_region_index", -1))
+            if expected_region >= 0:
+                mfa_last_word_by_region[expected_region] = max(
+                    mfa_last_word_by_region.get(expected_region, -1),
+                    expected_word_index,
+                )
         for word_index, owner in ownership_words.items():
             head = word_heads.get(word_index)
             strict_owner = bool(owner.get("runtime_mfa_strict_correct", False))
@@ -233,6 +257,26 @@ def main() -> int:
             )
             transcript_mfa_correct = runtime_mapped_regions == [mfa_region]
             runtime_raw_mfa_correct = runtime_regions == [mfa_region]
+            assigned_mfa_region = (
+                runtime_mapped_regions[0]
+                if len(runtime_mapped_regions) == 1
+                else -1
+            )
+            region_assignment_delta = (
+                assigned_mfa_region - mfa_region
+                if assigned_mfa_region >= 0 and mfa_region >= 0
+                else 0
+            )
+            if fully_committed and region_assignment_delta < 0:
+                early_region_theft_count += 1
+            if fully_committed and region_assignment_delta > 0:
+                late_region_assignment_count += 1
+            if fully_committed and len(runtime_regions) == 1:
+                runtime_region = runtime_regions[0]
+                assigned_last_word_by_runtime_region[runtime_region] = max(
+                    assigned_last_word_by_runtime_region.get(runtime_region, -1),
+                    word_index,
+                )
             whole_word_three_level_success = (
                 fully_committed
                 and transcript_mfa_correct
@@ -247,11 +291,20 @@ def main() -> int:
             error_ms = None
             start_success = False
             if head is not None:
-                error_ms = abs(float(head.get("error_ms", 0.0)))
+                signed_error_ms = float(head.get("error_ms", 0.0))
+                error_ms = abs(signed_error_ms)
                 word_errors.append(error_ms)
                 start_success = head_owner and error_ms <= START_TOLERANCE_MS
                 if start_success:
                     word_successes += 1
+                if fully_committed and signed_error_ms < -START_TOLERANCE_MS:
+                    materially_early_intact_word_count += 1
+                    max_intact_word_lead_ms = max(
+                        max_intact_word_lead_ms,
+                        -signed_error_ms,
+                    )
+            else:
+                signed_error_ms = None
             words_out.append({
                 "case": case_id(focus_path),
                 "case_name": focus_path.parent.name,
@@ -264,6 +317,10 @@ def main() -> int:
                 "physical_runtime_region_index": physical_runtime_region,
                 "physical_runtime_mfa_region_index": physical_runtime_mfa_region,
                 "runtime_regions": "|".join(str(value) for value in runtime_regions),
+                "assigned_mfa_region_index": assigned_mfa_region,
+                "region_assignment_delta": region_assignment_delta,
+                "early_region_theft": fully_committed and region_assignment_delta < 0,
+                "late_region_assignment": fully_committed and region_assignment_delta > 0,
                 "fully_committed": fully_committed,
                 "runtime_region_integrity": bool(owner.get("runtime_region_integrity", False)),
                 "region_assignment_success": fully_committed and strict_owner,
@@ -272,8 +329,29 @@ def main() -> int:
                 "planned_transcript_mfa_region_correct": planned_transcript_region == mfa_region,
                 "whole_word_three_level_success": whole_word_three_level_success,
                 "start_error_ms": "" if error_ms is None else error_ms,
+                "start_signed_error_ms": (
+                    "" if signed_error_ms is None else signed_error_ms
+                ),
+                "materially_early_intact_word": (
+                    fully_committed
+                    and signed_error_ms is not None
+                    and signed_error_ms < -START_TOLERANCE_MS
+                ),
                 "start_success": start_success,
             })
+
+        region_word_overrun_count = 0
+        max_region_word_overrun = 0
+        for runtime_region, assigned_last_word in assigned_last_word_by_runtime_region.items():
+            mapped_mfa_region = detected_region_mapped_to_mfa(runtime_region)
+            expected_last_word = mfa_last_word_by_region.get(mapped_mfa_region, -1)
+            if expected_last_word < 0 or assigned_last_word <= expected_last_word:
+                continue
+            region_word_overrun_count += 1
+            max_region_word_overrun = max(
+                max_region_word_overrun,
+                assigned_last_word - expected_last_word,
+            )
 
         split_word_count = 0
         incomplete_word_count = 0
@@ -477,6 +555,41 @@ def main() -> int:
         exact_boundary_count = sum(
             int(bool(row["exact_three_level_boundary"])) for row in case_boundaries
         )
+        class_anchor_errors: list[float] = []
+        class_anchor_successes = 0
+        class_anchor_kind_counts: dict[str, int] = {}
+        for anchor in visual_anchor_rows:
+            kind = anchor.get("visual_anchor_kind", "").strip()
+            if not kind or kind == "recovered_prior":
+                continue
+            phone_field = (
+                "nucleus_phone_index"
+                if kind == "nucleus"
+                else "visual_anchor_phone_index"
+            )
+            try:
+                phone_index = int(anchor.get(phone_field, -1))
+                visual_sec = float(anchor.get("visual_anchor_audio_sec", -1.0))
+            except (TypeError, ValueError):
+                continue
+            expected_phone = expected_phones.get(phone_index)
+            if expected_phone is None:
+                continue
+            gold_phone = gold_phones.get((
+                int(expected_phone["word_index"]),
+                int(expected_phone["word_phone_index"]),
+            ))
+            if gold_phone is None or visual_sec < 0.0:
+                continue
+            target_sec = (
+                (float(gold_phone["start"]) + float(gold_phone["end"])) * 0.5
+                if kind == "nucleus"
+                else float(gold_phone["start"])
+            )
+            error_ms = abs(visual_sec - target_sec) * 1000.0
+            class_anchor_errors.append(error_ms)
+            class_anchor_successes += int(error_ms <= START_TOLERANCE_MS)
+            class_anchor_kind_counts[kind] = class_anchor_kind_counts.get(kind, 0) + 1
         cases.append({
             "case": case_id(focus_path),
             "case_name": focus_path.parent.name,
@@ -502,6 +615,18 @@ def main() -> int:
             "word_start_successes": word_successes,
             "word_start_success_rate": ratio(word_successes, word_expected),
             "word_start_mean_abs_error_ms": ratio(sum(word_errors), len(word_errors), 0.0),
+            "class_anchor_expected": len(class_anchor_errors),
+            "class_anchor_successes": class_anchor_successes,
+            "class_anchor_success_rate": ratio(
+                class_anchor_successes, len(class_anchor_errors)
+            ),
+            "class_anchor_mean_abs_error_ms": ratio(
+                sum(class_anchor_errors), len(class_anchor_errors), 0.0
+            ),
+            "class_anchor_kind_counts": "|".join(
+                f"{kind}:{count}"
+                for kind, count in sorted(class_anchor_kind_counts.items())
+            ),
             "animation_onset_expected": animation_onset_expected,
             "animation_onset_matched": animation_onset_matched,
             "animation_onset_successes": animation_onset_successes,
@@ -531,6 +656,12 @@ def main() -> int:
             "three_level_word_assignment_rate": ratio(
                 three_level_word_successes, assignment_expected
             ),
+            "early_region_theft_count": early_region_theft_count,
+            "late_region_assignment_count": late_region_assignment_count,
+            "materially_early_intact_word_count": materially_early_intact_word_count,
+            "max_intact_word_lead_ms": max_intact_word_lead_ms,
+            "region_word_overrun_count": region_word_overrun_count,
+            "max_region_word_overrun": max_region_word_overrun,
             "planned_event_count": planned_events,
             "committed_event_count": committed_events,
             "event_completion_rate": ratio(committed_events, planned_events),
@@ -644,6 +775,13 @@ def main() -> int:
         * int(row["animation_onset_matched"])
         for row in cases
     )
+    class_anchor_expected = totals("class_anchor_expected")
+    class_anchor_successes = totals("class_anchor_successes")
+    class_anchor_error_total = sum(
+        float(row["class_anchor_mean_abs_error_ms"])
+        * int(row["class_anchor_expected"])
+        for row in cases
+    )
     word_nucleus_targets = totals("word_nucleus_target_count")
     word_nucleus_observations = totals("word_nucleus_observation_count")
     word_nucleus_matches = totals("word_nucleus_match_count")
@@ -703,6 +841,18 @@ def main() -> int:
             ),
             "tolerance_ms": START_TOLERANCE_MS,
         },
+        "class_aware_visual_anchor": {
+            "expected": class_anchor_expected,
+            "successful": class_anchor_successes,
+            "success_rate": ratio(class_anchor_successes, class_anchor_expected),
+            "mean_abs_error_ms": ratio(
+                class_anchor_error_total, class_anchor_expected, 0.0
+            ),
+            "tolerance_ms": START_TOLERANCE_MS,
+            "target_rule": (
+                "vowels use MFA nucleus center; consonant landmarks use MFA phone onset"
+            ),
+        },
         "legacy_word_head_pose_center": {
             "expected": word_expected,
             "successful": word_successes,
@@ -745,6 +895,32 @@ def main() -> int:
             "failed_cases": sum(
                 1 for row in cases
                 if row["three_level_word_successes"] < row["word_region_expected"]
+            ),
+        },
+        "word_region_confusion": {
+            "early_region_thefts": totals("early_region_theft_count"),
+            "early_region_theft_cases": sum(
+                1 for row in cases if row["early_region_theft_count"]
+            ),
+            "late_region_assignments": totals("late_region_assignment_count"),
+            "late_region_assignment_cases": sum(
+                1 for row in cases if row["late_region_assignment_count"]
+            ),
+            "materially_early_intact_words": totals(
+                "materially_early_intact_word_count"
+            ),
+            "materially_early_intact_word_cases": sum(
+                1 for row in cases if row["materially_early_intact_word_count"]
+            ),
+            "max_intact_word_lead_ms": max(
+                float(row["max_intact_word_lead_ms"]) for row in cases
+            ),
+            "region_word_overruns": totals("region_word_overrun_count"),
+            "region_word_overrun_cases": sum(
+                1 for row in cases if row["region_word_overrun_count"]
+            ),
+            "max_region_word_overrun": max(
+                int(row["max_region_word_overrun"]) for row in cases
             ),
         },
         "guardrails": {
@@ -864,6 +1040,11 @@ def main() -> int:
         f"{summary['word_animation_onset']['success_rate']:.3f} "
         f"({summary['word_animation_onset']['mean_abs_error_ms']:.1f} ms MAE)"
     )
+    print(
+        f"Class-aware visual anchors: "
+        f"{summary['class_aware_visual_anchor']['success_rate']:.3f} "
+        f"({summary['class_aware_visual_anchor']['mean_abs_error_ms']:.1f} ms MAE)"
+    )
     word_nucleus = summary["performed_word_start_nucleus"]
     nearby_nucleus = summary["performed_word_head_nearby_nucleus"]
     print(
@@ -878,6 +1059,14 @@ def main() -> int:
         f"({word_nucleus['mean_abs_error_ms']:.1f} ms matched MAE)"
     )
     print(f"Word-region assignment: {summary['word_region_assignment']['success_rate']:.3f}")
+    confusion = summary["word_region_confusion"]
+    print(
+        "Region confusion: "
+        f"early_thefts={confusion['early_region_thefts']} "
+        f"late_assignments={confusion['late_region_assignments']} "
+        f"intact_words_early={confusion['materially_early_intact_words']} "
+        f"region_overruns={confusion['region_word_overruns']}"
+    )
     print(
         f"Guardrails: completion={summary['guardrails']['event_completion_rate']:.3f} "
         f"order_violations={summary['guardrails']['order_violations']}"

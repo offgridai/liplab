@@ -4,7 +4,9 @@
 #include "Lipsync/OffgridAILipsyncTypes.h"
 
 // Phase 4. Owns envelope sampling only. It must not move centers, change pose ids,
-// suppress authored events, or inspect text/audio evidence.
+// suppress authored events, or inspect text/audio evidence. Sample() may also
+// return the reserved "JawOpen" carrier: hosts should apply it to mandibular
+// aperture after resolving the ordinary transcript-derived pose samples.
 class OFFGRIDAI_API FOffgridAIVisemePerformer
 {
 public:
