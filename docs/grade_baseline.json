@@ -1,20 +1,28 @@
 {
   "cases": 350,
+  "region_start": {
+    "success_rate": 0.5396449704142012,
+    "mean_abs_error_ms": 235.0505854241338
+  },
+  "word_animation_onset": {
+    "success_rate": 0.47551686615886835,
+    "mean_abs_error_ms": 199.38733883033993
+  },
+  "class_aware_visual_anchor": {
+    "success_rate": 0.5359147025813692,
+    "mean_abs_error_ms": 196.69231144781145
+  },
   "strict_region_segmentation": {
-    "exact_boundary_rate": 0.85833831440526
+    "exact_boundary_rate": 0.8580394500896593
   },
   "strict_three_level_word_assignment": {
-    "success_rate": 0.8874458874458875
-  },
-  "strict_region_nucleus_alignment": {
-    "success_rate": 0.4380165289256198,
-    "mean_abs_error_ms": 244.03096750902526
+    "success_rate": 0.8871753246753247
   },
   "pause": {
-    "clean_rate": 0.9874800330487469
+    "clean_rate": 0.9862517212889012
   },
   "guardrails": {
-    "event_completion_rate": 0.9741410885649403,
+    "event_completion_rate": 0.9711376455937294,
     "order_violations": 0
   }
 }

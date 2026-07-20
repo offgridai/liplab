@@ -29,10 +29,34 @@ def value(document: dict, path: str):
 
 
 checks = [
+    ("region_start.success_rate", "min", "max_region_start_success_drop"),
+    (
+        "region_start.mean_abs_error_ms",
+        "max",
+        "max_region_start_mae_ms_increase",
+    ),
+    ("word_animation_onset.success_rate", "min", "max_word_onset_success_drop"),
+    (
+        "word_animation_onset.mean_abs_error_ms",
+        "max",
+        "max_word_onset_mae_ms_increase",
+    ),
+    (
+        "class_aware_visual_anchor.success_rate",
+        "min",
+        "max_visual_anchor_success_drop",
+    ),
+    (
+        "class_aware_visual_anchor.mean_abs_error_ms",
+        "max",
+        "max_visual_anchor_mae_ms_increase",
+    ),
     ("strict_region_segmentation.exact_boundary_rate", "min", "max_strict_region_drop"),
-    ("strict_three_level_word_assignment.success_rate", "min", "max_strict_word_assignment_drop"),
-    ("strict_region_nucleus_alignment.success_rate", "min", "max_region_nucleus_success_drop"),
-    ("strict_region_nucleus_alignment.mean_abs_error_ms", "max", "max_region_nucleus_mae_ms_increase"),
+    (
+        "strict_three_level_word_assignment.success_rate",
+        "min",
+        "max_strict_word_assignment_drop",
+    ),
     ("pause.clean_rate", "min", "max_pause_clean_drop"),
     ("guardrails.event_completion_rate", "min", "max_event_completion_drop"),
 ]

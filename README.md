@@ -13,13 +13,15 @@ The runtime has one path:
 1. The transcript becomes ordered CMU phones, syllables, visemes, and relative
    intra-word durations.
 2. Streamed PCM becomes causal speech regions and acoustic feature frames.
-3. The evidence surface detects syllabic pulses and broad articulatory cues.
+3. The evidence surface detects syllabic pulses and class-specific articulatory
+   landmarks.
 4. The candidate estimator offers nearby ordered transcript syllables for each
    stable pulse.
-5. The scheduler anchors complete transcript-derived word packets to accepted
-   audio pulses and adapts the pacing rate of future words.
+5. The scheduler commits complete transcript-derived word packets. Vowel-led
+   words peak at the accepted nucleus; visible consonant-led words use the
+   matching audio onset/closure landmark, while preserving transcript identity.
 6. The performer samples committed events into pose weights, gated by detected
-   speech regions.
+   speech regions, with continuous coarticulation and a syllabic jaw carrier.
 
 Transcript identity and order are authoritative. Audio owns timing but cannot
 choose a viseme. Punctuation may disambiguate a boundary-final syllable, but it
@@ -80,13 +82,22 @@ python scripts\export_gold.py
 Approved packages contain phone, word, speech-region, pause-boundary, and review
 metadata. See [docs/gold_dataset_plan.md](docs/gold_dataset_plan.md).
 
+There are two deliberately separate Offgrid-log workflows:
+
+- `inputs/export_offgrid_logs_to_liplab.py` adds WAV/transcript pairs to the
+  permanent numbered corpus.
+- `scripts/export_offgrid_logs_for_mfa.py` creates a temporary MFA corpus and
+  index for `scripts/analyze_offgrid_logs.py`; it does not mutate the checked-in
+  corpus.
+
 ## Priority scorecard
 
 `outputs/runs/latest/alignment_summary.json` reports:
 
 - speech-region start and pause cleanliness,
 - performed word-animation onset,
-- nearby and exact word-head nucleus alignment,
+- class-aware visual-anchor alignment (nucleus for vowels, visible consonant
+  landmark for consonant-led words),
 - complete word-to-region assignment,
 - completion, split-word, and ordering guardrails.
 

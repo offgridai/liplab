@@ -52,6 +52,20 @@ The shared source set includes `OffgridAIAcousticEvidence.*`. The former
 `OffgridAIOnlinePhoneAligner.*` files are obsolete and should not remain in an
 Offgrid transplant.
 
+## Diagnostic compatibility
+
+Each captured line must record
+`FOffgridAILipsyncRuntimeSession::GetImplementationVersion()` and
+`GetDiagnosticSchemaVersion()`. The current shared source identifies itself as
+`2026.07.20-class-aware-visual-anchors-v15`, diagnostic schema `7`.
+
+For every word, `word_pacing.csv` should preserve `NucleusAudioSec`,
+`VisualAnchorAudioSec`, `VisualAnchorKind`, and `VisualAnchorPhoneIndex`.
+`NucleusAudioSec` describes the syllable estimator. `VisualAnchorAudioSec` is
+the actual class-aware presentation target and is therefore the field used to
+grade the first visible gesture. Keeping both prevents a consonant-led word
+from being incorrectly diagnosed against its later vowel nucleus.
+
 LineCoach should also not:
 
 - stop calling `Update(...)` after `CloseInputStream()`,
