@@ -452,6 +452,7 @@ static void FillCommittedEvent(
     Out.EventIndex = EventIndex;
     Out.PoseID = Source.PoseID;
     Out.Strength = Source.Strength;
+    Out.JawOpenTarget = Source.JawOpenTarget;
     Out.SourceWord = Source.SourceText;
     Out.WordIndex = Source.WordIndex;
     Out.SentenceIndex = Source.SentenceIndex;
