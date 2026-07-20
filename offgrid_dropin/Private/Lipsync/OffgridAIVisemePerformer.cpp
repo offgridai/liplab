@@ -119,7 +119,10 @@ static float EventWeightAt(
     // Normal speech gestures form a continuous minimum-jerk path from one
     // committed center to the next. Long spans are bounded so a pose does not
     // anticipate across an acoustically meaningful lull.
-    float AttackStart = Center - 0.090f;
+    // Articulation normally anticipates the acoustic nucleus. Give the first
+    // visible movement enough lead to meet (or slightly precede) consonant
+    // onset while retaining the nucleus as the immutable timing center.
+    float AttackStart = Center - 0.130f;
     float ReleaseEnd = Center + 0.120f;
 
     // Treat committed visemes as states over a continuous speech region, not as

@@ -4971,6 +4971,27 @@ int main(int argc, char** argv)
                 write_text(case_dir / "stream_tail.csv", stream_tail_csv(session.GetStreamTailDiagnosticRow()));
             }
             GradeReport report;
+            // Raw runtime evidence is useful when diagnosing newly captured
+            // Offgrid lines before they have been promoted into checked-in
+            // gold. Keep this host-side export independent of gold grading.
+            if (output.write_detailed_diagnostics)
+            {
+                FOffgridAIStreamingEvidenceSurfaceConfig evidence_surface_config;
+                evidence_surface_config.PrerollSec = stream.buffer_seconds;
+                evidence_surface_config.PostrollSec = stream.evidence_postroll_seconds;
+                evidence_surface_config.SpeechRegions = &speech;
+                const auto evidence_observations =
+                    FOffgridAIStreamingEvidenceSurface::Analyze(
+                        session.GetSpeechDetector().GetFeatureFrames(),
+                        evidence_surface_config);
+                write_text(case_dir / "streaming_evidence_observations.csv",
+                    evidence_ingredient_observations_csv(evidence_observations));
+                const auto syllable_candidate_sets =
+                    FOffgridAIStreamingSyllablePositionEstimator::EstimateCandidateSets(
+                        plan, evidence_observations);
+                write_text(case_dir / "streaming_syllable_candidate_sets.csv",
+                    syllable_candidate_sets_csv(syllable_candidate_sets));
+            }
             const fs::path gold_case_dir = root / "inputs" / "gold" / stem;
             const fs::path gold_phones_path = gold_case_dir / "phones.csv";
             const fs::path gold_words_path = gold_case_dir / "words.csv";

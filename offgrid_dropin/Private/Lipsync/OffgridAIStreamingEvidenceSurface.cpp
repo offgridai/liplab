@@ -629,6 +629,101 @@ TArray<FOffgridAIAudioLandmarkObservation> FOffgridAIStreamingEvidenceSurface::A
         LastPulseEpoch = PulseEpoch;
     }
 
+    // A missing onset pulse can cause a word to be stolen by the following
+    // region, shifting the rest of the line. Recover only narrowly isolated
+    // regions, and require either region closure or a later learned pulse as
+    // confirmation. Search after 100 ms so an initial consonant burst cannot
+    // masquerade as the syllable nucleus.
+    if (Config.SpeechRegions && Config.SpeechRegions->Num() > 0)
+    {
+        for (int32 RegionIndex = 0;
+            RegionIndex < Config.SpeechRegions->Num();
+            ++RegionIndex)
+        {
+            const auto& Region = (*Config.SpeechRegions)[RegionIndex];
+            const float RegionDurationSec =
+                Region.AudioBufferEndSec - Region.AudioBufferStartSec;
+            const bool bIsIsolatedOpeningWord = RegionIndex == 0
+                && Region.bEnded
+                && RegionDurationSec >= 0.450f
+                && RegionDurationSec <= 0.600f;
+            const float PrecedingGapSec = RegionIndex > 0
+                ? Region.AudioBufferStartSec
+                    - (*Config.SpeechRegions)[RegionIndex - 1].AudioBufferEndSec
+                : 0.0f;
+            const bool bIsIsolatedMediumRegion = RegionIndex > 0
+                && PrecedingGapSec >= 0.280f
+                && RegionDurationSec >= 0.650f
+                && RegionDurationSec <= 0.800f;
+            if (!bIsIsolatedOpeningWord && !bIsIsolatedMediumRegion)
+                continue;
+            const float SearchStartSec = Region.AudioBufferStartSec + 0.100f;
+            const float SearchEndSec = FMath::Min(
+                Region.AudioBufferStartSec + 0.300f,
+                Region.bEnded ? Region.AudioBufferEndSec
+                              : Region.AudioBufferStartSec + 0.300f);
+            const bool bHasLaterPulse = std::any_of(
+                Out.begin(), Out.end(), [&](const auto& Observation)
+                {
+                    return Observation.Type
+                            == EOffgridAIAudioLandmarkType::SyllabicPulse
+                        && Observation.CenterSec > SearchEndSec + 0.001f
+                        && (!Region.bEnded
+                            || Observation.CenterSec
+                                <= Region.AudioBufferEndSec + 0.001f);
+                });
+            // Do not speculate merely because 300 ms elapsed. Backfill only
+            // after a later learned pulse proves the region is syllabic, or
+            // after the region closes with no learned pulse at all.
+            const bool bReady = bHasLaterPulse || Region.bEnded;
+            const bool bCovered = std::any_of(
+                Out.begin(), Out.end(), [&](const auto& Observation)
+                {
+                    return Observation.Type
+                            == EOffgridAIAudioLandmarkType::SyllabicPulse
+                        && Observation.CenterSec
+                            >= Region.AudioBufferStartSec - 0.001f
+                        && Observation.CenterSec <= SearchEndSec + 0.001f;
+                });
+            if (bReady && !bCovered && SearchStartSec <= SearchEndSec)
+            {
+                int32 BestFrameIndex = INDEX_NONE;
+                float BestEnergy = -1.0f;
+                for (int32 FrameIndex = 0;
+                    FrameIndex < Frames.Num();
+                    ++FrameIndex)
+                {
+                    const auto& Frame = Frames[FrameIndex];
+                    if (!Frame.bInSpeechAfterFrame
+                        || Frame.AudioBufferCenterSec
+                            < SearchStartSec - 0.001f
+                        || Frame.AudioBufferCenterSec
+                            > SearchEndSec + 0.001f)
+                        continue;
+                    if (PulseEnergy[FrameIndex] > BestEnergy)
+                    {
+                        BestEnergy = PulseEnergy[FrameIndex];
+                        BestFrameIndex = FrameIndex;
+                    }
+                }
+                if (BestFrameIndex != INDEX_NONE)
+                {
+                    const int32 DecisionIndex = FMath::Min(
+                        BestFrameIndex + PulseContextFrames,
+                        Frames.Num() - 1);
+                    AddObservation(
+                        Out,
+                        EOffgridAIAudioLandmarkType::SyllabicPulse,
+                        Frames[BestFrameIndex],
+                        0.38f,
+                        FMath::Max(
+                            Frames[DecisionIndex].AudioBufferEndSec,
+                            SearchEndSec));
+                }
+            }
+        }
+    }
+
     // Lull/resume observations are state transitions, not every quiet frame.
     bool bInLull = false;
     bool bLullEmitted = false;
