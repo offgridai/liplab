@@ -2026,7 +2026,7 @@ static std::string runtime_syllable_anchor_diagnostics_csv(
     const TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow>& rows)
 {
     std::ostringstream out;
-    out << "line_id,update_ordinal,audio_speech_region_index,text_speech_region_index,nucleus_phone_index,pulse_audio_sec,prominence,confidence,skip_count,anchor_kind,timeline_correction_sec,word_index,word_prior_rate,observed_word_interval_sec,prior_word_interval_sec,canceled_prior_word_event_count\n";
+    out << "line_id,update_ordinal,audio_speech_region_index,text_speech_region_index,nucleus_phone_index,pulse_audio_sec,prominence,confidence,skip_count,anchor_kind,timeline_correction_sec,word_index,word_prior_rate,observed_word_interval_sec,prior_word_interval_sec,canceled_prior_word_event_count,nucleus_audio_sec,visual_anchor_audio_sec,visual_anchor_kind,visual_anchor_phone_index\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& row : rows)
     {
@@ -2045,7 +2045,11 @@ static std::string runtime_syllable_anchor_diagnostics_csv(
             << row.WordPriorRate << ','
             << row.ObservedWordIntervalSec << ','
             << row.PriorWordIntervalSec << ','
-            << row.CanceledPriorWordEventCount << '\n';
+            << row.CanceledPriorWordEventCount << ','
+            << row.NucleusAudioSec << ','
+            << row.VisualAnchorAudioSec << ','
+            << to_std(row.VisualAnchorKind) << ','
+            << row.VisualAnchorPhoneIndex << '\n';
     }
     return out.str();
 }
