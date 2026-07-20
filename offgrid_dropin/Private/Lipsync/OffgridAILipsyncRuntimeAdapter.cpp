@@ -19,6 +19,7 @@ static constexpr float MinimumAdaptiveWordPriorRate = 0.65f;
 static constexpr float MaximumAdaptiveWordPriorRate = 1.65f;
 static constexpr float AdaptiveWordPriorRateBlend = 0.35f;
 static constexpr float MinimumWordRateObservationSec = 0.080f;
+static constexpr float AmbiguousWordHeadLookaheadSec = 0.300f;
 
 static float SpanForPose(const FName& PoseID)
 {
@@ -738,8 +739,11 @@ static void UpdateSyllablePacedVisemeTrack(
             Plan, Evidence, 4, 6, 4);
 
     float LastCenter = LastCommittedCenter(InOutTrack);
-    for (const auto& CandidateSet : CandidateSets)
+    for (int32 CandidateSetIndex = 0;
+        CandidateSetIndex < CandidateSets.Num();
+        ++CandidateSetIndex)
     {
+        const auto& CandidateSet = CandidateSets[CandidateSetIndex];
         if (CandidateSet.AudioCenterSec <= State.LastProcessedSyllablePulseSec + 0.001f
             || (!Input.bInputStreamClosed
                 && CandidateSet.DecisionSec + PulseCommitStabilitySec
@@ -789,6 +793,8 @@ static void UpdateSyllablePacedVisemeTrack(
         }
         if (ActiveWordContinuationSyllableIndex != INDEX_NONE)
         {
+            AssignedSyllableIndex = ActiveWordContinuationSyllableIndex;
+            AssignmentScore = 0.45f;
             for (int32 CandidateIndex = 0;
                 CandidateIndex < CandidateSet.SyllableIndices.Num();
                 ++CandidateIndex)
@@ -867,6 +873,61 @@ static void UpdateSyllablePacedVisemeTrack(
                     AssignmentScore = 0.45f;
                     break;
                 }
+            }
+        }
+
+        // Do not greedily launch a word from a later syllable.  Hold only
+        // this ambiguous frontier long enough to observe the nearby pulse
+        // budget, then move the correspondence back by the number of
+        // supporting pulses actually present in the same audio region.  This
+        // is a bounded monotonic alignment: it neither revises committed
+        // words nor invents timing from the transcript.
+        const int32 CandidateWordIndex =
+            Plan.Syllables[AssignedSyllableIndex].WordIndex;
+        const bool bBoundaryAfterWord =
+            Plan.WordBoundaryPunctuationAfter.IsValidIndex(CandidateWordIndex)
+            && Plan.WordBoundaryPunctuationAfter[CandidateWordIndex]
+                != TCHAR(0);
+        if (CandidateWordIndex == State.LastCommittedWordIndex + 1
+            && bBoundaryAfterWord)
+        {
+            int32 FirstWordSyllableIndex = AssignedSyllableIndex;
+            for (int32 SyllableIndex = AssignedSyllableIndex - 1;
+                SyllableIndex >= 0;
+                --SyllableIndex)
+            {
+                if (Plan.Syllables[SyllableIndex].WordIndex
+                    != CandidateWordIndex)
+                    break;
+                FirstWordSyllableIndex = SyllableIndex;
+            }
+            if (AssignedSyllableIndex > FirstWordSyllableIndex)
+            {
+                const float FrontierReadySec = CandidateSet.AudioCenterSec
+                    + AmbiguousWordHeadLookaheadSec;
+                if (!Input.bInputStreamClosed
+                    && Input.ObservedAudioBufferEndSec + 0.001f
+                        < FrontierReadySec)
+                    break;
+
+                int32 SupportingFuturePulseCount = 0;
+                for (int32 FutureSetIndex = CandidateSetIndex + 1;
+                    FutureSetIndex < CandidateSets.Num();
+                    ++FutureSetIndex)
+                {
+                    const auto& FutureSet = CandidateSets[FutureSetIndex];
+                    if (FutureSet.AudioCenterSec
+                        > CandidateSet.AudioCenterSec
+                            + AmbiguousWordHeadLookaheadSec)
+                        break;
+                    if (RegionContaining(
+                            *Input.SpeechRegions,
+                            FutureSet.AudioCenterSec) == AudioRegionIndex)
+                        ++SupportingFuturePulseCount;
+                }
+                AssignedSyllableIndex = FMath::Max(
+                    FirstWordSyllableIndex,
+                    AssignedSyllableIndex - SupportingFuturePulseCount);
             }
         }
 
