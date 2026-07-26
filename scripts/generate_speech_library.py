@@ -117,6 +117,36 @@ def parse_seeds(raw: str) -> list[int]:
     return seeds
 
 
+def load_voices(raw_values: list[str] | None, qwen_root: pathlib.Path) -> list[dict[str, object]]:
+    values = raw_values or [str(qwen_root / "reference" / "priestley_0.6b_f16.json")]
+    voices: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for raw in values:
+        explicit_id, separator, raw_path = raw.partition("=")
+        path = pathlib.Path(raw_path if separator else raw).expanduser().resolve()
+        voice_id = explicit_id.strip() if separator else path.stem
+        if not voice_id or not voice_id.replace("_", "").replace("-", "").isalnum():
+            raise SystemExit(
+                f"voice id must be alphanumeric with '_' or '-': {voice_id!r}"
+            )
+        if voice_id in seen:
+            raise SystemExit(f"duplicate voice id: {voice_id}")
+        if not path.exists():
+            raise SystemExit(f"voice JSON not found: {path}")
+        seen.add(voice_id)
+        voices.append({"id": voice_id, "path": path, "sha256": sha256(path)})
+    return voices
+
+
+def write_named_path_list(
+    path: pathlib.Path, rows: list[tuple[str, pathlib.Path]]
+) -> None:
+    path.write_text(
+        "".join(f"{row_id}\t{row_path.resolve()}\n" for row_id, row_path in rows),
+        encoding="utf-8",
+    )
+
+
 def wav_metadata(path: pathlib.Path) -> dict[str, int | float]:
     with wave.open(str(path), "rb") as wav:
         frames = wav.getnframes()
@@ -230,7 +260,12 @@ def main() -> int:
         default=ROOT.parent / "qwen3-tts-cpp-streaming",
     )
     parser.add_argument("--qwen-exe", type=pathlib.Path)
-    parser.add_argument("--voice-json", type=pathlib.Path)
+    parser.add_argument(
+        "--voice-json",
+        action="append",
+        metavar="[ID=]PATH",
+        help="voice-clone JSON; repeat for multiple voices (default: Priestley reference)",
+    )
     parser.add_argument("--lines-json", type=pathlib.Path)
     parser.add_argument("--seeds", default="41,42")
     parser.add_argument("--model-identifier", default="qwen3-tts-0.6b-f16")
@@ -243,16 +278,10 @@ def main() -> int:
 
     qwen_root = args.qwen_root.resolve()
     qwen_exe = (args.qwen_exe.resolve() if args.qwen_exe else find_qwen_executable(qwen_root))
-    voice_json = (
-        args.voice_json.resolve()
-        if args.voice_json
-        else (qwen_root / "reference" / "priestley_0.6b_f16.json").resolve()
-    )
+    voices = load_voices(args.voice_json, qwen_root)
     models_root = (qwen_root / "models").resolve()
     if not qwen_exe.exists():
         raise SystemExit(f"Qwen executable not found: {qwen_exe}")
-    if not voice_json.exists():
-        raise SystemExit(f"voice JSON not found: {voice_json}")
     if not models_root.exists():
         raise SystemExit(f"Qwen models directory not found: {models_root}")
 
@@ -265,7 +294,16 @@ def main() -> int:
     transcript_root = output_root / "transcripts"
     corpus_root = output_root / "mfa_corpus"
     align_root = output_root / "mfa_align"
-    for path in (wav_root, transcript_root, corpus_root, align_root):
+    batch_input_root = output_root / "batch_inputs"
+    batch_transcript_root = batch_input_root / "transcripts"
+    for path in (
+        wav_root,
+        transcript_root,
+        corpus_root,
+        align_root,
+        batch_input_root,
+        batch_transcript_root,
+    ):
         path.mkdir(parents=True, exist_ok=True)
 
     lines = load_lines(args.lines_json)
@@ -282,70 +320,90 @@ def main() -> int:
         if isinstance(row, dict) and row.get("case_id")
     }
 
+    transcript_list_rows: list[tuple[str, pathlib.Path]] = []
+    for line in lines:
+        batch_transcript_path = batch_transcript_root / f"{line['id']}.txt"
+        batch_transcript_path.write_text(line["text"] + "\n", encoding="utf-8")
+        transcript_list_rows.append((line["id"], batch_transcript_path))
+
+    transcript_list_path = batch_input_root / "transcripts.tsv"
+    voice_list_path = batch_input_root / "voices.tsv"
+    write_named_path_list(transcript_list_path, transcript_list_rows)
+    write_named_path_list(
+        voice_list_path,
+        [(str(voice["id"]), pathlib.Path(voice["path"])) for voice in voices],
+    )
+
+    batch_command = [
+        str(qwen_exe),
+        "-m",
+        str(models_root),
+        "--model-identifier",
+        args.model_identifier,
+        "--tts-profile",
+        "offgrid-callback",
+        "--temperature",
+        "0.75",
+        "--top-k",
+        "16",
+        "--top-p",
+        "0.9",
+        "--cb0-top-p",
+        "1.0",
+        "--repetition-penalty",
+        "1.02",
+        "--max-frames-per-text-token",
+        "5",
+        "--min-dynamic-tokens",
+        "64",
+        "--no-play-streaming",
+        "--simulate-stream-callback",
+        "--quiet-all",
+        "--batch-transcript-list",
+        str(transcript_list_path),
+        "--batch-voice-list",
+        str(voice_list_path),
+        "--batch-seeds",
+        ",".join(str(seed) for seed in seeds),
+        "--batch-output-dir",
+        str(wav_root),
+    ]
+    if not args.skip_synthesis:
+        print(
+            f"Synthesizing {len(lines)} transcripts x {len(voices)} voices x "
+            f"{len(seeds)} seeds"
+        )
+        subprocess.run(batch_command, cwd=qwen_root, check=True)
+
     cases: list[dict[str, object]] = []
     for line in lines:
-        for seed in seeds:
-            case_id = f"{line['id']}_seed_{seed}"
-            wav_path = wav_root / f"{case_id}.wav"
-            transcript_path = transcript_root / f"{case_id}.txt"
-            lab_path = corpus_root / f"{case_id}.lab"
-            transcript_path.write_text(line["text"] + "\n", encoding="utf-8")
-            lab_path.write_text(normalize_spoken_numbers(line["text"]) + "\n", encoding="utf-8")
-
-            command = [
-                str(qwen_exe),
-                "-m",
-                str(models_root),
-                "--model-identifier",
-                args.model_identifier,
-                "--speaker-embedding",
-                str(voice_json),
-                "--tts-profile",
-                "offgrid-callback",
-                "--seed",
-                str(seed),
-                "--temperature",
-                "0.75",
-                "--top-k",
-                "16",
-                "--top-p",
-                "0.9",
-                "--cb0-top-p",
-                "1.0",
-                "--repetition-penalty",
-                "1.02",
-                "--max-frames-per-text-token",
-                "5",
-                "--min-dynamic-tokens",
-                "64",
-                "--no-play-streaming",
-                "--simulate-stream-callback",
-                "--quiet-all",
-                "-t",
-                line["text"],
-                "-o",
-                str(wav_path),
-            ]
-            if not args.skip_synthesis:
-                print(f"Synthesizing {case_id}")
-                subprocess.run(command, cwd=qwen_root, check=True)
-            if not wav_path.exists():
-                raise SystemExit(f"generated WAV missing: {wav_path}")
-            wav_hash = sha256(wav_path)
-            case = {
-                "case_id": case_id,
-                "line_id": line["id"],
-                "seed": seed,
-                "transcript": line["text"],
-                "wav": wav_path.relative_to(output_root).as_posix(),
-                "wav_sha256": wav_hash,
-                "matches_previous_wav": old_hashes.get(case_id) == wav_hash
-                if case_id in old_hashes
-                else None,
-                "wav_metadata": wav_metadata(wav_path),
-                "qwen_command": command,
-            }
-            cases.append(case)
+        for voice in voices:
+            for seed in seeds:
+                case_id = f"{line['id']}__{voice['id']}__seed_{seed}"
+                wav_path = wav_root / f"{case_id}.wav"
+                transcript_path = transcript_root / f"{case_id}.txt"
+                lab_path = corpus_root / f"{case_id}.lab"
+                transcript_path.write_text(line["text"] + "\n", encoding="utf-8")
+                lab_path.write_text(
+                    normalize_spoken_numbers(line["text"]) + "\n", encoding="utf-8"
+                )
+                if not wav_path.exists():
+                    raise SystemExit(f"generated WAV missing: {wav_path}")
+                wav_hash = sha256(wav_path)
+                case = {
+                    "case_id": case_id,
+                    "line_id": line["id"],
+                    "voice_id": voice["id"],
+                    "seed": seed,
+                    "transcript": line["text"],
+                    "wav": wav_path.relative_to(output_root).as_posix(),
+                    "wav_sha256": wav_hash,
+                    "matches_previous_wav": old_hashes.get(case_id) == wav_hash
+                    if case_id in old_hashes
+                    else None,
+                    "wav_metadata": wav_metadata(wav_path),
+                }
+                cases.append(case)
 
     dictionary_path = output_root / "mfa_dictionary.dict"
     dictionary_report = build_dictionary(
@@ -389,7 +447,7 @@ def main() -> int:
         case["alignment"] = alignment
 
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
         "library_id": args.library_id,
         "qwen": {
             "repo": str(qwen_root),
@@ -398,8 +456,15 @@ def main() -> int:
             "executable": str(qwen_exe),
             "executable_sha256": sha256(qwen_exe),
             "model_identifier": args.model_identifier,
-            "voice_json": str(voice_json),
-            "voice_json_sha256": sha256(voice_json),
+            "batch_command": batch_command,
+            "voices": [
+                {
+                    "id": voice["id"],
+                    "json": str(voice["path"]),
+                    "json_sha256": voice["sha256"],
+                }
+                for voice in voices
+            ],
         },
         "sampling": {
             "seeds": seeds,
