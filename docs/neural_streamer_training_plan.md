@@ -55,6 +55,16 @@ Every experiment reports, by frozen split:
 - vowel-nucleus/syllable precision, recall, and center MAE;
 - region containment, fallback rate, and ordering violations.
 
+Timing metrics use a comprehensive reporting contract. Each metric exposes
+coverage, matched-only mean and median, and all-reference mean and median.
+Unmatched references receive an explicit penalty equal to the matching window:
+180 ms for visemes, word onsets, and intra-word events; 100 ms for syllable
+nuclei. Speech-region matching has no finite window, so missing regions receive
+a documented 1000 ms penalty. Extras remain visible through precision, extra
+count, and F1 rather than being hidden inside timing error. This preserves the
+useful conditional timing diagnostic while ensuring the comprehensive score
+cannot improve by excluding difficult or misaligned references.
+
 The next data-factory expansion should target examples currently scarce in
 the corpus: 120-600 ms mid-sentence pauses, false-pause fricatives, stop/restart
 repairs, one-word regions, rapid lists, vowel-initial resumes, and the same

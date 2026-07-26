@@ -213,6 +213,7 @@ struct ProsodicPeakReport
     double raw_precision = 0.0;
     double raw_recall = 0.0;
     double raw_mean_abs_error_ms = 0.0;
+    std::vector<double> matched_error_samples_ms;
 };
 
 struct EvidenceIngredientTarget
@@ -275,6 +276,8 @@ struct BoundaryAlignmentReport
     double mean_lead_in_ms = 0.0;
     double mean_tail_out_ms = 0.0;
     bool count_mismatch = false;
+    std::vector<double> matched_start_error_samples_ms;
+    std::vector<double> matched_end_error_samples_ms;
 };
 
 struct PauseAlignmentReport
@@ -294,6 +297,7 @@ struct WordOnsetAlignmentReport
     double p90_abs_start_error_ms = 0.0;
     double mean_early_start_ms = 0.0;
     double mean_late_start_ms = 0.0;
+    std::vector<double> matched_start_error_samples_ms;
 };
 
 struct IntraWordAlignmentReport
@@ -307,6 +311,8 @@ struct IntraWordAlignmentReport
     double p90_abs_center_error_ms = 0.0;
     double mean_abs_start_error_ms = 0.0;
     double mean_abs_end_error_ms = 0.0;
+    std::vector<double> matched_center_error_samples_ms;
+    std::vector<double> matched_start_error_samples_ms;
 };
 
 struct SpeechRegionContainmentReport
@@ -362,6 +368,8 @@ struct GradeReport
     IntraWordAlignmentReport intra_word_alignment;
     SpeechRegionContainmentReport speech_region_containment;
     DroppedVisemeReport dropped_visemes;
+    std::vector<double> matched_center_error_samples_ms;
+    std::vector<double> matched_start_error_samples_ms;
 };
 
 struct GradeMatch
@@ -1430,6 +1438,7 @@ static ProsodicPeakReport grade_prosodic_peaks(
     report.median_abs_error_ms = percentile_ms(errors, 0.50);
     report.p90_abs_error_ms = percentile_ms(errors, 0.90);
     report.mean_decision_latency_ms = mean_ms(latencies);
+    report.matched_error_samples_ms = errors;
 
     std::vector<std::pair<double, double>> gold_intervals;
     for (const ProsodicPeakTarget& target : targets)
@@ -3695,6 +3704,58 @@ static PredictedNeuralTrackResult build_predicted_neural_track(
     return result;
 }
 
+static void append_json_number_array(
+    std::ostringstream& out, const std::vector<double>& values)
+{
+    out << '[';
+    for (size_t index = 0; index < values.size(); ++index)
+    {
+        if (index > 0) out << ',';
+        out << values[index];
+    }
+    out << ']';
+}
+
+static std::string neural_error_samples_json(
+    const GradeReport& grade_report,
+    const ProsodicPeakReport& syllable_report)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(3)
+        << "{\n  \"schema_version\": 1,\n"
+        << "  \"miss_penalties_ms\": {\"viseme\": 180.0, \"region\": 1000.0, "
+        << "\"word_onset\": 180.0, \"intra_word\": 180.0, \"syllable\": 100.0},\n";
+    auto write_metric = [&](const char* name, const std::vector<double>& samples,
+                            int reference_count, int matched_count, bool final) {
+        out << "  \"" << name << "\": {\"reference_count\": " << reference_count
+            << ", \"matched_count\": " << matched_count << ", \"matched_errors_ms\": ";
+        append_json_number_array(out, samples);
+        out << '}' << (final ? "\n" : ",\n");
+    };
+    write_metric("viseme_center", grade_report.matched_center_error_samples_ms,
+        grade_report.reference_count, grade_report.matched_count, false);
+    write_metric("speech_region_start",
+        grade_report.pause_alignment.speech_regions.matched_start_error_samples_ms,
+        grade_report.pause_alignment.speech_regions.reference_count,
+        grade_report.pause_alignment.speech_regions.matched_count, false);
+    write_metric("speech_region_end",
+        grade_report.pause_alignment.speech_regions.matched_end_error_samples_ms,
+        grade_report.pause_alignment.speech_regions.reference_count,
+        grade_report.pause_alignment.speech_regions.matched_count, false);
+    write_metric("word_onset_start",
+        grade_report.word_onset_alignment.matched_start_error_samples_ms,
+        grade_report.word_onset_alignment.reference_count,
+        grade_report.word_onset_alignment.matched_count, false);
+    write_metric("intra_word_center",
+        grade_report.intra_word_alignment.matched_center_error_samples_ms,
+        grade_report.intra_word_alignment.reference_count,
+        grade_report.intra_word_alignment.matched_count, false);
+    write_metric("syllable_center", syllable_report.matched_error_samples_ms,
+        syllable_report.target_count, syllable_report.matched_count, true);
+    out << "}\n";
+    return out.str();
+}
+
 static std::string predicted_neural_track_summary_json(
     const PredictedNeuralTrackResult& result,
     const GradeReport& grade_report)
@@ -4516,6 +4577,8 @@ static BoundaryAlignmentReport grade_region_boundaries(const std::vector<TimeSpa
     report.p90_abs_end_error_ms = percentile_ms(end_errors, 0.90);
     report.mean_lead_in_ms = lead_sum / denom;
     report.mean_tail_out_ms = tail_sum / denom;
+    report.matched_start_error_samples_ms = start_errors;
+    report.matched_end_error_samples_ms = end_errors;
     return report;
 }
 
@@ -4577,6 +4640,7 @@ static WordOnsetAlignmentReport grade_word_onsets(
         report.mean_early_start_ms = early_sum / static_cast<double>(errors.size());
         report.mean_late_start_ms = late_sum / static_cast<double>(errors.size());
     }
+    report.matched_start_error_samples_ms = errors;
     return report;
 }
 
@@ -4658,6 +4722,8 @@ static IntraWordAlignmentReport grade_intra_word_alignment(
         report.mean_abs_start_error_ms = mean_ms(start_errors);
         report.mean_abs_end_error_ms = mean_ms(end_errors);
     }
+    report.matched_center_error_samples_ms = center_errors;
+    report.matched_start_error_samples_ms = start_errors;
     return report;
 }
 
@@ -4789,6 +4855,8 @@ static GradeReport grade(
     report.word_onset_alignment = grade_word_onsets(track, handmade, gold_words);
     report.intra_word_alignment = grade_intra_word_alignment(track, handmade);
     report.speech_region_containment = grade_speech_region_containment(track, speech_regions);
+    report.matched_center_error_samples_ms = errors;
+    report.matched_start_error_samples_ms = start_errors;
     return report;
 }
 
@@ -6296,6 +6364,8 @@ int main(int argc, char** argv)
                         std::vector<ProsodicPeakObservation>());
                     write_text(case_dir / "neural_syllable_alignment_grade.json",
                         prosodic_peak_grade_json(neural_syllable_report));
+                    write_text(case_dir / "neural_error_samples.json",
+                        neural_error_samples_json(neural_grade, neural_syllable_report));
                 }
                 if (output.write_detailed_diagnostics)
                 {

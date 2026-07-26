@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import statistics
 from pathlib import Path
 
 
@@ -34,15 +35,41 @@ def main() -> int:
         "syllable_target_count": 0, "syllable_observation_count": 0,
         "syllable_matched_count": 0, "syllable_weighted_error_ms": 0.0,
     }
+    error_samples: dict[str, dict[str, dict[str, object]]] = {}
     for case_id, split in split_for.items():
         grade_path = run_root / case_id / "neural_track_grade.json"
         summary_path = run_root / case_id / "neural_track_summary.json"
         syllable_path = run_root / case_id / "neural_syllable_alignment_grade.json"
-        if not grade_path.exists() or not summary_path.exists() or not syllable_path.exists():
+        samples_path = run_root / case_id / "neural_error_samples.json"
+        if (not grade_path.exists() or not summary_path.exists()
+                or not syllable_path.exists() or not samples_path.exists()):
             raise RuntimeError(f"missing neural-track result for {case_id}")
         grade = json.loads(grade_path.read_text())
         summary = json.loads(summary_path.read_text())
         syllable = json.loads(syllable_path.read_text())
+        samples = json.loads(samples_path.read_text())
+        penalty_for = {
+            "viseme_center": samples["miss_penalties_ms"]["viseme"],
+            "speech_region_start": samples["miss_penalties_ms"]["region"],
+            "speech_region_end": samples["miss_penalties_ms"]["region"],
+            "word_onset_start": samples["miss_penalties_ms"]["word_onset"],
+            "intra_word_center": samples["miss_penalties_ms"]["intra_word"],
+            "syllable_center": samples["miss_penalties_ms"]["syllable"],
+        }
+        for name, penalty in penalty_for.items():
+            source = samples[name]
+            matched_values = source["matched_errors_ms"]
+            missing = source["reference_count"] - source["matched_count"]
+            for group in ("aggregate", split):
+                target = error_samples.setdefault(group, {}).setdefault(name, {
+                    "reference_count": 0, "matched_count": 0,
+                    "penalty_ms": penalty, "matched": [], "comprehensive": [],
+                })
+                target["reference_count"] += source["reference_count"]
+                target["matched_count"] += source["matched_count"]
+                target["matched"].extend(matched_values)
+                target["comprehensive"].extend(matched_values)
+                target["comprehensive"].extend([penalty] * missing)
         pause = grade["pause_alignment"]
         region_matches = pause["speech_region_matched_count"]
         alignment["speech_region_reference_count"] += pause["speech_region_reference_count"]
@@ -90,7 +117,7 @@ def main() -> int:
             row["prediction_count"] += summary["prediction_count"]
             row["deterministic_fallback_count"] += summary["deterministic_fallback_count"]
 
-    report: dict[str, object] = {"schema_version": 2, "splits": {}}
+    report: dict[str, object] = {"schema_version": 3, "splits": {}}
     for key, raw in accumulators.items():
         matched = int(raw["matched_count"])
         reference = int(raw["reference_count"])
@@ -132,15 +159,37 @@ def main() -> int:
         "syllable_recall": syllable_matches / alignment["syllable_target_count"],
         "syllable_center_mae_ms": alignment["syllable_weighted_error_ms"] / syllable_matches,
     }
+    report["comprehensive_metrics"] = {}
+    for group, metrics in error_samples.items():
+        report["comprehensive_metrics"][group] = {}
+        for name, raw in metrics.items():
+            matched_values = raw["matched"]
+            comprehensive_values = raw["comprehensive"]
+            reference_count = raw["reference_count"]
+            matched_count = raw["matched_count"]
+            report["comprehensive_metrics"][group][name] = {
+                "reference_count": reference_count,
+                "matched_count": matched_count,
+                "coverage": matched_count / reference_count if reference_count else 0.0,
+                "miss_penalty_ms": raw["penalty_ms"],
+                "matched_only_mean_ms": statistics.fmean(matched_values) if matched_values else 0.0,
+                "matched_only_median_ms": statistics.median(matched_values) if matched_values else 0.0,
+                "all_reference_mean_ms": statistics.fmean(comprehensive_values) if comprehensive_values else 0.0,
+                "all_reference_median_ms": statistics.median(comprehensive_values) if comprehensive_values else 0.0,
+            }
 
     output = args.output or run_root / "neural_track_grade_summary.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2) + "\n")
     aggregate = report["splits"]["aggregate"]
+    comprehensive = report["comprehensive_metrics"]["aggregate"]["viseme_center"]
     print(
         "Neural track: "
         f"match={aggregate['match_rate']:.6f}, "
-        f"center_mae={aggregate['mean_abs_center_error_ms']:.3f} ms, "
+        f"matched_center_mean/median={comprehensive['matched_only_mean_ms']:.3f}/"
+        f"{comprehensive['matched_only_median_ms']:.3f} ms, "
+        f"all_reference_mean/median={comprehensive['all_reference_mean_ms']:.3f}/"
+        f"{comprehensive['all_reference_median_ms']:.3f} ms, "
         f"fallback={aggregate['deterministic_fallback_rate']:.6f}, "
         f"order={aggregate['order_violations']}"
     )
