@@ -6,7 +6,7 @@ set "TORCH_ROOT=C:\aitoolkit\libtorch-2.13.0-cu130"
 if not "%~1"=="" set "TORCH_ROOT=%~1"
 set "VS_DEV_CMD=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
 set "CMAKE_EXE=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
-set "ARTIFACT_DIR=outputs\runs\neural_streamer_latest"
+set "ARTIFACT_DIR=outputs\runs\neural_streamer_artifacts\current"
 
 if not exist "%TORCH_ROOT%\share\cmake\Torch\TorchConfig.cmake" (
     echo TorchConfig.cmake not found under %TORCH_ROOT%
@@ -35,16 +35,20 @@ if errorlevel 1 exit /b 1
 
 echo [phase] train_curriculum
 set "PATH=%TORCH_ROOT%\lib;%PATH%"
-build-torch\liplab_monotonic_aligner_torch.exe . no_deterministic
+build-torch\liplab_monotonic_aligner_torch.exe .
 if errorlevel 1 exit /b 1
 
 if not exist "%ARTIFACT_DIR%" mkdir "%ARTIFACT_DIR%"
-copy /y outputs\runs\latest\monotonic_aligner_no_deterministic* "%ARTIFACT_DIR%\" >nul
+copy /y outputs\runs\latest\neural_streamer.pt "%ARTIFACT_DIR%\neural_streamer.pt" >nul
+if errorlevel 1 exit /b 1
+copy /y outputs\runs\latest\neural_streamer_predictions.csv "%ARTIFACT_DIR%\neural_streamer_predictions.csv" >nul
+if errorlevel 1 exit /b 1
+copy /y outputs\runs\latest\neural_streamer_report.json "%ARTIFACT_DIR%\neural_streamer_report.json" >nul
 if errorlevel 1 exit /b 1
 
 echo [phase] replay_neural_owned_stream
 build-torch\liplab_runner.exe . --fast-batch --tick-ms 40 ^
-    --neural-track-csv "%ARTIFACT_DIR%\monotonic_aligner_no_deterministic_predictions.csv"
+    --neural-track-csv "%ARTIFACT_DIR%\neural_streamer_predictions.csv"
 if errorlevel 1 exit /b 1
 
 echo [phase] summarize_neural_owned_stream

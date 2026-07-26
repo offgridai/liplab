@@ -46,7 +46,6 @@ struct TokenRow {
     float TargetCenter = 0.0f;
     float TargetDuration = 0.02f;
     float HasMfaTarget = 0.0f;
-    float DeterministicCenter = -1.0f;
 };
 
 struct SequenceCase {
@@ -170,7 +169,6 @@ static SequenceCase read_case(const fs::path& case_dir, const std::string& split
             token.TargetCenter = std::stof(cell(row, header, "target_center_sec"));
             token.TargetDuration = std::stof(cell(row, header, "target_duration_sec"));
             token.HasMfaTarget = std::stof(cell(row, header, "has_mfa_target"));
-            token.DeterministicCenter = std::stof(cell(row, header, "deterministic_center_sec"));
             result.Tokens.push_back(std::move(token));
         }
     }
@@ -230,7 +228,6 @@ struct CaseTensors {
     torch::Tensor FrameWeights;
     torch::Tensor CurriculumFrameWeights;
     torch::Tensor FrameTimes;
-    torch::Tensor DeterministicCenters;
     int BeginFrame = 0;
     int EndFrame = 0;
 };
@@ -313,11 +310,6 @@ static CaseTensors tensors(const SequenceCase& sequence)
     result.FrameWeights = torch::from_blob(frame_weights.data(), {used_frames}).clone();
     result.CurriculumFrameWeights = torch::from_blob(
         curriculum_frame_weights.data(), {used_frames}).clone();
-    std::vector<float> deterministic;
-    deterministic.reserve(token_count);
-    for (const TokenRow& token_row : sequence.Tokens)
-        deterministic.push_back(token_row.DeterministicCenter);
-    result.DeterministicCenters = torch::from_blob(deterministic.data(), {token_count}).clone();
     return result;
 }
 
@@ -331,14 +323,11 @@ struct MonotonicNetworkImpl : torch::nn::Module {
         TokenEncoder = register_module("token_encoder", torch::nn::Sequential(
             torch::nn::Linear(kTokenDimensions, 64), torch::nn::ReLU(),
             torch::nn::Linear(64, 64)));
-        PriorWeight = register_parameter("prior_weight", torch::tensor(1.0f));
         AudioMean = register_buffer("audio_mean", torch::zeros({1, kAudioDimensions, 1}));
         AudioScale = register_buffer("audio_scale", torch::ones({1, kAudioDimensions, 1}));
     }
 
-    torch::Tensor forward(torch::Tensor audio, torch::Tensor token,
-        torch::Tensor frame_times, torch::Tensor deterministic_centers,
-        bool use_prior, bool drop_prior)
+    torch::Tensor forward(torch::Tensor audio, torch::Tensor token)
     {
         const std::int64_t frames = audio.size(2);
         audio = (audio - AudioMean) / AudioScale;
@@ -348,22 +337,12 @@ struct MonotonicNetworkImpl : torch::nn::Module {
         audio_state = torch::relu(AudioConv2->forward(audio_state));
         audio_state = audio_state.slice(2, 0, frames).squeeze(0).transpose(0, 1);
         torch::Tensor token_state = TokenEncoder->forward(token);
-        torch::Tensor scores = torch::matmul(audio_state, token_state.transpose(0, 1)) / 8.0f;
-        if (use_prior && !drop_prior) {
-            torch::Tensor valid = deterministic_centers.ge(0.0f).to(scores.dtype());
-            torch::Tensor centers = deterministic_centers.clamp_min(0.0f);
-            if (is_training()) centers = centers + 0.030f * torch::randn_like(centers);
-            torch::Tensor proximity = torch::exp(-torch::abs(
-                frame_times.unsqueeze(1) - centers.unsqueeze(0)) / 0.150f);
-            scores = scores + torch::softplus(PriorWeight) * proximity * valid.unsqueeze(0);
-        }
-        return scores;
+        return torch::matmul(audio_state, token_state.transpose(0, 1)) / 8.0f;
     }
 
     torch::nn::Conv1d AudioConv1{nullptr};
     torch::nn::Conv1d AudioConv2{nullptr};
     torch::nn::Sequential TokenEncoder{nullptr};
-    torch::Tensor PriorWeight;
     torch::Tensor AudioMean;
     torch::Tensor AudioScale;
 };
@@ -480,7 +459,7 @@ static torch::Tensor forward_sum_loss(const torch::Tensor& score_tensor,
 }
 
 static double validation_loss(MonotonicNetwork& model, const std::vector<SequenceCase>& dataset,
-    const torch::Device& device, bool use_prior)
+    const torch::Device& device)
 {
     torch::NoGradGuard no_grad;
     model->eval();
@@ -489,8 +468,7 @@ static double validation_loss(MonotonicNetwork& model, const std::vector<Sequenc
     for (const SequenceCase& sequence : dataset) {
         if (sequence.Split != "validation") continue;
         CaseTensors row = tensors(sequence);
-        const torch::Tensor scores = model->forward(row.Audio.to(device), row.Tokens.to(device),
-            row.FrameTimes.to(device), row.DeterministicCenters.to(device), use_prior, false);
+        const torch::Tensor scores = model->forward(row.Audio.to(device), row.Tokens.to(device));
         const torch::Tensor per_frame = torch::nn::functional::cross_entropy(
             scores, row.Target.to(device),
             torch::nn::functional::CrossEntropyFuncOptions().reduction(torch::kNone));
@@ -502,20 +480,17 @@ static double validation_loss(MonotonicNetwork& model, const std::vector<Sequenc
 }
 
 static void write_predictions(const fs::path& path, MonotonicNetwork& model,
-    const std::vector<SequenceCase>& dataset, const torch::Device& device, bool use_prior,
-    int fixed_lag_frames, bool allow_fallback)
+    const std::vector<SequenceCase>& dataset, const torch::Device& device)
 {
     torch::NoGradGuard no_grad;
     model->eval();
     std::ofstream out(path);
-    out << "case_id,token_index,event_index,pose,is_silence,is_word_start,is_region_start,is_region_end,"
-        << "center_sec,duration_sec,confidence,fallback_used,split\n";
+    out << "case_id,token_index,event_index,is_silence,center_sec,duration_sec,confidence,fallback_used\n";
     out << std::fixed << std::setprecision(6);
     for (const SequenceCase& sequence : dataset) {
         CaseTensors row = tensors(sequence);
-        const torch::Tensor scores = model->forward(row.Audio.to(device), row.Tokens.to(device),
-            row.FrameTimes.to(device), row.DeterministicCenters.to(device), use_prior, false);
-        const std::vector<int> path = viterbi_path(scores, sequence.Tokens, fixed_lag_frames);
+        const torch::Tensor scores = model->forward(row.Audio.to(device), row.Tokens.to(device));
+        const std::vector<int> path = viterbi_path(scores, sequence.Tokens, kStreamingLagFrames);
         const torch::Tensor probabilities = torch::softmax(scores, 1).to(torch::kCPU);
         const auto probability = probabilities.accessor<float, 2>();
         std::vector<int> first(sequence.Tokens.size(), -1), last(sequence.Tokens.size(), -1);
@@ -536,15 +511,9 @@ static void write_predictions(const fs::path& path, MonotonicNetwork& model,
                 center = 0.5f * (start + end);
                 duration = std::max(0.010f, end - start + 0.010f);
             }
-            const bool fallback = allow_fallback && use_prior && confidence[token] < 0.50f
-                && sequence.Tokens[token].DeterministicCenter >= 0.0f;
-            if (fallback) center = sequence.Tokens[token].DeterministicCenter;
             out << sequence.CaseId << ',' << token << ',' << sequence.Tokens[token].EventIndex << ','
-                << sequence.Tokens[token].Pose << ',' << static_cast<int>(sequence.Tokens[token].IsSilence) << ','
-                << static_cast<int>(sequence.Tokens[token].IsWordStart) << ','
-                << static_cast<int>(sequence.Tokens[token].IsRegionStart) << ','
-                << static_cast<int>(sequence.Tokens[token].IsRegionEnd) << ',' << center << ',' << duration << ','
-                << confidence[token] << ',' << (fallback ? 1 : 0) << ',' << sequence.Split << '\n';
+                << static_cast<int>(sequence.Tokens[token].IsSilence) << ',' << center << ',' << duration << ','
+                << confidence[token] << ",0\n";
         }
     }
 }
@@ -553,10 +522,6 @@ int main(int argc, char** argv)
 {
     try {
         const fs::path root = argc > 1 ? fs::absolute(argv[1]) : fs::current_path();
-        const std::string mode = argc > 2 ? argv[2] : "no_deterministic";
-        const bool use_prior = mode == "with_deterministic";
-        if (!use_prior && mode != "no_deterministic")
-            throw std::runtime_error("mode must be no_deterministic or with_deterministic");
         std::vector<SequenceCase> dataset = read_dataset(root);
 #ifdef _WIN32
         _putenv_s("CUBLAS_WORKSPACE_CONFIG", ":4096:8");
@@ -564,7 +529,7 @@ int main(int argc, char** argv)
         torch::manual_seed(0x4c49504c);
         at::globalContext().setDeterministicAlgorithms(true, false);
         const torch::Device device(torch::cuda::is_available() ? torch::kCUDA : torch::kCPU);
-        std::cout << "Training monotonic aligner (" << mode << ") on " << device
+        std::cout << "Training neural streamer on " << device
             << " with " << dataset.size() << " utterances\n";
         MonotonicNetwork model;
         std::vector<torch::Tensor> training_audio;
@@ -580,8 +545,7 @@ int main(int argc, char** argv)
         for (size_t i = 0; i < dataset.size(); ++i)
             if (dataset[i].Split == "train") training_indices.push_back(i);
         std::mt19937 random(0x4c49504c);
-        const fs::path checkpoint = root / "outputs/runs/latest"
-            / ("monotonic_aligner_" + mode + ".pt");
+        const fs::path checkpoint = root / "outputs/runs/latest/neural_streamer.pt";
         double best_validation = std::numeric_limits<double>::infinity();
         int best_epoch = -1;
         int stale = 0;
@@ -602,9 +566,7 @@ int main(int argc, char** argv)
             double epoch_loss = 0.0;
             for (size_t index : epoch_indices) {
                 CaseTensors row = tensors(dataset[index]);
-                const bool drop_prior = use_prior && std::uniform_real_distribution<float>(0.0f, 1.0f)(random) < 0.65f;
-                const torch::Tensor scores = model->forward(row.Audio.to(device), row.Tokens.to(device),
-                    row.FrameTimes.to(device), row.DeterministicCenters.to(device), use_prior, drop_prior);
+                const torch::Tensor scores = model->forward(row.Audio.to(device), row.Tokens.to(device));
                 const torch::Tensor per_frame = torch::nn::functional::cross_entropy(
                     scores, row.Target.to(device),
                     torch::nn::functional::CrossEntropyFuncOptions().reduction(torch::kNone));
@@ -625,7 +587,7 @@ int main(int argc, char** argv)
                 optimizer.step();
                 epoch_loss += loss.item<double>();
             }
-            const double validation = validation_loss(model, dataset, device, use_prior);
+            const double validation = validation_loss(model, dataset, device);
             std::cout << "epoch=" << epoch << " train_ce=" << epoch_loss / epoch_indices.size()
                 << " validation_ce=" << validation << '\n';
             if (validation + 1.0e-4 < best_validation) {
@@ -637,29 +599,20 @@ int main(int argc, char** argv)
         }
         torch::load(model, checkpoint.string());
         model->to(device);
-        const fs::path predictions = root / "outputs/runs/latest"
-            / ("monotonic_aligner_" + mode + "_predictions.csv");
-        write_predictions(predictions, model, dataset, device, use_prior, kStreamingLagFrames, true);
-        const fs::path raw_predictions = root / "outputs/runs/latest"
-            / ("monotonic_aligner_" + mode + "_raw_predictions.csv");
-        write_predictions(raw_predictions, model, dataset, device, use_prior, kStreamingLagFrames, false);
-        const fs::path offline_predictions = root / "outputs/runs/latest"
-            / ("monotonic_aligner_" + mode + "_offline_diagnostic_predictions.csv");
-        write_predictions(offline_predictions, model, dataset, device, use_prior, -1, false);
-        const fs::path report = root / "outputs/runs/latest"
-            / ("monotonic_aligner_" + mode + "_report.json");
+        const fs::path predictions = root / "outputs/runs/latest/neural_streamer_predictions.csv";
+        write_predictions(predictions, model, dataset, device);
+        const fs::path report = root / "outputs/runs/latest/neural_streamer_report.json";
         std::ofstream out(report);
         out << std::fixed << std::setprecision(6)
             << "{\n  \"schema_version\": 1,\n  \"device\": \"" << device << "\",\n"
-            << "  \"mode\": \"" << mode << "\",\n  \"utterance_count\": " << dataset.size() << ",\n"
+            << "  \"utterance_count\": " << dataset.size() << ",\n"
             << "  \"selected_epoch\": " << best_epoch << ",\n"
             << "  \"validation_cross_entropy\": " << best_validation << ",\n"
             << "  \"forward_sum_weight\": 0.25,\n"
             << "  \"forward_sum_cadence\": " << kForwardSumCadence << ",\n"
             << "  \"streaming_lag_ms\": " << kStreamingLagFrames * kFrameMilliseconds << ",\n"
             << "  \"boundary_curriculum_epochs\": 6,\n"
-            << "  \"feature_noise_stddev\": 0.015,\n"
-            << "  \"deterministic_prior_dropout\": " << (use_prior ? 0.65 : 1.0) << "\n}\n";
+            << "  \"feature_noise_stddev\": 0.015\n}\n";
         std::cout << "Selected epoch " << best_epoch << " validation CE " << best_validation << '\n';
         std::cout << "Wrote " << predictions << '\n';
         return 0;

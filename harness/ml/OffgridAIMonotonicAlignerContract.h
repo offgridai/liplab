@@ -1,7 +1,5 @@
 #pragma once
 
-#include "OffgridAITimingModelContract.h"
-
 #include <array>
 #include <cstdint>
 #include <span>
@@ -10,6 +8,7 @@ namespace offgridai::monotonic_ml {
 
 constexpr int kContractVersion = 1;
 constexpr int kForwardTokenWindow = 4;
+constexpr int kAudioFeatureCount = 20;
 
 // Constructed from the transcript before audio begins. Identity and order are
 // immutable; inference decides only which token is active and when it advances.
@@ -25,14 +24,10 @@ struct TranscriptToken {
 };
 
 struct CausalFrame {
-    std::array<float, timing_ml::kAudioFeatureCount> Audio{};
+    std::array<float, kAudioFeatureCount> Audio{};
     float AudioStartSec = 0.0f;
     float AudioEndSec = 0.0f;
     float PlaybackSec = 0.0f;
-
-    // Optional prior. -1 means the deterministic scheduler did not run.
-    std::int32_t DeterministicTokenIndex = -1;
-    float DeterministicConfidence = 0.0f;
 };
 
 struct AlignmentDecision {
