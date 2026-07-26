@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "case_id": "factory_v1_long_007__alfie_1_7b",
+  "exported_utc": "2026-07-26T06:45:31.405685+00:00",
+  "approval": {
+    "status": "approved_gold",
+    "reviewed": true,
+    "reviewer": "auto_mfa_phone_export",
+    "reviewed_utc": "2026-07-26T06:26:56.789676+00:00"
+  },
+  "review_layers": {
+    "speech_regions": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "word_heads": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "dense_visemes": {
+      "status": "reviewed_dense",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    }
+  },
+  "reviewer": "auto_mfa_phone_export",
+  "source_draft": "outputs/gold_drafts/factory_v1_long_007__alfie_1_7b",
+  "summary": {
+    "word_count": 30,
+    "speech_region_count": 3,
+    "pause_boundary_count": 29,
+    "pause_region_break_count": 2,
+    "word_head_count": 30,
+    "viseme_count": 121,
+    "flag_count": 1,
+    "flags_by_kind": {
+      "speech_regions_split_on_pause_boundaries": 1
+    },
+    "commit_reasons": {
+      "mfa_phone_interval": 121
+    },
+    "alignment_reasons": {
+      "mfa_textgrid_phone": 121
+    },
+    "mapped_to_observed_speech_count": 121
+  }
+}

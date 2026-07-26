@@ -86,6 +86,10 @@ if errorlevel 1 exit /b 1
 echo [phase] validate_speech_recipe
 python scripts\build_corpus_speech_recipe.py --check
 if errorlevel 1 exit /b 1
+python scripts\build_neural_corpus_recipe.py --check
+if errorlevel 1 exit /b 1
+python scripts\build_timing_dataset_split.py --check
+if errorlevel 1 exit /b 1
 
 echo [phase] run_corpus
 set "LIPLAB_PREROLL_MS=350"
@@ -108,6 +112,8 @@ if errorlevel 1 exit /b 1
 
 echo [phase] summarize
 python scripts\summarize.py
+if errorlevel 1 exit /b 1
+python scripts\summarize_oracle_timing.py
 if errorlevel 1 exit /b 1
 
 echo [phase] check_grades

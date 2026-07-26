@@ -1,0 +1,21 @@
+case: factory_v1_long_list_008__priestley_1_7b
+transcript: We heard thunder, heavy rain, rushing water, snapping branches, barking dogs, and a distant alarm.
+audio: 6.697s @ 24000 Hz
+speech regions: 5
+pause boundaries: 14
+pause-driven region breaks: 4
+word heads: 15
+dense visemes: 65
+draft flags: 1
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading

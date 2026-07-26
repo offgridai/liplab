@@ -70,7 +70,7 @@ def main() -> int:
     words_out: list[dict] = []
     boundaries_out: list[dict] = []
 
-    for focus_path in sorted(latest.glob("case_*/focus_alignment_grade.json")):
+    for focus_path in sorted(latest.glob("*/focus_alignment_grade.json")):
         ownership_path = focus_path.parent / "region_ownership_grade.json"
         grade_path = focus_path.parent / "grade.json"
         if not ownership_path.exists() or not grade_path.exists():

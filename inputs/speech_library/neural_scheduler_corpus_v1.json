@@ -1,0 +1,3646 @@
+{
+  "schema_version": 1,
+  "recipe_id": "neural_scheduler_corpus_v1",
+  "description": "One reproducible 1.7B Qwen utterance for every transcript and voice pairing.",
+  "assignment": {
+    "algorithm": "sha256 namespace + line id + voice id",
+    "namespace": "liplab-neural-scheduler-corpus-v1",
+    "seed_range": [
+      1,
+      2147483646
+    ],
+    "cross_product": "100 transcripts x 4 voices",
+    "seed_retries_after_mfa_rejection": {
+      "long_004__priestley2_1_7b": 1,
+      "long_list_008__priestley2_1_7b": 1,
+      "long_list_009__priestley2_1_7b": 1,
+      "long_list_010__lana_1_7b": 2,
+      "sentences_004__priestley2_1_7b": 3,
+      "sentences_008__lana_1_7b": 1,
+      "sentences_008__priestley2_1_7b": 1
+    }
+  },
+  "source_lines": "inputs/speech_library/neural_scheduler_lines_v1.json",
+  "voices": [
+    {
+      "id": "alfie_1_7b",
+      "json": "reference/alfie_1.7B_f16.json"
+    },
+    {
+      "id": "lana_1_7b",
+      "json": "reference/lana_1.7b_f16.json"
+    },
+    {
+      "id": "priestley_1_7b",
+      "json": "reference/priestley_1.7b_f16.json"
+    },
+    {
+      "id": "priestley2_1_7b",
+      "json": "reference/priestley2_1.7b_f16.json"
+    }
+  ],
+  "line_count": 100,
+  "case_count": 400,
+  "cases": [
+    {
+      "id": "factory_v1_short_001__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_001__alfie_1_7b.txt",
+      "line_id": "short_001",
+      "category": "short",
+      "text": "Good morning.",
+      "seed": 1302500587,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_001__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_001__lana_1_7b.txt",
+      "line_id": "short_001",
+      "category": "short",
+      "text": "Good morning.",
+      "seed": 1404962885,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_001__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_001__priestley_1_7b.txt",
+      "line_id": "short_001",
+      "category": "short",
+      "text": "Good morning.",
+      "seed": 1751490817,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_001__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_001__priestley2_1_7b.txt",
+      "line_id": "short_001",
+      "category": "short",
+      "text": "Good morning.",
+      "seed": 1963620204,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_002__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_002__alfie_1_7b.txt",
+      "line_id": "short_002",
+      "category": "short",
+      "text": "Please wait here.",
+      "seed": 1730336761,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_002__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_002__lana_1_7b.txt",
+      "line_id": "short_002",
+      "category": "short",
+      "text": "Please wait here.",
+      "seed": 806859616,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_002__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_002__priestley_1_7b.txt",
+      "line_id": "short_002",
+      "category": "short",
+      "text": "Please wait here.",
+      "seed": 747830098,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_002__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_002__priestley2_1_7b.txt",
+      "line_id": "short_002",
+      "category": "short",
+      "text": "Please wait here.",
+      "seed": 544144417,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_003__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_003__alfie_1_7b.txt",
+      "line_id": "short_003",
+      "category": "short",
+      "text": "That seems fair.",
+      "seed": 106885768,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_003__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_003__lana_1_7b.txt",
+      "line_id": "short_003",
+      "category": "short",
+      "text": "That seems fair.",
+      "seed": 186087676,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_003__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_003__priestley_1_7b.txt",
+      "line_id": "short_003",
+      "category": "short",
+      "text": "That seems fair.",
+      "seed": 1490714363,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_003__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_003__priestley2_1_7b.txt",
+      "line_id": "short_003",
+      "category": "short",
+      "text": "That seems fair.",
+      "seed": 1711487660,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_004__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_004__alfie_1_7b.txt",
+      "line_id": "short_004",
+      "category": "short",
+      "text": "Blue birds flew away.",
+      "seed": 385530615,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_004__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_004__lana_1_7b.txt",
+      "line_id": "short_004",
+      "category": "short",
+      "text": "Blue birds flew away.",
+      "seed": 1747799822,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_004__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_004__priestley_1_7b.txt",
+      "line_id": "short_004",
+      "category": "short",
+      "text": "Blue birds flew away.",
+      "seed": 1416784268,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_004__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_004__priestley2_1_7b.txt",
+      "line_id": "short_004",
+      "category": "short",
+      "text": "Blue birds flew away.",
+      "seed": 1495706853,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_005__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_005__alfie_1_7b.txt",
+      "line_id": "short_005",
+      "category": "short",
+      "text": "Keep the door closed.",
+      "seed": 815455489,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_005__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_005__lana_1_7b.txt",
+      "line_id": "short_005",
+      "category": "short",
+      "text": "Keep the door closed.",
+      "seed": 1281159907,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_005__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_005__priestley_1_7b.txt",
+      "line_id": "short_005",
+      "category": "short",
+      "text": "Keep the door closed.",
+      "seed": 2080798260,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_005__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_005__priestley2_1_7b.txt",
+      "line_id": "short_005",
+      "category": "short",
+      "text": "Keep the door closed.",
+      "seed": 132792963,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_006__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_006__alfie_1_7b.txt",
+      "line_id": "short_006",
+      "category": "short",
+      "text": "We can begin now.",
+      "seed": 135856742,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_006__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_006__lana_1_7b.txt",
+      "line_id": "short_006",
+      "category": "short",
+      "text": "We can begin now.",
+      "seed": 306928230,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_006__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_006__priestley_1_7b.txt",
+      "line_id": "short_006",
+      "category": "short",
+      "text": "We can begin now.",
+      "seed": 633015527,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_006__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_006__priestley2_1_7b.txt",
+      "line_id": "short_006",
+      "category": "short",
+      "text": "We can begin now.",
+      "seed": 262496490,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_007__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_007__alfie_1_7b.txt",
+      "line_id": "short_007",
+      "category": "short",
+      "text": "Fresh bread smells wonderful.",
+      "seed": 889721916,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_007__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_007__lana_1_7b.txt",
+      "line_id": "short_007",
+      "category": "short",
+      "text": "Fresh bread smells wonderful.",
+      "seed": 1192309749,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_007__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_007__priestley_1_7b.txt",
+      "line_id": "short_007",
+      "category": "short",
+      "text": "Fresh bread smells wonderful.",
+      "seed": 630596089,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_007__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_007__priestley2_1_7b.txt",
+      "line_id": "short_007",
+      "category": "short",
+      "text": "Fresh bread smells wonderful.",
+      "seed": 777339738,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_008__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_008__alfie_1_7b.txt",
+      "line_id": "short_008",
+      "category": "short",
+      "text": "My phone needs power.",
+      "seed": 1118282524,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_008__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_008__lana_1_7b.txt",
+      "line_id": "short_008",
+      "category": "short",
+      "text": "My phone needs power.",
+      "seed": 620587954,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_008__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_008__priestley_1_7b.txt",
+      "line_id": "short_008",
+      "category": "short",
+      "text": "My phone needs power.",
+      "seed": 40310891,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_008__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_008__priestley2_1_7b.txt",
+      "line_id": "short_008",
+      "category": "short",
+      "text": "My phone needs power.",
+      "seed": 1886771871,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_009__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_009__alfie_1_7b.txt",
+      "line_id": "short_009",
+      "category": "short",
+      "text": "Turn left at noon.",
+      "seed": 243919773,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_009__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_009__lana_1_7b.txt",
+      "line_id": "short_009",
+      "category": "short",
+      "text": "Turn left at noon.",
+      "seed": 123802767,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_009__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_009__priestley_1_7b.txt",
+      "line_id": "short_009",
+      "category": "short",
+      "text": "Turn left at noon.",
+      "seed": 1196826990,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_009__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_009__priestley2_1_7b.txt",
+      "line_id": "short_009",
+      "category": "short",
+      "text": "Turn left at noon.",
+      "seed": 403436839,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_010__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_010__alfie_1_7b.txt",
+      "line_id": "short_010",
+      "category": "short",
+      "text": "Nothing else changed.",
+      "seed": 916460383,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_010__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_010__lana_1_7b.txt",
+      "line_id": "short_010",
+      "category": "short",
+      "text": "Nothing else changed.",
+      "seed": 1609390461,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_010__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_010__priestley_1_7b.txt",
+      "line_id": "short_010",
+      "category": "short",
+      "text": "Nothing else changed.",
+      "seed": 1079107419,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_010__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_010__priestley2_1_7b.txt",
+      "line_id": "short_010",
+      "category": "short",
+      "text": "Nothing else changed.",
+      "seed": 392212542,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_question_001__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_001__alfie_1_7b.txt",
+      "line_id": "question_001",
+      "category": "questions",
+      "text": "Where did you put the silver key?",
+      "seed": 829844403,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_question_001__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_001__lana_1_7b.txt",
+      "line_id": "question_001",
+      "category": "questions",
+      "text": "Where did you put the silver key?",
+      "seed": 147571276,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_question_001__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_001__priestley_1_7b.txt",
+      "line_id": "question_001",
+      "category": "questions",
+      "text": "Where did you put the silver key?",
+      "seed": 840723848,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_question_001__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_001__priestley2_1_7b.txt",
+      "line_id": "question_001",
+      "category": "questions",
+      "text": "Where did you put the silver key?",
+      "seed": 385737391,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_question_002__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_002__alfie_1_7b.txt",
+      "line_id": "question_002",
+      "category": "questions",
+      "text": "Could we meet beside the fountain after lunch?",
+      "seed": 1455244060,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_question_002__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_002__lana_1_7b.txt",
+      "line_id": "question_002",
+      "category": "questions",
+      "text": "Could we meet beside the fountain after lunch?",
+      "seed": 1619197307,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_question_002__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_002__priestley_1_7b.txt",
+      "line_id": "question_002",
+      "category": "questions",
+      "text": "Could we meet beside the fountain after lunch?",
+      "seed": 2094245353,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_question_002__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_002__priestley2_1_7b.txt",
+      "line_id": "question_002",
+      "category": "questions",
+      "text": "Could we meet beside the fountain after lunch?",
+      "seed": 338707658,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_question_003__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_003__alfie_1_7b.txt",
+      "line_id": "question_003",
+      "category": "questions",
+      "text": "Why does the small green light keep blinking?",
+      "seed": 810052265,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_question_003__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_003__lana_1_7b.txt",
+      "line_id": "question_003",
+      "category": "questions",
+      "text": "Why does the small green light keep blinking?",
+      "seed": 754210119,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_question_003__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_003__priestley_1_7b.txt",
+      "line_id": "question_003",
+      "category": "questions",
+      "text": "Why does the small green light keep blinking?",
+      "seed": 202453904,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_question_003__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_003__priestley2_1_7b.txt",
+      "line_id": "question_003",
+      "category": "questions",
+      "text": "Why does the small green light keep blinking?",
+      "seed": 1129784038,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_question_004__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_004__alfie_1_7b.txt",
+      "line_id": "question_004",
+      "category": "questions",
+      "text": "Did Morgan bring enough paper for everyone?",
+      "seed": 1682048169,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_question_004__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_004__lana_1_7b.txt",
+      "line_id": "question_004",
+      "category": "questions",
+      "text": "Did Morgan bring enough paper for everyone?",
+      "seed": 281635053,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_question_004__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_004__priestley_1_7b.txt",
+      "line_id": "question_004",
+      "category": "questions",
+      "text": "Did Morgan bring enough paper for everyone?",
+      "seed": 1560412466,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_question_004__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_004__priestley2_1_7b.txt",
+      "line_id": "question_004",
+      "category": "questions",
+      "text": "Did Morgan bring enough paper for everyone?",
+      "seed": 1743096668,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_question_005__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_005__alfie_1_7b.txt",
+      "line_id": "question_005",
+      "category": "questions",
+      "text": "Which route is faster, the river road or the mountain road?",
+      "seed": 1031140390,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_question_005__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_005__lana_1_7b.txt",
+      "line_id": "question_005",
+      "category": "questions",
+      "text": "Which route is faster, the river road or the mountain road?",
+      "seed": 443769757,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_question_005__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_005__priestley_1_7b.txt",
+      "line_id": "question_005",
+      "category": "questions",
+      "text": "Which route is faster, the river road or the mountain road?",
+      "seed": 872564912,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_question_005__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_005__priestley2_1_7b.txt",
+      "line_id": "question_005",
+      "category": "questions",
+      "text": "Which route is faster, the river road or the mountain road?",
+      "seed": 730746662,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_question_006__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_006__alfie_1_7b.txt",
+      "line_id": "question_006",
+      "category": "questions",
+      "text": "Are you certain this box belongs upstairs?",
+      "seed": 800130716,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_question_006__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_006__lana_1_7b.txt",
+      "line_id": "question_006",
+      "category": "questions",
+      "text": "Are you certain this box belongs upstairs?",
+      "seed": 122945361,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_question_006__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_006__priestley_1_7b.txt",
+      "line_id": "question_006",
+      "category": "questions",
+      "text": "Are you certain this box belongs upstairs?",
+      "seed": 1020445362,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_question_006__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_006__priestley2_1_7b.txt",
+      "line_id": "question_006",
+      "category": "questions",
+      "text": "Are you certain this box belongs upstairs?",
+      "seed": 709415472,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_question_007__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_007__alfie_1_7b.txt",
+      "line_id": "question_007",
+      "category": "questions",
+      "text": "What would happen if we opened both windows?",
+      "seed": 1558772291,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_question_007__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_007__lana_1_7b.txt",
+      "line_id": "question_007",
+      "category": "questions",
+      "text": "What would happen if we opened both windows?",
+      "seed": 1173189667,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_question_007__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_007__priestley_1_7b.txt",
+      "line_id": "question_007",
+      "category": "questions",
+      "text": "What would happen if we opened both windows?",
+      "seed": 883378197,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_question_007__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_007__priestley2_1_7b.txt",
+      "line_id": "question_007",
+      "category": "questions",
+      "text": "What would happen if we opened both windows?",
+      "seed": 1332267818,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_question_008__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_008__alfie_1_7b.txt",
+      "line_id": "question_008",
+      "category": "questions",
+      "text": "When should I call, before dinner or after the meeting?",
+      "seed": 241146354,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_question_008__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_008__lana_1_7b.txt",
+      "line_id": "question_008",
+      "category": "questions",
+      "text": "When should I call, before dinner or after the meeting?",
+      "seed": 1021240240,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_question_008__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_008__priestley_1_7b.txt",
+      "line_id": "question_008",
+      "category": "questions",
+      "text": "When should I call, before dinner or after the meeting?",
+      "seed": 113454931,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_question_008__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_008__priestley2_1_7b.txt",
+      "line_id": "question_008",
+      "category": "questions",
+      "text": "When should I call, before dinner or after the meeting?",
+      "seed": 419494597,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_question_009__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_009__alfie_1_7b.txt",
+      "line_id": "question_009",
+      "category": "questions",
+      "text": "How many bright red apples will fit in that basket?",
+      "seed": 2064901873,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_question_009__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_009__lana_1_7b.txt",
+      "line_id": "question_009",
+      "category": "questions",
+      "text": "How many bright red apples will fit in that basket?",
+      "seed": 92102795,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_question_009__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_009__priestley_1_7b.txt",
+      "line_id": "question_009",
+      "category": "questions",
+      "text": "How many bright red apples will fit in that basket?",
+      "seed": 1114252771,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_question_009__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_009__priestley2_1_7b.txt",
+      "line_id": "question_009",
+      "category": "questions",
+      "text": "How many bright red apples will fit in that basket?",
+      "seed": 1713595521,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_question_010__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_010__alfie_1_7b.txt",
+      "line_id": "question_010",
+      "category": "questions",
+      "text": "You remembered the tickets, didn't you?",
+      "seed": 1281470445,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_question_010__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_010__lana_1_7b.txt",
+      "line_id": "question_010",
+      "category": "questions",
+      "text": "You remembered the tickets, didn't you?",
+      "seed": 1077024626,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_question_010__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_010__priestley_1_7b.txt",
+      "line_id": "question_010",
+      "category": "questions",
+      "text": "You remembered the tickets, didn't you?",
+      "seed": 194354163,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_question_010__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_question_010__priestley2_1_7b.txt",
+      "line_id": "question_010",
+      "category": "questions",
+      "text": "You remembered the tickets, didn't you?",
+      "seed": 1040778674,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_001__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_001__alfie_1_7b.txt",
+      "line_id": "clause_001",
+      "category": "multiple_clauses",
+      "text": "Although the sky looked dark, we packed a lunch and continued toward the lake.",
+      "seed": 806044542,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_001__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_001__lana_1_7b.txt",
+      "line_id": "clause_001",
+      "category": "multiple_clauses",
+      "text": "Although the sky looked dark, we packed a lunch and continued toward the lake.",
+      "seed": 2008959335,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_001__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_001__priestley_1_7b.txt",
+      "line_id": "clause_001",
+      "category": "multiple_clauses",
+      "text": "Although the sky looked dark, we packed a lunch and continued toward the lake.",
+      "seed": 97118043,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_001__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_001__priestley2_1_7b.txt",
+      "line_id": "clause_001",
+      "category": "multiple_clauses",
+      "text": "Although the sky looked dark, we packed a lunch and continued toward the lake.",
+      "seed": 2024849232,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_002__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_002__alfie_1_7b.txt",
+      "line_id": "clause_002",
+      "category": "multiple_clauses",
+      "text": "I checked the lock twice, but the gate still swung open when the wind arrived.",
+      "seed": 1577615867,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_002__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_002__lana_1_7b.txt",
+      "line_id": "clause_002",
+      "category": "multiple_clauses",
+      "text": "I checked the lock twice, but the gate still swung open when the wind arrived.",
+      "seed": 1492821838,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_002__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_002__priestley_1_7b.txt",
+      "line_id": "clause_002",
+      "category": "multiple_clauses",
+      "text": "I checked the lock twice, but the gate still swung open when the wind arrived.",
+      "seed": 237546945,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_002__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_002__priestley2_1_7b.txt",
+      "line_id": "clause_002",
+      "category": "multiple_clauses",
+      "text": "I checked the lock twice, but the gate still swung open when the wind arrived.",
+      "seed": 1171710948,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_003__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_003__alfie_1_7b.txt",
+      "line_id": "clause_003",
+      "category": "multiple_clauses",
+      "text": "If the train leaves early, call me at once so I can change the reservation.",
+      "seed": 1341175566,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_003__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_003__lana_1_7b.txt",
+      "line_id": "clause_003",
+      "category": "multiple_clauses",
+      "text": "If the train leaves early, call me at once so I can change the reservation.",
+      "seed": 1447727343,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_003__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_003__priestley_1_7b.txt",
+      "line_id": "clause_003",
+      "category": "multiple_clauses",
+      "text": "If the train leaves early, call me at once so I can change the reservation.",
+      "seed": 2002383474,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_003__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_003__priestley2_1_7b.txt",
+      "line_id": "clause_003",
+      "category": "multiple_clauses",
+      "text": "If the train leaves early, call me at once so I can change the reservation.",
+      "seed": 2115727023,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_004__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_004__alfie_1_7b.txt",
+      "line_id": "clause_004",
+      "category": "multiple_clauses",
+      "text": "The soup was warm and the bread was fresh, yet nobody touched the salad.",
+      "seed": 1586410626,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_004__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_004__lana_1_7b.txt",
+      "line_id": "clause_004",
+      "category": "multiple_clauses",
+      "text": "The soup was warm and the bread was fresh, yet nobody touched the salad.",
+      "seed": 1099091616,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_004__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_004__priestley_1_7b.txt",
+      "line_id": "clause_004",
+      "category": "multiple_clauses",
+      "text": "The soup was warm and the bread was fresh, yet nobody touched the salad.",
+      "seed": 284432828,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_004__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_004__priestley2_1_7b.txt",
+      "line_id": "clause_004",
+      "category": "multiple_clauses",
+      "text": "The soup was warm and the bread was fresh, yet nobody touched the salad.",
+      "seed": 1821771376,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_005__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_005__alfie_1_7b.txt",
+      "line_id": "clause_005",
+      "category": "multiple_clauses",
+      "text": "Because we finished ahead of schedule, we cleaned the room, filed the notes, and went home.",
+      "seed": 1111756592,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_005__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_005__lana_1_7b.txt",
+      "line_id": "clause_005",
+      "category": "multiple_clauses",
+      "text": "Because we finished ahead of schedule, we cleaned the room, filed the notes, and went home.",
+      "seed": 167381745,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_005__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_005__priestley_1_7b.txt",
+      "line_id": "clause_005",
+      "category": "multiple_clauses",
+      "text": "Because we finished ahead of schedule, we cleaned the room, filed the notes, and went home.",
+      "seed": 1501525935,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_005__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_005__priestley2_1_7b.txt",
+      "line_id": "clause_005",
+      "category": "multiple_clauses",
+      "text": "Because we finished ahead of schedule, we cleaned the room, filed the notes, and went home.",
+      "seed": 1467006356,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_006__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_006__alfie_1_7b.txt",
+      "line_id": "clause_006",
+      "category": "multiple_clauses",
+      "text": "You may borrow the camera, provided that you return it before the weekend begins.",
+      "seed": 2003247749,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_006__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_006__lana_1_7b.txt",
+      "line_id": "clause_006",
+      "category": "multiple_clauses",
+      "text": "You may borrow the camera, provided that you return it before the weekend begins.",
+      "seed": 1774988809,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_006__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_006__priestley_1_7b.txt",
+      "line_id": "clause_006",
+      "category": "multiple_clauses",
+      "text": "You may borrow the camera, provided that you return it before the weekend begins.",
+      "seed": 414147601,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_006__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_006__priestley2_1_7b.txt",
+      "line_id": "clause_006",
+      "category": "multiple_clauses",
+      "text": "You may borrow the camera, provided that you return it before the weekend begins.",
+      "seed": 789237931,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_007__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_007__alfie_1_7b.txt",
+      "line_id": "clause_007",
+      "category": "multiple_clauses",
+      "text": "While Anna measured the wall, Ben moved the chairs and I swept the floor.",
+      "seed": 437162044,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_007__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_007__lana_1_7b.txt",
+      "line_id": "clause_007",
+      "category": "multiple_clauses",
+      "text": "While Anna measured the wall, Ben moved the chairs and I swept the floor.",
+      "seed": 2099199765,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_007__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_007__priestley_1_7b.txt",
+      "line_id": "clause_007",
+      "category": "multiple_clauses",
+      "text": "While Anna measured the wall, Ben moved the chairs and I swept the floor.",
+      "seed": 1785244136,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_007__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_007__priestley2_1_7b.txt",
+      "line_id": "clause_007",
+      "category": "multiple_clauses",
+      "text": "While Anna measured the wall, Ben moved the chairs and I swept the floor.",
+      "seed": 1748647410,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_008__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_008__alfie_1_7b.txt",
+      "line_id": "clause_008",
+      "category": "multiple_clauses",
+      "text": "The dog heard a whistle, raised one ear, and ran across the quiet yard.",
+      "seed": 670427007,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_008__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_008__lana_1_7b.txt",
+      "line_id": "clause_008",
+      "category": "multiple_clauses",
+      "text": "The dog heard a whistle, raised one ear, and ran across the quiet yard.",
+      "seed": 1313814267,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_008__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_008__priestley_1_7b.txt",
+      "line_id": "clause_008",
+      "category": "multiple_clauses",
+      "text": "The dog heard a whistle, raised one ear, and ran across the quiet yard.",
+      "seed": 937687942,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_008__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_008__priestley2_1_7b.txt",
+      "line_id": "clause_008",
+      "category": "multiple_clauses",
+      "text": "The dog heard a whistle, raised one ear, and ran across the quiet yard.",
+      "seed": 915063420,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_009__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_009__alfie_1_7b.txt",
+      "line_id": "clause_009",
+      "category": "multiple_clauses",
+      "text": "Even though the answer sounded simple, the final calculation took nearly an hour.",
+      "seed": 1234000812,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_009__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_009__lana_1_7b.txt",
+      "line_id": "clause_009",
+      "category": "multiple_clauses",
+      "text": "Even though the answer sounded simple, the final calculation took nearly an hour.",
+      "seed": 865456934,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_009__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_009__priestley_1_7b.txt",
+      "line_id": "clause_009",
+      "category": "multiple_clauses",
+      "text": "Even though the answer sounded simple, the final calculation took nearly an hour.",
+      "seed": 20356786,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_009__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_009__priestley2_1_7b.txt",
+      "line_id": "clause_009",
+      "category": "multiple_clauses",
+      "text": "Even though the answer sounded simple, the final calculation took nearly an hour.",
+      "seed": 194365604,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_010__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_010__alfie_1_7b.txt",
+      "line_id": "clause_010",
+      "category": "multiple_clauses",
+      "text": "Whenever the bell rings, close your book, stand calmly, and face the front.",
+      "seed": 1239834606,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_010__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_010__lana_1_7b.txt",
+      "line_id": "clause_010",
+      "category": "multiple_clauses",
+      "text": "Whenever the bell rings, close your book, stand calmly, and face the front.",
+      "seed": 193877335,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_010__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_010__priestley_1_7b.txt",
+      "line_id": "clause_010",
+      "category": "multiple_clauses",
+      "text": "Whenever the bell rings, close your book, stand calmly, and face the front.",
+      "seed": 1732351349,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_clause_010__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_clause_010__priestley2_1_7b.txt",
+      "line_id": "clause_010",
+      "category": "multiple_clauses",
+      "text": "Whenever the bell rings, close your book, stand calmly, and face the front.",
+      "seed": 1800033571,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_001__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_001__alfie_1_7b.txt",
+      "line_id": "sentences_001",
+      "category": "multiple_sentences",
+      "text": "The rain stopped. A thin band of sunlight crossed the garden.",
+      "seed": 1224948763,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_001__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_001__lana_1_7b.txt",
+      "line_id": "sentences_001",
+      "category": "multiple_sentences",
+      "text": "The rain stopped. A thin band of sunlight crossed the garden.",
+      "seed": 795614447,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_001__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_001__priestley_1_7b.txt",
+      "line_id": "sentences_001",
+      "category": "multiple_sentences",
+      "text": "The rain stopped. A thin band of sunlight crossed the garden.",
+      "seed": 313026168,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_001__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_001__priestley2_1_7b.txt",
+      "line_id": "sentences_001",
+      "category": "multiple_sentences",
+      "text": "The rain stopped. A thin band of sunlight crossed the garden.",
+      "seed": 1796781957,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_002__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_002__alfie_1_7b.txt",
+      "line_id": "sentences_002",
+      "category": "multiple_sentences",
+      "text": "I found your message this morning. Thank you for explaining the change so clearly.",
+      "seed": 1134598746,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_002__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_002__lana_1_7b.txt",
+      "line_id": "sentences_002",
+      "category": "multiple_sentences",
+      "text": "I found your message this morning. Thank you for explaining the change so clearly.",
+      "seed": 830704012,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_002__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_002__priestley_1_7b.txt",
+      "line_id": "sentences_002",
+      "category": "multiple_sentences",
+      "text": "I found your message this morning. Thank you for explaining the change so clearly.",
+      "seed": 1159910753,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_002__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_002__priestley2_1_7b.txt",
+      "line_id": "sentences_002",
+      "category": "multiple_sentences",
+      "text": "I found your message this morning. Thank you for explaining the change so clearly.",
+      "seed": 1688706592,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_003__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_003__alfie_1_7b.txt",
+      "line_id": "sentences_003",
+      "category": "multiple_sentences",
+      "text": "The first attempt failed. We replaced the loose cable, restarted the machine, and tried again.",
+      "seed": 1063167080,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_003__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_003__lana_1_7b.txt",
+      "line_id": "sentences_003",
+      "category": "multiple_sentences",
+      "text": "The first attempt failed. We replaced the loose cable, restarted the machine, and tried again.",
+      "seed": 1339072955,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_003__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_003__priestley_1_7b.txt",
+      "line_id": "sentences_003",
+      "category": "multiple_sentences",
+      "text": "The first attempt failed. We replaced the loose cable, restarted the machine, and tried again.",
+      "seed": 2061625102,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_003__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_003__priestley2_1_7b.txt",
+      "line_id": "sentences_003",
+      "category": "multiple_sentences",
+      "text": "The first attempt failed. We replaced the loose cable, restarted the machine, and tried again.",
+      "seed": 976354408,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_004__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_004__alfie_1_7b.txt",
+      "line_id": "sentences_004",
+      "category": "multiple_sentences",
+      "text": "Please listen carefully. The path becomes narrow after the wooden bridge.",
+      "seed": 643338418,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_004__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_004__lana_1_7b.txt",
+      "line_id": "sentences_004",
+      "category": "multiple_sentences",
+      "text": "Please listen carefully. The path becomes narrow after the wooden bridge.",
+      "seed": 554436581,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_004__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_004__priestley_1_7b.txt",
+      "line_id": "sentences_004",
+      "category": "multiple_sentences",
+      "text": "Please listen carefully. The path becomes narrow after the wooden bridge.",
+      "seed": 1780881245,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_004__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_004__priestley2_1_7b.txt",
+      "line_id": "sentences_004",
+      "category": "multiple_sentences",
+      "text": "Please listen carefully. The path becomes narrow after the wooden bridge.",
+      "seed": 1427185289,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_005__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_005__alfie_1_7b.txt",
+      "line_id": "sentences_005",
+      "category": "multiple_sentences",
+      "text": "Nobody answered the front door. Perhaps they were working in the back room.",
+      "seed": 1166273928,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_005__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_005__lana_1_7b.txt",
+      "line_id": "sentences_005",
+      "category": "multiple_sentences",
+      "text": "Nobody answered the front door. Perhaps they were working in the back room.",
+      "seed": 19828126,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_005__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_005__priestley_1_7b.txt",
+      "line_id": "sentences_005",
+      "category": "multiple_sentences",
+      "text": "Nobody answered the front door. Perhaps they were working in the back room.",
+      "seed": 881417290,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_005__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_005__priestley2_1_7b.txt",
+      "line_id": "sentences_005",
+      "category": "multiple_sentences",
+      "text": "Nobody answered the front door. Perhaps they were working in the back room.",
+      "seed": 1512416198,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_006__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_006__alfie_1_7b.txt",
+      "line_id": "sentences_006",
+      "category": "multiple_sentences",
+      "text": "The package arrived safely. Its corners were bent, but nothing inside was damaged.",
+      "seed": 761710833,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_006__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_006__lana_1_7b.txt",
+      "line_id": "sentences_006",
+      "category": "multiple_sentences",
+      "text": "The package arrived safely. Its corners were bent, but nothing inside was damaged.",
+      "seed": 416647646,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_006__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_006__priestley_1_7b.txt",
+      "line_id": "sentences_006",
+      "category": "multiple_sentences",
+      "text": "The package arrived safely. Its corners were bent, but nothing inside was damaged.",
+      "seed": 56971658,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_006__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_006__priestley2_1_7b.txt",
+      "line_id": "sentences_006",
+      "category": "multiple_sentences",
+      "text": "The package arrived safely. Its corners were bent, but nothing inside was damaged.",
+      "seed": 2108062031,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_007__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_007__alfie_1_7b.txt",
+      "line_id": "sentences_007",
+      "category": "multiple_sentences",
+      "text": "We have plenty of time. Take a breath, read the question, and choose your answer.",
+      "seed": 652358478,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_007__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_007__lana_1_7b.txt",
+      "line_id": "sentences_007",
+      "category": "multiple_sentences",
+      "text": "We have plenty of time. Take a breath, read the question, and choose your answer.",
+      "seed": 306104266,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_007__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_007__priestley_1_7b.txt",
+      "line_id": "sentences_007",
+      "category": "multiple_sentences",
+      "text": "We have plenty of time. Take a breath, read the question, and choose your answer.",
+      "seed": 1931692300,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_007__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_007__priestley2_1_7b.txt",
+      "line_id": "sentences_007",
+      "category": "multiple_sentences",
+      "text": "We have plenty of time. Take a breath, read the question, and choose your answer.",
+      "seed": 1746740602,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_008__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_008__alfie_1_7b.txt",
+      "line_id": "sentences_008",
+      "category": "multiple_sentences",
+      "text": "The audience became silent. Then the curtain rose and the music began.",
+      "seed": 1826794242,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_008__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_008__lana_1_7b.txt",
+      "line_id": "sentences_008",
+      "category": "multiple_sentences",
+      "text": "The audience became silent. Then the curtain rose and the music began.",
+      "seed": 1107747949,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_008__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_008__priestley_1_7b.txt",
+      "line_id": "sentences_008",
+      "category": "multiple_sentences",
+      "text": "The audience became silent. Then the curtain rose and the music began.",
+      "seed": 95240386,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_008__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_008__priestley2_1_7b.txt",
+      "line_id": "sentences_008",
+      "category": "multiple_sentences",
+      "text": "The audience became silent. Then the curtain rose and the music began.",
+      "seed": 1352259264,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_009__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_009__alfie_1_7b.txt",
+      "line_id": "sentences_009",
+      "category": "multiple_sentences",
+      "text": "I cannot promise perfect weather. I can promise a warm meal and a dry place to sleep.",
+      "seed": 1049021732,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_009__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_009__lana_1_7b.txt",
+      "line_id": "sentences_009",
+      "category": "multiple_sentences",
+      "text": "I cannot promise perfect weather. I can promise a warm meal and a dry place to sleep.",
+      "seed": 1667743176,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_009__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_009__priestley_1_7b.txt",
+      "line_id": "sentences_009",
+      "category": "multiple_sentences",
+      "text": "I cannot promise perfect weather. I can promise a warm meal and a dry place to sleep.",
+      "seed": 72956683,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_009__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_009__priestley2_1_7b.txt",
+      "line_id": "sentences_009",
+      "category": "multiple_sentences",
+      "text": "I cannot promise perfect weather. I can promise a warm meal and a dry place to sleep.",
+      "seed": 1954369120,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_010__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_010__alfie_1_7b.txt",
+      "line_id": "sentences_010",
+      "category": "multiple_sentences",
+      "text": "We missed the early bus. Shall we walk, or would you rather wait for the next one?",
+      "seed": 1924958923,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_010__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_010__lana_1_7b.txt",
+      "line_id": "sentences_010",
+      "category": "multiple_sentences",
+      "text": "We missed the early bus. Shall we walk, or would you rather wait for the next one?",
+      "seed": 1274389710,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_010__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_010__priestley_1_7b.txt",
+      "line_id": "sentences_010",
+      "category": "multiple_sentences",
+      "text": "We missed the early bus. Shall we walk, or would you rather wait for the next one?",
+      "seed": 1922087173,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_sentences_010__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_sentences_010__priestley2_1_7b.txt",
+      "line_id": "sentences_010",
+      "category": "multiple_sentences",
+      "text": "We missed the early bus. Shall we walk, or would you rather wait for the next one?",
+      "seed": 115307722,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_001__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_001__alfie_1_7b.txt",
+      "line_id": "short_list_001",
+      "category": "short_lists",
+      "text": "Bring a pencil, a ruler, and a clean sheet of paper.",
+      "seed": 48113710,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_001__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_001__lana_1_7b.txt",
+      "line_id": "short_list_001",
+      "category": "short_lists",
+      "text": "Bring a pencil, a ruler, and a clean sheet of paper.",
+      "seed": 1610694608,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_001__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_001__priestley_1_7b.txt",
+      "line_id": "short_list_001",
+      "category": "short_lists",
+      "text": "Bring a pencil, a ruler, and a clean sheet of paper.",
+      "seed": 866357016,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_001__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_001__priestley2_1_7b.txt",
+      "line_id": "short_list_001",
+      "category": "short_lists",
+      "text": "Bring a pencil, a ruler, and a clean sheet of paper.",
+      "seed": 1519978982,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_002__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_002__alfie_1_7b.txt",
+      "line_id": "short_list_002",
+      "category": "short_lists",
+      "text": "The flags were red, white, blue, and gold.",
+      "seed": 1533229387,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_002__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_002__lana_1_7b.txt",
+      "line_id": "short_list_002",
+      "category": "short_lists",
+      "text": "The flags were red, white, blue, and gold.",
+      "seed": 363758321,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_002__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_002__priestley_1_7b.txt",
+      "line_id": "short_list_002",
+      "category": "short_lists",
+      "text": "The flags were red, white, blue, and gold.",
+      "seed": 340270214,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_002__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_002__priestley2_1_7b.txt",
+      "line_id": "short_list_002",
+      "category": "short_lists",
+      "text": "The flags were red, white, blue, and gold.",
+      "seed": 1841480723,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_003__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_003__alfie_1_7b.txt",
+      "line_id": "short_list_003",
+      "category": "short_lists",
+      "text": "Choose tea, coffee, juice, or water.",
+      "seed": 1517979960,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_003__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_003__lana_1_7b.txt",
+      "line_id": "short_list_003",
+      "category": "short_lists",
+      "text": "Choose tea, coffee, juice, or water.",
+      "seed": 1614124858,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_003__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_003__priestley_1_7b.txt",
+      "line_id": "short_list_003",
+      "category": "short_lists",
+      "text": "Choose tea, coffee, juice, or water.",
+      "seed": 168402344,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_003__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_003__priestley2_1_7b.txt",
+      "line_id": "short_list_003",
+      "category": "short_lists",
+      "text": "Choose tea, coffee, juice, or water.",
+      "seed": 683504941,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_004__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_004__alfie_1_7b.txt",
+      "line_id": "short_list_004",
+      "category": "short_lists",
+      "text": "We need soap, towels, brushes, and gloves.",
+      "seed": 1632137936,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_004__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_004__lana_1_7b.txt",
+      "line_id": "short_list_004",
+      "category": "short_lists",
+      "text": "We need soap, towels, brushes, and gloves.",
+      "seed": 1183198548,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_004__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_004__priestley_1_7b.txt",
+      "line_id": "short_list_004",
+      "category": "short_lists",
+      "text": "We need soap, towels, brushes, and gloves.",
+      "seed": 535442620,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_004__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_004__priestley2_1_7b.txt",
+      "line_id": "short_list_004",
+      "category": "short_lists",
+      "text": "We need soap, towels, brushes, and gloves.",
+      "seed": 2081313821,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_005__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_005__alfie_1_7b.txt",
+      "line_id": "short_list_005",
+      "category": "short_lists",
+      "text": "Her bag held a book, a map, and two small coins.",
+      "seed": 1474122530,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_005__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_005__lana_1_7b.txt",
+      "line_id": "short_list_005",
+      "category": "short_lists",
+      "text": "Her bag held a book, a map, and two small coins.",
+      "seed": 953584005,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_005__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_005__priestley_1_7b.txt",
+      "line_id": "short_list_005",
+      "category": "short_lists",
+      "text": "Her bag held a book, a map, and two small coins.",
+      "seed": 743635214,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_005__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_005__priestley2_1_7b.txt",
+      "line_id": "short_list_005",
+      "category": "short_lists",
+      "text": "Her bag held a book, a map, and two small coins.",
+      "seed": 1268678495,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_006__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_006__alfie_1_7b.txt",
+      "line_id": "short_list_006",
+      "category": "short_lists",
+      "text": "First breathe, then focus, then speak.",
+      "seed": 1234554564,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_006__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_006__lana_1_7b.txt",
+      "line_id": "short_list_006",
+      "category": "short_lists",
+      "text": "First breathe, then focus, then speak.",
+      "seed": 135377477,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_006__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_006__priestley_1_7b.txt",
+      "line_id": "short_list_006",
+      "category": "short_lists",
+      "text": "First breathe, then focus, then speak.",
+      "seed": 1356877399,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_006__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_006__priestley2_1_7b.txt",
+      "line_id": "short_list_006",
+      "category": "short_lists",
+      "text": "First breathe, then focus, then speak.",
+      "seed": 674416449,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_007__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_007__alfie_1_7b.txt",
+      "line_id": "short_list_007",
+      "category": "short_lists",
+      "text": "North, south, east, and west are marked on the floor.",
+      "seed": 1370808829,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_007__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_007__lana_1_7b.txt",
+      "line_id": "short_list_007",
+      "category": "short_lists",
+      "text": "North, south, east, and west are marked on the floor.",
+      "seed": 497745397,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_007__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_007__priestley_1_7b.txt",
+      "line_id": "short_list_007",
+      "category": "short_lists",
+      "text": "North, south, east, and west are marked on the floor.",
+      "seed": 1026863183,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_007__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_007__priestley2_1_7b.txt",
+      "line_id": "short_list_007",
+      "category": "short_lists",
+      "text": "North, south, east, and west are marked on the floor.",
+      "seed": 1314949983,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_008__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_008__alfie_1_7b.txt",
+      "line_id": "short_list_008",
+      "category": "short_lists",
+      "text": "The main choices are repair, replace, or wait.",
+      "seed": 844679251,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_008__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_008__lana_1_7b.txt",
+      "line_id": "short_list_008",
+      "category": "short_lists",
+      "text": "The main choices are repair, replace, or wait.",
+      "seed": 393400873,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_008__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_008__priestley_1_7b.txt",
+      "line_id": "short_list_008",
+      "category": "short_lists",
+      "text": "The main choices are repair, replace, or wait.",
+      "seed": 462034973,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_008__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_008__priestley2_1_7b.txt",
+      "line_id": "short_list_008",
+      "category": "short_lists",
+      "text": "The main choices are repair, replace, or wait.",
+      "seed": 621090255,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_009__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_009__alfie_1_7b.txt",
+      "line_id": "short_list_009",
+      "category": "short_lists",
+      "text": "Pack shirts, socks, shoes, and a light coat.",
+      "seed": 1696270223,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_009__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_009__lana_1_7b.txt",
+      "line_id": "short_list_009",
+      "category": "short_lists",
+      "text": "Pack shirts, socks, shoes, and a light coat.",
+      "seed": 849839895,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_009__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_009__priestley_1_7b.txt",
+      "line_id": "short_list_009",
+      "category": "short_lists",
+      "text": "Pack shirts, socks, shoes, and a light coat.",
+      "seed": 945652191,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_009__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_009__priestley2_1_7b.txt",
+      "line_id": "short_list_009",
+      "category": "short_lists",
+      "text": "Pack shirts, socks, shoes, and a light coat.",
+      "seed": 124425644,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_010__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_010__alfie_1_7b.txt",
+      "line_id": "short_list_010",
+      "category": "short_lists",
+      "text": "Check the date, the name, and the final amount.",
+      "seed": 1445577316,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_010__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_010__lana_1_7b.txt",
+      "line_id": "short_list_010",
+      "category": "short_lists",
+      "text": "Check the date, the name, and the final amount.",
+      "seed": 12983438,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_010__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_010__priestley_1_7b.txt",
+      "line_id": "short_list_010",
+      "category": "short_lists",
+      "text": "Check the date, the name, and the final amount.",
+      "seed": 1914817179,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_short_list_010__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_short_list_010__priestley2_1_7b.txt",
+      "line_id": "short_list_010",
+      "category": "short_lists",
+      "text": "Check the date, the name, and the final amount.",
+      "seed": 1444232524,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_001__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_001__alfie_1_7b.txt",
+      "line_id": "long_list_001",
+      "category": "long_lists",
+      "text": "For breakfast we have toast, eggs, fruit, oatmeal, yogurt, pancakes, and warm biscuits.",
+      "seed": 1643157117,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_001__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_001__lana_1_7b.txt",
+      "line_id": "long_list_001",
+      "category": "long_lists",
+      "text": "For breakfast we have toast, eggs, fruit, oatmeal, yogurt, pancakes, and warm biscuits.",
+      "seed": 78485061,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_001__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_001__priestley_1_7b.txt",
+      "line_id": "long_list_001",
+      "category": "long_lists",
+      "text": "For breakfast we have toast, eggs, fruit, oatmeal, yogurt, pancakes, and warm biscuits.",
+      "seed": 186763251,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_001__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_001__priestley2_1_7b.txt",
+      "line_id": "long_list_001",
+      "category": "long_lists",
+      "text": "For breakfast we have toast, eggs, fruit, oatmeal, yogurt, pancakes, and warm biscuits.",
+      "seed": 1746053665,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_002__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_002__alfie_1_7b.txt",
+      "line_id": "long_list_002",
+      "category": "long_lists",
+      "text": "The workshop needs hammers, nails, screws, drills, clamps, saws, sandpaper, and safety glasses.",
+      "seed": 925688864,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_002__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_002__lana_1_7b.txt",
+      "line_id": "long_list_002",
+      "category": "long_lists",
+      "text": "The workshop needs hammers, nails, screws, drills, clamps, saws, sandpaper, and safety glasses.",
+      "seed": 555142233,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_002__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_002__priestley_1_7b.txt",
+      "line_id": "long_list_002",
+      "category": "long_lists",
+      "text": "The workshop needs hammers, nails, screws, drills, clamps, saws, sandpaper, and safety glasses.",
+      "seed": 1882383936,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_002__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_002__priestley2_1_7b.txt",
+      "line_id": "long_list_002",
+      "category": "long_lists",
+      "text": "The workshop needs hammers, nails, screws, drills, clamps, saws, sandpaper, and safety glasses.",
+      "seed": 619705846,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_003__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_003__alfie_1_7b.txt",
+      "line_id": "long_list_003",
+      "category": "long_lists",
+      "text": "Visit the library, the market, the post office, the bank, the park, and the old stone church.",
+      "seed": 1659441322,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_003__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_003__lana_1_7b.txt",
+      "line_id": "long_list_003",
+      "category": "long_lists",
+      "text": "Visit the library, the market, the post office, the bank, the park, and the old stone church.",
+      "seed": 1142606117,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_003__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_003__priestley_1_7b.txt",
+      "line_id": "long_list_003",
+      "category": "long_lists",
+      "text": "Visit the library, the market, the post office, the bank, the park, and the old stone church.",
+      "seed": 77772472,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_003__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_003__priestley2_1_7b.txt",
+      "line_id": "long_list_003",
+      "category": "long_lists",
+      "text": "Visit the library, the market, the post office, the bank, the park, and the old stone church.",
+      "seed": 441327042,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_004__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_004__alfie_1_7b.txt",
+      "line_id": "long_list_004",
+      "category": "long_lists",
+      "text": "The garden contains roses, lilies, tulips, sunflowers, lavender, mint, thyme, and tall green grass.",
+      "seed": 605101355,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_004__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_004__lana_1_7b.txt",
+      "line_id": "long_list_004",
+      "category": "long_lists",
+      "text": "The garden contains roses, lilies, tulips, sunflowers, lavender, mint, thyme, and tall green grass.",
+      "seed": 227515562,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_004__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_004__priestley_1_7b.txt",
+      "line_id": "long_list_004",
+      "category": "long_lists",
+      "text": "The garden contains roses, lilies, tulips, sunflowers, lavender, mint, thyme, and tall green grass.",
+      "seed": 585514298,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_004__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_004__priestley2_1_7b.txt",
+      "line_id": "long_list_004",
+      "category": "long_lists",
+      "text": "The garden contains roses, lilies, tulips, sunflowers, lavender, mint, thyme, and tall green grass.",
+      "seed": 546636713,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_005__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_005__alfie_1_7b.txt",
+      "line_id": "long_list_005",
+      "category": "long_lists",
+      "text": "Before leaving, turn off the lamps, close the windows, feed the cat, lock the back door, and check the stove.",
+      "seed": 292982668,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_005__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_005__lana_1_7b.txt",
+      "line_id": "long_list_005",
+      "category": "long_lists",
+      "text": "Before leaving, turn off the lamps, close the windows, feed the cat, lock the back door, and check the stove.",
+      "seed": 920232857,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_005__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_005__priestley_1_7b.txt",
+      "line_id": "long_list_005",
+      "category": "long_lists",
+      "text": "Before leaving, turn off the lamps, close the windows, feed the cat, lock the back door, and check the stove.",
+      "seed": 1006809825,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_005__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_005__priestley2_1_7b.txt",
+      "line_id": "long_list_005",
+      "category": "long_lists",
+      "text": "Before leaving, turn off the lamps, close the windows, feed the cat, lock the back door, and check the stove.",
+      "seed": 1437463085,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_006__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_006__alfie_1_7b.txt",
+      "line_id": "long_list_006",
+      "category": "long_lists",
+      "text": "The report covers cost, quality, safety, speed, staffing, training, delivery, and customer support.",
+      "seed": 999358322,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_006__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_006__lana_1_7b.txt",
+      "line_id": "long_list_006",
+      "category": "long_lists",
+      "text": "The report covers cost, quality, safety, speed, staffing, training, delivery, and customer support.",
+      "seed": 1700926826,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_006__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_006__priestley_1_7b.txt",
+      "line_id": "long_list_006",
+      "category": "long_lists",
+      "text": "The report covers cost, quality, safety, speed, staffing, training, delivery, and customer support.",
+      "seed": 2079836017,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_006__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_006__priestley2_1_7b.txt",
+      "line_id": "long_list_006",
+      "category": "long_lists",
+      "text": "The report covers cost, quality, safety, speed, staffing, training, delivery, and customer support.",
+      "seed": 1352995788,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_007__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_007__alfie_1_7b.txt",
+      "line_id": "long_list_007",
+      "category": "long_lists",
+      "text": "She described the room as bright, quiet, spacious, comfortable, clean, modern, and surprisingly warm.",
+      "seed": 710546902,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_007__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_007__lana_1_7b.txt",
+      "line_id": "long_list_007",
+      "category": "long_lists",
+      "text": "She described the room as bright, quiet, spacious, comfortable, clean, modern, and surprisingly warm.",
+      "seed": 1717906000,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_007__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_007__priestley_1_7b.txt",
+      "line_id": "long_list_007",
+      "category": "long_lists",
+      "text": "She described the room as bright, quiet, spacious, comfortable, clean, modern, and surprisingly warm.",
+      "seed": 962078202,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_007__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_007__priestley2_1_7b.txt",
+      "line_id": "long_list_007",
+      "category": "long_lists",
+      "text": "She described the room as bright, quiet, spacious, comfortable, clean, modern, and surprisingly warm.",
+      "seed": 261836369,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_008__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_008__alfie_1_7b.txt",
+      "line_id": "long_list_008",
+      "category": "long_lists",
+      "text": "We heard thunder, heavy rain, rushing water, snapping branches, barking dogs, and a distant alarm.",
+      "seed": 1546876931,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_008__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_008__lana_1_7b.txt",
+      "line_id": "long_list_008",
+      "category": "long_lists",
+      "text": "We heard thunder, heavy rain, rushing water, snapping branches, barking dogs, and a distant alarm.",
+      "seed": 1945713029,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_008__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_008__priestley_1_7b.txt",
+      "line_id": "long_list_008",
+      "category": "long_lists",
+      "text": "We heard thunder, heavy rain, rushing water, snapping branches, barking dogs, and a distant alarm.",
+      "seed": 1447452206,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_008__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_008__priestley2_1_7b.txt",
+      "line_id": "long_list_008",
+      "category": "long_lists",
+      "text": "We heard thunder, heavy rain, rushing water, snapping branches, barking dogs, and a distant alarm.",
+      "seed": 1708651392,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_009__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_009__alfie_1_7b.txt",
+      "line_id": "long_list_009",
+      "category": "long_lists",
+      "text": "The class studied circles, squares, triangles, angles, fractions, patterns, graphs, and simple equations.",
+      "seed": 1765275235,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_009__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_009__lana_1_7b.txt",
+      "line_id": "long_list_009",
+      "category": "long_lists",
+      "text": "The class studied circles, squares, triangles, angles, fractions, patterns, graphs, and simple equations.",
+      "seed": 1655950497,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_009__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_009__priestley_1_7b.txt",
+      "line_id": "long_list_009",
+      "category": "long_lists",
+      "text": "The class studied circles, squares, triangles, angles, fractions, patterns, graphs, and simple equations.",
+      "seed": 1557280637,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_009__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_009__priestley2_1_7b.txt",
+      "line_id": "long_list_009",
+      "category": "long_lists",
+      "text": "The class studied circles, squares, triangles, angles, fractions, patterns, graphs, and simple equations.",
+      "seed": 1824857128,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_010__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_010__alfie_1_7b.txt",
+      "line_id": "long_list_010",
+      "category": "long_lists",
+      "text": "Please sort the letters by sender, date, subject, urgency, department, and required response.",
+      "seed": 2132927840,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_010__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_010__lana_1_7b.txt",
+      "line_id": "long_list_010",
+      "category": "long_lists",
+      "text": "Please sort the letters by sender, date, subject, urgency, department, and required response.",
+      "seed": 1021742787,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_010__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_010__priestley_1_7b.txt",
+      "line_id": "long_list_010",
+      "category": "long_lists",
+      "text": "Please sort the letters by sender, date, subject, urgency, department, and required response.",
+      "seed": 218675723,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_list_010__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_list_010__priestley2_1_7b.txt",
+      "line_id": "long_list_010",
+      "category": "long_lists",
+      "text": "Please sort the letters by sender, date, subject, urgency, department, and required response.",
+      "seed": 1794509770,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_001__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_001__alfie_1_7b.txt",
+      "line_id": "emphatic_001",
+      "category": "emphatic",
+      "text": "Stop right there!",
+      "seed": 92651742,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_001__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_001__lana_1_7b.txt",
+      "line_id": "emphatic_001",
+      "category": "emphatic",
+      "text": "Stop right there!",
+      "seed": 1981327460,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_001__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_001__priestley_1_7b.txt",
+      "line_id": "emphatic_001",
+      "category": "emphatic",
+      "text": "Stop right there!",
+      "seed": 1654863901,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_001__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_001__priestley2_1_7b.txt",
+      "line_id": "emphatic_001",
+      "category": "emphatic",
+      "text": "Stop right there!",
+      "seed": 928930624,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_002__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_002__alfie_1_7b.txt",
+      "line_id": "emphatic_002",
+      "category": "emphatic",
+      "text": "That was absolutely brilliant!",
+      "seed": 1123604419,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_002__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_002__lana_1_7b.txt",
+      "line_id": "emphatic_002",
+      "category": "emphatic",
+      "text": "That was absolutely brilliant!",
+      "seed": 863881981,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_002__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_002__priestley_1_7b.txt",
+      "line_id": "emphatic_002",
+      "category": "emphatic",
+      "text": "That was absolutely brilliant!",
+      "seed": 1683480425,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_002__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_002__priestley2_1_7b.txt",
+      "line_id": "emphatic_002",
+      "category": "emphatic",
+      "text": "That was absolutely brilliant!",
+      "seed": 598850407,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_003__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_003__alfie_1_7b.txt",
+      "line_id": "emphatic_003",
+      "category": "emphatic",
+      "text": "No, do not press that button!",
+      "seed": 856708256,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_003__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_003__lana_1_7b.txt",
+      "line_id": "emphatic_003",
+      "category": "emphatic",
+      "text": "No, do not press that button!",
+      "seed": 1257676623,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_003__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_003__priestley_1_7b.txt",
+      "line_id": "emphatic_003",
+      "category": "emphatic",
+      "text": "No, do not press that button!",
+      "seed": 231273472,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_003__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_003__priestley2_1_7b.txt",
+      "line_id": "emphatic_003",
+      "category": "emphatic",
+      "text": "No, do not press that button!",
+      "seed": 1352178397,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_004__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_004__alfie_1_7b.txt",
+      "line_id": "emphatic_004",
+      "category": "emphatic",
+      "text": "Yes! We finally solved it!",
+      "seed": 863768004,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_004__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_004__lana_1_7b.txt",
+      "line_id": "emphatic_004",
+      "category": "emphatic",
+      "text": "Yes! We finally solved it!",
+      "seed": 855464484,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_004__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_004__priestley_1_7b.txt",
+      "line_id": "emphatic_004",
+      "category": "emphatic",
+      "text": "Yes! We finally solved it!",
+      "seed": 112136470,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_004__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_004__priestley2_1_7b.txt",
+      "line_id": "emphatic_004",
+      "category": "emphatic",
+      "text": "Yes! We finally solved it!",
+      "seed": 808580001,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_005__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_005__alfie_1_7b.txt",
+      "line_id": "emphatic_005",
+      "category": "emphatic",
+      "text": "I really mean it: this must be finished today!",
+      "seed": 1662240660,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_005__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_005__lana_1_7b.txt",
+      "line_id": "emphatic_005",
+      "category": "emphatic",
+      "text": "I really mean it: this must be finished today!",
+      "seed": 521600107,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_005__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_005__priestley_1_7b.txt",
+      "line_id": "emphatic_005",
+      "category": "emphatic",
+      "text": "I really mean it: this must be finished today!",
+      "seed": 1898647742,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_005__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_005__priestley2_1_7b.txt",
+      "line_id": "emphatic_005",
+      "category": "emphatic",
+      "text": "I really mean it: this must be finished today!",
+      "seed": 513698277,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_006__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_006__alfie_1_7b.txt",
+      "line_id": "emphatic_006",
+      "category": "emphatic",
+      "text": "What an astonishing view!",
+      "seed": 1485535669,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_006__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_006__lana_1_7b.txt",
+      "line_id": "emphatic_006",
+      "category": "emphatic",
+      "text": "What an astonishing view!",
+      "seed": 1271347110,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_006__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_006__priestley_1_7b.txt",
+      "line_id": "emphatic_006",
+      "category": "emphatic",
+      "text": "What an astonishing view!",
+      "seed": 662688084,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_006__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_006__priestley2_1_7b.txt",
+      "line_id": "emphatic_006",
+      "category": "emphatic",
+      "text": "What an astonishing view!",
+      "seed": 1410168359,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_007__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_007__alfie_1_7b.txt",
+      "line_id": "emphatic_007",
+      "category": "emphatic",
+      "text": "Please, please, give me one quiet minute!",
+      "seed": 1378270082,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_007__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_007__lana_1_7b.txt",
+      "line_id": "emphatic_007",
+      "category": "emphatic",
+      "text": "Please, please, give me one quiet minute!",
+      "seed": 551541033,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_007__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_007__priestley_1_7b.txt",
+      "line_id": "emphatic_007",
+      "category": "emphatic",
+      "text": "Please, please, give me one quiet minute!",
+      "seed": 312169124,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_007__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_007__priestley2_1_7b.txt",
+      "line_id": "emphatic_007",
+      "category": "emphatic",
+      "text": "Please, please, give me one quiet minute!",
+      "seed": 1551691507,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_008__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_008__alfie_1_7b.txt",
+      "line_id": "emphatic_008",
+      "category": "emphatic",
+      "text": "Watch out, the glass is falling!",
+      "seed": 1432124910,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_008__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_008__lana_1_7b.txt",
+      "line_id": "emphatic_008",
+      "category": "emphatic",
+      "text": "Watch out, the glass is falling!",
+      "seed": 270166694,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_008__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_008__priestley_1_7b.txt",
+      "line_id": "emphatic_008",
+      "category": "emphatic",
+      "text": "Watch out, the glass is falling!",
+      "seed": 750088336,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_008__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_008__priestley2_1_7b.txt",
+      "line_id": "emphatic_008",
+      "category": "emphatic",
+      "text": "Watch out, the glass is falling!",
+      "seed": 632173524,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_009__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_009__alfie_1_7b.txt",
+      "line_id": "emphatic_009",
+      "category": "emphatic",
+      "text": "This is the best news we have heard all year!",
+      "seed": 1034188941,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_009__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_009__lana_1_7b.txt",
+      "line_id": "emphatic_009",
+      "category": "emphatic",
+      "text": "This is the best news we have heard all year!",
+      "seed": 1109301691,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_009__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_009__priestley_1_7b.txt",
+      "line_id": "emphatic_009",
+      "category": "emphatic",
+      "text": "This is the best news we have heard all year!",
+      "seed": 70382311,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_009__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_009__priestley2_1_7b.txt",
+      "line_id": "emphatic_009",
+      "category": "emphatic",
+      "text": "This is the best news we have heard all year!",
+      "seed": 466235502,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_010__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_010__alfie_1_7b.txt",
+      "line_id": "emphatic_010",
+      "category": "emphatic",
+      "text": "Never forget how much your help mattered!",
+      "seed": 1090300717,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_010__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_010__lana_1_7b.txt",
+      "line_id": "emphatic_010",
+      "category": "emphatic",
+      "text": "Never forget how much your help mattered!",
+      "seed": 580588908,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_010__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_010__priestley_1_7b.txt",
+      "line_id": "emphatic_010",
+      "category": "emphatic",
+      "text": "Never forget how much your help mattered!",
+      "seed": 1457950641,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_emphatic_010__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_emphatic_010__priestley2_1_7b.txt",
+      "line_id": "emphatic_010",
+      "category": "emphatic",
+      "text": "Never forget how much your help mattered!",
+      "seed": 1614930946,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_001__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_001__alfie_1_7b.txt",
+      "line_id": "instruction_001",
+      "category": "instructions",
+      "text": "Fold the paper in half, press the edge firmly, and open it again.",
+      "seed": 1314453463,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_001__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_001__lana_1_7b.txt",
+      "line_id": "instruction_001",
+      "category": "instructions",
+      "text": "Fold the paper in half, press the edge firmly, and open it again.",
+      "seed": 2047995358,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_001__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_001__priestley_1_7b.txt",
+      "line_id": "instruction_001",
+      "category": "instructions",
+      "text": "Fold the paper in half, press the edge firmly, and open it again.",
+      "seed": 1047698291,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_001__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_001__priestley2_1_7b.txt",
+      "line_id": "instruction_001",
+      "category": "instructions",
+      "text": "Fold the paper in half, press the edge firmly, and open it again.",
+      "seed": 888600276,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_002__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_002__alfie_1_7b.txt",
+      "line_id": "instruction_002",
+      "category": "instructions",
+      "text": "After the screen turns blue, enter your name and select the green arrow.",
+      "seed": 1935596472,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_002__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_002__lana_1_7b.txt",
+      "line_id": "instruction_002",
+      "category": "instructions",
+      "text": "After the screen turns blue, enter your name and select the green arrow.",
+      "seed": 2010380329,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_002__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_002__priestley_1_7b.txt",
+      "line_id": "instruction_002",
+      "category": "instructions",
+      "text": "After the screen turns blue, enter your name and select the green arrow.",
+      "seed": 53531350,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_002__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_002__priestley2_1_7b.txt",
+      "line_id": "instruction_002",
+      "category": "instructions",
+      "text": "After the screen turns blue, enter your name and select the green arrow.",
+      "seed": 234444386,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_003__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_003__alfie_1_7b.txt",
+      "line_id": "instruction_003",
+      "category": "instructions",
+      "text": "Hold the cup with both hands so the hot tea does not spill.",
+      "seed": 1308159009,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_003__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_003__lana_1_7b.txt",
+      "line_id": "instruction_003",
+      "category": "instructions",
+      "text": "Hold the cup with both hands so the hot tea does not spill.",
+      "seed": 1792594757,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_003__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_003__priestley_1_7b.txt",
+      "line_id": "instruction_003",
+      "category": "instructions",
+      "text": "Hold the cup with both hands so the hot tea does not spill.",
+      "seed": 291177243,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_003__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_003__priestley2_1_7b.txt",
+      "line_id": "instruction_003",
+      "category": "instructions",
+      "text": "Hold the cup with both hands so the hot tea does not spill.",
+      "seed": 444347396,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_004__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_004__alfie_1_7b.txt",
+      "line_id": "instruction_004",
+      "category": "instructions",
+      "text": "Read the first paragraph aloud, pause, and summarize its main idea.",
+      "seed": 1890072704,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_004__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_004__lana_1_7b.txt",
+      "line_id": "instruction_004",
+      "category": "instructions",
+      "text": "Read the first paragraph aloud, pause, and summarize its main idea.",
+      "seed": 1255755775,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_004__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_004__priestley_1_7b.txt",
+      "line_id": "instruction_004",
+      "category": "instructions",
+      "text": "Read the first paragraph aloud, pause, and summarize its main idea.",
+      "seed": 918386390,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_004__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_004__priestley2_1_7b.txt",
+      "line_id": "instruction_004",
+      "category": "instructions",
+      "text": "Read the first paragraph aloud, pause, and summarize its main idea.",
+      "seed": 1527316483,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_005__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_005__alfie_1_7b.txt",
+      "line_id": "instruction_005",
+      "category": "instructions",
+      "text": "Place the largest block on the bottom and the smallest block on top.",
+      "seed": 1750419156,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_005__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_005__lana_1_7b.txt",
+      "line_id": "instruction_005",
+      "category": "instructions",
+      "text": "Place the largest block on the bottom and the smallest block on top.",
+      "seed": 1154246098,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_005__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_005__priestley_1_7b.txt",
+      "line_id": "instruction_005",
+      "category": "instructions",
+      "text": "Place the largest block on the bottom and the smallest block on top.",
+      "seed": 720966383,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_005__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_005__priestley2_1_7b.txt",
+      "line_id": "instruction_005",
+      "category": "instructions",
+      "text": "Place the largest block on the bottom and the smallest block on top.",
+      "seed": 396312407,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_006__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_006__alfie_1_7b.txt",
+      "line_id": "instruction_006",
+      "category": "instructions",
+      "text": "Walk past the bakery, cross at the light, and take the second street on your right.",
+      "seed": 412022943,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_006__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_006__lana_1_7b.txt",
+      "line_id": "instruction_006",
+      "category": "instructions",
+      "text": "Walk past the bakery, cross at the light, and take the second street on your right.",
+      "seed": 186023060,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_006__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_006__priestley_1_7b.txt",
+      "line_id": "instruction_006",
+      "category": "instructions",
+      "text": "Walk past the bakery, cross at the light, and take the second street on your right.",
+      "seed": 911606789,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_006__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_006__priestley2_1_7b.txt",
+      "line_id": "instruction_006",
+      "category": "instructions",
+      "text": "Walk past the bakery, cross at the light, and take the second street on your right.",
+      "seed": 1460536591,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_007__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_007__alfie_1_7b.txt",
+      "line_id": "instruction_007",
+      "category": "instructions",
+      "text": "Mix the flour and salt before you slowly add the water.",
+      "seed": 2040039868,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_007__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_007__lana_1_7b.txt",
+      "line_id": "instruction_007",
+      "category": "instructions",
+      "text": "Mix the flour and salt before you slowly add the water.",
+      "seed": 784339879,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_007__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_007__priestley_1_7b.txt",
+      "line_id": "instruction_007",
+      "category": "instructions",
+      "text": "Mix the flour and salt before you slowly add the water.",
+      "seed": 773500920,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_007__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_007__priestley2_1_7b.txt",
+      "line_id": "instruction_007",
+      "category": "instructions",
+      "text": "Mix the flour and salt before you slowly add the water.",
+      "seed": 1137792397,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_008__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_008__alfie_1_7b.txt",
+      "line_id": "instruction_008",
+      "category": "instructions",
+      "text": "Save your work, close the program, and restart the computer.",
+      "seed": 643565811,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_008__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_008__lana_1_7b.txt",
+      "line_id": "instruction_008",
+      "category": "instructions",
+      "text": "Save your work, close the program, and restart the computer.",
+      "seed": 1471253018,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_008__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_008__priestley_1_7b.txt",
+      "line_id": "instruction_008",
+      "category": "instructions",
+      "text": "Save your work, close the program, and restart the computer.",
+      "seed": 1921554792,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_008__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_008__priestley2_1_7b.txt",
+      "line_id": "instruction_008",
+      "category": "instructions",
+      "text": "Save your work, close the program, and restart the computer.",
+      "seed": 1468286754,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_009__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_009__alfie_1_7b.txt",
+      "line_id": "instruction_009",
+      "category": "instructions",
+      "text": "Speak naturally, keep a steady pace, and finish each sentence completely.",
+      "seed": 1433734335,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_009__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_009__lana_1_7b.txt",
+      "line_id": "instruction_009",
+      "category": "instructions",
+      "text": "Speak naturally, keep a steady pace, and finish each sentence completely.",
+      "seed": 226231644,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_009__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_009__priestley_1_7b.txt",
+      "line_id": "instruction_009",
+      "category": "instructions",
+      "text": "Speak naturally, keep a steady pace, and finish each sentence completely.",
+      "seed": 122321545,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_009__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_009__priestley2_1_7b.txt",
+      "line_id": "instruction_009",
+      "category": "instructions",
+      "text": "Speak naturally, keep a steady pace, and finish each sentence completely.",
+      "seed": 792088650,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_010__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_010__alfie_1_7b.txt",
+      "line_id": "instruction_010",
+      "category": "instructions",
+      "text": "If you smell smoke, leave the building and call for help from a safe place.",
+      "seed": 1684655960,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_010__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_010__lana_1_7b.txt",
+      "line_id": "instruction_010",
+      "category": "instructions",
+      "text": "If you smell smoke, leave the building and call for help from a safe place.",
+      "seed": 1374118201,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_010__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_010__priestley_1_7b.txt",
+      "line_id": "instruction_010",
+      "category": "instructions",
+      "text": "If you smell smoke, leave the building and call for help from a safe place.",
+      "seed": 337233942,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_instruction_010__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_instruction_010__priestley2_1_7b.txt",
+      "line_id": "instruction_010",
+      "category": "instructions",
+      "text": "If you smell smoke, leave the building and call for help from a safe place.",
+      "seed": 1350421687,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_001__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_001__alfie_1_7b.txt",
+      "line_id": "contrast_001",
+      "category": "contrast_and_dialogue",
+      "text": "I asked for the blue folder, not the black folder.",
+      "seed": 2145429795,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_001__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_001__lana_1_7b.txt",
+      "line_id": "contrast_001",
+      "category": "contrast_and_dialogue",
+      "text": "I asked for the blue folder, not the black folder.",
+      "seed": 1619812949,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_001__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_001__priestley_1_7b.txt",
+      "line_id": "contrast_001",
+      "category": "contrast_and_dialogue",
+      "text": "I asked for the blue folder, not the black folder.",
+      "seed": 342822357,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_001__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_001__priestley2_1_7b.txt",
+      "line_id": "contrast_001",
+      "category": "contrast_and_dialogue",
+      "text": "I asked for the blue folder, not the black folder.",
+      "seed": 1533571579,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_002__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_002__alfie_1_7b.txt",
+      "line_id": "contrast_002",
+      "category": "contrast_and_dialogue",
+      "text": "The room looks small from outside, but it feels enormous once you enter.",
+      "seed": 1579152856,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_002__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_002__lana_1_7b.txt",
+      "line_id": "contrast_002",
+      "category": "contrast_and_dialogue",
+      "text": "The room looks small from outside, but it feels enormous once you enter.",
+      "seed": 1508749817,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_002__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_002__priestley_1_7b.txt",
+      "line_id": "contrast_002",
+      "category": "contrast_and_dialogue",
+      "text": "The room looks small from outside, but it feels enormous once you enter.",
+      "seed": 646453428,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_002__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_002__priestley2_1_7b.txt",
+      "line_id": "contrast_002",
+      "category": "contrast_and_dialogue",
+      "text": "The room looks small from outside, but it feels enormous once you enter.",
+      "seed": 1014555363,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_003__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_003__alfie_1_7b.txt",
+      "line_id": "contrast_003",
+      "category": "contrast_and_dialogue",
+      "text": "Some people prefer an early start; others do their best work late at night.",
+      "seed": 686102776,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_003__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_003__lana_1_7b.txt",
+      "line_id": "contrast_003",
+      "category": "contrast_and_dialogue",
+      "text": "Some people prefer an early start; others do their best work late at night.",
+      "seed": 329662632,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_003__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_003__priestley_1_7b.txt",
+      "line_id": "contrast_003",
+      "category": "contrast_and_dialogue",
+      "text": "Some people prefer an early start; others do their best work late at night.",
+      "seed": 297278150,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_003__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_003__priestley2_1_7b.txt",
+      "line_id": "contrast_003",
+      "category": "contrast_and_dialogue",
+      "text": "Some people prefer an early start; others do their best work late at night.",
+      "seed": 1400790911,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_004__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_004__alfie_1_7b.txt",
+      "line_id": "contrast_004",
+      "category": "contrast_and_dialogue",
+      "text": "You said, 'Meet me at the station,' so that is exactly where I waited.",
+      "seed": 1051449919,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_004__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_004__lana_1_7b.txt",
+      "line_id": "contrast_004",
+      "category": "contrast_and_dialogue",
+      "text": "You said, 'Meet me at the station,' so that is exactly where I waited.",
+      "seed": 1366029452,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_004__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_004__priestley_1_7b.txt",
+      "line_id": "contrast_004",
+      "category": "contrast_and_dialogue",
+      "text": "You said, 'Meet me at the station,' so that is exactly where I waited.",
+      "seed": 1995047256,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_004__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_004__priestley2_1_7b.txt",
+      "line_id": "contrast_004",
+      "category": "contrast_and_dialogue",
+      "text": "You said, 'Meet me at the station,' so that is exactly where I waited.",
+      "seed": 916684465,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_005__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_005__alfie_1_7b.txt",
+      "line_id": "contrast_005",
+      "category": "contrast_and_dialogue",
+      "text": "The old plan was cheaper, while the new plan is faster and much safer.",
+      "seed": 458494781,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_005__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_005__lana_1_7b.txt",
+      "line_id": "contrast_005",
+      "category": "contrast_and_dialogue",
+      "text": "The old plan was cheaper, while the new plan is faster and much safer.",
+      "seed": 1243700738,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_005__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_005__priestley_1_7b.txt",
+      "line_id": "contrast_005",
+      "category": "contrast_and_dialogue",
+      "text": "The old plan was cheaper, while the new plan is faster and much safer.",
+      "seed": 931217518,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_005__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_005__priestley2_1_7b.txt",
+      "line_id": "contrast_005",
+      "category": "contrast_and_dialogue",
+      "text": "The old plan was cheaper, while the new plan is faster and much safer.",
+      "seed": 1099812001,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_006__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_006__alfie_1_7b.txt",
+      "line_id": "contrast_006",
+      "category": "contrast_and_dialogue",
+      "text": "Is this your final answer? Yes, and I am ready to explain it.",
+      "seed": 1374441473,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_006__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_006__lana_1_7b.txt",
+      "line_id": "contrast_006",
+      "category": "contrast_and_dialogue",
+      "text": "Is this your final answer? Yes, and I am ready to explain it.",
+      "seed": 914865581,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_006__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_006__priestley_1_7b.txt",
+      "line_id": "contrast_006",
+      "category": "contrast_and_dialogue",
+      "text": "Is this your final answer? Yes, and I am ready to explain it.",
+      "seed": 1592610792,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_006__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_006__priestley2_1_7b.txt",
+      "line_id": "contrast_006",
+      "category": "contrast_and_dialogue",
+      "text": "Is this your final answer? Yes, and I am ready to explain it.",
+      "seed": 1042799779,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_007__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_007__alfie_1_7b.txt",
+      "line_id": "contrast_007",
+      "category": "contrast_and_dialogue",
+      "text": "He whispered the first line, then repeated the final words in a strong clear voice.",
+      "seed": 239477666,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_007__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_007__lana_1_7b.txt",
+      "line_id": "contrast_007",
+      "category": "contrast_and_dialogue",
+      "text": "He whispered the first line, then repeated the final words in a strong clear voice.",
+      "seed": 291900414,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_007__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_007__priestley_1_7b.txt",
+      "line_id": "contrast_007",
+      "category": "contrast_and_dialogue",
+      "text": "He whispered the first line, then repeated the final words in a strong clear voice.",
+      "seed": 103064310,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_007__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_007__priestley2_1_7b.txt",
+      "line_id": "contrast_007",
+      "category": "contrast_and_dialogue",
+      "text": "He whispered the first line, then repeated the final words in a strong clear voice.",
+      "seed": 52256436,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_008__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_008__alfie_1_7b.txt",
+      "line_id": "contrast_008",
+      "category": "contrast_and_dialogue",
+      "text": "We could stay and finish, or we could leave now and return tomorrow.",
+      "seed": 885878406,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_008__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_008__lana_1_7b.txt",
+      "line_id": "contrast_008",
+      "category": "contrast_and_dialogue",
+      "text": "We could stay and finish, or we could leave now and return tomorrow.",
+      "seed": 1849406561,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_008__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_008__priestley_1_7b.txt",
+      "line_id": "contrast_008",
+      "category": "contrast_and_dialogue",
+      "text": "We could stay and finish, or we could leave now and return tomorrow.",
+      "seed": 617849404,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_008__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_008__priestley2_1_7b.txt",
+      "line_id": "contrast_008",
+      "category": "contrast_and_dialogue",
+      "text": "We could stay and finish, or we could leave now and return tomorrow.",
+      "seed": 1825339264,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_009__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_009__alfie_1_7b.txt",
+      "line_id": "contrast_009",
+      "category": "contrast_and_dialogue",
+      "text": "The sign says open, yet every light in the shop is dark.",
+      "seed": 2134038274,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_009__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_009__lana_1_7b.txt",
+      "line_id": "contrast_009",
+      "category": "contrast_and_dialogue",
+      "text": "The sign says open, yet every light in the shop is dark.",
+      "seed": 231619326,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_009__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_009__priestley_1_7b.txt",
+      "line_id": "contrast_009",
+      "category": "contrast_and_dialogue",
+      "text": "The sign says open, yet every light in the shop is dark.",
+      "seed": 653994783,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_009__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_009__priestley2_1_7b.txt",
+      "line_id": "contrast_009",
+      "category": "contrast_and_dialogue",
+      "text": "The sign says open, yet every light in the shop is dark.",
+      "seed": 646174304,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_010__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_010__alfie_1_7b.txt",
+      "line_id": "contrast_010",
+      "category": "contrast_and_dialogue",
+      "text": "I thought the task would be difficult. In fact, it was merely unfamiliar.",
+      "seed": 1568317491,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_010__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_010__lana_1_7b.txt",
+      "line_id": "contrast_010",
+      "category": "contrast_and_dialogue",
+      "text": "I thought the task would be difficult. In fact, it was merely unfamiliar.",
+      "seed": 1122585177,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_010__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_010__priestley_1_7b.txt",
+      "line_id": "contrast_010",
+      "category": "contrast_and_dialogue",
+      "text": "I thought the task would be difficult. In fact, it was merely unfamiliar.",
+      "seed": 659159244,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_contrast_010__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_contrast_010__priestley2_1_7b.txt",
+      "line_id": "contrast_010",
+      "category": "contrast_and_dialogue",
+      "text": "I thought the task would be difficult. In fact, it was merely unfamiliar.",
+      "seed": 1200537792,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_001__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_001__alfie_1_7b.txt",
+      "line_id": "long_001",
+      "category": "long_form",
+      "text": "On Saturday morning, Elena carried a folding chair to the beach, found a quiet place above the tide line, and watched fishing boats move slowly across the pale horizon.",
+      "seed": 1498415564,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_001__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_001__lana_1_7b.txt",
+      "line_id": "long_001",
+      "category": "long_form",
+      "text": "On Saturday morning, Elena carried a folding chair to the beach, found a quiet place above the tide line, and watched fishing boats move slowly across the pale horizon.",
+      "seed": 1560136673,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_001__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_001__priestley_1_7b.txt",
+      "line_id": "long_001",
+      "category": "long_form",
+      "text": "On Saturday morning, Elena carried a folding chair to the beach, found a quiet place above the tide line, and watched fishing boats move slowly across the pale horizon.",
+      "seed": 1123892266,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_001__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_001__priestley2_1_7b.txt",
+      "line_id": "long_001",
+      "category": "long_form",
+      "text": "On Saturday morning, Elena carried a folding chair to the beach, found a quiet place above the tide line, and watched fishing boats move slowly across the pale horizon.",
+      "seed": 1074935353,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_002__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_002__alfie_1_7b.txt",
+      "line_id": "long_002",
+      "category": "long_form",
+      "text": "The museum closes at six, but if we arrive before four we can visit the glass gallery, hear the short lecture, and still have time for coffee across the street.",
+      "seed": 267289372,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_002__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_002__lana_1_7b.txt",
+      "line_id": "long_002",
+      "category": "long_form",
+      "text": "The museum closes at six, but if we arrive before four we can visit the glass gallery, hear the short lecture, and still have time for coffee across the street.",
+      "seed": 508619537,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_002__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_002__priestley_1_7b.txt",
+      "line_id": "long_002",
+      "category": "long_form",
+      "text": "The museum closes at six, but if we arrive before four we can visit the glass gallery, hear the short lecture, and still have time for coffee across the street.",
+      "seed": 1054541281,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_002__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_002__priestley2_1_7b.txt",
+      "line_id": "long_002",
+      "category": "long_form",
+      "text": "The museum closes at six, but if we arrive before four we can visit the glass gallery, hear the short lecture, and still have time for coffee across the street.",
+      "seed": 1924525042,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_003__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_003__alfie_1_7b.txt",
+      "line_id": "long_003",
+      "category": "long_form",
+      "text": "Our first design was elegant but fragile. The second was strong but expensive. After several careful tests, the team produced a simpler version that was both reliable and affordable.",
+      "seed": 866475322,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_003__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_003__lana_1_7b.txt",
+      "line_id": "long_003",
+      "category": "long_form",
+      "text": "Our first design was elegant but fragile. The second was strong but expensive. After several careful tests, the team produced a simpler version that was both reliable and affordable.",
+      "seed": 253996154,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_003__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_003__priestley_1_7b.txt",
+      "line_id": "long_003",
+      "category": "long_form",
+      "text": "Our first design was elegant but fragile. The second was strong but expensive. After several careful tests, the team produced a simpler version that was both reliable and affordable.",
+      "seed": 462315970,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_003__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_003__priestley2_1_7b.txt",
+      "line_id": "long_003",
+      "category": "long_form",
+      "text": "Our first design was elegant but fragile. The second was strong but expensive. After several careful tests, the team produced a simpler version that was both reliable and affordable.",
+      "seed": 1292803892,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_004__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_004__alfie_1_7b.txt",
+      "line_id": "long_004",
+      "category": "long_form",
+      "text": "When the power failed, the hallway became completely dark; however, the emergency lamps came on within seconds, and everyone followed the marked path outside without confusion.",
+      "seed": 198409267,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_004__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_004__lana_1_7b.txt",
+      "line_id": "long_004",
+      "category": "long_form",
+      "text": "When the power failed, the hallway became completely dark; however, the emergency lamps came on within seconds, and everyone followed the marked path outside without confusion.",
+      "seed": 268148448,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_004__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_004__priestley_1_7b.txt",
+      "line_id": "long_004",
+      "category": "long_form",
+      "text": "When the power failed, the hallway became completely dark; however, the emergency lamps came on within seconds, and everyone followed the marked path outside without confusion.",
+      "seed": 478210784,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_004__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_004__priestley2_1_7b.txt",
+      "line_id": "long_004",
+      "category": "long_form",
+      "text": "When the power failed, the hallway became completely dark; however, the emergency lamps came on within seconds, and everyone followed the marked path outside without confusion.",
+      "seed": 840229209,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_005__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_005__alfie_1_7b.txt",
+      "line_id": "long_005",
+      "category": "long_form",
+      "text": "Before you make a decision, compare the two estimates, ask what each price includes, confirm the delivery date, and write down any promise that could affect the final cost.",
+      "seed": 850237700,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_005__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_005__lana_1_7b.txt",
+      "line_id": "long_005",
+      "category": "long_form",
+      "text": "Before you make a decision, compare the two estimates, ask what each price includes, confirm the delivery date, and write down any promise that could affect the final cost.",
+      "seed": 1060375199,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_005__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_005__priestley_1_7b.txt",
+      "line_id": "long_005",
+      "category": "long_form",
+      "text": "Before you make a decision, compare the two estimates, ask what each price includes, confirm the delivery date, and write down any promise that could affect the final cost.",
+      "seed": 421177512,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_005__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_005__priestley2_1_7b.txt",
+      "line_id": "long_005",
+      "category": "long_form",
+      "text": "Before you make a decision, compare the two estimates, ask what each price includes, confirm the delivery date, and write down any promise that could affect the final cost.",
+      "seed": 300558761,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_006__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_006__alfie_1_7b.txt",
+      "line_id": "long_006",
+      "category": "long_form",
+      "text": "A good explanation does more than state the answer. It identifies the evidence, connects each step, admits uncertainty where it exists, and leaves the listener able to repeat the reasoning.",
+      "seed": 186918928,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_006__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_006__lana_1_7b.txt",
+      "line_id": "long_006",
+      "category": "long_form",
+      "text": "A good explanation does more than state the answer. It identifies the evidence, connects each step, admits uncertainty where it exists, and leaves the listener able to repeat the reasoning.",
+      "seed": 1178019426,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_006__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_006__priestley_1_7b.txt",
+      "line_id": "long_006",
+      "category": "long_form",
+      "text": "A good explanation does more than state the answer. It identifies the evidence, connects each step, admits uncertainty where it exists, and leaves the listener able to repeat the reasoning.",
+      "seed": 2041601396,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_006__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_006__priestley2_1_7b.txt",
+      "line_id": "long_006",
+      "category": "long_form",
+      "text": "A good explanation does more than state the answer. It identifies the evidence, connects each step, admits uncertainty where it exists, and leaves the listener able to repeat the reasoning.",
+      "seed": 1160437604,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_007__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_007__alfie_1_7b.txt",
+      "line_id": "long_007",
+      "category": "long_form",
+      "text": "The children built a tiny town from boxes and colored paper. They added roads, bridges, gardens, a hospital, and a busy station where every paper train arrived precisely on time.",
+      "seed": 389979326,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_007__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_007__lana_1_7b.txt",
+      "line_id": "long_007",
+      "category": "long_form",
+      "text": "The children built a tiny town from boxes and colored paper. They added roads, bridges, gardens, a hospital, and a busy station where every paper train arrived precisely on time.",
+      "seed": 252450797,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_007__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_007__priestley_1_7b.txt",
+      "line_id": "long_007",
+      "category": "long_form",
+      "text": "The children built a tiny town from boxes and colored paper. They added roads, bridges, gardens, a hospital, and a busy station where every paper train arrived precisely on time.",
+      "seed": 787385175,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_007__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_007__priestley2_1_7b.txt",
+      "line_id": "long_007",
+      "category": "long_form",
+      "text": "The children built a tiny town from boxes and colored paper. They added roads, bridges, gardens, a hospital, and a busy station where every paper train arrived precisely on time.",
+      "seed": 590179281,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_008__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_008__alfie_1_7b.txt",
+      "line_id": "long_008",
+      "category": "long_form",
+      "text": "Can we finish before sunset? We can, if one person prepares the tools, another clears the work area, and the rest of us move the heavy boards together.",
+      "seed": 1960553760,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_008__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_008__lana_1_7b.txt",
+      "line_id": "long_008",
+      "category": "long_form",
+      "text": "Can we finish before sunset? We can, if one person prepares the tools, another clears the work area, and the rest of us move the heavy boards together.",
+      "seed": 1068744094,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_008__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_008__priestley_1_7b.txt",
+      "line_id": "long_008",
+      "category": "long_form",
+      "text": "Can we finish before sunset? We can, if one person prepares the tools, another clears the work area, and the rest of us move the heavy boards together.",
+      "seed": 305145607,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_008__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_008__priestley2_1_7b.txt",
+      "line_id": "long_008",
+      "category": "long_form",
+      "text": "Can we finish before sunset? We can, if one person prepares the tools, another clears the work area, and the rest of us move the heavy boards together.",
+      "seed": 877188460,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_009__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_009__alfie_1_7b.txt",
+      "line_id": "long_009",
+      "category": "long_form",
+      "text": "I expected the journey to feel endless, yet every stop brought something memorable: a friendly conversation, a beautiful view, an excellent meal, or a story I had never heard.",
+      "seed": 1068362766,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_009__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_009__lana_1_7b.txt",
+      "line_id": "long_009",
+      "category": "long_form",
+      "text": "I expected the journey to feel endless, yet every stop brought something memorable: a friendly conversation, a beautiful view, an excellent meal, or a story I had never heard.",
+      "seed": 20866082,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_009__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_009__priestley_1_7b.txt",
+      "line_id": "long_009",
+      "category": "long_form",
+      "text": "I expected the journey to feel endless, yet every stop brought something memorable: a friendly conversation, a beautiful view, an excellent meal, or a story I had never heard.",
+      "seed": 1011504315,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_009__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_009__priestley2_1_7b.txt",
+      "line_id": "long_009",
+      "category": "long_form",
+      "text": "I expected the journey to feel endless, yet every stop brought something memorable: a friendly conversation, a beautiful view, an excellent meal, or a story I had never heard.",
+      "seed": 32968095,
+      "voice_id": "priestley2_1_7b"
+    },
+    {
+      "id": "factory_v1_long_010__alfie_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_010__alfie_1_7b.txt",
+      "line_id": "long_010",
+      "category": "long_form",
+      "text": "Please remember this final point. Speed matters during an emergency, but calm communication matters just as much, because a clear instruction can prevent several people from making the same mistake.",
+      "seed": 778966028,
+      "voice_id": "alfie_1_7b"
+    },
+    {
+      "id": "factory_v1_long_010__lana_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_010__lana_1_7b.txt",
+      "line_id": "long_010",
+      "category": "long_form",
+      "text": "Please remember this final point. Speed matters during an emergency, but calm communication matters just as much, because a clear instruction can prevent several people from making the same mistake.",
+      "seed": 1801767595,
+      "voice_id": "lana_1_7b"
+    },
+    {
+      "id": "factory_v1_long_010__priestley_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_010__priestley_1_7b.txt",
+      "line_id": "long_010",
+      "category": "long_form",
+      "text": "Please remember this final point. Speed matters during an emergency, but calm communication matters just as much, because a clear instruction can prevent several people from making the same mistake.",
+      "seed": 690887617,
+      "voice_id": "priestley_1_7b"
+    },
+    {
+      "id": "factory_v1_long_010__priestley2_1_7b",
+      "source_transcript": "inputs/transcripts/factory_v1_long_010__priestley2_1_7b.txt",
+      "line_id": "long_010",
+      "category": "long_form",
+      "text": "Please remember this final point. Speed matters during an emergency, but calm communication matters just as much, because a clear instruction can prevent several people from making the same mistake.",
+      "seed": 908020125,
+      "voice_id": "priestley2_1_7b"
+    }
+  ]
+}

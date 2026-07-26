@@ -3,6 +3,7 @@
 #include "Lipsync/OffgridAIStreamingEvidenceSurface.h"
 #include "Lipsync/OffgridAIStreamingSyllablePositionEstimator.h"
 #include "Lipsync/OffgridAIVisemePerformer.h"
+#include "ml/OffgridAITimingModelContract.h"
 
 #include <cstring>
 #include <cctype>
@@ -26,6 +27,8 @@ namespace fs = std::filesystem;
 
 using FOffgridAIAlignedVisemeTrack = FOffgridAICommittedVisemeTrack;
 using FOffgridAIAlignedVisemeEvent = FOffgridAICommittedVisemeEvent;
+
+static_assert(offgridai::timing_ml::kContractVersion == 1);
 
 static std::string derived_pause_family(const FOffgridAIStreamingAudioFeatureFrame& frame)
 {
@@ -378,6 +381,7 @@ struct StreamConfig
 struct OutputConfig
 {
     bool write_detailed_diagnostics = true;
+    bool write_timing_training_rows = false;
 };
 
 struct OraclePhoneDurationReport
@@ -387,6 +391,55 @@ struct OraclePhoneDurationReport
     int fallback_word_matches = 0;
     int unmatched_count = 0;
     double mean_duration_seconds = 0.0;
+};
+
+struct OracleTimingAdviceRow
+{
+    int event_index = -1;
+    int label_index = -1;
+    double original_center = 0.0;
+    double target_center = 0.0;
+    double corrected_center = 0.0;
+    double requested_shift_ms = 0.0;
+    double applied_shift_ms = 0.0;
+    bool clipped = false;
+};
+
+struct OracleTimingAdviceResult
+{
+    FOffgridAIAlignedVisemeTrack track;
+    std::vector<OracleTimingAdviceRow> rows;
+    int identity_match_count = 0;
+    int clipped_count = 0;
+    double max_shift_ms = 0.0;
+    double mean_abs_error_before_ms = 0.0;
+    double mean_abs_error_after_ms = 0.0;
+};
+
+struct PredictedTimingAdvice
+{
+    std::string split;
+    double correction_ms = 0.0;
+    double confidence = 0.0;
+    std::string predicted_pose;
+    double identity_confidence = 0.0;
+    bool absolute_placement = false;
+};
+
+using PredictedTimingAdviceByCase = std::map<std::string, std::map<int, PredictedTimingAdvice>>;
+
+struct PredictedTimingApplicationResult
+{
+    FOffgridAIAlignedVisemeTrack track;
+    std::string split;
+    int prediction_count = 0;
+    int applied_count = 0;
+    int clipped_count = 0;
+    int identity_prediction_count = 0;
+    int identity_agreement_count = 0;
+    int identity_fallback_count = 0;
+    double mean_abs_requested_shift_ms = 0.0;
+    double mean_abs_applied_shift_ms = 0.0;
 };
 
 static std::string to_std(const FString& value) { return value.Str(); }
@@ -463,6 +516,44 @@ static std::string csv_cell(const std::vector<std::string>& cells, int index)
         return {};
     }
     return cells[static_cast<size_t>(index)];
+}
+
+static PredictedTimingAdviceByCase read_predicted_timing_advice_csv(const fs::path& path)
+{
+    std::ifstream input(path);
+    if (!input) throw std::runtime_error("cannot read timing advice: " + path.string());
+    std::string line;
+    if (!std::getline(input, line)) throw std::runtime_error("empty timing advice: " + path.string());
+    const auto header = parse_csv_cells(line);
+    const int case_column = header_index(header, "case_id");
+    const int event_column = header_index(header, "event_index");
+    const int correction_column = header_index(header, "correction_ms");
+    const int confidence_column = header_index(header, "confidence");
+    const int split_column = header_index(header, "split");
+    const int pose_column = header_index(header, "predicted_pose");
+    const int identity_confidence_column = header_index(header, "identity_confidence");
+    const int placement_column = header_index(header, "placement_mode");
+    if (case_column < 0 || event_column < 0 || correction_column < 0
+        || confidence_column < 0 || split_column < 0)
+    {
+        throw std::runtime_error("timing advice is missing required columns");
+    }
+    PredictedTimingAdviceByCase result;
+    while (std::getline(input, line))
+    {
+        if (line.empty()) continue;
+        const auto cells = parse_csv_cells(line);
+        PredictedTimingAdvice advice;
+        advice.split = csv_cell(cells, split_column);
+        advice.correction_ms = std::stod(csv_cell(cells, correction_column));
+        advice.confidence = std::stod(csv_cell(cells, confidence_column));
+        advice.predicted_pose = csv_cell(cells, pose_column);
+        const std::string identity_confidence = csv_cell(cells, identity_confidence_column);
+        advice.identity_confidence = identity_confidence.empty() ? 0.0 : std::stod(identity_confidence);
+        advice.absolute_placement = csv_cell(cells, placement_column) == "absolute";
+        result[csv_cell(cells, case_column)][std::stoi(csv_cell(cells, event_column))] = advice;
+    }
+    return result;
 }
 
 static std::string read_text(const fs::path& path)
@@ -3007,7 +3098,8 @@ static std::vector<GradeMatch> compute_monotonic_matches_subset(
     const FOffgridAIAlignedVisemeTrack& track,
     const std::vector<HandmadeLabel>& handmade,
     const std::vector<int>& label_indices,
-    const std::vector<int>& event_indices)
+    const std::vector<int>& event_indices,
+    double max_center_error_ms = 180.0)
 {
     const int n = static_cast<int>(label_indices.size());
     const int m = static_cast<int>(event_indices.size());
@@ -3057,7 +3149,7 @@ static std::vector<GradeMatch> compute_monotonic_matches_subset(
                 {
                     const double center = (label.start + label.end) * 0.5;
                     const double err_ms = std::abs(static_cast<double>(event.FinalRenderCenterSeconds) - center) * 1000.0;
-                    if (err_ms <= 180.0)
+                    if (err_ms <= max_center_error_ms)
                     {
                         MatchState candidate = current;
                         candidate.matched_count += 1;
@@ -3129,6 +3221,451 @@ static std::vector<GradeMatch> compute_monotonic_matches(const FOffgridAIAligned
             && !track.Events[i].bCanceledByWordHandoff) event_indices.push_back(i);
     }
     return compute_monotonic_matches_subset(track, handmade, label_indices, event_indices);
+}
+
+static OracleTimingAdviceResult apply_bounded_gold_timing_advice(
+    const FOffgridAIAlignedVisemeTrack& source,
+    const TArray<FOffgridAIStreamingSpeechRegion>& speech_regions,
+    const std::vector<HandmadeLabel>& handmade,
+    double max_shift_ms)
+{
+    OracleTimingAdviceResult result;
+    result.track = source;
+    result.max_shift_ms = max_shift_ms;
+
+    std::vector<int> label_indices(handmade.size());
+    std::iota(label_indices.begin(), label_indices.end(), 0);
+    std::vector<int> event_indices;
+    for (int32 i = 0; i < source.Events.Num(); ++i)
+    {
+        if (source.Events[i].bIsRenderable && !source.Events[i].bCanceledByWordHandoff)
+        {
+            event_indices.push_back(i);
+        }
+    }
+    const auto matches = compute_monotonic_matches_subset(
+        source,
+        handmade,
+        label_indices,
+        event_indices,
+        std::numeric_limits<double>::infinity());
+
+    const double max_shift_seconds = std::max(0.0, max_shift_ms) / 1000.0;
+    double total_before_ms = 0.0;
+    double total_after_ms = 0.0;
+    for (const GradeMatch& match : matches)
+    {
+        const HandmadeLabel& label = handmade[static_cast<size_t>(match.label_index)];
+        auto& corrected = result.track.Events[match.event_index];
+        const auto& original = source.Events[match.event_index];
+        const double original_center = original.FinalRenderCenterSeconds;
+        const double target_center = 0.5 * (label.start + label.end);
+        const double requested_shift = target_center - original_center;
+        const double bounded_shift = std::clamp(
+            requested_shift,
+            -max_shift_seconds,
+            max_shift_seconds);
+        const double order_floor = match.event_index > 0
+            ? static_cast<double>(result.track.Events[match.event_index - 1].FinalRenderCenterSeconds)
+            : -std::numeric_limits<double>::infinity();
+        const double order_ceiling = match.event_index + 1 < source.Events.Num()
+            ? static_cast<double>(source.Events[match.event_index + 1].FinalRenderCenterSeconds)
+            : std::numeric_limits<double>::infinity();
+        const double lower_bound = std::max(
+            original_center - max_shift_seconds,
+            order_floor);
+        const double upper_bound = std::min(
+            original_center + max_shift_seconds,
+            order_ceiling);
+        double constrained_lower_bound = lower_bound;
+        double constrained_upper_bound = upper_bound;
+        if (speech_regions.IsValidIndex(original.SpeechRegionIndex))
+        {
+            const auto& region = speech_regions[original.SpeechRegionIndex];
+            const double half_duration = std::max(
+                0.0,
+                0.5 * (static_cast<double>(original.RenderEndSeconds)
+                    - static_cast<double>(original.RenderStartSeconds)));
+            const double region_floor = static_cast<double>(region.AudioBufferStartSec) + half_duration;
+            const double region_ceiling = static_cast<double>(
+                std::max(region.AudioBufferLastSpeechSec, region.AudioBufferEndSec)) - half_duration;
+            const double candidate_lower = std::max(lower_bound, region_floor);
+            const double candidate_upper = std::min(upper_bound, region_ceiling);
+            if (candidate_lower <= candidate_upper)
+            {
+                constrained_lower_bound = candidate_lower;
+                constrained_upper_bound = candidate_upper;
+            }
+        }
+        const double candidate_center = std::clamp(
+            original_center + bounded_shift,
+            constrained_lower_bound,
+            constrained_upper_bound);
+        const double applied_shift = candidate_center - original_center;
+
+        corrected.FinalRenderCenterSeconds = static_cast<float>(candidate_center);
+        corrected.RenderStartSeconds = static_cast<float>(
+            static_cast<double>(original.RenderStartSeconds) + applied_shift);
+        corrected.RenderEndSeconds = static_cast<float>(
+            static_cast<double>(original.RenderEndSeconds) + applied_shift);
+        OracleTimingAdviceRow row;
+        row.event_index = match.event_index;
+        row.label_index = match.label_index;
+        row.original_center = original_center;
+        row.target_center = target_center;
+        row.corrected_center = candidate_center;
+        row.requested_shift_ms = requested_shift * 1000.0;
+        row.applied_shift_ms = applied_shift * 1000.0;
+        row.clipped = std::abs(requested_shift - applied_shift) > 0.0005;
+        result.rows.push_back(row);
+        if (row.clipped) ++result.clipped_count;
+        total_before_ms += std::abs(original_center - target_center) * 1000.0;
+        total_after_ms += std::abs(candidate_center - target_center) * 1000.0;
+    }
+
+    result.identity_match_count = static_cast<int>(matches.size());
+    if (!matches.empty())
+    {
+        result.mean_abs_error_before_ms = total_before_ms / static_cast<double>(matches.size());
+        result.mean_abs_error_after_ms = total_after_ms / static_cast<double>(matches.size());
+    }
+    return result;
+}
+
+static std::string oracle_timing_advice_csv(const OracleTimingAdviceResult& result)
+{
+    std::ostringstream out;
+    out << "event_index,label_index,original_center,target_center,corrected_center,requested_shift_ms,applied_shift_ms,clipped\n";
+    out << std::fixed << std::setprecision(6);
+    for (const OracleTimingAdviceRow& row : result.rows)
+    {
+        out << row.event_index << ','
+            << row.label_index << ','
+            << row.original_center << ','
+            << row.target_center << ','
+            << row.corrected_center << ','
+            << row.requested_shift_ms << ','
+            << row.applied_shift_ms << ','
+            << (row.clipped ? 1 : 0) << '\n';
+    }
+    return out.str();
+}
+
+static std::string oracle_timing_advice_json(
+    const OracleTimingAdviceResult& result,
+    const GradeReport& grade_report)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(6)
+        << "{\n"
+        << "  \"max_shift_ms\": " << result.max_shift_ms << ",\n"
+        << "  \"identity_match_count\": " << result.identity_match_count << ",\n"
+        << "  \"clipped_count\": " << result.clipped_count << ",\n"
+        << "  \"mean_abs_error_before_ms\": " << result.mean_abs_error_before_ms << ",\n"
+        << "  \"mean_abs_error_after_ms\": " << result.mean_abs_error_after_ms << ",\n"
+        << "  \"graded_matched_count\": " << grade_report.matched_count << ",\n"
+        << "  \"graded_missing_count\": " << grade_report.missing_count << ",\n"
+        << "  \"graded_order_violations\": " << grade_report.order_violations << ",\n"
+        << "  \"graded_mean_abs_center_error_ms\": " << grade_report.mean_abs_center_error_ms << ",\n"
+        << "  \"graded_p90_abs_center_error_ms\": " << grade_report.p90_abs_center_error_ms << ",\n"
+        << "  \"word_onset_mean_abs_start_error_ms\": "
+        << grade_report.word_onset_alignment.mean_abs_start_error_ms << ",\n"
+        << "  \"speech_region_events_outside\": "
+        << grade_report.speech_region_containment.events_outside_region << "\n"
+        << "}\n";
+    return out.str();
+}
+
+static PredictedTimingApplicationResult apply_predicted_timing_advice(
+    const FOffgridAIAlignedVisemeTrack& source,
+    const TArray<FOffgridAIStreamingSpeechRegion>& speech_regions,
+    const std::map<int, PredictedTimingAdvice>& advice)
+{
+    PredictedTimingApplicationResult result;
+    result.track = source;
+    if (!advice.empty()) result.split = advice.begin()->second.split;
+    double requested_total_ms = 0.0;
+    double applied_total_ms = 0.0;
+    for (int32 event_array_index = 0; event_array_index < source.Events.Num(); ++event_array_index)
+    {
+        const auto& original = source.Events[event_array_index];
+        const auto prediction = advice.find(original.EventIndex);
+        if (prediction == advice.end()) continue;
+        ++result.prediction_count;
+        if (!original.bIsRenderable || original.bCanceledByWordHandoff) continue;
+
+        const bool neural_schedule = prediction->second.absolute_placement;
+        const double requested_shift_ms = neural_schedule
+            ? prediction->second.correction_ms
+            : std::clamp(prediction->second.correction_ms, -100.0, 100.0);
+        const double requested_shift_sec = requested_shift_ms / 1000.0;
+        const double original_center = original.FinalRenderCenterSeconds;
+        const double order_floor = event_array_index > 0
+            ? static_cast<double>(result.track.Events[event_array_index - 1].FinalRenderCenterSeconds)
+            : -std::numeric_limits<double>::infinity();
+        const double order_ceiling = event_array_index + 1 < source.Events.Num()
+            ? static_cast<double>(source.Events[event_array_index + 1].FinalRenderCenterSeconds)
+            : std::numeric_limits<double>::infinity();
+        double lower_bound = neural_schedule ? order_floor : std::max(original_center - 0.100, order_floor);
+        double upper_bound = neural_schedule ? order_ceiling : std::min(original_center + 0.100, order_ceiling);
+        if (speech_regions.IsValidIndex(original.SpeechRegionIndex))
+        {
+            const auto& region = speech_regions[original.SpeechRegionIndex];
+            const double half_duration = std::max(0.0,
+                0.5 * (static_cast<double>(original.RenderEndSeconds)
+                    - static_cast<double>(original.RenderStartSeconds)));
+            const double region_floor = static_cast<double>(region.AudioBufferStartSec) + half_duration;
+            const double region_ceiling = static_cast<double>(
+                std::max(region.AudioBufferLastSpeechSec, region.AudioBufferEndSec)) - half_duration;
+            const double candidate_lower = std::max(lower_bound, region_floor);
+            const double candidate_upper = std::min(upper_bound, region_ceiling);
+            if (candidate_lower <= candidate_upper)
+            {
+                lower_bound = candidate_lower;
+                upper_bound = candidate_upper;
+            }
+        }
+        if (lower_bound > upper_bound) continue;
+        const double corrected_center = std::clamp(
+            original_center + requested_shift_sec,
+            lower_bound,
+            upper_bound);
+        const double applied_shift_sec = corrected_center - original_center;
+        auto& corrected = result.track.Events[event_array_index];
+        if (!prediction->second.predicted_pose.empty())
+        {
+            ++result.identity_prediction_count;
+            if (prediction->second.predicted_pose == to_std(original.PoseID))
+            {
+                ++result.identity_agreement_count;
+                corrected.PoseID = FName(prediction->second.predicted_pose);
+            }
+            else
+            {
+                // The network owns the identity proposal, but transcript-derived
+                // identity remains a hard safety constraint. A disagreement falls
+                // back to the authoritative plan instead of letting audio invent a pose.
+                ++result.identity_fallback_count;
+            }
+        }
+        corrected.FinalRenderCenterSeconds = static_cast<float>(corrected_center);
+        corrected.RenderStartSeconds = static_cast<float>(original.RenderStartSeconds + applied_shift_sec);
+        corrected.RenderEndSeconds = static_cast<float>(original.RenderEndSeconds + applied_shift_sec);
+        ++result.applied_count;
+        requested_total_ms += std::abs(requested_shift_ms);
+        applied_total_ms += std::abs(applied_shift_sec * 1000.0);
+        if (std::abs(applied_shift_sec - requested_shift_sec) > 0.0005) ++result.clipped_count;
+    }
+    if (result.applied_count > 0)
+    {
+        result.mean_abs_requested_shift_ms = requested_total_ms / result.applied_count;
+        result.mean_abs_applied_shift_ms = applied_total_ms / result.applied_count;
+    }
+    return result;
+}
+
+static std::string predicted_timing_summary_json(
+    const PredictedTimingApplicationResult& result,
+    const GradeReport& grade_report)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(6)
+        << "{\n"
+        << "  \"split\": \"" << result.split << "\",\n"
+        << "  \"prediction_count\": " << result.prediction_count << ",\n"
+        << "  \"applied_count\": " << result.applied_count << ",\n"
+        << "  \"clipped_count\": " << result.clipped_count << ",\n"
+        << "  \"identity_prediction_count\": " << result.identity_prediction_count << ",\n"
+        << "  \"identity_agreement_count\": " << result.identity_agreement_count << ",\n"
+        << "  \"identity_fallback_count\": " << result.identity_fallback_count << ",\n"
+        << "  \"mean_abs_requested_shift_ms\": " << result.mean_abs_requested_shift_ms << ",\n"
+        << "  \"mean_abs_applied_shift_ms\": " << result.mean_abs_applied_shift_ms << ",\n"
+        << "  \"graded_matched_count\": " << grade_report.matched_count << ",\n"
+        << "  \"graded_missing_count\": " << grade_report.missing_count << ",\n"
+        << "  \"graded_order_violations\": " << grade_report.order_violations << ",\n"
+        << "  \"graded_mean_abs_center_error_ms\": " << grade_report.mean_abs_center_error_ms << ",\n"
+        << "  \"graded_p90_abs_center_error_ms\": " << grade_report.p90_abs_center_error_ms << ",\n"
+        << "  \"word_onset_mean_abs_start_error_ms\": "
+        << grade_report.word_onset_alignment.mean_abs_start_error_ms << ",\n"
+        << "  \"speech_region_events_outside\": "
+        << grade_report.speech_region_containment.events_outside_region << "\n"
+        << "}\n";
+    return out.str();
+}
+
+static const HandmadeLabel* find_gold_label_for_committed_event(
+    const FOffgridAICommittedVisemeEvent& event,
+    const std::vector<HandmadeLabel>& labels)
+{
+    for (const HandmadeLabel& label : labels)
+    {
+        if (label.source_phone_global_index == event.SourcePhoneIndex
+            && label.word_index == event.WordIndex
+            && label.pose == to_std(event.PoseID))
+        {
+            return &label;
+        }
+    }
+    return nullptr;
+}
+
+static std::string timing_commit_training_rows_csv(
+    const FOffgridAITextVisemePlan& plan,
+    const FOffgridAICommittedVisemeTrack& committed,
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames,
+    const TArray<FOffgridAIRuntimeBoundaryDiagnosticRow>& runtime_rows,
+    const std::vector<HandmadeLabel>& labels,
+    float preroll_seconds)
+{
+    constexpr std::array<const char*, offgridai::timing_ml::kAudioFeatureCount> audio_feature_names = {
+        "rms_norm", "delta_rms", "flux", "zcr", "low_band_norm", "mid_band_norm",
+        "high_band_norm", "spectral_centroid_norm", "periodicity", "rich_low_band_norm",
+        "rich_mid_band_norm", "rich_high_band_norm", "rich_spectral_centroid_norm",
+        "rich_spectral_rolloff_norm", "rich_spectral_flatness", "rich_spectral_flux",
+        "rich_periodicity", "speech_evidence", "silence_accum_sec", "in_speech"
+    };
+    std::ostringstream out;
+    out << "schema_version,event_index,commit_playback_sec,causal_audio_cutoff_sec,audio_frame_end_sec,"
+        << "phone_index,word_index,speech_region_index,phone_base,pose,phone_weight_sec,is_vowel,"
+        << "visual_role,prior_center_sec,lead_adjusted_center_sec,deterministic_center_sec,"
+        << "commit_lead_sec,playback_offset_sec,total_paused_sec,total_center_delay_sec,"
+        << "mapped_to_observed_speech,used_initial_anchor,used_resume_anchor,acoustic_anchor_sec,"
+        << "acoustic_anchor_error_sec,timeline_rate,active_speech_region_index,active_text_speech_region_index,"
+        << "active_region_start_sec,active_region_end_sec,last_matched_phone_index,last_matched_audio_sec,"
+        << "last_matched_confidence,audio_valid_frames,";
+    for (int history_index = 0; history_index < offgridai::timing_ml::kAudioHistoryFrames; ++history_index)
+    {
+        for (const char* feature_name : audio_feature_names)
+        {
+            out << "audio_" << std::setw(2) << std::setfill('0') << history_index
+                << '_' << feature_name << ',';
+        }
+    }
+    out << "gold_center_sec,target_shift_ms,target_shift_clamped_100_ms,target_actionable\n";
+    out << std::setfill(' ');
+    out << std::fixed << std::setprecision(6);
+
+    int32 frame_cursor = 0;
+    int32 runtime_cursor = 0;
+    for (const FOffgridAICommittedVisemeEvent& event : committed.Events)
+    {
+        if (!event.bIsRenderable || event.bCanceledByWordHandoff || frames.Num() <= 0) continue;
+        const HandmadeLabel* label = find_gold_label_for_committed_event(event, labels);
+        if (!label) continue;
+
+        const float audio_cutoff = std::min(
+            frames.Last().AudioBufferEndSec,
+            event.CommitPlaybackSeconds + std::max(0.0f, preroll_seconds));
+        while (frame_cursor + 1 < frames.Num()
+            && frames[frame_cursor + 1].AudioBufferEndSec <= audio_cutoff + 0.00001f)
+        {
+            ++frame_cursor;
+        }
+        const FOffgridAIStreamingAudioFeatureFrame& frame = frames[frame_cursor];
+        if (frame.AudioBufferEndSec > audio_cutoff + 0.00001f) continue;
+
+        while (runtime_cursor + 1 < runtime_rows.Num()
+            && !runtime_rows[runtime_cursor + 1].bFinalReplay
+            && runtime_rows[runtime_cursor + 1].CurrentPlaybackSec
+                <= event.CommitPlaybackSeconds + 0.0005f)
+        {
+            ++runtime_cursor;
+        }
+        const FOffgridAIRuntimeBoundaryDiagnosticRow* runtime =
+            runtime_rows.IsValidIndex(runtime_cursor) && !runtime_rows[runtime_cursor].bFinalReplay
+            ? &runtime_rows[runtime_cursor]
+            : nullptr;
+
+        const int32 phone_index = event.SourcePhoneIndex;
+        const FOffgridAIExpectedPhone* phone = plan.ExpectedPhones.IsValidIndex(phone_index)
+            ? &plan.ExpectedPhones[phone_index]
+            : nullptr;
+        const double gold_center = 0.5 * (label->start + label->end);
+        const double target_shift_ms = (
+            gold_center - static_cast<double>(event.FinalRenderCenterSeconds)) * 1000.0;
+        const int32 first_audio_frame = std::max(
+            0,
+            frame_cursor - offgridai::timing_ml::kAudioHistoryFrames + 1);
+        const int32 valid_audio_frames = frame_cursor - first_audio_frame + 1;
+
+        auto append_audio_frame = [&out](const FOffgridAIStreamingAudioFeatureFrame& audio_frame)
+        {
+            out << audio_frame.RMSNorm << ','
+                << audio_frame.DeltaRMS << ','
+                << audio_frame.Flux << ','
+                << audio_frame.ZCR << ','
+                << audio_frame.LowBandNorm << ','
+                << audio_frame.MidBandNorm << ','
+                << audio_frame.HighBandNorm << ','
+                << audio_frame.SpectralCentroidNorm << ','
+                << audio_frame.Periodicity << ','
+                << audio_frame.RichLowBandNorm << ','
+                << audio_frame.RichMidBandNorm << ','
+                << audio_frame.RichHighBandNorm << ','
+                << audio_frame.RichSpectralCentroidNorm << ','
+                << audio_frame.RichSpectralRolloffNorm << ','
+                << audio_frame.RichSpectralFlatness << ','
+                << audio_frame.RichSpectralFlux << ','
+                << audio_frame.RichPeriodicity << ','
+                << audio_frame.SpeechEvidence << ','
+                << audio_frame.SilenceAccumSec << ','
+                << (audio_frame.bInSpeechAfterFrame ? 1 : 0) << ',';
+        };
+
+        out << 2 << ','
+            << event.EventIndex << ','
+            << event.CommitPlaybackSeconds << ','
+            << audio_cutoff << ','
+            << frame.AudioBufferEndSec << ','
+            << phone_index << ','
+            << event.WordIndex << ','
+            << event.SpeechRegionIndex << ','
+            << csv_value(to_std(event.SourcePhoneBase)) << ','
+            << csv_value(to_std(event.PoseID)) << ','
+            << (phone ? phone->WeightSeconds : 0.0f) << ','
+            << (phone && phone->bIsVowel ? 1 : 0) << ','
+            << (phone ? static_cast<int>(phone->VisualRole) : 0) << ','
+            << event.PriorCenterSeconds << ','
+            << event.LeadAdjustedCenterSeconds << ','
+            << event.FinalRenderCenterSeconds << ','
+            << event.CommitLeadSeconds << ','
+            << event.PlaybackOffsetSeconds << ','
+            << event.TotalPausedSecondsAtCommit << ','
+            << event.TotalCenterDelaySeconds << ','
+            << (event.bMappedToObservedSpeech ? 1 : 0) << ','
+            << (event.bUsedInitialSpeechAnchor ? 1 : 0) << ','
+            << (event.bUsedResumeAnchor ? 1 : 0) << ','
+            << event.AcousticAnchorSeconds << ','
+            << event.AcousticAnchorErrorSeconds << ','
+            << (runtime ? runtime->TimelineRate : 1.0f) << ','
+            << (runtime ? runtime->ActiveSpeechRegionIndex : INDEX_NONE) << ','
+            << (runtime ? runtime->ActiveTextSpeechRegionIndex : INDEX_NONE) << ','
+            << (runtime ? runtime->ActiveRegionStartSec : -1.0f) << ','
+            << (runtime ? runtime->ActiveRegionEndSec : -1.0f) << ','
+            << (runtime ? runtime->LastMatchedSyllablePhoneIndex : INDEX_NONE) << ','
+            << (runtime ? runtime->LastMatchedSyllableAudioSec : -1.0f) << ','
+            << (runtime ? runtime->LastMatchedSyllableConfidence : 0.0f) << ','
+            << valid_audio_frames << ',';
+        for (int padding_index = valid_audio_frames;
+            padding_index < offgridai::timing_ml::kAudioHistoryFrames;
+            ++padding_index)
+        {
+            for (int feature_index = 0; feature_index < offgridai::timing_ml::kAudioFeatureCount; ++feature_index)
+            {
+                out << 0.0f << ',';
+            }
+        }
+        for (int32 history_frame = first_audio_frame; history_frame <= frame_cursor; ++history_frame)
+        {
+            append_audio_frame(frames[history_frame]);
+        }
+        out << gold_center << ','
+            << target_shift_ms << ','
+            << std::clamp(target_shift_ms, -100.0, 100.0) << ','
+            << (gold_center + 0.0005 >= event.CommitPlaybackSeconds ? 1 : 0)
+            << '\n';
+    }
+    return out.str();
 }
 
 static std::string classify_gap_family_by_duration(double gap_seconds)
@@ -4748,6 +5285,7 @@ struct RunnerCliConfig
     OutputConfig output;
     bool fast_batch = false;
     std::string case_filter;
+    fs::path timing_advice_csv;
 };
 
 static RunnerCliConfig parse_cli_config(int argc, char** argv)
@@ -4835,6 +5373,19 @@ static RunnerCliConfig parse_cli_config(int argc, char** argv)
         else if (arg == "--full-diagnostics")
         {
             cli.output.write_detailed_diagnostics = true;
+        }
+        else if (arg == "--export-timing-dataset")
+        {
+            cli.output.write_timing_training_rows = true;
+        }
+        else if (arg == "--timing-advice-csv")
+        {
+            if (i + 1 >= argc) throw std::runtime_error("--timing-advice-csv requires a value");
+            cli.timing_advice_csv = fs::path(argv[++i]);
+        }
+        else if (starts_with(arg, "--timing-advice-csv="))
+        {
+            cli.timing_advice_csv = fs::path(arg.substr(std::string("--timing-advice-csv=").size()));
         }
         else if (arg == "--case")
         {
@@ -4950,6 +5501,9 @@ int main(int argc, char** argv)
     {
         using clock = std::chrono::steady_clock;
         const RunnerCliConfig cli = parse_cli_config(argc, argv);
+        const PredictedTimingAdviceByCase predicted_timing_advice = cli.timing_advice_csv.empty()
+            ? PredictedTimingAdviceByCase{}
+            : read_predicted_timing_advice_csv(fs::absolute(cli.timing_advice_csv));
         const fs::path root = cli.root;
         const StreamConfig stream = cli.stream;
         const OutputConfig output = cli.output;
@@ -5129,6 +5683,18 @@ int main(int argc, char** argv)
                 if (!cli.case_filter.empty()) std::cerr << "[case] visible-labels " << stem << std::endl;
                 const auto handmade = build_gold_visible_labels(plan, gold_phones);
                 gold_viseme_count = handmade.size();
+                if (output.write_timing_training_rows)
+                {
+                    write_text(
+                        case_dir / "timing_training_rows.csv",
+                        timing_commit_training_rows_csv(
+                            plan,
+                            committed,
+                            session.GetSpeechDetector().GetFeatureFrames(),
+                            session.GetRuntimeBoundaryDiagnosticRows(),
+                            handmade,
+                            stream.buffer_seconds));
+                }
                 if (!cli.case_filter.empty()) std::cerr << "[case] grade " << stem << std::endl;
                 write_text(case_dir / "planned_words.csv", planned_words_csv(plan));
                 write_text(case_dir / "expected_phones.csv", expected_phones_csv(plan));
@@ -5140,6 +5706,58 @@ int main(int argc, char** argv)
                 write_text(case_dir / "region_ownership_grade.json",
                     region_ownership_grade_json(committed, plan, gold_words, gold_speech));
                 report = grade(committed, speech, handmade, gold_words, gold_speech);
+                const std::array<std::pair<const char*, double>, 4> oracle_limits = {{
+                    {"050", 50.0},
+                    {"100", 100.0},
+                    {"200", 200.0},
+                    {"unbounded", 10000.0},
+                }};
+                for (const auto& oracle_limit : oracle_limits)
+                {
+                    const OracleTimingAdviceResult oracle = apply_bounded_gold_timing_advice(
+                        committed,
+                        speech,
+                        handmade,
+                        oracle_limit.second);
+                    const GradeReport oracle_grade = grade(
+                        oracle.track,
+                        speech,
+                        handmade,
+                        gold_words,
+                        gold_speech);
+                    write_text(
+                        case_dir / (std::string("oracle_timing_") + oracle_limit.first + "_summary.json"),
+                        oracle_timing_advice_json(oracle, oracle_grade));
+                    write_text(
+                        case_dir / (std::string("oracle_timing_") + oracle_limit.first + "_grade.json"),
+                        grade_json(oracle_grade));
+                    if (output.write_detailed_diagnostics)
+                    {
+                        write_text(
+                            case_dir / (std::string("oracle_timing_") + oracle_limit.first + "_advice.csv"),
+                            oracle_timing_advice_csv(oracle));
+                    }
+                }
+                const auto model_advice = predicted_timing_advice.find(stem);
+                if (model_advice != predicted_timing_advice.end())
+                {
+                    const PredictedTimingApplicationResult corrected = apply_predicted_timing_advice(
+                        committed,
+                        speech,
+                        model_advice->second);
+                    const GradeReport corrected_grade = grade(
+                        corrected.track,
+                        speech,
+                        handmade,
+                        gold_words,
+                        gold_speech);
+                    write_text(
+                        case_dir / "timing_model_summary.json",
+                        predicted_timing_summary_json(corrected, corrected_grade));
+                    write_text(
+                        case_dir / "timing_model_grade.json",
+                        grade_json(corrected_grade));
+                }
                 if (output.write_detailed_diagnostics)
                 {
                     write_text(case_dir / "audio_landmark_frames.csv", audio_landmark_frames_csv(session.GetSpeechDetector().GetFeatureFrames()));

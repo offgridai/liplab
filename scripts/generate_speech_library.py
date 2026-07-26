@@ -374,6 +374,13 @@ def main() -> int:
         type=pathlib.Path,
         help="per-case transcript, voice, and seed recipe",
     )
+    parser.add_argument(
+        "--case",
+        action="append",
+        dest="case_ids",
+        default=[],
+        help="synthesize only the named recipe case; repeat as needed",
+    )
     parser.add_argument("--seeds")
     parser.add_argument("--model-identifier", default="qwen3-tts-0.6b-f16")
     parser.add_argument("--library-id", default="demo_v1")
@@ -392,12 +399,23 @@ def main() -> int:
         raise SystemExit(
             "--recipe-json cannot be combined with --lines-json, --voice-json, or --seeds"
         )
+    if args.case_ids and not args.recipe_json:
+        raise SystemExit("--case requires --recipe-json")
 
     qwen_root = args.qwen_root.resolve()
     qwen_exe = (args.qwen_exe.resolve() if args.qwen_exe else find_qwen_executable(qwen_root))
     recipe_cases: list[dict[str, object]] | None = None
     if args.recipe_json:
         voices, recipe_cases = load_recipe(args.recipe_json.resolve(), qwen_root)
+        if args.case_ids:
+            requested_ids = set(args.case_ids)
+            recipe_cases = [
+                case for case in recipe_cases if str(case["case_id"]) in requested_ids
+            ]
+            found_ids = {str(case["case_id"]) for case in recipe_cases}
+            missing_ids = sorted(requested_ids - found_ids)
+            if missing_ids:
+                raise SystemExit("recipe cases not found: " + ", ".join(missing_ids))
     else:
         voices = load_voices(args.voice_json, qwen_root)
     models_root = (qwen_root / "models").resolve()

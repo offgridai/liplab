@@ -79,3 +79,26 @@ python scripts\generate_speech_library.py ^
 Remove `--validate-only` to synthesize and MFA-align the complete assigned
 corpus. Regenerate the checked-in recipe after intentionally changing the
 source corpus with `python scripts\build_corpus_speech_recipe.py`.
+
+## Neural scheduler expansion corpus
+
+`inputs/speech_library/neural_scheduler_lines_v1.json` contains a balanced
+suite of 100 short, long, multi-clause, multi-sentence, list, question,
+instruction, contrast, and emphatic transcripts. The generated
+`neural_scheduler_corpus_v1.json` recipe crosses every line once with each of
+the four available 1.7B voice-clone references, for 400 fixed cases.
+
+```bat
+python scripts\build_neural_corpus_recipe.py
+python scripts\generate_speech_library.py ^
+  --recipe-json inputs\speech_library\neural_scheduler_corpus_v1.json ^
+  --library-id neural_scheduler_corpus_v1 ^
+  --model-identifier qwen3-tts-1.7b-base-f16
+python scripts\import_speech_library.py outputs\speech_library\neural_scheduler_corpus_v1
+```
+
+The import copies WAVs into `inputs/wav`, preserves the generated canonical
+transcripts, and stages the completed TextGrids under `outputs/mfa_align/latest`
+for the normal gold-draft/export workflow. Text-group hashing keeps all four
+voice renditions of one transcript in the same train, validation, or test
+partition.

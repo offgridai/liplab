@@ -1228,10 +1228,15 @@ def main() -> int:
         help="Minimum comma-associated acoustic gap retained as a speech-region break (default: 120 ms).",
     )
     parser.add_argument("--case", action="append", dest="cases", default=[])
+    parser.add_argument("--case-prefix", help="process only case IDs beginning with this prefix")
     parser.add_argument("--skip-runner", action="store_true")
     parser.add_argument("--skip-mfa", action="store_true")
     args = parser.parse_args()
     cases = args.cases or case_stems()
+    if args.case_prefix:
+        cases = [case_id for case_id in cases if case_id.startswith(args.case_prefix)]
+    if not cases:
+        raise SystemExit("no matching cases")
 
     if not args.skip_runner:
         rc = run_runner_and_capture(args.buffer_ms, args.chunk_ms, offline_gold_run_root())

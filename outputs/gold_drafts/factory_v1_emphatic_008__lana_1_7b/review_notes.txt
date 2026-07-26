@@ -1,0 +1,21 @@
+case: factory_v1_emphatic_008__lana_1_7b
+transcript: Watch out, the glass is falling!
+audio: 3.097s @ 24000 Hz
+speech regions: 2
+pause boundaries: 5
+pause-driven region breaks: 1
+word heads: 6
+dense visemes: 18
+draft flags: 2
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading

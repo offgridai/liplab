@@ -562,7 +562,9 @@ def read_csv_rows(path: pathlib.Path) -> list[dict[str, str]]:
 
 def write_json(path: pathlib.Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
 
 
 def write_text(path: pathlib.Path, text: str) -> None:
