@@ -3166,7 +3166,10 @@ static PredictedNeuralTrackResult build_predicted_neural_track(
             return !prediction.is_silence && prediction.event_index >= 0;
         }));
     bool region_open = false;
-    constexpr float kNeuralPauseSplitSeconds = 0.100f;
+    // Frozen-corpus calibration: shorter between-word silence remains inside
+    // one region, while a 120 ms neural silence state owns pause/resume
+    // segmentation.
+    constexpr float kNeuralPauseSplitSeconds = 0.120f;
     for (const PredictedNeuralTrackEvent& prediction : predictions)
     {
         ++result.prediction_count;

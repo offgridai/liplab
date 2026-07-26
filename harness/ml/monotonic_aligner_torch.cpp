@@ -312,6 +312,44 @@ static CaseTensors tensors(const SequenceCase& sequence)
         frame_weights.push_back(weight);
         curriculum_frame_weights.push_back(curriculum_weight);
     }
+    // Occupancy weighting alone spends most of its gradient on token interiors.
+    // Put a narrow, symmetric band around the transitions that drive the
+    // product metrics. Region flags are MFA supervision only; they are never
+    // included in token_features() or the runtime checkpoint inputs.
+    for (int frame = 1; frame < used_frames; ++frame) {
+        const int left = static_cast<int>(targets[static_cast<size_t>(frame - 1)]);
+        const int right = static_cast<int>(targets[static_cast<size_t>(frame)]);
+        if (left == right) continue;
+        const TokenRow& before = sequence.Tokens[static_cast<size_t>(left)];
+        const TokenRow& after = sequence.Tokens[static_cast<size_t>(right)];
+        float boundary_weight = 1.0f;
+        float curriculum_boundary_weight = 1.0f;
+        if (before.IsVowel > 0.5f || after.IsVowel > 0.5f) {
+            boundary_weight = std::max(boundary_weight, 4.0f);
+            curriculum_boundary_weight = std::max(curriculum_boundary_weight, 6.0f);
+        }
+        if (after.IsWordStart > 0.5f) {
+            boundary_weight = std::max(boundary_weight, 8.0f);
+            curriculum_boundary_weight = std::max(curriculum_boundary_weight, 10.0f);
+        }
+        if (before.IsSilence > 0.5f || after.IsSilence > 0.5f) {
+            boundary_weight = std::max(boundary_weight, 10.0f);
+            curriculum_boundary_weight = std::max(curriculum_boundary_weight, 14.0f);
+        }
+        if (before.IsRegionEnd > 0.5f || after.IsRegionStart > 0.5f) {
+            boundary_weight = std::max(boundary_weight, 14.0f);
+            curriculum_boundary_weight = std::max(curriculum_boundary_weight, 18.0f);
+        }
+        constexpr int kBoundaryRadiusFrames = 4;
+        for (int nearby = std::max(0, frame - kBoundaryRadiusFrames);
+             nearby < std::min(used_frames, frame + kBoundaryRadiusFrames + 1); ++nearby) {
+            frame_weights[static_cast<size_t>(nearby)] = std::max(
+                frame_weights[static_cast<size_t>(nearby)], boundary_weight);
+            curriculum_frame_weights[static_cast<size_t>(nearby)] = std::max(
+                curriculum_frame_weights[static_cast<size_t>(nearby)],
+                curriculum_boundary_weight);
+        }
+    }
     result.FrameWeights = torch::from_blob(frame_weights.data(), {used_frames}).clone();
     result.CurriculumFrameWeights = torch::from_blob(
         curriculum_frame_weights.data(), {used_frames}).clone();
@@ -774,6 +812,7 @@ int main(int argc, char** argv)
             << "  \"forward_sum_cadence\": " << kForwardSumCadence << ",\n"
             << "  \"streaming_lag_ms\": " << kStreamingLagFrames * kFrameMilliseconds << ",\n"
             << "  \"boundary_curriculum_epochs\": 6,\n"
+            << "  \"boundary_band_radius_ms\": 40,\n"
             << "  \"feature_noise_stddev\": 0.015,\n"
             << "  \"runtime\": {\n"
             << "    \"backend\": \"fused_cuda_fp16\",\n"

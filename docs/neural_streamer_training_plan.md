@@ -107,12 +107,22 @@ Speech regions use order-preserving overlap alignment. Reports distinguish
 clean one-to-one matches, merges, splits, missing regions, and extra regions so
 a single pause error cannot shift every later boundary pairing.
 
-The current 750-case neural replay scores 0.9333 exact viseme match with 21.10 ms
-matched-center mean and 31.70 ms all-reference mean, zero deterministic fallback,
-and zero ordering violations. Overlap-aware speech-region recall/precision are
-0.9356/0.9020; comprehensive start and end means are 164.8/172.4 ms with 20/20 ms
-medians. These are research scores, not evidence that live Offgrid inference is
-integrated yet.
+The current 750-case neural replay scores 0.9531 exact viseme match with 17.62 ms
+matched-center mean and 25.23 ms all-reference mean, zero deterministic fallback,
+and zero ordering violations. Validation, unseen-text, and held-out-speaker match
+rates are 0.9512, 0.9483, and 0.9349. Overlap-aware speech-region recall/precision
+are 0.9411/0.9469; comprehensive start and end means are 136.7/138.8 ms with
+20/20 ms medians. Word-onset comprehensive mean is 59.1 ms. Syllable coverage is
+0.8621 with a 33.3 ms comprehensive mean. These are research scores, not evidence
+that live Offgrid inference is integrated yet.
+
+This improvement comes from symmetric 40 ms supervision bands around learned
+pause/resume, word-start, and vowel-nucleus transitions, plus a 120 ms neural
+silence-state region boundary calibrated on the frozen corpus. Region-boundary
+flags remain training labels only and are deliberately absent from runtime token
+features. The next accuracy work should prioritize syllable recall and the
+remaining long-tail speech-start errors; broad viseme timing and word starts are
+no longer the dominant failures.
 
 ## Promotion gates
 
