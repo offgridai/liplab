@@ -113,8 +113,10 @@ and zero ordering violations. Validation, unseen-text, and held-out-speaker matc
 rates are 0.9512, 0.9483, and 0.9349. Overlap-aware speech-region recall/precision
 are 0.9411/0.9469; comprehensive start and end means are 136.7/138.8 ms with
 20/20 ms medians. Word-onset comprehensive mean is 59.1 ms. Syllable coverage is
-0.8621 with a 33.3 ms comprehensive mean. These are research scores, not evidence
-that live Offgrid inference is integrated yet.
+0.9387 with a 20.9 ms comprehensive mean and 10 ms median. Held-out-speaker,
+validation, and unseen-text syllable coverage are 0.9208, 0.9326, and 0.9343.
+These are research scores, not evidence that live Offgrid inference is integrated
+yet.
 
 This improvement comes from symmetric 40 ms supervision bands around learned
 pause/resume, word-start, and vowel-nucleus transitions, plus a 120 ms neural
@@ -123,6 +125,14 @@ flags remain training labels only and are deliberately absent from runtime token
 features. The next accuracy work should prioritize syllable recall and the
 remaining long-tail speech-start errors; broad viseme timing and word starts are
 no longer the dominant failures.
+
+Neural syllable grading compares the complete chronological neural-vowel stream
+against the complete chronological MFA-vowel stream with a maximum-cardinality,
+minimum-error monotonic alignment. A pair still must be within 100 ms. This
+avoids shifting every later target when MFA inserts `spn`, reduces a word, or
+selects a different pronunciation; it does not discard targets or observations.
+The aggregate report currently includes 12,164 MFA vowel targets and 12,220
+neural vowel observations.
 
 ## Promotion gates
 

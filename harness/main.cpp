@@ -1414,6 +1414,100 @@ static ProsodicPeakReport grade_prosodic_peaks(
     return report;
 }
 
+// Transcript and MFA phone inventories can differ through reductions, inserted
+// SPN intervals, or pronunciation variants. Neural syllable scoring therefore
+// aligns the complete chronological vowel streams instead of joining them by
+// raw phone index. Every MFA vowel remains a target and every neural vowel
+// remains an observation; only pairs within the existing 100 ms criterion can
+// match.
+static ProsodicPeakReport grade_monotonic_neural_syllables(
+    const std::vector<ProsodicPeakTarget>& targets,
+    const std::vector<ProsodicPeakObservation>& observations)
+{
+    std::vector<const ProsodicPeakTarget*> gold;
+    for (const ProsodicPeakTarget& target : targets)
+        if (target.has_gold) gold.push_back(&target);
+
+    struct MatchScore
+    {
+        int Count = 0;
+        double ErrorMs = 0.0;
+    };
+    const size_t observation_count = observations.size();
+    const size_t target_count = gold.size();
+    std::vector<std::vector<MatchScore>> dp(
+        observation_count + 1, std::vector<MatchScore>(target_count + 1));
+    std::vector<std::vector<char>> choice(
+        observation_count + 1, std::vector<char>(target_count + 1, 'o'));
+    auto better = [](const MatchScore& left, const MatchScore& right) {
+        return left.Count > right.Count
+            || (left.Count == right.Count && left.ErrorMs < right.ErrorMs);
+    };
+    for (size_t observation = 1; observation <= observation_count; ++observation)
+    {
+        for (size_t target = 1; target <= target_count; ++target)
+        {
+            MatchScore best = dp[observation - 1][target];
+            char step = 'o';
+            if (better(dp[observation][target - 1], best))
+            {
+                best = dp[observation][target - 1];
+                step = 't';
+            }
+            const double error_ms = std::abs(
+                observations[observation - 1].peak_sec - gold[target - 1]->gold_center) * 1000.0;
+            if (error_ms <= 100.0)
+            {
+                MatchScore matched = dp[observation - 1][target - 1];
+                ++matched.Count;
+                matched.ErrorMs += error_ms;
+                if (better(matched, best))
+                {
+                    best = matched;
+                    step = 'm';
+                }
+            }
+            dp[observation][target] = best;
+            choice[observation][target] = step;
+        }
+    }
+
+    std::vector<double> errors;
+    std::vector<double> latencies;
+    size_t observation = observation_count;
+    size_t target = target_count;
+    while (observation > 0 && target > 0)
+    {
+        const char step = choice[observation][target];
+        if (step == 'm')
+        {
+            const auto& item = observations[observation - 1];
+            errors.push_back(std::abs(item.peak_sec - gold[target - 1]->gold_center) * 1000.0);
+            latencies.push_back(std::max(0.0, item.decision_sec - item.peak_sec) * 1000.0);
+            --observation;
+            --target;
+        }
+        else if (step == 't') --target;
+        else --observation;
+    }
+
+    ProsodicPeakReport report;
+    report.available = true;
+    report.target_count = static_cast<int>(target_count);
+    report.observation_count = static_cast<int>(observation_count);
+    report.matched_count = dp[observation_count][target_count].Count;
+    report.precision = observation_count > 0
+        ? static_cast<double>(report.matched_count) / observation_count : 0.0;
+    report.recall = target_count > 0
+        ? static_cast<double>(report.matched_count) / target_count : 0.0;
+    report.mean_abs_error_ms = mean_ms(errors);
+    report.median_abs_error_ms = percentile_ms(errors, 0.50);
+    report.p90_abs_error_ms = percentile_ms(errors, 0.90);
+    report.mean_decision_latency_ms = mean_ms(latencies);
+    report.matched_error_samples_ms = std::move(errors);
+    return report;
+}
+
 static std::vector<ProsodicPeakObservation> neural_syllable_observations(
     const std::vector<ProsodicPeakTarget>& targets,
     const FOffgridAIAlignedVisemeTrack& track)
@@ -5703,6 +5797,7 @@ int main(int argc, char** argv)
                 if (!cli.case_filter.empty()) std::cerr << "[case] landmark-targets " << stem << std::endl;
                 if (!cli.case_filter.empty()) std::cerr << "[case] prosody-targets " << stem << std::endl;
                 const auto prosodic_peak_targets = build_prosodic_peak_targets(plan, gold_phones);
+                const auto mfa_nucleus_targets = build_mfa_nucleus_targets(gold_phones);
                 const TArray<FOffgridAIStreamingSyllableCandidateSet> syllable_candidate_sets =
                     FOffgridAIStreamingSyllablePositionEstimator::EstimateCandidateSets(
                         plan,
@@ -5756,10 +5851,8 @@ int main(int argc, char** argv)
                     write_text(case_dir / "neural_track_grade.json", grade_json(neural_grade));
                     auto neural_syllables = neural_syllable_observations(
                         prosodic_peak_targets, neural.track);
-                    const ProsodicPeakReport neural_syllable_report = grade_prosodic_peaks(
-                        prosodic_peak_targets,
-                        neural_syllables,
-                        std::vector<ProsodicPeakObservation>());
+                    const ProsodicPeakReport neural_syllable_report =
+                        grade_monotonic_neural_syllables(mfa_nucleus_targets, neural_syllables);
                     write_text(case_dir / "neural_syllable_alignment_grade.json",
                         prosodic_peak_grade_json(neural_syllable_report));
                     write_text(case_dir / "neural_error_samples.json",
@@ -5789,7 +5882,6 @@ int main(int argc, char** argv)
                         word_start_targets,
                         runtime_word_start_observations,
                         std::vector<ProsodicPeakObservation>());
-                const auto mfa_nucleus_targets = build_mfa_nucleus_targets(gold_phones);
                 const auto performed_word_head_observations =
                     performed_word_head_anchor_observations(committed);
                 std::vector<ProsodicPeakObservation> no_assigned_word_heads;
