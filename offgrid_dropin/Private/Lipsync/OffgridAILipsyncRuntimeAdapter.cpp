@@ -15,6 +15,7 @@ namespace
 static constexpr float InterWordSeconds = 0.020f;
 static constexpr float MinLiveLeadSec = 0.030f;
 static constexpr float PulseCommitStabilitySec = 0.120f;
+static constexpr float SchedulerEvidenceHistorySec = 0.250f;
 static constexpr float MinimumAdaptiveWordPriorRate = 0.65f;
 static constexpr float MaximumAdaptiveWordPriorRate = 1.65f;
 static constexpr float AdaptiveWordPriorRateBlend = 0.35f;
@@ -841,7 +842,7 @@ static void UpdateSyllablePacedVisemeTrack(
 
     FOffgridAIStreamingEvidenceSurfaceConfig Config;
     Config.PrerollSec = FMath::Max(Input.PrerollSec, 0.100f);
-    Config.PostrollSec = 0.250f;
+    Config.PostrollSec = SchedulerEvidenceHistorySec;
     Config.SpeechRegions = Input.SpeechRegions;
     const TArray<FOffgridAIAudioLandmarkObservation> Evidence =
         FOffgridAIStreamingEvidenceSurface::Analyze(*Input.AudioFeatureFrames, Config);

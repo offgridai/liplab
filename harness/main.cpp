@@ -2534,7 +2534,7 @@ static std::string speech_csv(const TArray<FOffgridAIStreamingSpeechRegion>& spe
 static std::string occupancy_frames_csv(const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames)
 {
     std::ostringstream out;
-    out << "index,start,end,center,rms,rms_norm,delta_rms,flux,zcr,low_band,mid_band,high_band,centroid,periodicity,evidence,open_threshold,close_threshold,in_speech_before,in_speech_after,open_candidate,keep_open,strong_onset,strong_quiet,low_evidence,endpoint_active,silence_accum,endpoint_start,active_speech_region_start,active_speech_region_end,frame_started_speech_region,frame_closed_speech_region,frame_bridged_speech_region,decision,local_rms_peak,local_rms_valley,local_flux_peak,derived_pause_family,derived_pause_confidence,list_gap_sensitive,learned_speech_probability,learned_speech\n";
+    out << "index,start,end,center,rms,rms_norm,delta_rms,flux,zcr,low_band,mid_band,high_band,centroid,periodicity,evidence,open_threshold,close_threshold,in_speech_before,in_speech_after,open_candidate,keep_open,strong_onset,strong_quiet,low_evidence,endpoint_active,silence_accum,endpoint_start,active_speech_region_start,active_speech_region_end,frame_started_speech_region,frame_closed_speech_region,frame_bridged_speech_region,decision,local_rms_peak,local_rms_valley,local_flux_peak,derived_pause_family,derived_pause_confidence,learned_speech_probability,learned_speech\n";
     out << std::fixed << std::setprecision(6);
     for (int32 i = 0; i < frames.Num(); ++i)
     {
@@ -2577,7 +2577,6 @@ static std::string occupancy_frames_csv(const TArray<FOffgridAIStreamingAudioFea
             << (f.bLocalFluxPeak ? 1 : 0) << ','
             << derived_pause_family(f) << ','
             << derived_pause_confidence(f) << ','
-            << (f.bListGapSensitive ? 1 : 0) << ','
             << f.LearnedSpeechProbability << ','
             << (f.bLearnedSpeech ? 1 : 0) << '\n';
     }

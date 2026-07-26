@@ -6,8 +6,12 @@ The gold corpus is rebuilt around one rule:
 
 - transcript owns viseme identity
 - offline alignment owns timing suggestions
-- human review owns approval
+- explicit review-layer approval owns export eligibility
 - the harness grades only approved gold
+
+Reviewer provenance is recorded in each package. The current checked-in corpus
+was promoted by the deterministic `auto_mfa_phone_export` workflow; future
+human review can replace that provenance without changing the runtime contract.
 
 ## Problem
 

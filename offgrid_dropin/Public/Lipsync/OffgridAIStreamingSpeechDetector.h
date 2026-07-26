@@ -132,11 +132,6 @@ struct FOffgridAIStreamingAudioFeatureFrame
 
     float LearnedSpeechProbability = 0.0f;
     bool bLearnedSpeech = false;
-    // Transcript punctuation may temporarily request greater sensitivity to
-    // acoustic gaps while traversing a list. This never supplies timing or
-    // changes speech evidence; it only selects the quiet-run duration used by
-    // the learned region decoder for this frame.
-    bool bListGapSensitive = false;
 
 };
 
@@ -144,7 +139,9 @@ class OFFGRIDAI_API FOffgridAIStreamingSpeechDetector
 {
 public:
     void Reset();
-    void SetListGapSensitivity(bool bEnabled) { bListGapSensitive = bEnabled; }
+    // Retained as a source-compatible no-op for existing hosts. Speech-region
+    // timing is audio-owned; transcript punctuation must not tune occupancy.
+    void SetListGapSensitivity(bool) {}
     void AppendPCM16(const TArray<uint8>& PCMChunk, int32 BytesToUse, int32 SampleRate, int32 NumChannels, int64 ChunkStartSample = -1);
     void Finalize(float FinalObservedAudioBufferEndSec = -1.0f);
 
@@ -228,5 +225,4 @@ private:
 
     float SpeechPeakRMS = 0.0001f;
     float NoiseFloorRMS = 0.0001f;
-    bool bListGapSensitive = false;
 };

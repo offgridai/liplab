@@ -20,6 +20,8 @@ enum class EOffgridAIAudioLandmarkType : uint8
 struct FOffgridAIStreamingEvidenceSurfaceConfig
 {
     float PrerollSec = 0.350f;
+    // Default history used by offline diagnostics. The live runtime selects a
+    // shorter bounded history explicitly when making scheduling decisions.
     float PostrollSec = 1.500f;
     // Optional confirmed acoustic regions. When supplied, nucleus candidates
     // on opposite sides of a confirmed pause belong to different temporal

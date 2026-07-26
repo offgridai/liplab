@@ -55,8 +55,10 @@ scripts\verify.bat
 ```
 
 This builds the shared code, validates all approved gold packages, streams the
-entire corpus with the default 350 ms preroll and 1500 ms retained postroll,
-summarizes the priority metrics, and enforces the active-controller baseline.
+entire corpus with the default 350 ms playback preroll, exports diagnostics
+using 1500 ms of evidence history, summarizes the priority metrics, and
+enforces the active-controller baseline. The live scheduler uses its own
+bounded 250 ms evidence-history window.
 
 Manual execution after a build:
 
@@ -67,7 +69,8 @@ python scripts\check_grades.py
 ```
 
 The runner accepts `--preroll-ms`, `--evidence-postroll-ms`, `--chunk-ms`,
-`--tick-ms`, `--case`, and `--full-diagnostics`.
+`--tick-ms`, `--case`, and `--full-diagnostics`. `--evidence-postroll-ms`
+controls diagnostic evidence export and grading, not live scheduler history.
 
 ## Gold corpus
 

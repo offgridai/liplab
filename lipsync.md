@@ -37,11 +37,12 @@ It never asserts that a pause exists or supplies pause duration.
 causal speech-region opens, provisional closes, confirmed closes, resumes, and
 feature frames.
 
-`FOffgridAIStreamingEvidenceSurface` analyzes the retained audio window. The
-default host configuration exposes 350 ms of preroll ahead of audible playback
-and retains 1500 ms behind it. The surface emits stable syllabic pulses plus
-bilabial, labiodental, sibilant, and glide landmarks without selecting
-transcript identity.
+`FOffgridAIStreamingEvidenceSurface` analyzes retained feature history. The
+host exposes 350 ms of audio ahead of audible playback; the live scheduler uses
+a bounded 250 ms evidence-history window. The standalone grader may reanalyze
+the completed feature track with 1500 ms of history for diagnostics. The
+surface emits stable syllabic pulses plus bilabial, labiodental, sibilant, and
+glide landmarks without selecting transcript identity.
 
 `FOffgridAIStreamingSyllablePositionEstimator` returns a small ordered candidate
 set for each pulse. It does not maintain an alternate global alignment or a
