@@ -83,6 +83,10 @@ echo [phase] validate_gold
 python scripts\check_gold.py --include-drafts
 if errorlevel 1 exit /b 1
 
+echo [phase] validate_speech_recipe
+python scripts\build_corpus_speech_recipe.py --check
+if errorlevel 1 exit /b 1
+
 echo [phase] run_corpus
 set "LIPLAB_PREROLL_MS=350"
 if not "%~1"=="" set "LIPLAB_PREROLL_MS=%~1"

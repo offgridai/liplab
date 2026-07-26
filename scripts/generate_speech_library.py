@@ -138,13 +138,115 @@ def load_voices(raw_values: list[str] | None, qwen_root: pathlib.Path) -> list[d
     return voices
 
 
-def write_named_path_list(
-    path: pathlib.Path, rows: list[tuple[str, pathlib.Path]]
-) -> None:
-    path.write_text(
-        "".join(f"{row_id}\t{row_path.resolve()}\n" for row_id, row_path in rows),
-        encoding="utf-8",
+def load_recipe(
+    path: pathlib.Path, qwen_root: pathlib.Path
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict) or payload.get("schema_version") != 1:
+        raise SystemExit("recipe JSON must use schema_version 1")
+
+    raw_voices = payload.get("voices")
+    raw_cases = payload.get("cases")
+    if not isinstance(raw_voices, list) or not raw_voices:
+        raise SystemExit("recipe JSON must contain a non-empty voices list")
+    if not isinstance(raw_cases, list) or not raw_cases:
+        raise SystemExit("recipe JSON must contain a non-empty cases list")
+
+    voices: list[dict[str, object]] = []
+    voices_by_id: dict[str, dict[str, object]] = {}
+    for row in raw_voices:
+        if not isinstance(row, dict):
+            raise SystemExit("recipe voice entries must be objects")
+        voice_id = str(row.get("id", "")).strip()
+        raw_json = str(row.get("json", "")).strip()
+        if not voice_id or not raw_json:
+            raise SystemExit("recipe voice entries require id and json")
+        voice_path = pathlib.Path(raw_json)
+        if not voice_path.is_absolute():
+            voice_path = qwen_root / voice_path
+        loaded = load_voices([f"{voice_id}={voice_path}"], qwen_root)[0]
+        if voice_id in voices_by_id:
+            raise SystemExit(f"duplicate recipe voice id: {voice_id}")
+        voices.append(loaded)
+        voices_by_id[voice_id] = loaded
+
+    cases: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for index, row in enumerate(raw_cases, start=1):
+        if not isinstance(row, dict):
+            raise SystemExit(f"invalid recipe case at index {index}")
+        case_id = str(row.get("id", "")).strip()
+        text = str(row.get("text", "")).strip()
+        voice_id = str(row.get("voice_id", "")).strip()
+        source_value = str(row.get("source_transcript", "")).strip()
+        if (
+            not case_id
+            or not case_id.replace("_", "").replace("-", "").isalnum()
+            or not text
+            or voice_id not in voices_by_id
+            or not source_value
+        ):
+            raise SystemExit(f"invalid recipe case at index {index}")
+        if case_id in seen:
+            raise SystemExit(f"duplicate recipe case id: {case_id}")
+        try:
+            seed = int(row["seed"])
+        except (KeyError, TypeError, ValueError):
+            raise SystemExit(f"invalid recipe seed for {case_id}") from None
+        source_path = pathlib.Path(source_value)
+        if not source_path.is_absolute():
+            source_path = ROOT / source_path
+        source_path = source_path.resolve()
+        if not source_path.exists():
+            raise SystemExit(f"recipe source transcript not found: {source_path}")
+        try:
+            source_path.relative_to(ROOT)
+        except ValueError:
+            raise SystemExit(
+                f"recipe source transcript must be inside the liplab repository: {source_path}"
+            ) from None
+        if source_path.read_text(encoding="utf-8-sig").strip() != text:
+            raise SystemExit(f"recipe text differs from source transcript: {case_id}")
+        seen.add(case_id)
+        cases.append(
+            {
+                "case_id": case_id,
+                "line_id": case_id,
+                "text": text,
+                "seed": seed,
+                "voice": voices_by_id[voice_id],
+                "source_transcript": source_path,
+            }
+        )
+    return voices, cases
+
+
+def write_batch_job_list(path: pathlib.Path, cases: list[dict[str, object]]) -> None:
+    rows: list[str] = []
+    ordered_cases = sorted(
+        cases,
+        key=lambda case: (
+            str(case["voice"]["id"]) if isinstance(case["voice"], dict) else "",
+            str(case["case_id"]),
+        ),
     )
+    for case in ordered_cases:
+        voice = case["voice"]
+        if not isinstance(voice, dict):
+            raise SystemExit("internal error: invalid case voice")
+        rows.append(
+            "\t".join(
+                [
+                    str(case["case_id"]),
+                    str(pathlib.Path(case["batch_transcript"]).resolve()),
+                    str(voice["id"]),
+                    str(pathlib.Path(voice["path"]).resolve()),
+                    str(case["seed"]),
+                ]
+            )
+            + "\n"
+        )
+    path.write_text("".join(rows), encoding="utf-8")
 
 
 def wav_metadata(path: pathlib.Path) -> dict[str, int | float]:
@@ -267,18 +369,37 @@ def main() -> int:
         help="voice-clone JSON; repeat for multiple voices (default: Priestley reference)",
     )
     parser.add_argument("--lines-json", type=pathlib.Path)
-    parser.add_argument("--seeds", default="41,42")
+    parser.add_argument(
+        "--recipe-json",
+        type=pathlib.Path,
+        help="per-case transcript, voice, and seed recipe",
+    )
+    parser.add_argument("--seeds")
     parser.add_argument("--model-identifier", default="qwen3-tts-0.6b-f16")
     parser.add_argument("--library-id", default="demo_v1")
     parser.add_argument("--output-root", type=pathlib.Path)
     parser.add_argument("--mfa-num-jobs", type=int, default=2)
     parser.add_argument("--skip-synthesis", action="store_true")
     parser.add_argument("--skip-mfa", action="store_true")
+    parser.add_argument(
+        "--validate-only",
+        action="store_true",
+        help="validate inputs and write batch staging files without synthesis",
+    )
     args = parser.parse_args()
+
+    if args.recipe_json and (args.lines_json or args.voice_json or args.seeds):
+        raise SystemExit(
+            "--recipe-json cannot be combined with --lines-json, --voice-json, or --seeds"
+        )
 
     qwen_root = args.qwen_root.resolve()
     qwen_exe = (args.qwen_exe.resolve() if args.qwen_exe else find_qwen_executable(qwen_root))
-    voices = load_voices(args.voice_json, qwen_root)
+    recipe_cases: list[dict[str, object]] | None = None
+    if args.recipe_json:
+        voices, recipe_cases = load_recipe(args.recipe_json.resolve(), qwen_root)
+    else:
+        voices = load_voices(args.voice_json, qwen_root)
     models_root = (qwen_root / "models").resolve()
     if not qwen_exe.exists():
         raise SystemExit(f"Qwen executable not found: {qwen_exe}")
@@ -306,8 +427,12 @@ def main() -> int:
     ):
         path.mkdir(parents=True, exist_ok=True)
 
-    lines = load_lines(args.lines_json)
-    seeds = parse_seeds(args.seeds)
+    lines = load_lines(args.lines_json) if recipe_cases is None else []
+    seeds = (
+        parse_seeds(args.seeds or "41,42")
+        if recipe_cases is None
+        else sorted({int(case["seed"]) for case in recipe_cases})
+    )
     old_manifest_path = output_root / "manifest.json"
     old_manifest = (
         json.loads(old_manifest_path.read_text(encoding="utf-8"))
@@ -320,19 +445,37 @@ def main() -> int:
         if isinstance(row, dict) and row.get("case_id")
     }
 
-    transcript_list_rows: list[tuple[str, pathlib.Path]] = []
-    for line in lines:
-        batch_transcript_path = batch_transcript_root / f"{line['id']}.txt"
-        batch_transcript_path.write_text(line["text"] + "\n", encoding="utf-8")
-        transcript_list_rows.append((line["id"], batch_transcript_path))
+    requested_cases: list[dict[str, object]] = []
+    if recipe_cases is not None:
+        requested_cases = recipe_cases
+    else:
+        for line in lines:
+            for voice in voices:
+                for seed in seeds:
+                    requested_cases.append(
+                        {
+                            "case_id": f"{line['id']}__{voice['id']}__seed_{seed}",
+                            "line_id": line["id"],
+                            "text": line["text"],
+                            "seed": seed,
+                            "voice": voice,
+                            "source_transcript": None,
+                        }
+                    )
 
-    transcript_list_path = batch_input_root / "transcripts.tsv"
-    voice_list_path = batch_input_root / "voices.tsv"
-    write_named_path_list(transcript_list_path, transcript_list_rows)
-    write_named_path_list(
-        voice_list_path,
-        [(str(voice["id"]), pathlib.Path(voice["path"])) for voice in voices],
-    )
+    for case in requested_cases:
+        batch_transcript_path = batch_transcript_root / f"{case['case_id']}.txt"
+        batch_transcript_path.write_text(str(case["text"]) + "\n", encoding="utf-8")
+        case["batch_transcript"] = batch_transcript_path
+
+    batch_job_list_path = batch_input_root / "jobs.tsv"
+    write_batch_job_list(batch_job_list_path, requested_cases)
+    if args.validate_only:
+        print(
+            f"Validated {len(requested_cases)} assigned cases across "
+            f"{len(voices)} voices: {batch_job_list_path}"
+        )
+        return 0
 
     batch_command = [
         str(qwen_exe),
@@ -359,51 +502,51 @@ def main() -> int:
         "--no-play-streaming",
         "--simulate-stream-callback",
         "--quiet-all",
-        "--batch-transcript-list",
-        str(transcript_list_path),
-        "--batch-voice-list",
-        str(voice_list_path),
-        "--batch-seeds",
-        ",".join(str(seed) for seed in seeds),
+        "--batch-job-list",
+        str(batch_job_list_path),
         "--batch-output-dir",
         str(wav_root),
     ]
     if not args.skip_synthesis:
         print(
-            f"Synthesizing {len(lines)} transcripts x {len(voices)} voices x "
-            f"{len(seeds)} seeds"
+            f"Synthesizing {len(requested_cases)} assigned transcript/voice/seed cases"
         )
         subprocess.run(batch_command, cwd=qwen_root, check=True)
 
     cases: list[dict[str, object]] = []
-    for line in lines:
-        for voice in voices:
-            for seed in seeds:
-                case_id = f"{line['id']}__{voice['id']}__seed_{seed}"
-                wav_path = wav_root / f"{case_id}.wav"
-                transcript_path = transcript_root / f"{case_id}.txt"
-                lab_path = corpus_root / f"{case_id}.lab"
-                transcript_path.write_text(line["text"] + "\n", encoding="utf-8")
-                lab_path.write_text(
-                    normalize_spoken_numbers(line["text"]) + "\n", encoding="utf-8"
-                )
-                if not wav_path.exists():
-                    raise SystemExit(f"generated WAV missing: {wav_path}")
-                wav_hash = sha256(wav_path)
-                case = {
-                    "case_id": case_id,
-                    "line_id": line["id"],
-                    "voice_id": voice["id"],
-                    "seed": seed,
-                    "transcript": line["text"],
-                    "wav": wav_path.relative_to(output_root).as_posix(),
-                    "wav_sha256": wav_hash,
-                    "matches_previous_wav": old_hashes.get(case_id) == wav_hash
-                    if case_id in old_hashes
-                    else None,
-                    "wav_metadata": wav_metadata(wav_path),
-                }
-                cases.append(case)
+    for requested in requested_cases:
+        case_id = str(requested["case_id"])
+        text = str(requested["text"])
+        voice = requested["voice"]
+        if not isinstance(voice, dict):
+            raise SystemExit("internal error: invalid case voice")
+        wav_path = wav_root / f"{case_id}.wav"
+        transcript_path = transcript_root / f"{case_id}.txt"
+        lab_path = corpus_root / f"{case_id}.lab"
+        transcript_path.write_text(text + "\n", encoding="utf-8")
+        lab_path.write_text(normalize_spoken_numbers(text) + "\n", encoding="utf-8")
+        if not wav_path.exists():
+            raise SystemExit(f"generated WAV missing: {wav_path}")
+        wav_hash = sha256(wav_path)
+        case = {
+            "case_id": case_id,
+            "line_id": requested["line_id"],
+            "voice_id": voice["id"],
+            "seed": requested["seed"],
+            "transcript": text,
+            "source_transcript": (
+                pathlib.Path(requested["source_transcript"]).relative_to(ROOT).as_posix()
+                if requested.get("source_transcript")
+                else None
+            ),
+            "wav": wav_path.relative_to(output_root).as_posix(),
+            "wav_sha256": wav_hash,
+            "matches_previous_wav": old_hashes.get(case_id) == wav_hash
+            if case_id in old_hashes
+            else None,
+            "wav_metadata": wav_metadata(wav_path),
+        }
+        cases.append(case)
 
     dictionary_path = output_root / "mfa_dictionary.dict"
     dictionary_report = build_dictionary(
@@ -447,8 +590,16 @@ def main() -> int:
         case["alignment"] = alignment
 
     manifest = {
-        "schema_version": 2,
+        "schema_version": 3,
         "library_id": args.library_id,
+        "recipe": (
+            {
+                "path": str(args.recipe_json.resolve()),
+                "sha256": sha256(args.recipe_json.resolve()),
+            }
+            if args.recipe_json
+            else None
+        ),
         "qwen": {
             "repo": str(qwen_root),
             "revision": git_revision(qwen_root),

@@ -39,6 +39,8 @@ Useful options:
 - `--qwen-root <path>` or `--qwen-exe <path>` selects the TTS checkout/build.
 - `--skip-synthesis` reuses existing WAVs and reruns MFA packaging.
 - `--skip-mfa` generates WAVs and provenance without alignment.
+- `--recipe-json <path>` selects exact per-case transcript, voice, and seed assignments.
+- `--validate-only` validates a recipe and stages its Qwen job list without synthesis.
 
 For example, two transcripts, two voices, and three seeds produce twelve WAVs:
 
@@ -54,3 +56,26 @@ The output manifest is the reproducibility contract. It records the Qwen Git
 revision, hashes of the executable and every voice JSON, explicit sampling
 settings, the persistent batch command, WAV format/duration/hash, dictionary
 provenance, and TextGrid hashes and interval counts.
+
+## Existing corpus recipe
+
+`inputs/speech_library/existing_corpus_v1.json` assigns one deterministic seed
+and one voice to each of the 350 checked-in corpus transcripts. Assignments are
+pseudorandom but reproducible: they are derived from a named SHA-256 namespace
+and the original case ID. The recipe currently spreads cases across the Alfie,
+Lana, Priestley, and Priestley 2 reference JSONs.
+
+Validate that every embedded transcript still matches its canonical source and
+that all Qwen voice JSONs resolve:
+
+```bat
+python scripts\build_corpus_speech_recipe.py --check
+python scripts\generate_speech_library.py ^
+  --recipe-json inputs\speech_library\existing_corpus_v1.json ^
+  --library-id existing_corpus_v1 ^
+  --validate-only
+```
+
+Remove `--validate-only` to synthesize and MFA-align the complete assigned
+corpus. Regenerate the checked-in recipe after intentionally changing the
+source corpus with `python scripts\build_corpus_speech_recipe.py`.
