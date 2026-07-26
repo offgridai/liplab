@@ -54,9 +54,39 @@ That command performs exactly one experiment:
 5. replay it through the normal grader;
 6. write the comprehensive frozen-split score report.
 
-The current harness replay is the integration seam, not the final runtime.
-The next implementation step is a live `IStreamingMonotonicAligner` inside the
+The current harness replay is the integration seam. The checkpoint now also has
+a deployable C++/CUDA inference implementation; the next integration step is to
+connect that implementation to a live `IStreamingMonotonicAligner` inside the
 Offgrid runtime, using the same persistent fixed-lag state without CSV files.
+
+## Co-resident GPU runtime
+
+Operational TTS owns the valuable GPU budget. Lipsync therefore does not load
+LibTorch, cuDNN, or a general graph executor at inference time. Training exports
+a versioned flat checkpoint, and `NeuralStreamerCudaRuntime` executes two small
+fused kernels using CUDA Runtime only:
+
+- model weights are resident FP16 (54,608 bytes) with FP32 accumulation;
+- transcript tokens are encoded once per utterance and cached as FP16 (6,912
+  bytes in the measured benchmark utterance);
+- inference batches four 10 ms acoustic frames and scores only the current four
+  monotonic token candidates;
+- four causal history frames are retained, so no growing audio tensor or model
+  replay is required;
+- pinned host buffers and all GPU allocations are established outside the
+  per-chunk path;
+- work runs on a dedicated nonblocking CUDA stream at the device's least-urgent
+  priority, allowing higher-priority TTS kernels to preempt between Lipsync's
+  short launches.
+
+The runtime benchmark compares every candidate logit against the LibTorch
+reference before scoring. On the current CUDA system, 512 synchronized 40 ms
+chunks measured 121.4 us mean, 121.0 us median, 123.6 us p95, and 185 us max.
+Maximum FP16/reference logit error was 0.0095. Transcript setup measured 48.7 ms
+once per utterance; this is not on the recurring audio-chunk path. The flat
+checkpoint is 109,240 bytes and resident weights are about 53.3 KiB. These are
+isolated-kernel measurements; TTS-coexistence latency still needs an integration
+benchmark under actual synthesis load.
 
 ## Reporting contract
 
@@ -69,11 +99,12 @@ Speech regions use order-preserving overlap alignment. Reports distinguish
 clean one-to-one matches, merges, splits, missing regions, and extra regions so
 a single pause error cannot shift every later boundary pairing.
 
-The current 750-case neural replay scores 0.9284 exact viseme match with 20.99 ms
-matched-center mean, zero deterministic fallback, and zero ordering violations.
-Overlap-aware speech-region recall/precision are 0.9345/0.9107; comprehensive
-start and end means are 163.3/172.2 ms with 20/16.9 ms medians. These are research
-scores, not evidence that live Offgrid inference is implemented.
+The current 750-case neural replay scores 0.9333 exact viseme match with 21.10 ms
+matched-center mean and 31.70 ms all-reference mean, zero deterministic fallback,
+and zero ordering violations. Overlap-aware speech-region recall/precision are
+0.9356/0.9020; comprehensive start and end means are 164.8/172.4 ms with 20/20 ms
+medians. These are research scores, not evidence that live Offgrid inference is
+integrated yet.
 
 ## Promotion gates
 

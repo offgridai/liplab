@@ -32,9 +32,20 @@ target_link_libraries(liplab_runner PRIVATE liplab_core)
 option(LIPLAB_ENABLE_TORCH "Build the optional LibTorch CUDA neural streamer trainer" OFF)
 if(LIPLAB_ENABLE_TORCH)
     find_package(Torch CONFIG REQUIRED)
+    find_package(CUDAToolkit REQUIRED)
+    add_library(liplab_neural_streamer_cuda STATIC
+        harness/ml/NeuralStreamerCudaRuntime.cu
+    )
+    target_include_directories(liplab_neural_streamer_cuda PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/harness/ml)
+    target_link_libraries(liplab_neural_streamer_cuda PUBLIC CUDA::cudart)
+    set_property(TARGET liplab_neural_streamer_cuda PROPERTY CUDA_STANDARD 17)
+    set_property(TARGET liplab_neural_streamer_cuda PROPERTY CUDA_STANDARD_REQUIRED ON)
     add_executable(liplab_monotonic_aligner_torch harness/ml/monotonic_aligner_torch.cpp)
     target_include_directories(liplab_monotonic_aligner_torch PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/harness/ml)
-    target_link_libraries(liplab_monotonic_aligner_torch PRIVATE ${TORCH_LIBRARIES})
+    target_link_libraries(liplab_monotonic_aligner_torch PRIVATE
+        ${TORCH_LIBRARIES}
+        liplab_neural_streamer_cuda
+    )
     # LibTorch 2.13 headers use C++20 designated initializers and bit-field
     # defaults. Keep the standalone harness on C++17 and raise only this
     # optional target.

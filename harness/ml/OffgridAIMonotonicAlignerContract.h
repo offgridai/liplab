@@ -1,5 +1,7 @@
 #pragma once
 
+#include "NeuralStreamerModelFormat.h"
+
 #include <array>
 #include <cstdint>
 #include <span>
@@ -7,8 +9,8 @@
 namespace offgridai::monotonic_ml {
 
 constexpr int kContractVersion = 1;
-constexpr int kForwardTokenWindow = 4;
-constexpr int kAudioFeatureCount = 20;
+constexpr int kForwardTokenWindow = neural_streamer::kForwardTokenWindow;
+constexpr int kAudioFeatureCount = neural_streamer::kAudioFeatureCount;
 
 // Constructed from the transcript before audio begins. Identity and order are
 // immutable; inference decides only which token is active and when it advances.

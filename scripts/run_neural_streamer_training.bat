@@ -41,6 +41,8 @@ if errorlevel 1 exit /b 1
 if not exist "%ARTIFACT_DIR%" mkdir "%ARTIFACT_DIR%"
 copy /y outputs\runs\latest\neural_streamer.pt "%ARTIFACT_DIR%\neural_streamer.pt" >nul
 if errorlevel 1 exit /b 1
+copy /y outputs\runs\latest\neural_streamer_cuda.bin "%ARTIFACT_DIR%\neural_streamer_cuda.bin" >nul
+if errorlevel 1 exit /b 1
 copy /y outputs\runs\latest\neural_streamer_predictions.csv "%ARTIFACT_DIR%\neural_streamer_predictions.csv" >nul
 if errorlevel 1 exit /b 1
 copy /y outputs\runs\latest\neural_streamer_report.json "%ARTIFACT_DIR%\neural_streamer_report.json" >nul

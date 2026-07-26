@@ -1,6 +1,10 @@
 #include <torch/torch.h>
 
+#include "NeuralStreamerCudaRuntime.h"
+#include "NeuralStreamerModelFormat.h"
+
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -20,11 +24,12 @@
 
 namespace fs = std::filesystem;
 
-constexpr int kAudioDimensions = 20;
-constexpr int kPhoneBuckets = 64;
-constexpr int kPoseBuckets = 32;
-constexpr int kTokenContinuous = 10;
-constexpr int kTokenDimensions = kPhoneBuckets + kPoseBuckets + kTokenContinuous;
+constexpr int kAudioDimensions = offgridai::neural_streamer::kAudioFeatureCount;
+constexpr int kPhoneBuckets = offgridai::neural_streamer::kPhoneBuckets;
+constexpr int kPoseBuckets = offgridai::neural_streamer::kPoseBuckets;
+constexpr int kTokenContinuous = offgridai::neural_streamer::kTokenContinuous;
+constexpr int kTokenDimensions = offgridai::neural_streamer::kTokenDimensions;
+constexpr int kHiddenDimensions = offgridai::neural_streamer::kHiddenDimensions;
 constexpr int kFrameMilliseconds = 10;
 constexpr int kStreamingLagFrames = 35;
 constexpr int kForwardSumCadence = 16;
@@ -317,12 +322,13 @@ struct MonotonicNetworkImpl : torch::nn::Module {
     MonotonicNetworkImpl()
     {
         AudioConv1 = register_module("audio_conv1", torch::nn::Conv1d(
-            torch::nn::Conv1dOptions(kAudioDimensions, 64, 3).padding(2)));
+            torch::nn::Conv1dOptions(kAudioDimensions, kHiddenDimensions, 3).padding(2)));
         AudioConv2 = register_module("audio_conv2", torch::nn::Conv1d(
-            torch::nn::Conv1dOptions(64, 64, 3).padding(2)));
-        TokenEncoder = register_module("token_encoder", torch::nn::Sequential(
-            torch::nn::Linear(kTokenDimensions, 64), torch::nn::ReLU(),
-            torch::nn::Linear(64, 64)));
+            torch::nn::Conv1dOptions(kHiddenDimensions, kHiddenDimensions, 3).padding(2)));
+        TokenLinear1 = register_module("token_linear_1",
+            torch::nn::Linear(kTokenDimensions, kHiddenDimensions));
+        TokenLinear2 = register_module("token_linear_2",
+            torch::nn::Linear(kHiddenDimensions, kHiddenDimensions));
         AudioMean = register_buffer("audio_mean", torch::zeros({1, kAudioDimensions, 1}));
         AudioScale = register_buffer("audio_scale", torch::ones({1, kAudioDimensions, 1}));
     }
@@ -336,17 +342,166 @@ struct MonotonicNetworkImpl : torch::nn::Module {
         audio_state = audio_state.slice(2, 0, frames);
         audio_state = torch::relu(AudioConv2->forward(audio_state));
         audio_state = audio_state.slice(2, 0, frames).squeeze(0).transpose(0, 1);
-        torch::Tensor token_state = TokenEncoder->forward(token);
+        torch::Tensor token_state = TokenLinear2->forward(torch::relu(TokenLinear1->forward(token)));
         return torch::matmul(audio_state, token_state.transpose(0, 1)) / 8.0f;
     }
 
     torch::nn::Conv1d AudioConv1{nullptr};
     torch::nn::Conv1d AudioConv2{nullptr};
-    torch::nn::Sequential TokenEncoder{nullptr};
+    torch::nn::Linear TokenLinear1{nullptr};
+    torch::nn::Linear TokenLinear2{nullptr};
     torch::Tensor AudioMean;
     torch::Tensor AudioScale;
 };
 TORCH_MODULE(MonotonicNetwork);
+
+static std::vector<int> viterbi_path(
+    const torch::Tensor& score_tensor,
+    const std::vector<TokenRow>& tokens,
+    int fixed_lag_frames);
+
+static void append_tensor(std::vector<float>& values, const torch::Tensor& tensor)
+{
+    const torch::Tensor contiguous = tensor.detach().to(torch::kCPU, torch::kFloat32).contiguous();
+    const float* begin = contiguous.data_ptr<float>();
+    values.insert(values.end(), begin, begin + contiguous.numel());
+}
+
+static void write_runtime_checkpoint(const fs::path& path, const MonotonicNetwork& model)
+{
+    using namespace offgridai::neural_streamer;
+    std::vector<float> values;
+    values.reserve(kCheckpointFloatCount);
+    append_tensor(values, model->AudioMean);
+    append_tensor(values, model->AudioScale);
+    append_tensor(values, model->AudioConv1->weight);
+    append_tensor(values, model->AudioConv1->bias);
+    append_tensor(values, model->AudioConv2->weight);
+    append_tensor(values, model->AudioConv2->bias);
+    append_tensor(values, model->TokenLinear1->weight);
+    append_tensor(values, model->TokenLinear1->bias);
+    append_tensor(values, model->TokenLinear2->weight);
+    append_tensor(values, model->TokenLinear2->bias);
+    if (values.size() != kCheckpointFloatCount)
+        throw std::runtime_error("runtime checkpoint parameter count changed");
+    const CheckpointHeader header;
+    std::ofstream output(path, std::ios::binary);
+    if (!output) throw std::runtime_error("cannot write runtime checkpoint");
+    output.write(reinterpret_cast<const char*>(&header), sizeof(header));
+    output.write(reinterpret_cast<const char*>(values.data()),
+        static_cast<std::streamsize>(values.size() * sizeof(float)));
+    if (!output) throw std::runtime_error("runtime checkpoint write failed");
+}
+
+static double percentile(std::vector<double> values, double fraction)
+{
+    if (values.empty()) return 0.0;
+    std::sort(values.begin(), values.end());
+    const double position = std::clamp(fraction, 0.0, 1.0) * (values.size() - 1);
+    const std::size_t low = static_cast<std::size_t>(std::floor(position));
+    const std::size_t high = static_cast<std::size_t>(std::ceil(position));
+    const double weight = position - low;
+    return values[low] * (1.0 - weight) + values[high] * weight;
+}
+
+struct RuntimeBenchmark {
+    double MeanMicroseconds = 0.0;
+    double MedianMicroseconds = 0.0;
+    double P95Microseconds = 0.0;
+    double MaxMicroseconds = 0.0;
+    double TokenSetupMicroseconds = 0.0;
+    double MaxLogitError = 0.0;
+    int Calls = 0;
+    offgridai::neural_streamer::RuntimeFootprint Footprint;
+};
+
+static RuntimeBenchmark benchmark_runtime(
+    const fs::path& checkpoint,
+    MonotonicNetwork& model,
+    const std::vector<SequenceCase>& dataset,
+    const torch::Device& device)
+{
+    using clock = std::chrono::steady_clock;
+    using namespace offgridai::neural_streamer;
+    const auto selected = std::find_if(dataset.begin(), dataset.end(), [](const SequenceCase& sequence) {
+        return sequence.Split == "validation"
+            && sequence.FrameTimes.size() >= 32
+            && sequence.Tokens.size() >= kForwardTokenWindow;
+    });
+    if (selected == dataset.end()) throw std::runtime_error("no runtime benchmark sequence");
+    CaseTensors row = tensors(*selected);
+    model->eval();
+    torch::InferenceMode inference_guard;
+    const torch::Tensor reference = model->forward(
+        row.Audio.to(device), row.Tokens.to(device)).to(torch::kCPU).contiguous();
+    const std::vector<int> path = viterbi_path(reference, selected->Tokens, kStreamingLagFrames);
+    const torch::Tensor frame_major = row.Audio.squeeze(0).transpose(0, 1).contiguous();
+    const float* frames = frame_major.data_ptr<float>();
+    const int frame_count = static_cast<int>(frame_major.size(0));
+    const int token_count = static_cast<int>(row.Tokens.size(0));
+
+    CudaRuntime runtime;
+    if (!runtime.LoadCheckpoint(checkpoint.string()))
+        throw std::runtime_error(runtime.LastError());
+    const auto token_begin = clock::now();
+    if (!runtime.ResetTokens(row.Tokens.contiguous().data_ptr<float>(), token_count))
+        throw std::runtime_error(runtime.LastError());
+    const auto token_end = clock::now();
+
+    RuntimeBenchmark result;
+    result.TokenSetupMicroseconds = std::chrono::duration<double, std::micro>(
+        token_end - token_begin).count();
+    const auto reference_values = reference.accessor<float, 2>();
+    std::array<float, kRuntimeChunkFrames * kForwardTokenWindow> scores{};
+    for (int begin = 0; begin < frame_count; begin += kRuntimeChunkFrames) {
+        const int count = std::min(kRuntimeChunkFrames, frame_count - begin);
+        const int active = std::clamp(path[static_cast<std::size_t>(begin)],
+            0, token_count - 1);
+        int scored_tokens = 0;
+        if (!runtime.PushChunk(frames + begin * kAudioFeatureCount, count,
+                active, scores.data(), scored_tokens))
+            throw std::runtime_error(runtime.LastError());
+        for (int frame = 0; frame < count; ++frame)
+            for (int token = 0; token < scored_tokens; ++token)
+                result.MaxLogitError = std::max(result.MaxLogitError,
+                    std::abs(static_cast<double>(scores[frame * kForwardTokenWindow + token])
+                        - reference_values[begin + frame][active + token]));
+    }
+    if (result.MaxLogitError > 0.10)
+        throw std::runtime_error("FP16 CUDA runtime diverges from LibTorch reference; max error "
+            + std::to_string(result.MaxLogitError));
+
+    std::vector<double> samples;
+    samples.reserve(512);
+    int begin = 0;
+    for (int call = 0; call < 528; ++call) {
+        if (begin >= frame_count) {
+            begin = 0;
+            if (!runtime.ResetTokens(row.Tokens.contiguous().data_ptr<float>(), token_count))
+                throw std::runtime_error(runtime.LastError());
+        }
+        const int count = std::min(kRuntimeChunkFrames, frame_count - begin);
+        const int active = std::clamp(path[static_cast<std::size_t>(begin)],
+            0, token_count - 1);
+        int scored_tokens = 0;
+        const auto start = clock::now();
+        if (!runtime.PushChunk(frames + begin * kAudioFeatureCount, count,
+                active, scores.data(), scored_tokens))
+            throw std::runtime_error(runtime.LastError());
+        const auto end = clock::now();
+        if (call >= 16)
+            samples.push_back(std::chrono::duration<double, std::micro>(end - start).count());
+        begin += count;
+    }
+    result.Calls = static_cast<int>(samples.size());
+    result.MeanMicroseconds = std::accumulate(samples.begin(), samples.end(), 0.0)
+        / std::max<std::size_t>(samples.size(), 1);
+    result.MedianMicroseconds = percentile(samples, 0.50);
+    result.P95Microseconds = percentile(samples, 0.95);
+    result.MaxMicroseconds = *std::max_element(samples.begin(), samples.end());
+    result.Footprint = runtime.Footprint();
+    return result;
+}
 
 static std::vector<int> viterbi_path(const torch::Tensor& score_tensor,
     const std::vector<TokenRow>& tokens, int fixed_lag_frames)
@@ -599,12 +754,19 @@ int main(int argc, char** argv)
         }
         torch::load(model, checkpoint.string());
         model->to(device);
+        const fs::path runtime_checkpoint =
+            root / "outputs/runs/latest/neural_streamer_cuda.bin";
+        write_runtime_checkpoint(runtime_checkpoint, model);
+        const RuntimeBenchmark runtime = benchmark_runtime(
+            runtime_checkpoint, model, dataset, device);
+        if (runtime.P95Microseconds > 1000.0)
+            throw std::runtime_error("CUDA runtime exceeds the 1 ms p95 budget");
         const fs::path predictions = root / "outputs/runs/latest/neural_streamer_predictions.csv";
         write_predictions(predictions, model, dataset, device);
         const fs::path report = root / "outputs/runs/latest/neural_streamer_report.json";
         std::ofstream out(report);
         out << std::fixed << std::setprecision(6)
-            << "{\n  \"schema_version\": 1,\n  \"device\": \"" << device << "\",\n"
+            << "{\n  \"schema_version\": 2,\n  \"device\": \"" << device << "\",\n"
             << "  \"utterance_count\": " << dataset.size() << ",\n"
             << "  \"selected_epoch\": " << best_epoch << ",\n"
             << "  \"validation_cross_entropy\": " << best_validation << ",\n"
@@ -612,8 +774,29 @@ int main(int argc, char** argv)
             << "  \"forward_sum_cadence\": " << kForwardSumCadence << ",\n"
             << "  \"streaming_lag_ms\": " << kStreamingLagFrames * kFrameMilliseconds << ",\n"
             << "  \"boundary_curriculum_epochs\": 6,\n"
-            << "  \"feature_noise_stddev\": 0.015\n}\n";
+            << "  \"feature_noise_stddev\": 0.015,\n"
+            << "  \"runtime\": {\n"
+            << "    \"backend\": \"fused_cuda_fp16\",\n"
+            << "    \"chunk_frames\": "
+                << offgridai::neural_streamer::kRuntimeChunkFrames << ",\n"
+            << "    \"forward_token_window\": "
+                << offgridai::neural_streamer::kForwardTokenWindow << ",\n"
+            << "    \"benchmark_calls\": " << runtime.Calls << ",\n"
+            << "    \"mean_us\": " << runtime.MeanMicroseconds << ",\n"
+            << "    \"median_us\": " << runtime.MedianMicroseconds << ",\n"
+            << "    \"p95_us\": " << runtime.P95Microseconds << ",\n"
+            << "    \"max_us\": " << runtime.MaxMicroseconds << ",\n"
+            << "    \"token_setup_us\": " << runtime.TokenSetupMicroseconds << ",\n"
+            << "    \"max_logit_error\": " << runtime.MaxLogitError << ",\n"
+            << "    \"checkpoint_bytes\": " << runtime.Footprint.CheckpointBytes << ",\n"
+            << "    \"resident_weight_bytes\": " << runtime.Footprint.WeightBytes << ",\n"
+            << "    \"resident_token_bytes\": " << runtime.Footprint.TokenBytes << ",\n"
+            << "    \"stream_priority\": " << runtime.Footprint.StreamPriority << "\n"
+            << "  }\n}\n";
         std::cout << "Selected epoch " << best_epoch << " validation CE " << best_validation << '\n';
+        std::cout << "CUDA runtime p95 " << runtime.P95Microseconds << " us, weights "
+            << runtime.Footprint.WeightBytes << " bytes, max logit error "
+            << runtime.MaxLogitError << '\n';
         std::cout << "Wrote " << predictions << '\n';
         return 0;
     } catch (const std::exception& error) {
