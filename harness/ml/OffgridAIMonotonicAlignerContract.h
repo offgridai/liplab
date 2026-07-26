@@ -38,8 +38,17 @@ struct CausalFrame {
 struct AlignmentDecision {
     std::int32_t ActiveTokenIndex = -1;
     std::int32_t AdvancedTokenCount = 0;
+    std::int32_t SpeechRegionIndex = -1;
+    std::int32_t ActiveWordIndex = -1;
+    std::int32_t ActiveSyllableNucleusPhoneIndex = -1;
     float TransitionAudioSec = -1.0f;
     float PathConfidence = 0.0f;
+    bool InSpeech = false;
+    bool StartedSpeechRegion = false;
+    bool EndedSpeechRegion = false;
+    bool ResumedSpeech = false;
+    bool StartedWord = false;
+    bool ReachedSyllableNucleus = false;
     bool UseDeterministicFallback = false;
 };
 

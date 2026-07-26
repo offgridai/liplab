@@ -431,8 +431,13 @@ using PredictedTimingAdviceByCase = std::map<std::string, std::map<int, Predicte
 
 struct PredictedNeuralTrackEvent
 {
+    int token_index = -1;
     int event_index = -1;
     std::string pose;
+    bool is_silence = false;
+    bool is_word_start = false;
+    bool is_region_start = false;
+    bool is_region_end = false;
     double center_sec = 0.0;
     double duration_sec = 0.08;
     double confidence = 0.0;
@@ -445,6 +450,7 @@ using PredictedNeuralTrackByCase =
 struct PredictedNeuralTrackResult
 {
     FOffgridAIAlignedVisemeTrack track;
+    TArray<FOffgridAIStreamingSpeechRegion> speech_regions;
     int prediction_count = 0;
     int accepted_count = 0;
     int identity_fallback_count = 0;
@@ -587,13 +593,18 @@ static PredictedNeuralTrackByCase read_predicted_neural_track_csv(const fs::path
     if (!std::getline(input, line)) throw std::runtime_error("empty neural track: " + path.string());
     const auto header = parse_csv_cells(line);
     const int case_column = header_index(header, "case_id");
+    const int token_column = header_index(header, "token_index");
     const int event_column = header_index(header, "event_index");
     const int pose_column = header_index(header, "pose");
     const int center_column = header_index(header, "center_sec");
     const int duration_column = header_index(header, "duration_sec");
     const int confidence_column = header_index(header, "confidence");
     const int fallback_column = header_index(header, "fallback_used");
-    if (case_column < 0 || event_column < 0 || pose_column < 0 || center_column < 0
+    const int silence_column = header_index(header, "is_silence");
+    const int word_start_column = header_index(header, "is_word_start");
+    const int region_start_column = header_index(header, "is_region_start");
+    const int region_end_column = header_index(header, "is_region_end");
+    if (case_column < 0 || token_column < 0 || event_column < 0 || pose_column < 0 || center_column < 0
         || duration_column < 0 || confidence_column < 0 || fallback_column < 0)
     {
         throw std::runtime_error("neural track is missing required columns");
@@ -604,8 +615,13 @@ static PredictedNeuralTrackByCase read_predicted_neural_track_csv(const fs::path
         if (line.empty()) continue;
         const auto cells = parse_csv_cells(line);
         PredictedNeuralTrackEvent event;
+        event.token_index = std::stoi(csv_cell(cells, token_column));
         event.event_index = std::stoi(csv_cell(cells, event_column));
         event.pose = csv_cell(cells, pose_column);
+        event.is_silence = csv_cell(cells, silence_column) == "1";
+        event.is_word_start = csv_cell(cells, word_start_column) == "1";
+        event.is_region_start = csv_cell(cells, region_start_column) == "1";
+        event.is_region_end = csv_cell(cells, region_end_column) == "1";
         event.center_sec = std::stod(csv_cell(cells, center_column));
         event.duration_sec = std::stod(csv_cell(cells, duration_column));
         event.confidence = std::stod(csv_cell(cells, confidence_column));
@@ -616,7 +632,7 @@ static PredictedNeuralTrackByCase read_predicted_neural_track_csv(const fs::path
     {
         (void)case_id;
         std::sort(events.begin(), events.end(), [](const auto& left, const auto& right) {
-            return left.event_index < right.event_index;
+            return left.token_index < right.token_index;
         });
     }
     return result;
@@ -1497,6 +1513,32 @@ static ProsodicPeakReport grade_prosodic_peaks(
         ? static_cast<double>(report.raw_matched_count) / report.target_count : 0.0;
     report.raw_mean_abs_error_ms = mean_ms(raw_errors);
     return report;
+}
+
+static std::vector<ProsodicPeakObservation> neural_syllable_observations(
+    const std::vector<ProsodicPeakTarget>& targets,
+    const FOffgridAIAlignedVisemeTrack& track)
+{
+    std::vector<ProsodicPeakObservation> observations;
+    for (const ProsodicPeakTarget& target : targets)
+    {
+        const auto event = std::find_if(track.Events.begin(), track.Events.end(), [&](const auto& candidate) {
+            return candidate.bIsRenderable
+                && !candidate.bCanceledByWordHandoff
+                && candidate.SourcePhoneIndex == target.global_phone_index;
+        });
+        if (event == track.Events.end()) continue;
+        ProsodicPeakObservation observation;
+        observation.target_index = target.target_index;
+        observation.peak_sec = event->FinalRenderCenterSeconds;
+        observation.decision_sec = event->FinalRenderCenterSeconds + 0.350;
+        observation.prominence = event->Strength;
+        observation.family_score = 1.0;
+        observation.score = 1.0;
+        observation.speech_region_index = event->SpeechRegionIndex;
+        observations.push_back(observation);
+    }
+    return observations;
 }
 
 static bool is_gold_vowel_phone(const std::string& phone_base)
@@ -3532,17 +3574,64 @@ static PredictedTimingApplicationResult apply_predicted_timing_advice(
 
 static PredictedNeuralTrackResult build_predicted_neural_track(
     const FOffgridAITextVisemePlan& plan,
-    const TArray<FOffgridAIStreamingSpeechRegion>& speech_regions,
     const std::vector<PredictedNeuralTrackEvent>& predictions)
 {
     PredictedNeuralTrackResult result;
     float last_center = 0.0f;
+    int remaining_visible = static_cast<int>(std::count_if(
+        predictions.begin(), predictions.end(), [](const auto& prediction) {
+            return !prediction.is_silence && prediction.event_index >= 0;
+        }));
+    bool region_open = false;
+    constexpr float kNeuralPauseSplitSeconds = 0.100f;
     for (const PredictedNeuralTrackEvent& prediction : predictions)
     {
         ++result.prediction_count;
+        const float requested_center = static_cast<float>(std::max(0.0, prediction.center_sec));
+        const float center = std::max(requested_center, last_center);
+        const float duration = static_cast<float>(std::clamp(prediction.duration_sec, 0.010, 0.500));
+        const float predicted_start = std::max(0.0f, center - 0.5f * duration);
+        const float predicted_end = center + 0.5f * duration;
+        if (prediction.is_silence)
+        {
+            const bool leading_or_trailing = result.accepted_count == 0 || remaining_visible == 0;
+            if (region_open && (duration >= kNeuralPauseSplitSeconds || leading_or_trailing))
+            {
+                auto& region = result.speech_regions.Last();
+                region.AudioBufferLastSpeechSec = std::max(region.AudioBufferStartSec, predicted_start);
+                region.AudioBufferEndSec = region.AudioBufferLastSpeechSec;
+                region.ProvisionalEndSec = predicted_start;
+                region.EndDecisionSec = predicted_end;
+                region.bEnded = true;
+                region.EndReason = FName(TEXT("neural_silence_state"));
+                region_open = false;
+            }
+            last_center = center;
+            continue;
+        }
         if (!plan.Events.IsValidIndex(prediction.event_index)) continue;
         const FOffgridAITextVisemeEvent& source = plan.Events[prediction.event_index];
         if (!source.bIsRenderable) continue;
+        --remaining_visible;
+
+        if (!region_open)
+        {
+            FOffgridAIStreamingSpeechRegion region;
+            region.SpeechRegionIndex = result.speech_regions.Num();
+            region.AudioBufferStartSec = predicted_start;
+            region.AudioBufferLastSpeechSec = predicted_end;
+            region.AudioBufferEndSec = predicted_end;
+            region.bStarted = true;
+            region.bEnded = false;
+            result.speech_regions.Add(region);
+            region_open = true;
+        }
+        else
+        {
+            auto& region = result.speech_regions.Last();
+            region.AudioBufferLastSpeechSec = std::max(region.AudioBufferLastSpeechSec, predicted_end);
+            region.AudioBufferEndSec = region.AudioBufferLastSpeechSec;
+        }
 
         FOffgridAICommittedVisemeEvent event;
         event.EventIndex = prediction.event_index;
@@ -3554,13 +3643,10 @@ static PredictedNeuralTrackResult build_predicted_neural_track(
         event.SourceWord = source.SourceText;
         event.WordIndex = source.WordIndex;
         event.SentenceIndex = source.SentenceIndex;
-        event.SpeechRegionIndex = source.SpeechRegionIndex;
+        event.SpeechRegionIndex = result.speech_regions.Last().SpeechRegionIndex;
         event.bIsStrongVisibleEvent = source.bIsStrongVisibleEvent;
         event.bIsRenderable = true;
         event.bCanceledByWordHandoff = false;
-        const float requested_center = static_cast<float>(std::max(0.0, prediction.center_sec));
-        const float center = std::max(requested_center, last_center);
-        const float duration = static_cast<float>(std::clamp(prediction.duration_sec, 0.010, 0.500));
         event.TextCenterNorm = source.StartNorm + 0.5f * (source.EndNorm - source.StartNorm);
         event.TextDiagnosticCenterSeconds = center;
         event.PriorCenterSeconds = center;
@@ -3572,7 +3658,7 @@ static PredictedNeuralTrackResult build_predicted_neural_track(
         event.RenderEndSeconds = center + 0.5f * duration;
         event.SourcePhoneIndex = source.SourcePhoneGlobalIndex;
         event.SourcePhoneBase = source.SourcePhoneBase;
-        event.bMappedToObservedSpeech = speech_regions.IsValidIndex(source.SpeechRegionIndex);
+        event.bMappedToObservedSpeech = true;
         event.CommitPlaybackSeconds = std::max(0.0f, center - 0.350f);
         event.CommitLeadSeconds = center - event.CommitPlaybackSeconds;
         event.CommitReason = FName(TEXT("neural_monotonic_alignment"));
@@ -3583,6 +3669,28 @@ static PredictedNeuralTrackResult build_predicted_neural_track(
         last_center = center;
         ++result.accepted_count;
         if (prediction.fallback_used) ++result.deterministic_fallback_count;
+    }
+    if (region_open)
+    {
+        auto& region = result.speech_regions.Last();
+        region.bEnded = true;
+        region.ProvisionalEndSec = region.AudioBufferEndSec;
+        region.EndDecisionSec = region.AudioBufferEndSec;
+        region.EndReason = FName(TEXT("neural_sequence_end"));
+    }
+    for (const auto& region : result.speech_regions)
+    {
+        FOffgridAICommittedVisemeTrack::FSpeechRegion track_region;
+        track_region.SpeechRegionIndex = region.SpeechRegionIndex;
+        track_region.StartSeconds = region.AudioBufferStartSec;
+        track_region.EndSeconds = region.AudioBufferEndSec;
+        track_region.bEnded = region.bEnded;
+        result.track.SpeechRegions.Add(track_region);
+    }
+    if (result.speech_regions.Num() > 0)
+    {
+        result.track.SpeechStartSeconds = result.speech_regions[0].AudioBufferStartSec;
+        result.track.SpeechEndSeconds = result.speech_regions.Last().AudioBufferEndSec;
     }
     return result;
 }
@@ -3869,11 +3977,27 @@ static const HandmadeLabel* find_gold_label_for_planned_event(
 static std::string monotonic_tokens_csv(
     const FOffgridAITextVisemePlan& plan,
     const FOffgridAICommittedVisemeTrack& committed,
-    const std::vector<HandmadeLabel>& labels)
+    const std::vector<HandmadeLabel>& labels,
+    const std::vector<GoldWordTiming>& gold_words)
 {
     struct TokenTarget {
         int32 EventIndex = INDEX_NONE;
         const HandmadeLabel* Gold = nullptr;
+        std::string Pose;
+        std::string Phone;
+        int WordIndex = INDEX_NONE;
+        int PhoneIndexInWord = INDEX_NONE;
+        int PhoneGlobalIndex = INDEX_NONE;
+        double DurationPrior = 0.075;
+        double TextCenterNorm = 0.0;
+        double Strength = 0.0;
+        int VisualRole = 0;
+        bool IsVowel = false;
+        bool IsSilence = false;
+        bool IsWordStart = false;
+        bool IsWordEnd = false;
+        bool IsRegionStart = false;
+        bool IsRegionEnd = false;
         double Center = -1.0;
         double Duration = 0.020;
         double DeterministicCenter = -1.0;
@@ -3889,6 +4013,18 @@ static std::string monotonic_tokens_csv(
         TokenTarget target;
         target.EventIndex = event_index;
         target.Gold = find_gold_label_for_planned_event(event, labels);
+        target.Pose = to_std(event.PoseID);
+        target.Phone = to_std(event.SourcePhoneBase);
+        target.WordIndex = event.WordIndex;
+        target.PhoneIndexInWord = event.SourcePhoneIndex;
+        target.PhoneGlobalIndex = event.SourcePhoneGlobalIndex;
+        const FOffgridAIExpectedPhone* phone = plan.ExpectedPhones.IsValidIndex(event.SourcePhoneGlobalIndex)
+            ? &plan.ExpectedPhones[event.SourcePhoneGlobalIndex] : nullptr;
+        target.DurationPrior = phone ? phone->WeightSeconds : 0.075f;
+        target.IsVowel = phone && phone->bIsVowel;
+        target.VisualRole = static_cast<int>(event.VisualRole);
+        target.TextCenterNorm = event.StartNorm + 0.5f * (event.EndNorm - event.StartNorm);
+        target.Strength = event.Strength;
         if (target.Gold)
         {
             target.Center = 0.5 * (target.Gold->start + target.Gold->end);
@@ -3924,23 +4060,96 @@ static std::string monotonic_tokens_csv(
             targets[index].Center = 0.030 * static_cast<double>(index);
     }
 
+    auto gold_word = [&](int word_index) -> const GoldWordTiming* {
+        const auto found = std::find_if(gold_words.begin(), gold_words.end(), [&](const auto& word) {
+            return word.word_index == word_index;
+        });
+        return found == gold_words.end() ? nullptr : &*found;
+    };
+    for (size_t index = 0; index < targets.size(); ++index)
+    {
+        const int word_index = targets[index].WordIndex;
+        const bool first_in_word = index == 0 || targets[index - 1].WordIndex != word_index;
+        const bool last_in_word = index + 1 == targets.size() || targets[index + 1].WordIndex != word_index;
+        targets[index].IsWordStart = first_in_word;
+        targets[index].IsWordEnd = last_in_word;
+        const GoldWordTiming* word = gold_word(word_index);
+        const GoldWordTiming* previous = first_in_word && index > 0
+            ? gold_word(targets[index - 1].WordIndex) : nullptr;
+        const GoldWordTiming* next = last_in_word && index + 1 < targets.size()
+            ? gold_word(targets[index + 1].WordIndex) : nullptr;
+        targets[index].IsRegionStart = first_in_word
+            && (!previous || !word || previous->speech_region_index != word->speech_region_index);
+        targets[index].IsRegionEnd = last_in_word
+            && (!next || !word || next->speech_region_index != word->speech_region_index);
+    }
+
+    auto silence_target = [](double center, double duration, double text_center) {
+        TokenTarget silence;
+        silence.Pose = "__SILENCE__";
+        silence.Phone = "SIL";
+        silence.IsSilence = true;
+        silence.DurationPrior = 0.040;
+        silence.Center = center;
+        silence.Duration = std::max(0.010, duration);
+        silence.TextCenterNorm = text_center;
+        return silence;
+    };
+    std::vector<TokenTarget> sequence;
+    if (!targets.empty())
+    {
+        const double first_start = targets.front().Center - 0.5 * targets.front().Duration;
+        TokenTarget leading = silence_target(
+            std::max(0.0, first_start - 0.050), 0.100, 0.0);
+        leading.IsRegionStart = true;
+        sequence.push_back(std::move(leading));
+        for (size_t index = 0; index < targets.size(); ++index)
+        {
+            sequence.push_back(targets[index]);
+            if (index + 1 >= targets.size()
+                || targets[index].WordIndex == targets[index + 1].WordIndex) continue;
+            const GoldWordTiming* before = gold_word(targets[index].WordIndex);
+            const GoldWordTiming* after = gold_word(targets[index + 1].WordIndex);
+            double gap_start = before ? before->end
+                : targets[index].Center + 0.5 * targets[index].Duration;
+            double gap_end = after ? after->start
+                : targets[index + 1].Center - 0.5 * targets[index + 1].Duration;
+            const double low = targets[index].Center + 0.005;
+            const double high = targets[index + 1].Center - 0.005;
+            double center = 0.5 * (gap_start + gap_end);
+            if (high > low) center = std::clamp(center, low, high);
+            else center = 0.5 * (targets[index].Center + targets[index + 1].Center);
+            const double text_center = 0.5
+                * (targets[index].TextCenterNorm + targets[index + 1].TextCenterNorm);
+            TokenTarget silence = silence_target(center, gap_end - gap_start, text_center);
+            silence.IsRegionEnd = targets[index].IsRegionEnd;
+            silence.IsRegionStart = targets[index + 1].IsRegionStart;
+            sequence.push_back(std::move(silence));
+        }
+        const double last_end = targets.back().Center + 0.5 * targets.back().Duration;
+        TokenTarget trailing = silence_target(last_end + 0.050, 0.100, 1.0);
+        trailing.IsRegionEnd = true;
+        sequence.push_back(std::move(trailing));
+    }
+    targets = std::move(sequence);
+
     std::ostringstream out;
     out << "schema_version,token_index,event_index,pose,phone_base,word_index,phone_index_in_word,"
         << "phone_global_index,duration_prior_sec,is_vowel,visual_role,text_center_norm,strength,"
+        << "is_silence,is_word_start,is_word_end,is_region_start,is_region_end,"
         << "target_center_sec,target_duration_sec,has_mfa_target,deterministic_center_sec\n";
     out << std::fixed << std::setprecision(6);
     for (size_t token_index = 0; token_index < targets.size(); ++token_index)
     {
         const TokenTarget& target = targets[token_index];
-        const auto& event = plan.Events[target.EventIndex];
-        const FOffgridAIExpectedPhone* phone = plan.ExpectedPhones.IsValidIndex(event.SourcePhoneGlobalIndex)
-            ? &plan.ExpectedPhones[event.SourcePhoneGlobalIndex] : nullptr;
         out << 1 << ',' << token_index << ',' << target.EventIndex << ','
-            << csv_value(to_std(event.PoseID)) << ',' << csv_value(to_std(event.SourcePhoneBase)) << ','
-            << event.WordIndex << ',' << event.SourcePhoneIndex << ',' << event.SourcePhoneGlobalIndex << ','
-            << (phone ? phone->WeightSeconds : 0.075f) << ',' << (phone && phone->bIsVowel ? 1 : 0) << ','
-            << static_cast<int>(event.VisualRole) << ','
-            << (event.StartNorm + 0.5f * (event.EndNorm - event.StartNorm)) << ',' << event.Strength << ','
+            << csv_value(target.Pose) << ',' << csv_value(target.Phone) << ','
+            << target.WordIndex << ',' << target.PhoneIndexInWord << ',' << target.PhoneGlobalIndex << ','
+            << target.DurationPrior << ',' << (target.IsVowel ? 1 : 0) << ','
+            << target.VisualRole << ',' << target.TextCenterNorm << ',' << target.Strength << ','
+            << (target.IsSilence ? 1 : 0) << ',' << (target.IsWordStart ? 1 : 0) << ','
+            << (target.IsWordEnd ? 1 : 0) << ',' << (target.IsRegionStart ? 1 : 0) << ','
+            << (target.IsRegionEnd ? 1 : 0) << ','
             << target.Center << ',' << target.Duration << ',' << (target.Gold ? 1 : 0) << ','
             << target.DeterministicCenter << '\n';
     }
@@ -5998,7 +6207,7 @@ int main(int argc, char** argv)
                         monotonic_audio_frames_csv(session.GetSpeechDetector().GetFeatureFrames()));
                     write_text(
                         case_dir / "monotonic_tokens.csv",
-                        monotonic_tokens_csv(plan, committed, handmade));
+                        monotonic_tokens_csv(plan, committed, handmade, gold_words));
                 }
                 if (!cli.case_filter.empty()) std::cerr << "[case] grade " << stem << std::endl;
                 write_text(case_dir / "planned_words.csv", planned_words_csv(plan));
@@ -6068,11 +6277,10 @@ int main(int argc, char** argv)
                 {
                     const PredictedNeuralTrackResult neural = build_predicted_neural_track(
                         plan,
-                        speech,
                         neural_prediction->second);
                     const GradeReport neural_grade = grade(
                         neural.track,
-                        speech,
+                        neural.speech_regions,
                         handmade,
                         gold_words,
                         gold_speech);
@@ -6080,6 +6288,14 @@ int main(int argc, char** argv)
                         case_dir / "neural_track_summary.json",
                         predicted_neural_track_summary_json(neural, neural_grade));
                     write_text(case_dir / "neural_track_grade.json", grade_json(neural_grade));
+                    auto neural_syllables = neural_syllable_observations(
+                        prosodic_peak_targets, neural.track);
+                    const ProsodicPeakReport neural_syllable_report = grade_prosodic_peaks(
+                        prosodic_peak_targets,
+                        neural_syllables,
+                        std::vector<ProsodicPeakObservation>());
+                    write_text(case_dir / "neural_syllable_alignment_grade.json",
+                        prosodic_peak_grade_json(neural_syllable_report));
                 }
                 if (output.write_detailed_diagnostics)
                 {

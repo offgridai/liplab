@@ -19,13 +19,61 @@ def main() -> int:
     split_for = {case["case_id"]: case["split"] for case in manifest["cases"]}
 
     accumulators: dict[str, dict[str, float]] = {}
+    alignment = {
+        "speech_region_reference_count": 0, "speech_region_matched_count": 0,
+        "speech_region_weighted_start_error_ms": 0.0,
+        "speech_region_weighted_end_error_ms": 0.0,
+        "speech_region_count_mismatch_cases": 0,
+        "word_onset_reference_count": 0, "word_onset_matched_count": 0,
+        "word_onset_weighted_start_error_ms": 0.0,
+        "intra_word_reference_count": 0, "intra_word_matched_count": 0,
+        "intra_word_weighted_center_error_ms": 0.0,
+        "intra_word_weighted_start_error_ms": 0.0,
+        "containment_event_count": 0, "containment_outside_count": 0,
+        "containment_before_count": 0, "containment_after_count": 0,
+        "syllable_target_count": 0, "syllable_observation_count": 0,
+        "syllable_matched_count": 0, "syllable_weighted_error_ms": 0.0,
+    }
     for case_id, split in split_for.items():
         grade_path = run_root / case_id / "neural_track_grade.json"
         summary_path = run_root / case_id / "neural_track_summary.json"
-        if not grade_path.exists() or not summary_path.exists():
+        syllable_path = run_root / case_id / "neural_syllable_alignment_grade.json"
+        if not grade_path.exists() or not summary_path.exists() or not syllable_path.exists():
             raise RuntimeError(f"missing neural-track result for {case_id}")
         grade = json.loads(grade_path.read_text())
         summary = json.loads(summary_path.read_text())
+        syllable = json.loads(syllable_path.read_text())
+        pause = grade["pause_alignment"]
+        region_matches = pause["speech_region_matched_count"]
+        alignment["speech_region_reference_count"] += pause["speech_region_reference_count"]
+        alignment["speech_region_matched_count"] += region_matches
+        alignment["speech_region_weighted_start_error_ms"] += (
+            pause["mean_abs_speech_region_start_error_ms"] * region_matches)
+        alignment["speech_region_weighted_end_error_ms"] += (
+            pause["mean_abs_speech_region_end_error_ms"] * region_matches)
+        alignment["speech_region_count_mismatch_cases"] += int(pause["speech_region_count_mismatch"])
+        onset = grade["word_onset_alignment"]
+        alignment["word_onset_reference_count"] += onset["reference_count"]
+        alignment["word_onset_matched_count"] += onset["matched_count"]
+        alignment["word_onset_weighted_start_error_ms"] += (
+            onset["mean_abs_start_error_ms"] * onset["matched_count"])
+        intra = grade["intra_word_alignment"]
+        alignment["intra_word_reference_count"] += intra["reference_count"]
+        alignment["intra_word_matched_count"] += intra["matched_count"]
+        alignment["intra_word_weighted_center_error_ms"] += (
+            intra["mean_abs_center_error_ms"] * intra["matched_count"])
+        alignment["intra_word_weighted_start_error_ms"] += (
+            intra["mean_abs_start_error_ms"] * intra["matched_count"])
+        containment = grade["speech_region_containment"]
+        alignment["containment_event_count"] += containment["event_count"]
+        alignment["containment_outside_count"] += containment["events_outside_region"]
+        alignment["containment_before_count"] += containment["events_starting_before_region"]
+        alignment["containment_after_count"] += containment["events_ending_after_region"]
+        alignment["syllable_target_count"] += syllable["target_count"]
+        alignment["syllable_observation_count"] += syllable["observation_count"]
+        alignment["syllable_matched_count"] += syllable["matched_count"]
+        alignment["syllable_weighted_error_ms"] += (
+            syllable["mean_abs_error_ms"] * syllable["matched_count"])
         for key in ("aggregate", split):
             row = accumulators.setdefault(key, {
                 "case_count": 0, "reference_count": 0, "matched_count": 0,
@@ -42,7 +90,7 @@ def main() -> int:
             row["prediction_count"] += summary["prediction_count"]
             row["deterministic_fallback_count"] += summary["deterministic_fallback_count"]
 
-    report: dict[str, object] = {"schema_version": 1, "splits": {}}
+    report: dict[str, object] = {"schema_version": 2, "splits": {}}
     for key, raw in accumulators.items():
         matched = int(raw["matched_count"])
         reference = int(raw["reference_count"])
@@ -61,6 +109,29 @@ def main() -> int:
             "deterministic_fallback_count": fallback,
             "deterministic_fallback_rate": fallback / predictions if predictions else 0.0,
         }
+
+    region_matches = alignment["speech_region_matched_count"]
+    onset_matches = alignment["word_onset_matched_count"]
+    intra_matches = alignment["intra_word_matched_count"]
+    containment_events = alignment["containment_event_count"]
+    syllable_matches = alignment["syllable_matched_count"]
+    report["alignment"] = {
+        "speech_region_match_rate": region_matches / alignment["speech_region_reference_count"],
+        "speech_region_start_mae_ms": alignment["speech_region_weighted_start_error_ms"] / region_matches,
+        "speech_region_end_mae_ms": alignment["speech_region_weighted_end_error_ms"] / region_matches,
+        "speech_region_count_mismatch_cases": alignment["speech_region_count_mismatch_cases"],
+        "word_onset_match_rate": onset_matches / alignment["word_onset_reference_count"],
+        "word_onset_start_mae_ms": alignment["word_onset_weighted_start_error_ms"] / onset_matches,
+        "intra_word_match_rate": intra_matches / alignment["intra_word_reference_count"],
+        "intra_word_center_mae_ms": alignment["intra_word_weighted_center_error_ms"] / intra_matches,
+        "intra_word_start_mae_ms": alignment["intra_word_weighted_start_error_ms"] / intra_matches,
+        "speech_region_containment_outside_rate": alignment["containment_outside_count"] / containment_events,
+        "speech_region_containment_before_count": alignment["containment_before_count"],
+        "speech_region_containment_after_count": alignment["containment_after_count"],
+        "syllable_precision": syllable_matches / alignment["syllable_observation_count"],
+        "syllable_recall": syllable_matches / alignment["syllable_target_count"],
+        "syllable_center_mae_ms": alignment["syllable_weighted_error_ms"] / syllable_matches,
+    }
 
     output = args.output or run_root / "neural_track_grade_summary.json"
     output.parent.mkdir(parents=True, exist_ok=True)

@@ -23,7 +23,7 @@ namespace fs = std::filesystem;
 constexpr int kAudioDimensions = 20;
 constexpr int kPhoneBuckets = 64;
 constexpr int kPoseBuckets = 32;
-constexpr int kTokenContinuous = 7;
+constexpr int kTokenContinuous = 10;
 constexpr int kTokenDimensions = kPhoneBuckets + kPoseBuckets + kTokenContinuous;
 constexpr int kFrameMilliseconds = 10;
 constexpr int kStreamingLagFrames = 35;
@@ -38,6 +38,11 @@ struct TokenRow {
     float VisualRole = 0.0f;
     float TextCenterNorm = 0.0f;
     float Strength = 0.0f;
+    float IsSilence = 0.0f;
+    float IsWordStart = 0.0f;
+    float IsWordEnd = 0.0f;
+    float IsRegionStart = 0.0f;
+    float IsRegionEnd = 0.0f;
     float TargetCenter = 0.0f;
     float TargetDuration = 0.02f;
     float HasMfaTarget = 0.0f;
@@ -157,6 +162,11 @@ static SequenceCase read_case(const fs::path& case_dir, const std::string& split
             token.VisualRole = std::stof(cell(row, header, "visual_role"));
             token.TextCenterNorm = std::stof(cell(row, header, "text_center_norm"));
             token.Strength = std::stof(cell(row, header, "strength"));
+            token.IsSilence = std::stof(cell(row, header, "is_silence"));
+            token.IsWordStart = std::stof(cell(row, header, "is_word_start"));
+            token.IsWordEnd = std::stof(cell(row, header, "is_word_end"));
+            token.IsRegionStart = std::stof(cell(row, header, "is_region_start"));
+            token.IsRegionEnd = std::stof(cell(row, header, "is_region_end"));
             token.TargetCenter = std::stof(cell(row, header, "target_center_sec"));
             token.TargetDuration = std::stof(cell(row, header, "target_duration_sec"));
             token.HasMfaTarget = std::stof(cell(row, header, "has_mfa_target"));
@@ -205,6 +215,9 @@ static torch::Tensor token_features(const SequenceCase& sequence)
         continuous[4] = token.Strength;
         continuous[5] = i == 0 ? 1.0f : 0.0f;
         continuous[6] = i + 1 == sequence.Tokens.size() ? 1.0f : 0.0f;
+        continuous[7] = token.IsSilence;
+        continuous[8] = token.IsWordStart;
+        continuous[9] = token.IsWordEnd;
     }
     return torch::from_blob(values.data(), {
         static_cast<std::int64_t>(sequence.Tokens.size()), kTokenDimensions}).clone();
@@ -214,6 +227,8 @@ struct CaseTensors {
     torch::Tensor Audio;
     torch::Tensor Tokens;
     torch::Tensor Target;
+    torch::Tensor FrameWeights;
+    torch::Tensor CurriculumFrameWeights;
     torch::Tensor FrameTimes;
     torch::Tensor DeterministicCenters;
     int BeginFrame = 0;
@@ -257,13 +272,47 @@ static CaseTensors tensors(const SequenceCase& sequence)
     int token = 0;
     for (int frame = result.BeginFrame; frame < result.EndFrame; ++frame) {
         const float time = sequence.FrameTimes[frame];
-        while (token + 1 < token_count
-            && time > 0.5f * (sequence.Tokens[token].TargetCenter
-                + sequence.Tokens[token + 1].TargetCenter)) ++token;
+        while (token + 1 < token_count) {
+            const TokenRow& current = sequence.Tokens[token];
+            const TokenRow& next = sequence.Tokens[token + 1];
+            float boundary = 0.5f * (current.TargetCenter + next.TargetCenter);
+            if (next.IsWordStart > 0.5f)
+                boundary = next.TargetCenter - 0.5f * next.TargetDuration;
+            else if (next.IsSilence > 0.5f)
+                boundary = current.TargetCenter + 0.5f * current.TargetDuration;
+            if (time <= boundary) break;
+            ++token;
+        }
         targets.push_back(token);
     }
     result.Target = torch::from_blob(targets.data(), {used_frames},
         torch::TensorOptions().dtype(torch::kInt64)).clone();
+    std::vector<float> frame_weights;
+    std::vector<float> curriculum_frame_weights;
+    frame_weights.reserve(used_frames);
+    curriculum_frame_weights.reserve(used_frames);
+    for (std::int64_t target : targets) {
+        const TokenRow& selected = sequence.Tokens[static_cast<size_t>(target)];
+        float weight = 1.0f;
+        float curriculum_weight = 1.0f;
+        if (selected.IsVowel > 0.5f) {
+            weight = std::max(weight, 2.0f);
+            curriculum_weight = std::max(curriculum_weight, 3.0f);
+        }
+        if (selected.IsSilence > 0.5f) weight = 5.0f;
+        if (selected.IsSilence > 0.5f) curriculum_weight = 8.0f;
+        if (selected.IsWordStart > 0.5f) weight = std::max(weight, 4.0f);
+        if (selected.IsWordStart > 0.5f) curriculum_weight = std::max(curriculum_weight, 6.0f);
+        if (selected.IsRegionStart > 0.5f || selected.IsRegionEnd > 0.5f)
+            weight = std::max(weight, 7.0f);
+        if (selected.IsRegionStart > 0.5f || selected.IsRegionEnd > 0.5f)
+            curriculum_weight = std::max(curriculum_weight, 12.0f);
+        frame_weights.push_back(weight);
+        curriculum_frame_weights.push_back(curriculum_weight);
+    }
+    result.FrameWeights = torch::from_blob(frame_weights.data(), {used_frames}).clone();
+    result.CurriculumFrameWeights = torch::from_blob(
+        curriculum_frame_weights.data(), {used_frames}).clone();
     std::vector<float> deterministic;
     deterministic.reserve(token_count);
     for (const TokenRow& token_row : sequence.Tokens)
@@ -293,6 +342,7 @@ struct MonotonicNetworkImpl : torch::nn::Module {
     {
         const std::int64_t frames = audio.size(2);
         audio = (audio - AudioMean) / AudioScale;
+        if (is_training()) audio = audio + 0.015f * torch::randn_like(audio);
         torch::Tensor audio_state = torch::relu(AudioConv1->forward(audio));
         audio_state = audio_state.slice(2, 0, frames);
         audio_state = torch::relu(AudioConv2->forward(audio_state));
@@ -441,7 +491,11 @@ static double validation_loss(MonotonicNetwork& model, const std::vector<Sequenc
         CaseTensors row = tensors(sequence);
         const torch::Tensor scores = model->forward(row.Audio.to(device), row.Tokens.to(device),
             row.FrameTimes.to(device), row.DeterministicCenters.to(device), use_prior, false);
-        total += torch::nn::functional::cross_entropy(scores, row.Target.to(device)).item<double>();
+        const torch::Tensor per_frame = torch::nn::functional::cross_entropy(
+            scores, row.Target.to(device),
+            torch::nn::functional::CrossEntropyFuncOptions().reduction(torch::kNone));
+        const torch::Tensor weights = row.FrameWeights.to(device);
+        total += ((per_frame * weights).sum() / weights.sum()).item<double>();
         ++count;
     }
     return total / std::max(count, 1);
@@ -454,7 +508,8 @@ static void write_predictions(const fs::path& path, MonotonicNetwork& model,
     torch::NoGradGuard no_grad;
     model->eval();
     std::ofstream out(path);
-    out << "case_id,event_index,pose,center_sec,duration_sec,confidence,fallback_used,split\n";
+    out << "case_id,token_index,event_index,pose,is_silence,is_word_start,is_region_start,is_region_end,"
+        << "center_sec,duration_sec,confidence,fallback_used,split\n";
     out << std::fixed << std::setprecision(6);
     for (const SequenceCase& sequence : dataset) {
         CaseTensors row = tensors(sequence);
@@ -484,8 +539,11 @@ static void write_predictions(const fs::path& path, MonotonicNetwork& model,
             const bool fallback = allow_fallback && use_prior && confidence[token] < 0.50f
                 && sequence.Tokens[token].DeterministicCenter >= 0.0f;
             if (fallback) center = sequence.Tokens[token].DeterministicCenter;
-            out << sequence.CaseId << ',' << sequence.Tokens[token].EventIndex << ','
-                << sequence.Tokens[token].Pose << ',' << center << ',' << duration << ','
+            out << sequence.CaseId << ',' << token << ',' << sequence.Tokens[token].EventIndex << ','
+                << sequence.Tokens[token].Pose << ',' << static_cast<int>(sequence.Tokens[token].IsSilence) << ','
+                << static_cast<int>(sequence.Tokens[token].IsWordStart) << ','
+                << static_cast<int>(sequence.Tokens[token].IsRegionStart) << ','
+                << static_cast<int>(sequence.Tokens[token].IsRegionEnd) << ',' << center << ',' << duration << ','
                 << confidence[token] << ',' << (fallback ? 1 : 0) << ',' << sequence.Split << '\n';
         }
     }
@@ -529,15 +587,30 @@ int main(int argc, char** argv)
         int stale = 0;
         for (int epoch = 1; epoch <= 16; ++epoch) {
             model->train();
-            std::shuffle(training_indices.begin(), training_indices.end(), random);
+            std::vector<size_t> epoch_indices = training_indices;
+            if (epoch <= 6) {
+                for (size_t index : training_indices) {
+                    const bool has_region_gap = std::any_of(
+                        dataset[index].Tokens.begin(), dataset[index].Tokens.end(), [](const TokenRow& token) {
+                            return token.IsSilence > 0.5f
+                                && (token.IsRegionStart > 0.5f || token.IsRegionEnd > 0.5f);
+                        });
+                    if (has_region_gap) epoch_indices.push_back(index);
+                }
+            }
+            std::shuffle(epoch_indices.begin(), epoch_indices.end(), random);
             double epoch_loss = 0.0;
-            for (size_t index : training_indices) {
+            for (size_t index : epoch_indices) {
                 CaseTensors row = tensors(dataset[index]);
                 const bool drop_prior = use_prior && std::uniform_real_distribution<float>(0.0f, 1.0f)(random) < 0.65f;
                 const torch::Tensor scores = model->forward(row.Audio.to(device), row.Tokens.to(device),
                     row.FrameTimes.to(device), row.DeterministicCenters.to(device), use_prior, drop_prior);
-                const torch::Tensor frame_loss = torch::nn::functional::cross_entropy(
-                    scores, row.Target.to(device));
+                const torch::Tensor per_frame = torch::nn::functional::cross_entropy(
+                    scores, row.Target.to(device),
+                    torch::nn::functional::CrossEntropyFuncOptions().reduction(torch::kNone));
+                const torch::Tensor weights = (epoch <= 4
+                    ? row.CurriculumFrameWeights : row.FrameWeights).to(device);
+                const torch::Tensor frame_loss = (per_frame * weights).sum() / weights.sum();
                 // Rotate the expensive full-lattice objective across cases so
                 // every training utterance receives it once in 16 epochs,
                 // while dense occupancy supervision remains present each pass.
@@ -553,7 +626,7 @@ int main(int argc, char** argv)
                 epoch_loss += loss.item<double>();
             }
             const double validation = validation_loss(model, dataset, device, use_prior);
-            std::cout << "epoch=" << epoch << " train_ce=" << epoch_loss / training_indices.size()
+            std::cout << "epoch=" << epoch << " train_ce=" << epoch_loss / epoch_indices.size()
                 << " validation_ce=" << validation << '\n';
             if (validation + 1.0e-4 < best_validation) {
                 best_validation = validation;
@@ -584,6 +657,8 @@ int main(int argc, char** argv)
             << "  \"forward_sum_weight\": 0.25,\n"
             << "  \"forward_sum_cadence\": " << kForwardSumCadence << ",\n"
             << "  \"streaming_lag_ms\": " << kStreamingLagFrames * kFrameMilliseconds << ",\n"
+            << "  \"boundary_curriculum_epochs\": 6,\n"
+            << "  \"feature_noise_stddev\": 0.015,\n"
             << "  \"deterministic_prior_dropout\": " << (use_prior ? 0.65 : 1.0) << "\n}\n";
         std::cout << "Selected epoch " << best_epoch << " validation CE " << best_validation << '\n';
         std::cout << "Wrote " << predictions << '\n';
