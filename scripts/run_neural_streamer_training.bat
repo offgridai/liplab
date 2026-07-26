@@ -29,6 +29,10 @@ echo [phase] build_cuda
 "%CMAKE_EXE%" --build build-torch --target liplab_runner liplab_monotonic_aligner_torch -j 2
 if errorlevel 1 exit /b 1
 
+echo [phase] audit_cuda_compatibility
+python scripts\check_cuda_architectures.py build-torch\liplab_neural_streamer_cuda.lib --required sm_89
+if errorlevel 1 exit /b 1
+
 echo [phase] export_sequence_dataset
 build-torch\liplab_runner.exe . --fast-batch --tick-ms 40 --export-monotonic-dataset
 if errorlevel 1 exit /b 1

@@ -79,6 +79,14 @@ fused kernels using CUDA Runtime only:
   priority, allowing higher-priority TTS kernels to preempt between Lipsync's
   short launches.
 
+The default CUDA fat binary contains native `sm_89` machine code for the RTX
+4090. CUDA 12.8 and newer builds also include native `sm_120` for the RTX 5090;
+older toolkits still produce the required 4090 image. The architecture list can
+be overridden with `-DLIPLAB_CUDA_ARCHITECTURES=...`. The canonical training
+workflow inspects the finished archive with `cuobjdump` and fails if `sm_89` is
+absent, so 4090 support cannot silently regress even though the current machine
+cannot execute that code path.
+
 The runtime benchmark compares every candidate logit against the LibTorch
 reference before scoring. On the current CUDA system, 512 synchronized 40 ms
 chunks measured 121.4 us mean, 121.0 us median, 123.6 us p95, and 185 us max.

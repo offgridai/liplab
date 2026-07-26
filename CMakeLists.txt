@@ -33,6 +33,16 @@ option(LIPLAB_ENABLE_TORCH "Build the optional LibTorch CUDA neural streamer tra
 if(LIPLAB_ENABLE_TORCH)
     find_package(Torch CONFIG REQUIRED)
     find_package(CUDAToolkit REQUIRED)
+
+    # Ship real machine code for Ada (RTX 4090, sm_89), rather than relying on
+    # a newer driver's PTX JIT. CUDA 12.8 added Blackwell sm_120 support, so
+    # toolkits new enough to build it produce one portable 4090/5090 fatbin.
+    if(NOT DEFINED LIPLAB_CUDA_ARCHITECTURES)
+        set(LIPLAB_CUDA_ARCHITECTURES "89")
+        if(CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.8)
+            set(LIPLAB_CUDA_ARCHITECTURES "89;120")
+        endif()
+    endif()
     add_library(liplab_neural_streamer_cuda STATIC
         harness/ml/NeuralStreamerCudaRuntime.cu
     )
@@ -40,6 +50,9 @@ if(LIPLAB_ENABLE_TORCH)
     target_link_libraries(liplab_neural_streamer_cuda PUBLIC CUDA::cudart)
     set_property(TARGET liplab_neural_streamer_cuda PROPERTY CUDA_STANDARD 17)
     set_property(TARGET liplab_neural_streamer_cuda PROPERTY CUDA_STANDARD_REQUIRED ON)
+    set_property(TARGET liplab_neural_streamer_cuda PROPERTY
+        CUDA_ARCHITECTURES "${LIPLAB_CUDA_ARCHITECTURES}")
+    message(STATUS "LipLab CUDA runtime architectures: ${LIPLAB_CUDA_ARCHITECTURES}")
     add_executable(liplab_monotonic_aligner_torch harness/ml/monotonic_aligner_torch.cpp)
     target_include_directories(liplab_monotonic_aligner_torch PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/harness/ml)
     target_link_libraries(liplab_monotonic_aligner_torch PRIVATE
