@@ -1,0 +1,595 @@
+#include <torch/torch.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <map>
+#include <numeric>
+#include <random>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <vector>
+
+namespace fs = std::filesystem;
+
+constexpr int kAudioDimensions = 20;
+constexpr int kPhoneBuckets = 64;
+constexpr int kPoseBuckets = 32;
+constexpr int kTokenContinuous = 7;
+constexpr int kTokenDimensions = kPhoneBuckets + kPoseBuckets + kTokenContinuous;
+constexpr int kFrameMilliseconds = 10;
+constexpr int kStreamingLagFrames = 35;
+constexpr int kForwardSumCadence = 16;
+
+struct TokenRow {
+    int EventIndex = -1;
+    std::string Pose;
+    std::string Phone;
+    float DurationPrior = 0.075f;
+    float IsVowel = 0.0f;
+    float VisualRole = 0.0f;
+    float TextCenterNorm = 0.0f;
+    float Strength = 0.0f;
+    float TargetCenter = 0.0f;
+    float TargetDuration = 0.02f;
+    float HasMfaTarget = 0.0f;
+    float DeterministicCenter = -1.0f;
+};
+
+struct SequenceCase {
+    std::string CaseId;
+    std::string Split;
+    std::vector<float> FrameTimes;
+    std::vector<float> Audio;
+    std::vector<TokenRow> Tokens;
+};
+
+static std::vector<std::string> parse_csv_row(const std::string& line)
+{
+    std::vector<std::string> fields;
+    std::string field;
+    bool quoted = false;
+    for (size_t i = 0; i < line.size(); ++i) {
+        const char ch = line[i];
+        if (ch == '"') {
+            if (quoted && i + 1 < line.size() && line[i + 1] == '"') { field.push_back('"'); ++i; }
+            else quoted = !quoted;
+        } else if (ch == ',' && !quoted) { fields.push_back(field); field.clear(); }
+        else field.push_back(ch);
+    }
+    fields.push_back(field);
+    return fields;
+}
+
+static std::map<std::string, size_t> columns(const std::string& header)
+{
+    std::map<std::string, size_t> result;
+    const auto fields = parse_csv_row(header);
+    for (size_t i = 0; i < fields.size(); ++i) result[fields[i]] = i;
+    return result;
+}
+
+static const std::string& cell(const std::vector<std::string>& row,
+    const std::map<std::string, size_t>& header, const std::string& name)
+{
+    const auto found = header.find(name);
+    if (found == header.end() || found->second >= row.size())
+        throw std::runtime_error("missing CSV column: " + name);
+    return row[found->second];
+}
+
+static std::string json_string_value(const std::string& line)
+{
+    const size_t colon = line.find(':');
+    const size_t first = line.find('"', colon + 1);
+    const size_t last = line.find('"', first + 1);
+    if (colon == std::string::npos || first == std::string::npos || last == std::string::npos)
+        throw std::runtime_error("invalid split manifest line");
+    return line.substr(first + 1, last - first - 1);
+}
+
+static std::map<std::string, std::string> read_splits(const fs::path& path)
+{
+    std::ifstream input(path);
+    if (!input) throw std::runtime_error("cannot read split manifest: " + path.string());
+    std::map<std::string, std::string> result;
+    std::string pending_case;
+    std::string line;
+    while (std::getline(input, line)) {
+        if (line.find("\"case_id\"") != std::string::npos) pending_case = json_string_value(line);
+        else if (!pending_case.empty() && line.find("\"split\"") != std::string::npos) {
+            result[pending_case] = json_string_value(line);
+            pending_case.clear();
+        }
+    }
+    return result;
+}
+
+static SequenceCase read_case(const fs::path& case_dir, const std::string& split)
+{
+    SequenceCase result;
+    result.CaseId = case_dir.filename().string();
+    result.Split = split;
+    {
+        std::ifstream input(case_dir / "monotonic_audio_frames.csv");
+        if (!input) throw std::runtime_error("missing monotonic frames for " + result.CaseId);
+        std::string line;
+        std::getline(input, line);
+        const auto header = columns(line);
+        const std::vector<std::string> feature_names = {
+            "rms_norm", "delta_rms", "flux", "zcr", "low_band_norm", "mid_band_norm",
+            "high_band_norm", "spectral_centroid_norm", "periodicity", "rich_low_band_norm",
+            "rich_mid_band_norm", "rich_high_band_norm", "rich_spectral_centroid_norm",
+            "rich_spectral_rolloff_norm", "rich_spectral_flatness", "rich_spectral_flux",
+            "rich_periodicity", "speech_evidence", "silence_accum_sec", "in_speech"};
+        while (std::getline(input, line)) {
+            if (line.empty()) continue;
+            const auto row = parse_csv_row(line);
+            result.FrameTimes.push_back(0.5f * (std::stof(cell(row, header, "start_sec"))
+                + std::stof(cell(row, header, "end_sec"))));
+            for (const std::string& name : feature_names)
+                result.Audio.push_back(std::stof(cell(row, header, name)));
+        }
+    }
+    {
+        std::ifstream input(case_dir / "monotonic_tokens.csv");
+        if (!input) throw std::runtime_error("missing monotonic tokens for " + result.CaseId);
+        std::string line;
+        std::getline(input, line);
+        const auto header = columns(line);
+        while (std::getline(input, line)) {
+            if (line.empty()) continue;
+            const auto row = parse_csv_row(line);
+            TokenRow token;
+            token.EventIndex = std::stoi(cell(row, header, "event_index"));
+            token.Pose = cell(row, header, "pose");
+            token.Phone = cell(row, header, "phone_base");
+            token.DurationPrior = std::stof(cell(row, header, "duration_prior_sec"));
+            token.IsVowel = std::stof(cell(row, header, "is_vowel"));
+            token.VisualRole = std::stof(cell(row, header, "visual_role"));
+            token.TextCenterNorm = std::stof(cell(row, header, "text_center_norm"));
+            token.Strength = std::stof(cell(row, header, "strength"));
+            token.TargetCenter = std::stof(cell(row, header, "target_center_sec"));
+            token.TargetDuration = std::stof(cell(row, header, "target_duration_sec"));
+            token.HasMfaTarget = std::stof(cell(row, header, "has_mfa_target"));
+            token.DeterministicCenter = std::stof(cell(row, header, "deterministic_center_sec"));
+            result.Tokens.push_back(std::move(token));
+        }
+    }
+    return result;
+}
+
+static std::vector<SequenceCase> read_dataset(const fs::path& root)
+{
+    const auto splits = read_splits(root / "inputs/speech_library/timing_split_v1.json");
+    const fs::path run_root = root / "outputs/runs/latest";
+    std::vector<SequenceCase> result;
+    for (const auto& [case_id, split] : splits) {
+        const fs::path case_dir = run_root / case_id;
+        if (!fs::exists(case_dir / "monotonic_audio_frames.csv")) continue;
+        result.push_back(read_case(case_dir, split));
+    }
+    if (result.size() != splits.size())
+        throw std::runtime_error("sequence export does not cover the frozen split");
+    return result;
+}
+
+static std::uint32_t fnv1a(const std::string& value)
+{
+    std::uint32_t hash = 2166136261u;
+    for (unsigned char ch : value) { hash ^= ch; hash *= 16777619u; }
+    return hash;
+}
+
+static torch::Tensor token_features(const SequenceCase& sequence)
+{
+    std::vector<float> values(sequence.Tokens.size() * kTokenDimensions, 0.0f);
+    for (size_t i = 0; i < sequence.Tokens.size(); ++i) {
+        const TokenRow& token = sequence.Tokens[i];
+        float* row = values.data() + i * kTokenDimensions;
+        row[fnv1a(token.Phone) % kPhoneBuckets] = 1.0f;
+        row[kPhoneBuckets + fnv1a(token.Pose) % kPoseBuckets] = 1.0f;
+        float* continuous = row + kPhoneBuckets + kPoseBuckets;
+        continuous[0] = token.DurationPrior;
+        continuous[1] = token.IsVowel;
+        continuous[2] = token.VisualRole / 3.0f;
+        continuous[3] = token.TextCenterNorm;
+        continuous[4] = token.Strength;
+        continuous[5] = i == 0 ? 1.0f : 0.0f;
+        continuous[6] = i + 1 == sequence.Tokens.size() ? 1.0f : 0.0f;
+    }
+    return torch::from_blob(values.data(), {
+        static_cast<std::int64_t>(sequence.Tokens.size()), kTokenDimensions}).clone();
+}
+
+struct CaseTensors {
+    torch::Tensor Audio;
+    torch::Tensor Tokens;
+    torch::Tensor Target;
+    torch::Tensor FrameTimes;
+    torch::Tensor DeterministicCenters;
+    int BeginFrame = 0;
+    int EndFrame = 0;
+};
+
+static CaseTensors tensors(const SequenceCase& sequence)
+{
+    const int frame_count = static_cast<int>(sequence.FrameTimes.size());
+    const int token_count = static_cast<int>(sequence.Tokens.size());
+    CaseTensors result;
+    // The MFA target is training supervision, never an inference-time crop.
+    // Use the same causal speech-detector feature available to the runtime and
+    // retain a small buffered margin around its first/last active frames.
+    int first_speech = -1;
+    int last_speech = -1;
+    for (int frame = 0; frame < frame_count; ++frame) {
+        if (sequence.Audio[static_cast<size_t>(frame) * kAudioDimensions + 19] > 0.5f) {
+            if (first_speech < 0) first_speech = frame;
+            last_speech = frame;
+        }
+    }
+    if (first_speech < 0) {
+        result.BeginFrame = 0;
+        result.EndFrame = frame_count;
+    } else {
+        result.BeginFrame = std::max(0, first_speech - 10);
+        result.EndFrame = std::min(frame_count, last_speech + 21);
+    }
+    if (result.EndFrame - result.BeginFrame < token_count)
+        result.EndFrame = std::min(frame_count, result.BeginFrame + token_count);
+    const int used_frames = result.EndFrame - result.BeginFrame;
+    result.Audio = torch::from_blob(
+        const_cast<float*>(sequence.Audio.data()) + result.BeginFrame * kAudioDimensions,
+        {used_frames, kAudioDimensions}).clone().transpose(0, 1).unsqueeze(0);
+    result.FrameTimes = torch::from_blob(
+        const_cast<float*>(sequence.FrameTimes.data()) + result.BeginFrame, {used_frames}).clone();
+    result.Tokens = token_features(sequence);
+    std::vector<std::int64_t> targets;
+    targets.reserve(used_frames);
+    int token = 0;
+    for (int frame = result.BeginFrame; frame < result.EndFrame; ++frame) {
+        const float time = sequence.FrameTimes[frame];
+        while (token + 1 < token_count
+            && time > 0.5f * (sequence.Tokens[token].TargetCenter
+                + sequence.Tokens[token + 1].TargetCenter)) ++token;
+        targets.push_back(token);
+    }
+    result.Target = torch::from_blob(targets.data(), {used_frames},
+        torch::TensorOptions().dtype(torch::kInt64)).clone();
+    std::vector<float> deterministic;
+    deterministic.reserve(token_count);
+    for (const TokenRow& token_row : sequence.Tokens)
+        deterministic.push_back(token_row.DeterministicCenter);
+    result.DeterministicCenters = torch::from_blob(deterministic.data(), {token_count}).clone();
+    return result;
+}
+
+struct MonotonicNetworkImpl : torch::nn::Module {
+    MonotonicNetworkImpl()
+    {
+        AudioConv1 = register_module("audio_conv1", torch::nn::Conv1d(
+            torch::nn::Conv1dOptions(kAudioDimensions, 64, 3).padding(2)));
+        AudioConv2 = register_module("audio_conv2", torch::nn::Conv1d(
+            torch::nn::Conv1dOptions(64, 64, 3).padding(2)));
+        TokenEncoder = register_module("token_encoder", torch::nn::Sequential(
+            torch::nn::Linear(kTokenDimensions, 64), torch::nn::ReLU(),
+            torch::nn::Linear(64, 64)));
+        PriorWeight = register_parameter("prior_weight", torch::tensor(1.0f));
+        AudioMean = register_buffer("audio_mean", torch::zeros({1, kAudioDimensions, 1}));
+        AudioScale = register_buffer("audio_scale", torch::ones({1, kAudioDimensions, 1}));
+    }
+
+    torch::Tensor forward(torch::Tensor audio, torch::Tensor token,
+        torch::Tensor frame_times, torch::Tensor deterministic_centers,
+        bool use_prior, bool drop_prior)
+    {
+        const std::int64_t frames = audio.size(2);
+        audio = (audio - AudioMean) / AudioScale;
+        torch::Tensor audio_state = torch::relu(AudioConv1->forward(audio));
+        audio_state = audio_state.slice(2, 0, frames);
+        audio_state = torch::relu(AudioConv2->forward(audio_state));
+        audio_state = audio_state.slice(2, 0, frames).squeeze(0).transpose(0, 1);
+        torch::Tensor token_state = TokenEncoder->forward(token);
+        torch::Tensor scores = torch::matmul(audio_state, token_state.transpose(0, 1)) / 8.0f;
+        if (use_prior && !drop_prior) {
+            torch::Tensor valid = deterministic_centers.ge(0.0f).to(scores.dtype());
+            torch::Tensor centers = deterministic_centers.clamp_min(0.0f);
+            if (is_training()) centers = centers + 0.030f * torch::randn_like(centers);
+            torch::Tensor proximity = torch::exp(-torch::abs(
+                frame_times.unsqueeze(1) - centers.unsqueeze(0)) / 0.150f);
+            scores = scores + torch::softplus(PriorWeight) * proximity * valid.unsqueeze(0);
+        }
+        return scores;
+    }
+
+    torch::nn::Conv1d AudioConv1{nullptr};
+    torch::nn::Conv1d AudioConv2{nullptr};
+    torch::nn::Sequential TokenEncoder{nullptr};
+    torch::Tensor PriorWeight;
+    torch::Tensor AudioMean;
+    torch::Tensor AudioScale;
+};
+TORCH_MODULE(MonotonicNetwork);
+
+static std::vector<int> viterbi_path(const torch::Tensor& score_tensor,
+    const std::vector<TokenRow>& tokens, int fixed_lag_frames)
+{
+    const torch::Tensor scores = torch::log_softmax(score_tensor, 1).to(torch::kCPU);
+    const int frames = static_cast<int>(scores.size(0));
+    const int count = static_cast<int>(scores.size(1));
+    const auto access = scores.accessor<float, 2>();
+    const float negative = -1.0e30f;
+    std::vector<float> previous(count, negative), current(count, negative);
+    std::vector<std::uint8_t> advanced(static_cast<size_t>(frames) * count, 0);
+    previous[0] = access[0][0];
+    std::vector<int> path(frames, -1);
+    path[0] = 0;
+    for (int frame = 1; frame < frames; ++frame) {
+        std::fill(current.begin(), current.end(), negative);
+        for (int token = 0; token < count; ++token) {
+            const float advance_probability = std::clamp(
+                0.010f / std::max(tokens[token].DurationPrior, 0.020f), 0.02f, 0.80f);
+            const float stay = previous[token] + std::log1p(-advance_probability);
+            const float advance = token > 0
+                ? previous[token - 1] + std::log(std::clamp(
+                    0.010f / std::max(tokens[token - 1].DurationPrior, 0.020f), 0.02f, 0.80f))
+                : negative;
+            if (advance > stay) {
+                current[token] = advance + access[frame][token];
+                advanced[static_cast<size_t>(frame) * count + token] = 1;
+            } else current[token] = stay + access[frame][token];
+        }
+        previous.swap(current);
+
+        // Commit only the state far enough behind the live frontier. This is
+        // the fixed-lag streaming approximation: it never consults frames
+        // later than commit_frame + fixed_lag_frames.
+        if (fixed_lag_frames >= 0 && frame >= fixed_lag_frames) {
+            int state = static_cast<int>(std::distance(previous.begin(),
+                std::max_element(previous.begin(), previous.end())));
+            for (int back = frame; back > frame - fixed_lag_frames; --back) {
+                if (state > 0 && advanced[static_cast<size_t>(back) * count + state]) --state;
+            }
+            const int commit_frame = frame - fixed_lag_frames;
+            if (commit_frame > 0)
+                state = std::clamp(state, path[commit_frame - 1], path[commit_frame - 1] + 1);
+            path[commit_frame] = state;
+        }
+    }
+
+    // Flush only the uncommitted lag window when the utterance closes. The
+    // final-state requirement guarantees that every transcript token appears.
+    int token = count - 1;
+    std::vector<int> tail(frames, 0);
+    for (int frame = frames - 1; frame >= 0; --frame) {
+        tail[frame] = token;
+        if (frame > 0 && token > 0 && advanced[static_cast<size_t>(frame) * count + token]) --token;
+    }
+    if (fixed_lag_frames < 0) return tail;
+    const int tail_begin = std::max(0, frames - fixed_lag_frames);
+    for (int frame = tail_begin; frame < frames; ++frame) {
+        int state = tail[frame];
+        if (frame > 0) state = std::clamp(state, path[frame - 1], path[frame - 1] + 1);
+        path[frame] = state;
+    }
+    // A short or low-confidence tail may not connect to the forced endpoint.
+    // Preserve completeness without target-time leakage by distributing only
+    // the still-required one-step advances across the closing lag window.
+    if (path.back() < count - 1) {
+        const int prefix_frame = tail_begin - 1;
+        const int prefix_state = prefix_frame >= 0 ? path[prefix_frame] : 0;
+        const int tail_frames = frames - tail_begin;
+        const int remaining = count - 1 - prefix_state;
+        if (remaining > tail_frames)
+            throw std::runtime_error("streaming lag is too short to close monotonic path");
+        for (int offset = 0; offset < tail_frames; ++offset) {
+            const int completed = std::min(remaining,
+                static_cast<int>(std::floor((offset + 1.0) * remaining / tail_frames)));
+            path[tail_begin + offset] = prefix_state + completed;
+        }
+    }
+    return path;
+}
+
+static torch::Tensor forward_sum_loss(const torch::Tensor& score_tensor,
+    const std::vector<TokenRow>& tokens)
+{
+    const torch::Tensor log_probability = torch::log_softmax(score_tensor, 1);
+    const int frames = static_cast<int>(log_probability.size(0));
+    const int count = static_cast<int>(log_probability.size(1));
+    std::vector<float> stay_values(count), advance_values(count);
+    for (int token = 0; token < count; ++token) {
+        const float advance_probability = std::clamp(
+            0.010f / std::max(tokens[token].DurationPrior, 0.020f), 0.02f, 0.80f);
+        stay_values[token] = std::log1p(-advance_probability);
+        advance_values[token] = std::log(advance_probability);
+    }
+    const torch::Tensor stay_prior = torch::from_blob(stay_values.data(), {count}).clone()
+        .to(log_probability.device());
+    const torch::Tensor advance_prior = torch::from_blob(advance_values.data(), {count}).clone()
+        .to(log_probability.device());
+    torch::Tensor alpha = torch::cat({
+        log_probability.index({0, 0}).reshape({1}),
+        torch::full({count - 1}, -1.0e30f, log_probability.options())});
+    for (int frame = 1; frame < frames; ++frame) {
+        const torch::Tensor stay = alpha + stay_prior;
+        const torch::Tensor advance = torch::cat({
+            torch::full({1}, -1.0e30f, log_probability.options()),
+            alpha.slice(0, 0, count - 1) + advance_prior.slice(0, 0, count - 1)});
+        alpha = torch::logaddexp(stay, advance) + log_probability.index({frame});
+    }
+    return -alpha.index({count - 1}) / static_cast<float>(frames);
+}
+
+static double validation_loss(MonotonicNetwork& model, const std::vector<SequenceCase>& dataset,
+    const torch::Device& device, bool use_prior)
+{
+    torch::NoGradGuard no_grad;
+    model->eval();
+    double total = 0.0;
+    int count = 0;
+    for (const SequenceCase& sequence : dataset) {
+        if (sequence.Split != "validation") continue;
+        CaseTensors row = tensors(sequence);
+        const torch::Tensor scores = model->forward(row.Audio.to(device), row.Tokens.to(device),
+            row.FrameTimes.to(device), row.DeterministicCenters.to(device), use_prior, false);
+        total += torch::nn::functional::cross_entropy(scores, row.Target.to(device)).item<double>();
+        ++count;
+    }
+    return total / std::max(count, 1);
+}
+
+static void write_predictions(const fs::path& path, MonotonicNetwork& model,
+    const std::vector<SequenceCase>& dataset, const torch::Device& device, bool use_prior,
+    int fixed_lag_frames, bool allow_fallback)
+{
+    torch::NoGradGuard no_grad;
+    model->eval();
+    std::ofstream out(path);
+    out << "case_id,event_index,pose,center_sec,duration_sec,confidence,fallback_used,split\n";
+    out << std::fixed << std::setprecision(6);
+    for (const SequenceCase& sequence : dataset) {
+        CaseTensors row = tensors(sequence);
+        const torch::Tensor scores = model->forward(row.Audio.to(device), row.Tokens.to(device),
+            row.FrameTimes.to(device), row.DeterministicCenters.to(device), use_prior, false);
+        const std::vector<int> path = viterbi_path(scores, sequence.Tokens, fixed_lag_frames);
+        const torch::Tensor probabilities = torch::softmax(scores, 1).to(torch::kCPU);
+        const auto probability = probabilities.accessor<float, 2>();
+        std::vector<int> first(sequence.Tokens.size(), -1), last(sequence.Tokens.size(), -1);
+        std::vector<float> confidence(sequence.Tokens.size(), 0.0f);
+        for (int frame = 0; frame < static_cast<int>(path.size()); ++frame) {
+            const int token = path[frame];
+            if (first[token] < 0) first[token] = frame;
+            last[token] = frame;
+            confidence[token] = std::max(confidence[token], probability[frame][token]);
+        }
+        for (size_t token = 0; token < sequence.Tokens.size(); ++token) {
+            float center = row.FrameTimes[std::min<int>(
+                static_cast<int>(token), static_cast<int>(row.FrameTimes.size(0)) - 1)].item<float>();
+            float duration = 0.020f;
+            if (first[token] >= 0) {
+                const float start = row.FrameTimes[first[token]].item<float>();
+                const float end = row.FrameTimes[last[token]].item<float>();
+                center = 0.5f * (start + end);
+                duration = std::max(0.010f, end - start + 0.010f);
+            }
+            const bool fallback = allow_fallback && use_prior && confidence[token] < 0.50f
+                && sequence.Tokens[token].DeterministicCenter >= 0.0f;
+            if (fallback) center = sequence.Tokens[token].DeterministicCenter;
+            out << sequence.CaseId << ',' << sequence.Tokens[token].EventIndex << ','
+                << sequence.Tokens[token].Pose << ',' << center << ',' << duration << ','
+                << confidence[token] << ',' << (fallback ? 1 : 0) << ',' << sequence.Split << '\n';
+        }
+    }
+}
+
+int main(int argc, char** argv)
+{
+    try {
+        const fs::path root = argc > 1 ? fs::absolute(argv[1]) : fs::current_path();
+        const std::string mode = argc > 2 ? argv[2] : "no_deterministic";
+        const bool use_prior = mode == "with_deterministic";
+        if (!use_prior && mode != "no_deterministic")
+            throw std::runtime_error("mode must be no_deterministic or with_deterministic");
+        std::vector<SequenceCase> dataset = read_dataset(root);
+#ifdef _WIN32
+        _putenv_s("CUBLAS_WORKSPACE_CONFIG", ":4096:8");
+#endif
+        torch::manual_seed(0x4c49504c);
+        at::globalContext().setDeterministicAlgorithms(true, false);
+        const torch::Device device(torch::cuda::is_available() ? torch::kCUDA : torch::kCPU);
+        std::cout << "Training monotonic aligner (" << mode << ") on " << device
+            << " with " << dataset.size() << " utterances\n";
+        MonotonicNetwork model;
+        std::vector<torch::Tensor> training_audio;
+        for (const SequenceCase& sequence : dataset) if (sequence.Split == "train")
+            training_audio.push_back(tensors(sequence).Audio);
+        torch::Tensor concatenated = torch::cat(training_audio, 2);
+        model->AudioMean.copy_(concatenated.mean({0, 2}, true));
+        model->AudioScale.copy_(concatenated.std({0, 2}, false, true).clamp_min(1.0e-5));
+        model->to(device);
+        torch::optim::AdamW optimizer(model->parameters(),
+            torch::optim::AdamWOptions(0.001).weight_decay(5.0e-4));
+        std::vector<size_t> training_indices;
+        for (size_t i = 0; i < dataset.size(); ++i)
+            if (dataset[i].Split == "train") training_indices.push_back(i);
+        std::mt19937 random(0x4c49504c);
+        const fs::path checkpoint = root / "outputs/runs/latest"
+            / ("monotonic_aligner_" + mode + ".pt");
+        double best_validation = std::numeric_limits<double>::infinity();
+        int best_epoch = -1;
+        int stale = 0;
+        for (int epoch = 1; epoch <= 16; ++epoch) {
+            model->train();
+            std::shuffle(training_indices.begin(), training_indices.end(), random);
+            double epoch_loss = 0.0;
+            for (size_t index : training_indices) {
+                CaseTensors row = tensors(dataset[index]);
+                const bool drop_prior = use_prior && std::uniform_real_distribution<float>(0.0f, 1.0f)(random) < 0.65f;
+                const torch::Tensor scores = model->forward(row.Audio.to(device), row.Tokens.to(device),
+                    row.FrameTimes.to(device), row.DeterministicCenters.to(device), use_prior, drop_prior);
+                const torch::Tensor frame_loss = torch::nn::functional::cross_entropy(
+                    scores, row.Target.to(device));
+                // Rotate the expensive full-lattice objective across cases so
+                // every training utterance receives it once in 16 epochs,
+                // while dense occupancy supervision remains present each pass.
+                const bool apply_forward_sum =
+                    (fnv1a(dataset[index].CaseId) + epoch) % kForwardSumCadence == 0;
+                const torch::Tensor loss = apply_forward_sum
+                    ? frame_loss + 0.25f * forward_sum_loss(scores, dataset[index].Tokens)
+                    : frame_loss;
+                optimizer.zero_grad();
+                loss.backward();
+                torch::nn::utils::clip_grad_norm_(model->parameters(), 1.0);
+                optimizer.step();
+                epoch_loss += loss.item<double>();
+            }
+            const double validation = validation_loss(model, dataset, device, use_prior);
+            std::cout << "epoch=" << epoch << " train_ce=" << epoch_loss / training_indices.size()
+                << " validation_ce=" << validation << '\n';
+            if (validation + 1.0e-4 < best_validation) {
+                best_validation = validation;
+                best_epoch = epoch;
+                stale = 0;
+                torch::save(model, checkpoint.string());
+            } else if (++stale >= 4) break;
+        }
+        torch::load(model, checkpoint.string());
+        model->to(device);
+        const fs::path predictions = root / "outputs/runs/latest"
+            / ("monotonic_aligner_" + mode + "_predictions.csv");
+        write_predictions(predictions, model, dataset, device, use_prior, kStreamingLagFrames, true);
+        const fs::path raw_predictions = root / "outputs/runs/latest"
+            / ("monotonic_aligner_" + mode + "_raw_predictions.csv");
+        write_predictions(raw_predictions, model, dataset, device, use_prior, kStreamingLagFrames, false);
+        const fs::path offline_predictions = root / "outputs/runs/latest"
+            / ("monotonic_aligner_" + mode + "_offline_diagnostic_predictions.csv");
+        write_predictions(offline_predictions, model, dataset, device, use_prior, -1, false);
+        const fs::path report = root / "outputs/runs/latest"
+            / ("monotonic_aligner_" + mode + "_report.json");
+        std::ofstream out(report);
+        out << std::fixed << std::setprecision(6)
+            << "{\n  \"schema_version\": 1,\n  \"device\": \"" << device << "\",\n"
+            << "  \"mode\": \"" << mode << "\",\n  \"utterance_count\": " << dataset.size() << ",\n"
+            << "  \"selected_epoch\": " << best_epoch << ",\n"
+            << "  \"validation_cross_entropy\": " << best_validation << ",\n"
+            << "  \"forward_sum_weight\": 0.25,\n"
+            << "  \"forward_sum_cadence\": " << kForwardSumCadence << ",\n"
+            << "  \"streaming_lag_ms\": " << kStreamingLagFrames * kFrameMilliseconds << ",\n"
+            << "  \"deterministic_prior_dropout\": " << (use_prior ? 0.65 : 1.0) << "\n}\n";
+        std::cout << "Selected epoch " << best_epoch << " validation CE " << best_validation << '\n';
+        std::cout << "Wrote " << predictions << '\n';
+        return 0;
+    } catch (const std::exception& error) {
+        std::cerr << "error: " << error.what() << '\n';
+        return 1;
+    }
+}

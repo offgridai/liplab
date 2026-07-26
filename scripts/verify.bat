@@ -115,6 +115,8 @@ python scripts\summarize.py
 if errorlevel 1 exit /b 1
 python scripts\summarize_oracle_timing.py
 if errorlevel 1 exit /b 1
+python scripts\summarize_monotonic_alignment_ceiling.py
+if errorlevel 1 exit /b 1
 
 echo [phase] check_grades
 python scripts\check_grades.py

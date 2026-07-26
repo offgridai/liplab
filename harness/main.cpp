@@ -382,6 +382,7 @@ struct OutputConfig
 {
     bool write_detailed_diagnostics = true;
     bool write_timing_training_rows = false;
+    bool write_monotonic_training_rows = false;
 };
 
 struct OraclePhoneDurationReport
@@ -427,6 +428,28 @@ struct PredictedTimingAdvice
 };
 
 using PredictedTimingAdviceByCase = std::map<std::string, std::map<int, PredictedTimingAdvice>>;
+
+struct PredictedNeuralTrackEvent
+{
+    int event_index = -1;
+    std::string pose;
+    double center_sec = 0.0;
+    double duration_sec = 0.08;
+    double confidence = 0.0;
+    bool fallback_used = false;
+};
+
+using PredictedNeuralTrackByCase =
+    std::map<std::string, std::vector<PredictedNeuralTrackEvent>>;
+
+struct PredictedNeuralTrackResult
+{
+    FOffgridAIAlignedVisemeTrack track;
+    int prediction_count = 0;
+    int accepted_count = 0;
+    int identity_fallback_count = 0;
+    int deterministic_fallback_count = 0;
+};
 
 struct PredictedTimingApplicationResult
 {
@@ -552,6 +575,49 @@ static PredictedTimingAdviceByCase read_predicted_timing_advice_csv(const fs::pa
         advice.identity_confidence = identity_confidence.empty() ? 0.0 : std::stod(identity_confidence);
         advice.absolute_placement = csv_cell(cells, placement_column) == "absolute";
         result[csv_cell(cells, case_column)][std::stoi(csv_cell(cells, event_column))] = advice;
+    }
+    return result;
+}
+
+static PredictedNeuralTrackByCase read_predicted_neural_track_csv(const fs::path& path)
+{
+    std::ifstream input(path);
+    if (!input) throw std::runtime_error("cannot read neural track: " + path.string());
+    std::string line;
+    if (!std::getline(input, line)) throw std::runtime_error("empty neural track: " + path.string());
+    const auto header = parse_csv_cells(line);
+    const int case_column = header_index(header, "case_id");
+    const int event_column = header_index(header, "event_index");
+    const int pose_column = header_index(header, "pose");
+    const int center_column = header_index(header, "center_sec");
+    const int duration_column = header_index(header, "duration_sec");
+    const int confidence_column = header_index(header, "confidence");
+    const int fallback_column = header_index(header, "fallback_used");
+    if (case_column < 0 || event_column < 0 || pose_column < 0 || center_column < 0
+        || duration_column < 0 || confidence_column < 0 || fallback_column < 0)
+    {
+        throw std::runtime_error("neural track is missing required columns");
+    }
+    PredictedNeuralTrackByCase result;
+    while (std::getline(input, line))
+    {
+        if (line.empty()) continue;
+        const auto cells = parse_csv_cells(line);
+        PredictedNeuralTrackEvent event;
+        event.event_index = std::stoi(csv_cell(cells, event_column));
+        event.pose = csv_cell(cells, pose_column);
+        event.center_sec = std::stod(csv_cell(cells, center_column));
+        event.duration_sec = std::stod(csv_cell(cells, duration_column));
+        event.confidence = std::stod(csv_cell(cells, confidence_column));
+        event.fallback_used = std::stoi(csv_cell(cells, fallback_column)) != 0;
+        result[csv_cell(cells, case_column)].push_back(std::move(event));
+    }
+    for (auto& [case_id, events] : result)
+    {
+        (void)case_id;
+        std::sort(events.begin(), events.end(), [](const auto& left, const auto& right) {
+            return left.event_index < right.event_index;
+        });
     }
     return result;
 }
@@ -3464,6 +3530,88 @@ static PredictedTimingApplicationResult apply_predicted_timing_advice(
     return result;
 }
 
+static PredictedNeuralTrackResult build_predicted_neural_track(
+    const FOffgridAITextVisemePlan& plan,
+    const TArray<FOffgridAIStreamingSpeechRegion>& speech_regions,
+    const std::vector<PredictedNeuralTrackEvent>& predictions)
+{
+    PredictedNeuralTrackResult result;
+    float last_center = 0.0f;
+    for (const PredictedNeuralTrackEvent& prediction : predictions)
+    {
+        ++result.prediction_count;
+        if (!plan.Events.IsValidIndex(prediction.event_index)) continue;
+        const FOffgridAITextVisemeEvent& source = plan.Events[prediction.event_index];
+        if (!source.bIsRenderable) continue;
+
+        FOffgridAICommittedVisemeEvent event;
+        event.EventIndex = prediction.event_index;
+        event.PoseID = source.PoseID;
+        if (!prediction.pose.empty() && prediction.pose != to_std(source.PoseID))
+            ++result.identity_fallback_count;
+        event.Strength = source.Strength;
+        event.JawOpenTarget = source.JawOpenTarget;
+        event.SourceWord = source.SourceText;
+        event.WordIndex = source.WordIndex;
+        event.SentenceIndex = source.SentenceIndex;
+        event.SpeechRegionIndex = source.SpeechRegionIndex;
+        event.bIsStrongVisibleEvent = source.bIsStrongVisibleEvent;
+        event.bIsRenderable = true;
+        event.bCanceledByWordHandoff = false;
+        const float requested_center = static_cast<float>(std::max(0.0, prediction.center_sec));
+        const float center = std::max(requested_center, last_center);
+        const float duration = static_cast<float>(std::clamp(prediction.duration_sec, 0.010, 0.500));
+        event.TextCenterNorm = source.StartNorm + 0.5f * (source.EndNorm - source.StartNorm);
+        event.TextDiagnosticCenterSeconds = center;
+        event.PriorCenterSeconds = center;
+        event.PriorStartSeconds = std::max(0.0f, center - 0.5f * duration);
+        event.PriorEndSeconds = center + 0.5f * duration;
+        event.LeadAdjustedCenterSeconds = center;
+        event.FinalRenderCenterSeconds = center;
+        event.RenderStartSeconds = std::max(0.0f, center - 0.5f * duration);
+        event.RenderEndSeconds = center + 0.5f * duration;
+        event.SourcePhoneIndex = source.SourcePhoneGlobalIndex;
+        event.SourcePhoneBase = source.SourcePhoneBase;
+        event.bMappedToObservedSpeech = speech_regions.IsValidIndex(source.SpeechRegionIndex);
+        event.CommitPlaybackSeconds = std::max(0.0f, center - 0.350f);
+        event.CommitLeadSeconds = center - event.CommitPlaybackSeconds;
+        event.CommitReason = FName(TEXT("neural_monotonic_alignment"));
+        event.AcousticAnchorKind = FName(TEXT("neural_transition"));
+        event.AcousticAnchorSeconds = center;
+        event.AcousticAnchorErrorSeconds = 0.0f;
+        result.track.Events.Add(std::move(event));
+        last_center = center;
+        ++result.accepted_count;
+        if (prediction.fallback_used) ++result.deterministic_fallback_count;
+    }
+    return result;
+}
+
+static std::string predicted_neural_track_summary_json(
+    const PredictedNeuralTrackResult& result,
+    const GradeReport& grade_report)
+{
+    const double fallback_rate = result.accepted_count > 0
+        ? static_cast<double>(result.deterministic_fallback_count) / result.accepted_count
+        : 0.0;
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(6)
+        << "{\n"
+        << "  \"prediction_count\": " << result.prediction_count << ",\n"
+        << "  \"accepted_count\": " << result.accepted_count << ",\n"
+        << "  \"identity_fallback_count\": " << result.identity_fallback_count << ",\n"
+        << "  \"deterministic_fallback_count\": " << result.deterministic_fallback_count << ",\n"
+        << "  \"deterministic_fallback_rate\": " << fallback_rate << ",\n"
+        << "  \"graded_matched_count\": " << grade_report.matched_count << ",\n"
+        << "  \"graded_missing_count\": " << grade_report.missing_count << ",\n"
+        << "  \"graded_extra_count\": " << grade_report.extra_count << ",\n"
+        << "  \"graded_order_violations\": " << grade_report.order_violations << ",\n"
+        << "  \"graded_mean_abs_center_error_ms\": "
+        << grade_report.mean_abs_center_error_ms << "\n"
+        << "}\n";
+    return out.str();
+}
+
 static std::string predicted_timing_summary_json(
     const PredictedTimingApplicationResult& result,
     const GradeReport& grade_report)
@@ -3664,6 +3812,137 @@ static std::string timing_commit_training_rows_csv(
             << std::clamp(target_shift_ms, -100.0, 100.0) << ','
             << (gold_center + 0.0005 >= event.CommitPlaybackSeconds ? 1 : 0)
             << '\n';
+    }
+    return out.str();
+}
+
+static void append_monotonic_audio_features(
+    std::ostringstream& out,
+    const FOffgridAIStreamingAudioFeatureFrame& frame)
+{
+    out << frame.RMSNorm << ',' << frame.DeltaRMS << ',' << frame.Flux << ',' << frame.ZCR << ','
+        << frame.LowBandNorm << ',' << frame.MidBandNorm << ',' << frame.HighBandNorm << ','
+        << frame.SpectralCentroidNorm << ',' << frame.Periodicity << ','
+        << frame.RichLowBandNorm << ',' << frame.RichMidBandNorm << ',' << frame.RichHighBandNorm << ','
+        << frame.RichSpectralCentroidNorm << ',' << frame.RichSpectralRolloffNorm << ','
+        << frame.RichSpectralFlatness << ',' << frame.RichSpectralFlux << ','
+        << frame.RichPeriodicity << ',' << frame.SpeechEvidence << ',' << frame.SilenceAccumSec << ','
+        << (frame.bInSpeechAfterFrame ? 1 : 0);
+}
+
+static std::string monotonic_audio_frames_csv(
+    const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames)
+{
+    std::ostringstream out;
+    out << "schema_version,frame_index,start_sec,end_sec,rms_norm,delta_rms,flux,zcr,"
+        << "low_band_norm,mid_band_norm,high_band_norm,spectral_centroid_norm,periodicity,"
+        << "rich_low_band_norm,rich_mid_band_norm,rich_high_band_norm,rich_spectral_centroid_norm,"
+        << "rich_spectral_rolloff_norm,rich_spectral_flatness,rich_spectral_flux,rich_periodicity,"
+        << "speech_evidence,silence_accum_sec,in_speech\n";
+    out << std::fixed << std::setprecision(6);
+    for (int32 index = 0; index < frames.Num(); ++index)
+    {
+        out << 1 << ',' << index << ',' << frames[index].AudioBufferStartSec << ','
+            << frames[index].AudioBufferEndSec << ',';
+        append_monotonic_audio_features(out, frames[index]);
+        out << '\n';
+    }
+    return out.str();
+}
+
+static const HandmadeLabel* find_gold_label_for_planned_event(
+    const FOffgridAITextVisemeEvent& event,
+    const std::vector<HandmadeLabel>& labels)
+{
+    for (const HandmadeLabel& label : labels)
+    {
+        if (label.word_index == event.WordIndex
+            && label.source_phone_word_index == event.SourcePhoneIndex
+            && label.pose == to_std(event.PoseID))
+        {
+            return &label;
+        }
+    }
+    return nullptr;
+}
+
+static std::string monotonic_tokens_csv(
+    const FOffgridAITextVisemePlan& plan,
+    const FOffgridAICommittedVisemeTrack& committed,
+    const std::vector<HandmadeLabel>& labels)
+{
+    struct TokenTarget {
+        int32 EventIndex = INDEX_NONE;
+        const HandmadeLabel* Gold = nullptr;
+        double Center = -1.0;
+        double Duration = 0.020;
+        double DeterministicCenter = -1.0;
+    };
+    std::map<int32, double> deterministic_centers;
+    for (const FOffgridAICommittedVisemeEvent& event : committed.Events)
+        deterministic_centers[event.EventIndex] = event.FinalRenderCenterSeconds;
+    std::vector<TokenTarget> targets;
+    for (int32 event_index = 0; event_index < plan.Events.Num(); ++event_index)
+    {
+        const auto& event = plan.Events[event_index];
+        if (!event.bIsRenderable) continue;
+        TokenTarget target;
+        target.EventIndex = event_index;
+        target.Gold = find_gold_label_for_planned_event(event, labels);
+        if (target.Gold)
+        {
+            target.Center = 0.5 * (target.Gold->start + target.Gold->end);
+            target.Duration = target.Gold->end - target.Gold->start;
+        }
+        const auto deterministic = deterministic_centers.find(event_index);
+        if (deterministic != deterministic_centers.end())
+            target.DeterministicCenter = deterministic->second;
+        targets.push_back(target);
+    }
+    for (size_t index = 0; index < targets.size(); ++index)
+    {
+        if (targets[index].Center >= 0.0) continue;
+        size_t before = index;
+        while (before > 0 && targets[before - 1].Center < 0.0) --before;
+        const bool has_before = before > 0;
+        size_t after = index + 1;
+        while (after < targets.size() && targets[after].Center < 0.0) ++after;
+        const bool has_after = after < targets.size();
+        if (has_before && has_after)
+        {
+            const size_t before_index = before - 1;
+            const double fraction = static_cast<double>(index - before_index)
+                / static_cast<double>(after - before_index);
+            targets[index].Center = targets[before_index].Center
+                + fraction * (targets[after].Center - targets[before_index].Center);
+        }
+        else if (has_before)
+            targets[index].Center = targets[before - 1].Center + 0.030 * (index - before + 1);
+        else if (has_after)
+            targets[index].Center = std::max(0.0, targets[after].Center - 0.030 * (after - index));
+        else
+            targets[index].Center = 0.030 * static_cast<double>(index);
+    }
+
+    std::ostringstream out;
+    out << "schema_version,token_index,event_index,pose,phone_base,word_index,phone_index_in_word,"
+        << "phone_global_index,duration_prior_sec,is_vowel,visual_role,text_center_norm,strength,"
+        << "target_center_sec,target_duration_sec,has_mfa_target,deterministic_center_sec\n";
+    out << std::fixed << std::setprecision(6);
+    for (size_t token_index = 0; token_index < targets.size(); ++token_index)
+    {
+        const TokenTarget& target = targets[token_index];
+        const auto& event = plan.Events[target.EventIndex];
+        const FOffgridAIExpectedPhone* phone = plan.ExpectedPhones.IsValidIndex(event.SourcePhoneGlobalIndex)
+            ? &plan.ExpectedPhones[event.SourcePhoneGlobalIndex] : nullptr;
+        out << 1 << ',' << token_index << ',' << target.EventIndex << ','
+            << csv_value(to_std(event.PoseID)) << ',' << csv_value(to_std(event.SourcePhoneBase)) << ','
+            << event.WordIndex << ',' << event.SourcePhoneIndex << ',' << event.SourcePhoneGlobalIndex << ','
+            << (phone ? phone->WeightSeconds : 0.075f) << ',' << (phone && phone->bIsVowel ? 1 : 0) << ','
+            << static_cast<int>(event.VisualRole) << ','
+            << (event.StartNorm + 0.5f * (event.EndNorm - event.StartNorm)) << ',' << event.Strength << ','
+            << target.Center << ',' << target.Duration << ',' << (target.Gold ? 1 : 0) << ','
+            << target.DeterministicCenter << '\n';
     }
     return out.str();
 }
@@ -5286,6 +5565,7 @@ struct RunnerCliConfig
     bool fast_batch = false;
     std::string case_filter;
     fs::path timing_advice_csv;
+    fs::path neural_track_csv;
 };
 
 static RunnerCliConfig parse_cli_config(int argc, char** argv)
@@ -5378,6 +5658,10 @@ static RunnerCliConfig parse_cli_config(int argc, char** argv)
         {
             cli.output.write_timing_training_rows = true;
         }
+        else if (arg == "--export-monotonic-dataset")
+        {
+            cli.output.write_monotonic_training_rows = true;
+        }
         else if (arg == "--timing-advice-csv")
         {
             if (i + 1 >= argc) throw std::runtime_error("--timing-advice-csv requires a value");
@@ -5386,6 +5670,15 @@ static RunnerCliConfig parse_cli_config(int argc, char** argv)
         else if (starts_with(arg, "--timing-advice-csv="))
         {
             cli.timing_advice_csv = fs::path(arg.substr(std::string("--timing-advice-csv=").size()));
+        }
+        else if (arg == "--neural-track-csv")
+        {
+            if (i + 1 >= argc) throw std::runtime_error("--neural-track-csv requires a value");
+            cli.neural_track_csv = fs::path(argv[++i]);
+        }
+        else if (starts_with(arg, "--neural-track-csv="))
+        {
+            cli.neural_track_csv = fs::path(arg.substr(std::string("--neural-track-csv=").size()));
         }
         else if (arg == "--case")
         {
@@ -5504,6 +5797,9 @@ int main(int argc, char** argv)
         const PredictedTimingAdviceByCase predicted_timing_advice = cli.timing_advice_csv.empty()
             ? PredictedTimingAdviceByCase{}
             : read_predicted_timing_advice_csv(fs::absolute(cli.timing_advice_csv));
+        const PredictedNeuralTrackByCase predicted_neural_tracks = cli.neural_track_csv.empty()
+            ? PredictedNeuralTrackByCase{}
+            : read_predicted_neural_track_csv(fs::absolute(cli.neural_track_csv));
         const fs::path root = cli.root;
         const StreamConfig stream = cli.stream;
         const OutputConfig output = cli.output;
@@ -5695,6 +5991,15 @@ int main(int argc, char** argv)
                             handmade,
                             stream.buffer_seconds));
                 }
+                if (output.write_monotonic_training_rows)
+                {
+                    write_text(
+                        case_dir / "monotonic_audio_frames.csv",
+                        monotonic_audio_frames_csv(session.GetSpeechDetector().GetFeatureFrames()));
+                    write_text(
+                        case_dir / "monotonic_tokens.csv",
+                        monotonic_tokens_csv(plan, committed, handmade));
+                }
                 if (!cli.case_filter.empty()) std::cerr << "[case] grade " << stem << std::endl;
                 write_text(case_dir / "planned_words.csv", planned_words_csv(plan));
                 write_text(case_dir / "expected_phones.csv", expected_phones_csv(plan));
@@ -5757,6 +6062,24 @@ int main(int argc, char** argv)
                     write_text(
                         case_dir / "timing_model_grade.json",
                         grade_json(corrected_grade));
+                }
+                const auto neural_prediction = predicted_neural_tracks.find(stem);
+                if (neural_prediction != predicted_neural_tracks.end())
+                {
+                    const PredictedNeuralTrackResult neural = build_predicted_neural_track(
+                        plan,
+                        speech,
+                        neural_prediction->second);
+                    const GradeReport neural_grade = grade(
+                        neural.track,
+                        speech,
+                        handmade,
+                        gold_words,
+                        gold_speech);
+                    write_text(
+                        case_dir / "neural_track_summary.json",
+                        predicted_neural_track_summary_json(neural, neural_grade));
+                    write_text(case_dir / "neural_track_grade.json", grade_json(neural_grade));
                 }
                 if (output.write_detailed_diagnostics)
                 {
