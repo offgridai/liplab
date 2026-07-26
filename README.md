@@ -93,6 +93,11 @@ There are two deliberately separate Offgrid-log workflows:
   index for `scripts/analyze_offgrid_logs.py`; it does not mutate the checked-in
   corpus.
 
+The offline synthetic data factory is also separate from the checked-in corpus:
+`scripts/generate_speech_library.py` creates reproducible Qwen WAVs, provenance
+manifests, and MFA TextGrids under `outputs/speech_library/`. See
+[`docs/speech_library_generator.md`](docs/speech_library_generator.md).
+
 ## Priority scorecard
 
 `outputs/runs/latest/alignment_summary.json` reports:
