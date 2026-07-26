@@ -267,6 +267,9 @@ struct BoundaryAlignmentReport
     int matched_count = 0;
     int missing_count = 0;
     int extra_count = 0;
+    int clean_match_count = 0;
+    int merge_count = 0;
+    int split_count = 0;
     double mean_abs_start_error_ms = 0.0;
     double median_abs_start_error_ms = 0.0;
     double p90_abs_start_error_ms = 0.0;
@@ -4544,30 +4547,145 @@ static BoundaryAlignmentReport grade_region_boundaries(const std::vector<TimeSpa
     BoundaryAlignmentReport report;
     report.reference_count = static_cast<int>(gold.size());
     report.predicted_count = static_cast<int>(predicted.size());
-    report.matched_count = std::min(report.reference_count, report.predicted_count);
-    report.missing_count = std::max(0, report.reference_count - report.matched_count);
-    report.extra_count = std::max(0, report.predicted_count - report.matched_count);
     report.count_mismatch = report.reference_count != report.predicted_count;
 
-    if (report.matched_count <= 0)
+    if (gold.empty() || predicted.empty())
     {
+        report.missing_count = report.reference_count;
+        report.extra_count = report.predicted_count;
         return report;
     }
+
+    const auto overlap_seconds = [](const TimeSpan& left, const TimeSpan& right) {
+        return std::max(0.0, std::min(left.end, right.end) - std::max(left.start, right.start));
+    };
+    std::vector<int> gold_overlap_counts(gold.size(), 0);
+    std::vector<int> predicted_overlap_counts(predicted.size(), 0);
+    for (size_t gold_index = 0; gold_index < gold.size(); ++gold_index)
+    {
+        for (size_t predicted_index = 0; predicted_index < predicted.size(); ++predicted_index)
+        {
+            if (overlap_seconds(gold[gold_index], predicted[predicted_index]) <= 0.0) continue;
+            ++gold_overlap_counts[gold_index];
+            ++predicted_overlap_counts[predicted_index];
+        }
+    }
+    report.merge_count = static_cast<int>(std::count_if(
+        predicted_overlap_counts.begin(), predicted_overlap_counts.end(), [](int count) { return count > 1; }));
+    report.split_count = static_cast<int>(std::count_if(
+        gold_overlap_counts.begin(), gold_overlap_counts.end(), [](int count) { return count > 1; }));
+
+    constexpr uint8_t kAlignmentNone = 0;
+    constexpr uint8_t kAlignmentMatch = 1;
+    constexpr uint8_t kAlignmentMissing = 2;
+    constexpr uint8_t kAlignmentExtra = 3;
+    struct AlignmentCell
+    {
+        double cost = std::numeric_limits<double>::infinity();
+        uint8_t step = 0;
+    };
+    const size_t column_count = predicted.size() + 1;
+    std::vector<AlignmentCell> cells((gold.size() + 1) * column_count);
+    const auto cell_index = [column_count](size_t gold_index, size_t predicted_index) {
+        return gold_index * column_count + predicted_index;
+    };
+    cells[0].cost = 0.0;
+    for (size_t gold_index = 1; gold_index <= gold.size(); ++gold_index)
+    {
+        auto& cell = cells[cell_index(gold_index, 0)];
+        cell.cost = static_cast<double>(gold_index);
+        cell.step = kAlignmentMissing;
+    }
+    for (size_t predicted_index = 1; predicted_index <= predicted.size(); ++predicted_index)
+    {
+        auto& cell = cells[cell_index(0, predicted_index)];
+        cell.cost = static_cast<double>(predicted_index);
+        cell.step = kAlignmentExtra;
+    }
+    for (size_t gold_index = 1; gold_index <= gold.size(); ++gold_index)
+    {
+        for (size_t predicted_index = 1; predicted_index <= predicted.size(); ++predicted_index)
+        {
+            auto& cell = cells[cell_index(gold_index, predicted_index)];
+            const double missing_cost = cells[cell_index(gold_index - 1, predicted_index)].cost + 1.0;
+            const double extra_cost = cells[cell_index(gold_index, predicted_index - 1)].cost + 1.0;
+            if (missing_cost <= extra_cost)
+            {
+                cell.cost = missing_cost;
+                cell.step = kAlignmentMissing;
+            }
+            else
+            {
+                cell.cost = extra_cost;
+                cell.step = kAlignmentExtra;
+            }
+
+            const auto& gold_span = gold[gold_index - 1];
+            const auto& predicted_span = predicted[predicted_index - 1];
+            const double overlap = overlap_seconds(gold_span, predicted_span);
+            if (overlap <= 0.0) continue;
+            const double span_union = std::max(gold_span.end, predicted_span.end)
+                - std::min(gold_span.start, predicted_span.start);
+            const double intersection_over_union = span_union > 0.0 ? overlap / span_union : 0.0;
+            const double match_cost = cells[cell_index(gold_index - 1, predicted_index - 1)].cost
+                + (1.0 - intersection_over_union);
+            if (match_cost <= cell.cost)
+            {
+                cell.cost = match_cost;
+                cell.step = kAlignmentMatch;
+            }
+        }
+    }
+
+    std::vector<std::pair<size_t, size_t>> matches;
+    size_t gold_index = gold.size();
+    size_t predicted_index = predicted.size();
+    while (gold_index > 0 || predicted_index > 0)
+    {
+        const uint8_t step = cells[cell_index(gold_index, predicted_index)].step;
+        if (step == kAlignmentMatch)
+        {
+            matches.emplace_back(gold_index - 1, predicted_index - 1);
+            --gold_index;
+            --predicted_index;
+        }
+        else if (step == kAlignmentMissing)
+        {
+            --gold_index;
+        }
+        else if (step == kAlignmentExtra)
+        {
+            --predicted_index;
+        }
+        else
+        {
+            break;
+        }
+    }
+    std::reverse(matches.begin(), matches.end());
+    report.matched_count = static_cast<int>(matches.size());
+    report.missing_count = report.reference_count - report.matched_count;
+    report.extra_count = report.predicted_count - report.matched_count;
 
     std::vector<double> start_errors;
     std::vector<double> end_errors;
     double lead_sum = 0.0;
     double tail_sum = 0.0;
-    for (int i = 0; i < report.matched_count; ++i)
+    for (const auto& match : matches)
     {
-        const auto& predicted_span = predicted[static_cast<size_t>(i)];
-        const auto& gold_span = gold[static_cast<size_t>(i)];
+        const auto& gold_span = gold[match.first];
+        const auto& predicted_span = predicted[match.second];
         start_errors.push_back(std::abs(predicted_span.start - gold_span.start) * 1000.0);
         end_errors.push_back(std::abs(predicted_span.end - gold_span.end) * 1000.0);
         lead_sum += std::max(0.0, gold_span.start - predicted_span.start) * 1000.0;
         tail_sum += std::max(0.0, predicted_span.end - gold_span.end) * 1000.0;
+        if (gold_overlap_counts[match.first] == 1 && predicted_overlap_counts[match.second] == 1)
+        {
+            ++report.clean_match_count;
+        }
     }
 
+    if (report.matched_count <= 0) return report;
     const double denom = static_cast<double>(report.matched_count);
     report.mean_abs_start_error_ms = mean_ms(start_errors);
     report.median_abs_start_error_ms = percentile_ms(start_errors, 0.50);
@@ -5720,6 +5838,9 @@ static std::string grade_json(const GradeReport& grade_report)
         << "    \"speech_region_matched_count\": " << grade_report.pause_alignment.speech_regions.matched_count << ",\n"
         << "    \"speech_region_missing_count\": " << grade_report.pause_alignment.speech_regions.missing_count << ",\n"
         << "    \"speech_region_extra_count\": " << grade_report.pause_alignment.speech_regions.extra_count << ",\n"
+        << "    \"speech_region_clean_match_count\": " << grade_report.pause_alignment.speech_regions.clean_match_count << ",\n"
+        << "    \"speech_region_merge_count\": " << grade_report.pause_alignment.speech_regions.merge_count << ",\n"
+        << "    \"speech_region_split_count\": " << grade_report.pause_alignment.speech_regions.split_count << ",\n"
         << "    \"mean_abs_speech_region_start_error_ms\": " << grade_report.pause_alignment.speech_regions.mean_abs_start_error_ms << ",\n"
         << "    \"median_abs_speech_region_start_error_ms\": " << grade_report.pause_alignment.speech_regions.median_abs_start_error_ms << ",\n"
         << "    \"p90_abs_speech_region_start_error_ms\": " << grade_report.pause_alignment.speech_regions.p90_abs_start_error_ms << ",\n"

@@ -9,6 +9,17 @@ import statistics
 from pathlib import Path
 
 
+def percentile(values: list[float], fraction: float) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    position = min(1.0, max(0.0, fraction)) * (len(ordered) - 1)
+    lower = int(position)
+    upper = min(lower + 1, len(ordered) - 1)
+    weight = position - lower
+    return ordered[lower] * (1.0 - weight) + ordered[upper] * weight
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
@@ -25,6 +36,9 @@ def main() -> int:
         "speech_region_weighted_start_error_ms": 0.0,
         "speech_region_weighted_end_error_ms": 0.0,
         "speech_region_count_mismatch_cases": 0,
+        "speech_region_clean_match_count": 0,
+        "speech_region_merge_count": 0,
+        "speech_region_split_count": 0,
         "word_onset_reference_count": 0, "word_onset_matched_count": 0,
         "word_onset_weighted_start_error_ms": 0.0,
         "intra_word_reference_count": 0, "intra_word_matched_count": 0,
@@ -36,6 +50,7 @@ def main() -> int:
         "syllable_matched_count": 0, "syllable_weighted_error_ms": 0.0,
     }
     error_samples: dict[str, dict[str, dict[str, object]]] = {}
+    region_segmentation: dict[str, dict[str, int]] = {}
     for case_id, split in split_for.items():
         grade_path = run_root / case_id / "neural_track_grade.json"
         summary_path = run_root / case_id / "neural_track_summary.json"
@@ -79,6 +94,28 @@ def main() -> int:
         alignment["speech_region_weighted_end_error_ms"] += (
             pause["mean_abs_speech_region_end_error_ms"] * region_matches)
         alignment["speech_region_count_mismatch_cases"] += int(pause["speech_region_count_mismatch"])
+        alignment["speech_region_clean_match_count"] += pause["speech_region_clean_match_count"]
+        alignment["speech_region_merge_count"] += pause["speech_region_merge_count"]
+        alignment["speech_region_split_count"] += pause["speech_region_split_count"]
+        for group in ("aggregate", split):
+            segmentation = region_segmentation.setdefault(group, {
+                "case_count": 0, "count_mismatch_cases": 0,
+                "reference_count": 0, "predicted_count": 0, "matched_count": 0,
+                "missing_count": 0, "extra_count": 0, "clean_match_count": 0,
+                "merge_count": 0, "split_count": 0,
+            })
+            segmentation["case_count"] += 1
+            segmentation["count_mismatch_cases"] += int(pause["speech_region_count_mismatch"])
+            for source_name, target_name in (
+                    ("speech_region_reference_count", "reference_count"),
+                    ("speech_region_predicted_count", "predicted_count"),
+                    ("speech_region_matched_count", "matched_count"),
+                    ("speech_region_missing_count", "missing_count"),
+                    ("speech_region_extra_count", "extra_count"),
+                    ("speech_region_clean_match_count", "clean_match_count"),
+                    ("speech_region_merge_count", "merge_count"),
+                    ("speech_region_split_count", "split_count")):
+                segmentation[target_name] += pause[source_name]
         onset = grade["word_onset_alignment"]
         alignment["word_onset_reference_count"] += onset["reference_count"]
         alignment["word_onset_matched_count"] += onset["matched_count"]
@@ -117,7 +154,7 @@ def main() -> int:
             row["prediction_count"] += summary["prediction_count"]
             row["deterministic_fallback_count"] += summary["deterministic_fallback_count"]
 
-    report: dict[str, object] = {"schema_version": 3, "splits": {}}
+    report: dict[str, object] = {"schema_version": 4, "splits": {}}
     for key, raw in accumulators.items():
         matched = int(raw["matched_count"])
         reference = int(raw["reference_count"])
@@ -147,6 +184,9 @@ def main() -> int:
         "speech_region_start_mae_ms": alignment["speech_region_weighted_start_error_ms"] / region_matches,
         "speech_region_end_mae_ms": alignment["speech_region_weighted_end_error_ms"] / region_matches,
         "speech_region_count_mismatch_cases": alignment["speech_region_count_mismatch_cases"],
+        "speech_region_clean_match_count": alignment["speech_region_clean_match_count"],
+        "speech_region_merge_count": alignment["speech_region_merge_count"],
+        "speech_region_split_count": alignment["speech_region_split_count"],
         "word_onset_match_rate": onset_matches / alignment["word_onset_reference_count"],
         "word_onset_start_mae_ms": alignment["word_onset_weighted_start_error_ms"] / onset_matches,
         "intra_word_match_rate": intra_matches / alignment["intra_word_reference_count"],
@@ -159,6 +199,17 @@ def main() -> int:
         "syllable_recall": syllable_matches / alignment["syllable_target_count"],
         "syllable_center_mae_ms": alignment["syllable_weighted_error_ms"] / syllable_matches,
     }
+    report["region_segmentation"] = {}
+    for group, raw in region_segmentation.items():
+        matched = raw["matched_count"]
+        reference = raw["reference_count"]
+        predicted = raw["predicted_count"]
+        report["region_segmentation"][group] = {
+            **raw,
+            "recall": matched / reference if reference else 0.0,
+            "precision": matched / predicted if predicted else 0.0,
+            "clean_match_rate": raw["clean_match_count"] / reference if reference else 0.0,
+        }
     report["comprehensive_metrics"] = {}
     for group, metrics in error_samples.items():
         report["comprehensive_metrics"][group] = {}
@@ -174,8 +225,14 @@ def main() -> int:
                 "miss_penalty_ms": raw["penalty_ms"],
                 "matched_only_mean_ms": statistics.fmean(matched_values) if matched_values else 0.0,
                 "matched_only_median_ms": statistics.median(matched_values) if matched_values else 0.0,
+                "matched_only_p90_ms": percentile(matched_values, 0.90),
+                "matched_only_p95_ms": percentile(matched_values, 0.95),
+                "matched_only_max_ms": max(matched_values, default=0.0),
                 "all_reference_mean_ms": statistics.fmean(comprehensive_values) if comprehensive_values else 0.0,
                 "all_reference_median_ms": statistics.median(comprehensive_values) if comprehensive_values else 0.0,
+                "all_reference_p90_ms": percentile(comprehensive_values, 0.90),
+                "all_reference_p95_ms": percentile(comprehensive_values, 0.95),
+                "all_reference_max_ms": max(comprehensive_values, default=0.0),
             }
 
     output = args.output or run_root / "neural_track_grade_summary.json"
