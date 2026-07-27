@@ -118,10 +118,9 @@ struct FOffgridAISubmittedVisemeSample
 
 struct FOffgridAILipsyncPoseRuntimeState
 {
-    float Open = 0.0f;
-    float Closed = 0.0f;
-    float Wide = 0.0f;
-    float Round = 0.0f;
-    float Funnel = 0.0f;
-    float Teeth = 0.0f;
+    // Full MetaHuman pose state. PoseIDs preserves deterministic iteration and
+    // lets poses that disappear from the current target decay cleanly without
+    // collapsing articulation into a fixed set of mouth-shape channels.
+    TArray<FName> PoseIDs;
+    TMap<FName, float> PoseWeights;
 };

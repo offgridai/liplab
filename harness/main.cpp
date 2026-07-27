@@ -2480,18 +2480,6 @@ static std::string focus_alignment_grade_json(
     return out.str();
 }
 
-static std::array<double, 6> pose_channels(const FOffgridAILipsyncPoseRuntimeState& pose)
-{
-    return {
-        pose.Open,
-        pose.Closed,
-        pose.Wide,
-        pose.Round,
-        pose.Funnel,
-        pose.Teeth
-    };
-}
-
 static std::string runtime_delivery_grade_json(
     const FOffgridAIAlignedVisemeTrack& track,
     const FOffgridAITextVisemePlan& plan,
@@ -3076,13 +3064,13 @@ static std::string presentation_motion_grade_json(
     }
 
     FOffgridAILipsyncPoseRuntimeState displayed;
-    std::array<double, 6> previous_channels{};
-    std::array<double, 6> previous_velocity{};
+    std::map<std::string, double> previous_displayed_weights;
+    std::map<std::string, double> previous_displayed_velocity;
     double squared_step_sum = 0.0;
     double squared_acceleration_sum = 0.0;
-    double max_channel_step = 0.0;
-    double max_channel_speed = 0.0;
-    double max_channel_acceleration = 0.0;
+    double max_displayed_pose_step = 0.0;
+    double max_displayed_pose_speed = 0.0;
+    double max_displayed_pose_acceleration = 0.0;
     std::map<std::string, double> previous_driver_weights;
     std::map<std::string, double> previous_driver_velocity;
     double driver_squared_step_sum = 0.0;
@@ -3092,7 +3080,16 @@ static std::string presentation_motion_grade_json(
     double driver_max_pose_acceleration = 0.0;
     int driver_channel_sample_count = 0;
     int sample_count = 0;
-    int channel_sample_count = 0;
+    int displayed_pose_sample_count = 0;
+    std::map<std::string, bool> eligible_pose_ids;
+    std::map<std::string, bool> driven_pose_ids;
+    for (const auto& event : track.Events)
+    {
+        if (event.bIsRenderable && !event.bCanceledByWordHandoff
+            && !event.PoseID.IsNone())
+            eligible_pose_ids[to_std(event.PoseID)] = true;
+    }
+    eligible_pose_ids["JawOpen"] = true;
     double jaw_peak = 0.0;
     double jaw_sum = 0.0;
     double jaw_squared_speed_sum = 0.0;
@@ -3147,21 +3144,48 @@ static std::string presentation_motion_grade_json(
         }
         previous_driver_weights = driver_weights;
         const auto target =
-            FOffgridAIVisemePerformer::BuildPoseStateFromPoseWeights(weights);
+            FOffgridAIVisemePerformer::BuildPoseStateFromSamples(samples);
+        for (const auto& sample : samples)
+        {
+            if (!sample.PoseID.IsNone()
+                && !target.PoseWeights.Contains(sample.PoseID))
+                throw std::runtime_error(
+                    "detailed pose was filtered from performer target: "
+                    + to_std(sample.PoseID));
+        }
         displayed = FOffgridAIVisemePerformer::StepDisplayedPose(
             displayed,
             target,
             static_cast<float>(frame_seconds),
             0.035f,
             false);
-        const auto channels = pose_channels(displayed);
-        const double jaw = displayed.Open;
+        TMap<FName, float> displayed_pose_map;
+        FOffgridAIVisemePerformer::BuildPoseWeightMapFromState(
+            displayed_pose_map, displayed);
+        for (const FName& pose_id : target.PoseIDs)
+        {
+            if (!displayed_pose_map.Contains(pose_id))
+                throw std::runtime_error(
+                    "detailed pose was filtered from displayed state: "
+                    + to_std(pose_id));
+        }
+        std::map<std::string, double> displayed_weights;
+        for (const auto& pose : eligible_pose_ids)
+        {
+            const FName pose_id(pose.first.c_str());
+            const double weight = displayed_pose_map.FindRef(pose_id);
+            displayed_weights[pose.first] = weight;
+            if (weight > 0.012) driven_pose_ids[pose.first] = true;
+        }
+        const double jaw = displayed_pose_map.FindRef(TEXT("JawOpen"));
         jaw_peak = std::max(jaw_peak, jaw);
         jaw_sum += jaw;
         if (jaw >= 0.75) ++jaw_high_aperture_samples;
         if (sample_count > 0)
         {
-            const double jaw_speed = (jaw - previous_channels[0]) / frame_seconds;
+            const double previous_jaw = previous_displayed_weights.count("JawOpen")
+                ? previous_displayed_weights.at("JawOpen") : 0.0;
+            const double jaw_speed = (jaw - previous_jaw) / frame_seconds;
             jaw_max_speed = std::max(jaw_max_speed, std::abs(jaw_speed));
             jaw_squared_speed_sum += jaw_speed * jaw_speed;
             if (std::abs(jaw_speed) >= 0.05
@@ -3185,31 +3209,42 @@ static std::string presentation_motion_grade_json(
         }
         if (sample_count > 0)
         {
-            for (size_t channel = 0; channel < channels.size(); ++channel)
+            for (const auto& pose : eligible_pose_ids)
             {
-                const double step = channels[channel] - previous_channels[channel];
+                const double current = displayed_weights.count(pose.first)
+                    ? displayed_weights.at(pose.first) : 0.0;
+                const double previous = previous_displayed_weights.count(pose.first)
+                    ? previous_displayed_weights.at(pose.first) : 0.0;
+                const double step = current - previous;
                 const double velocity = step / frame_seconds;
+                const double previous_velocity =
+                    previous_displayed_velocity.count(pose.first)
+                    ? previous_displayed_velocity.at(pose.first) : 0.0;
                 const double acceleration =
-                    (velocity - previous_velocity[channel]) / frame_seconds;
-                max_channel_step = std::max(max_channel_step, std::abs(step));
-                max_channel_speed = std::max(max_channel_speed, std::abs(velocity));
-                max_channel_acceleration = std::max(
-                    max_channel_acceleration, std::abs(acceleration));
+                    (velocity - previous_velocity) / frame_seconds;
+                max_displayed_pose_step = std::max(
+                    max_displayed_pose_step, std::abs(step));
+                max_displayed_pose_speed = std::max(
+                    max_displayed_pose_speed, std::abs(velocity));
+                max_displayed_pose_acceleration = std::max(
+                    max_displayed_pose_acceleration, std::abs(acceleration));
                 squared_step_sum += step * step;
                 squared_acceleration_sum += acceleration * acceleration;
-                previous_velocity[channel] = velocity;
-                ++channel_sample_count;
+                previous_displayed_velocity[pose.first] = velocity;
+                ++displayed_pose_sample_count;
             }
         }
-        previous_channels = channels;
+        previous_displayed_weights = displayed_weights;
         ++sample_count;
     }
 
-    const double rms_channel_step = channel_sample_count > 0
-        ? std::sqrt(squared_step_sum / static_cast<double>(channel_sample_count))
+    const double rms_displayed_pose_step = displayed_pose_sample_count > 0
+        ? std::sqrt(squared_step_sum
+            / static_cast<double>(displayed_pose_sample_count))
         : 0.0;
-    const double rms_channel_acceleration = channel_sample_count > 0
-        ? std::sqrt(squared_acceleration_sum / static_cast<double>(channel_sample_count))
+    const double rms_displayed_pose_acceleration = displayed_pose_sample_count > 0
+        ? std::sqrt(squared_acceleration_sum
+            / static_cast<double>(displayed_pose_sample_count))
         : 0.0;
     const double driver_rms_pose_step = driver_channel_sample_count > 0
         ? std::sqrt(driver_squared_step_sum
@@ -3239,13 +3274,20 @@ static std::string presentation_motion_grade_json(
         << "{\n"
         << "  \"sample_rate_hz\": 60.0,\n"
         << "  \"sample_count\": " << sample_count << ",\n"
-        << "  \"max_channel_step_per_frame\": " << max_channel_step << ",\n"
-        << "  \"rms_channel_step_per_frame\": " << rms_channel_step << ",\n"
-        << "  \"max_channel_speed_per_second\": " << max_channel_speed << ",\n"
-        << "  \"max_channel_acceleration_per_second2\": "
-        << max_channel_acceleration << ",\n"
-        << "  \"rms_channel_acceleration_per_second2\": "
-        << rms_channel_acceleration << ",\n"
+        << "  \"eligible_detailed_pose_count\": "
+        << eligible_pose_ids.size() << ",\n"
+        << "  \"driven_detailed_pose_count\": "
+        << driven_pose_ids.size() << ",\n"
+        << "  \"displayed_max_pose_step_per_frame\": "
+        << max_displayed_pose_step << ",\n"
+        << "  \"displayed_rms_pose_step_per_frame\": "
+        << rms_displayed_pose_step << ",\n"
+        << "  \"displayed_max_pose_speed_per_second\": "
+        << max_displayed_pose_speed << ",\n"
+        << "  \"displayed_max_pose_acceleration_per_second2\": "
+        << max_displayed_pose_acceleration << ",\n"
+        << "  \"displayed_rms_pose_acceleration_per_second2\": "
+        << rms_displayed_pose_acceleration << ",\n"
         << "  \"driver_max_pose_step_per_frame\": "
         << driver_max_pose_step << ",\n"
         << "  \"driver_rms_pose_step_per_frame\": "

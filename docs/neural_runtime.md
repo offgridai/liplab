@@ -81,6 +81,12 @@ playback clock, finalize after playback, sample pose weights, and pass them to
 FaceDriver. It must not plan, move, split, merge, prune, repair, or replace
 neural events.
 
+The performer/FaceDriver boundary carries the complete detailed MetaHuman pose
+map returned by the committed track, including supporting consonant and tongue
+poses, plus `JawOpen`. `FOffgridAILipsyncPoseRuntimeState` smooths that dynamic
+map without reducing it to generic open/closed/wide/round/funnel/teeth channels.
+Hosts should submit the map produced by `BuildPoseWeightMapFromState` unchanged.
+
 `CloseInputStream()` means that no more PCM will arrive. It is not an
 end-of-playback signal. LineCoach must continue `Update(CurrentPlaybackSec)`
 while buffered audio drains and call `Finalize` only at true audible completion.

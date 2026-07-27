@@ -16,7 +16,10 @@ There is one runtime path:
    speech occupancy.
 4. A fixed-lag monotonic decoder commits viseme identity, placement, duration,
    speech regions, pauses, word starts, and syllable alignment.
-5. The performer turns committed events into continuous pose weights.
+5. The performer turns committed events into continuous weights for every
+   transcript-selected MetaHuman pose plus the independent jaw carrier. Display
+   smoothing preserves those detailed pose IDs rather than reducing them to a
+   fixed mouth-shape palette.
 
 Transcript-derived identity and order are authoritative. Audio and the neural
 model determine timing, but cannot invent or reorder visemes. There is no

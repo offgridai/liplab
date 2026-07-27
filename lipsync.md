@@ -7,7 +7,7 @@
 - The neural aligner owns speech occupancy, pause/resume, word and syllable
   transitions, event centers, and event durations.
 - The runtime session owns irreversible monotonic commitment.
-- The performer owns pose-envelope sampling.
+- The performer owns detailed-pose envelope sampling and display smoothing.
 
 The runtime consumes no MFA labels, TTS token timing, hint streams, word
 schedules, Python, LibTorch, or deterministic timing fallback.
@@ -38,7 +38,10 @@ The first and last token states delimit each word. Their training targets extend
 to the complete MFA word interval, while internal token transitions retain phone
 and syllable supervision. The performer sustains each neural state through its
 predicted interval with short presentation edges, so a well-timed schedule is
-not visually shortened by long fades.
+not visually shortened by long fades. Its display state is keyed by the
+complete set of eligible MetaHuman pose IDs. Tongue, dental, affricate, rhotic,
+and supporting consonant poses remain independently driven; they are not
+collapsed into six generic mouth shapes.
 
 `FOffgridAILipsyncRuntimeSession` is the only runtime controller. It rejects a
 missing or invalid checkpoint and produces no track rather than invoking an
@@ -62,6 +65,7 @@ it does not repair alignment or choose identity.
 4. `CloseInputStream` when no more PCM will arrive
 5. continue `Update` while buffered audio drains
 6. `Finalize` only when audible playback ends
+7. sample, smooth, and submit the complete detailed pose-weight map
 
 LineCoach supplies transcript, PCM, and the audible playback clock. It must not
 schedule, merge, prune, or repair visemes. Runtime packaging, transplantation,

@@ -333,41 +333,33 @@ TMap<FName, float> FOffgridAIVisemePerformer::CollapseByPoseID(const TArray<FOff
     return Out;
 }
 
-FOffgridAILipsyncPoseRuntimeState FOffgridAIVisemePerformer::BuildPoseStateFromPoseWeights(const TMap<FName, float>& PoseWeights)
+FOffgridAILipsyncPoseRuntimeState FOffgridAIVisemePerformer::BuildPoseStateFromSamples(
+    const TArray<FOffgridAISubmittedVisemeSample>& Samples)
 {
     FOffgridAILipsyncPoseRuntimeState State;
-    State.Closed = FMath::Clamp(FMath::Max(PoseWeights.FindRef(TEXT("22_MBP")), PoseWeights.FindRef(TEXT("MBP"))), 0.0f, 1.0f);
-    if (const float* JawOpen = PoseWeights.Find(TEXT("JawOpen")))
+    for (const FOffgridAISubmittedVisemeSample& Sample : Samples)
     {
-        State.Open = FMath::Clamp(*JawOpen, 0.0f, 1.0f);
+        if (Sample.PoseID.IsNone()) continue;
+        if (!State.PoseWeights.Contains(Sample.PoseID))
+            State.PoseIDs.Add(Sample.PoseID);
+        float& Weight = State.PoseWeights.FindOrAdd(Sample.PoseID);
+        Weight = FMath::Max(
+            Weight,
+            FMath::Clamp(Sample.SubmittedWeight, 0.0f, 1.0f));
     }
-    else
-    {
-        // Compatibility for hosts submitting legacy pose maps.
-        State.Open = FMath::Clamp(FMath::Max(FMath::Max(FMath::Max(PoseWeights.FindRef(TEXT("07_Aa")), PoseWeights.FindRef(TEXT("08_Ah"))), PoseWeights.FindRef(TEXT("18_Uh"))), PoseWeights.FindRef(TEXT("AAA"))), 0.0f, 1.0f);
-    }
-    State.Wide = FMath::Clamp(FMath::Max(FMath::Max(FMath::Max(PoseWeights.FindRef(TEXT("03_Ee")), PoseWeights.FindRef(TEXT("04_Ih"))), PoseWeights.FindRef(TEXT("05_Ay"))), PoseWeights.FindRef(TEXT("EEE"))), 0.0f, 1.0f);
-    State.Round = FMath::Clamp(FMath::Max(FMath::Max(FMath::Max(PoseWeights.FindRef(TEXT("11_Oo")), PoseWeights.FindRef(TEXT("10_Or"))), PoseWeights.FindRef(TEXT("09_Oh"))), PoseWeights.FindRef(TEXT("OOO"))), 0.0f, 1.0f);
-    State.Funnel = FMath::Clamp(FMath::Max(PoseWeights.FindRef(TEXT("12_Ww-Oo-")), PoseWeights.FindRef(TEXT("WUH"))), 0.0f, 1.0f);
-    State.Teeth = FMath::Clamp(FMath::Max(PoseWeights.FindRef(TEXT("20_FV")), PoseWeights.FindRef(TEXT("FVS"))), 0.0f, 1.0f);
     return State;
 }
 
 void FOffgridAIVisemePerformer::BuildPoseWeightMapFromState(TMap<FName, float>& OutMap, const FOffgridAILipsyncPoseRuntimeState& State)
 {
     OutMap.Reset();
-    OutMap.Add(TEXT("MBP"), FMath::Clamp(State.Closed, 0.0f, 1.0f));
-    OutMap.Add(TEXT("AAA"), FMath::Clamp(State.Open, 0.0f, 1.0f));
-    OutMap.Add(TEXT("JawOpen"), FMath::Clamp(State.Open, 0.0f, 1.0f));
-    OutMap.Add(TEXT("EEE"), FMath::Clamp(State.Wide, 0.0f, 1.0f));
-    OutMap.Add(TEXT("OOO"), FMath::Clamp(State.Round, 0.0f, 1.0f));
-    OutMap.Add(TEXT("WUH"), FMath::Clamp(State.Funnel, 0.0f, 1.0f));
-    OutMap.Add(TEXT("FVS"), FMath::Clamp(State.Teeth, 0.0f, 1.0f));
-    OutMap.Add(TEXT("LipCompression"), FMath::Clamp(State.Closed, 0.0f, 1.0f));
-    OutMap.Add(TEXT("LipFunnel"), FMath::Clamp(State.Funnel, 0.0f, 1.0f));
-    OutMap.Add(TEXT("LipStretch"), FMath::Clamp(State.Wide, 0.0f, 1.0f));
-    OutMap.Add(TEXT("LowerLipDown"), FMath::Clamp(State.Teeth, 0.0f, 1.0f));
-    OutMap.Add(TEXT("CornerPull"), 0.0f);
+    for (const FName& PoseID : State.PoseIDs)
+    {
+        if (PoseID.IsNone()) continue;
+        OutMap.Add(
+            PoseID,
+            FMath::Clamp(State.PoseWeights.FindRef(PoseID), 0.0f, 1.0f));
+    }
 }
 
 FOffgridAILipsyncPoseRuntimeState FOffgridAIVisemePerformer::StepDisplayedPose(
@@ -378,7 +370,11 @@ FOffgridAILipsyncPoseRuntimeState FOffgridAIVisemePerformer::StepDisplayedPose(
     bool bLineEndingOrIdle)
 {
     const float SafeDeltaTime = FMath::Max(DeltaTimeSeconds, 0.0f);
-    auto StepPose = [SafeDeltaTime](float CurrentValue, float TargetValue, float AttackMs, float ReleaseMs) -> float
+    auto StepPose = [SafeDeltaTime](
+        float CurrentValue,
+        float TargetValue,
+        float AttackMs,
+        float ReleaseMs) -> float
     {
         const float TauMs = TargetValue > CurrentValue ? AttackMs : ReleaseMs;
         const float TauSeconds = FMath::Max(TauMs * 0.001f, 0.001f);
@@ -388,11 +384,61 @@ FOffgridAILipsyncPoseRuntimeState FOffgridAIVisemePerformer::StepDisplayedPose(
 
     const float EndMultiplier = bLineEndingOrIdle ? 0.45f : 1.0f;
     FOffgridAILipsyncPoseRuntimeState Out;
-    Out.Closed = StepPose(Current.Closed, FMath::Max(Target.Closed, RestClosedWeight), 18.0f, FMath::Min(72.0f, 46.0f) * EndMultiplier);
-    Out.Open = StepPose(Current.Open, Target.Open, 56.0f, FMath::Min(124.0f, 78.0f) * EndMultiplier);
-    Out.Wide = StepPose(Current.Wide, Target.Wide, 56.0f, FMath::Min(124.0f, 78.0f) * EndMultiplier);
-    Out.Round = StepPose(Current.Round, Target.Round, 48.0f, FMath::Min(140.0f, 86.0f) * EndMultiplier);
-    Out.Funnel = StepPose(Current.Funnel, Target.Funnel, 24.0f, FMath::Min(84.0f, 54.0f) * EndMultiplier);
-    Out.Teeth = StepPose(Current.Teeth, Target.Teeth, 24.0f, FMath::Min(84.0f, 54.0f) * EndMultiplier);
+    auto AddPoseID = [&Out](const FName& PoseID)
+    {
+        if (!PoseID.IsNone() && !Out.PoseWeights.Contains(PoseID))
+        {
+            Out.PoseIDs.Add(PoseID);
+            Out.PoseWeights.Add(PoseID, 0.0f);
+        }
+    };
+    for (const FName& PoseID : Current.PoseIDs) AddPoseID(PoseID);
+    for (const FName& PoseID : Target.PoseIDs) AddPoseID(PoseID);
+
+    const FName ClosedPose(TEXT("22_MBP"));
+    if (RestClosedWeight > 0.0f) AddPoseID(ClosedPose);
+    for (const FName& PoseID : Out.PoseIDs)
+    {
+        float AttackMs = 32.0f;
+        float ReleaseMs = 64.0f;
+        if (PoseID == ClosedPose)
+        {
+            AttackMs = 18.0f;
+            ReleaseMs = 46.0f;
+        }
+        else if (PoseID == FName(TEXT("JawOpen")))
+        {
+            AttackMs = 56.0f;
+            ReleaseMs = 78.0f;
+        }
+        else if (PoseID == FName(TEXT("12_Ww-Oo-"))
+            || PoseID == FName(TEXT("20_FV"))
+            || PoseID == FName(TEXT("21_FV-Ee-"))
+            || PoseID == FName(TEXT("24_Tongue_Th")))
+        {
+            AttackMs = 24.0f;
+            ReleaseMs = 54.0f;
+        }
+        else if (PoseID == FName(TEXT("09_Oh"))
+            || PoseID == FName(TEXT("10_Or"))
+            || PoseID == FName(TEXT("11_Oo"))
+            || PoseID == FName(TEXT("17_Rr")))
+        {
+            AttackMs = 48.0f;
+            ReleaseMs = 86.0f;
+        }
+
+        const float CurrentWeight = Current.PoseWeights.FindRef(PoseID);
+        float TargetWeight = Target.PoseWeights.FindRef(PoseID);
+        if (PoseID == ClosedPose)
+            TargetWeight = FMath::Max(TargetWeight, RestClosedWeight);
+        Out.PoseWeights.Add(
+            PoseID,
+            StepPose(
+                CurrentWeight,
+                TargetWeight,
+                AttackMs,
+                ReleaseMs * EndMultiplier));
+    }
     return Out;
 }

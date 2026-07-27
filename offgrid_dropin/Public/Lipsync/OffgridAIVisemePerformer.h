@@ -13,7 +13,9 @@ public:
     static TArray<FOffgridAISubmittedVisemeSample> Sample(const FOffgridAICommittedVisemeTrack& Track, float PlaybackSeconds, bool bGateBeforeSpeechStart = true);
     static TMap<FName, float> CollapseByPoseID(const TArray<FOffgridAISubmittedVisemeSample>& Samples);
 
-    static FOffgridAILipsyncPoseRuntimeState BuildPoseStateFromPoseWeights(const TMap<FName, float>& PoseWeights);
+    // Builds and advances the complete detailed-pose state. Every eligible
+    // PoseID returned by Sample() is retained; no six-shape reduction occurs.
+    static FOffgridAILipsyncPoseRuntimeState BuildPoseStateFromSamples(const TArray<FOffgridAISubmittedVisemeSample>& Samples);
     static void BuildPoseWeightMapFromState(TMap<FName, float>& OutMap, const FOffgridAILipsyncPoseRuntimeState& State);
     static FOffgridAILipsyncPoseRuntimeState StepDisplayedPose(
         const FOffgridAILipsyncPoseRuntimeState& Current,
