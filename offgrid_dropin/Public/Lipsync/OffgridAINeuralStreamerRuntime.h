@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 
@@ -11,6 +12,7 @@ struct RuntimeFootprint {
     std::size_t WeightBytes = 0;
     std::size_t TokenBytes = 0;
     int StreamPriority = 0;
+    std::uint64_t CheckpointFingerprint = 0;
 };
 
 class CudaRuntime {
@@ -21,6 +23,7 @@ public:
     CudaRuntime& operator=(const CudaRuntime&) = delete;
 
     bool LoadCheckpoint(const std::string& path);
+    bool LoadCheckpoint(const void* data, std::size_t size);
     bool ResetTokens(const float* features, int token_count);
     bool PushChunk(
         const float* audio_features,

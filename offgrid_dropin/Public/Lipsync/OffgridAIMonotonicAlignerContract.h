@@ -1,6 +1,6 @@
 #pragma once
 
-#include "NeuralStreamerModelFormat.h"
+#include "Lipsync/OffgridAINeuralStreamerModelFormat.h"
 
 #include <array>
 #include <cstdint>

@@ -1,7 +1,7 @@
 #include <torch/torch.h>
 
-#include "NeuralStreamerCudaRuntime.h"
-#include "NeuralStreamerModelFormat.h"
+#include "Lipsync/OffgridAINeuralStreamerRuntime.h"
+#include "Lipsync/OffgridAINeuralStreamerModelFormat.h"
 
 #include <algorithm>
 #include <chrono>

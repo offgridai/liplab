@@ -18,6 +18,7 @@ add_library(liplab_core
     offgrid_dropin/Private/Lipsync/OffgridAIAcousticEvidence.cpp
     offgrid_dropin/Private/Lipsync/OffgridAIStreamingEvidenceSurface.cpp
     offgrid_dropin/Private/Lipsync/OffgridAIStreamingSyllablePositionEstimator.cpp
+    offgrid_dropin/Private/Lipsync/OffgridAINeuralLipsyncBridge.cpp
 )
 
 target_include_directories(liplab_core
@@ -30,8 +31,13 @@ add_executable(liplab_runner harness/main.cpp)
 target_link_libraries(liplab_runner PRIVATE liplab_core)
 
 option(LIPLAB_ENABLE_TORCH "Build the optional LibTorch CUDA neural streamer trainer" OFF)
+option(LIPLAB_ENABLE_NEURAL_RUNTIME "Build the standalone CUDA neural lipsync runtime" OFF)
 if(LIPLAB_ENABLE_TORCH)
-    find_package(Torch CONFIG REQUIRED)
+    set(LIPLAB_ENABLE_NEURAL_RUNTIME ON)
+endif()
+
+if(LIPLAB_ENABLE_NEURAL_RUNTIME)
+    enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED)
 
     # Ship real machine code for Ada (RTX 4090, sm_89), rather than relying on
@@ -44,17 +50,43 @@ if(LIPLAB_ENABLE_TORCH)
         endif()
     endif()
     add_library(liplab_neural_streamer_cuda STATIC
-        harness/ml/NeuralStreamerCudaRuntime.cu
+        offgrid_dropin/Private/Lipsync/OffgridAINeuralStreamerRuntime.cu
     )
-    target_include_directories(liplab_neural_streamer_cuda PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/harness/ml)
+    target_include_directories(liplab_neural_streamer_cuda PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/offgrid_dropin/Public)
     target_link_libraries(liplab_neural_streamer_cuda PUBLIC CUDA::cudart)
     set_property(TARGET liplab_neural_streamer_cuda PROPERTY CUDA_STANDARD 17)
     set_property(TARGET liplab_neural_streamer_cuda PROPERTY CUDA_STANDARD_REQUIRED ON)
     set_property(TARGET liplab_neural_streamer_cuda PROPERTY
         CUDA_ARCHITECTURES "${LIPLAB_CUDA_ARCHITECTURES}")
     message(STATUS "LipLab CUDA runtime architectures: ${LIPLAB_CUDA_ARCHITECTURES}")
+
+    set(LIPLAB_NEURAL_MODEL
+        ${CMAKE_CURRENT_SOURCE_DIR}/offgrid_dropin/Private/Lipsync/Models/OffgridAINeuralStreamerV3.bin)
+    set(LIPLAB_EMBEDDED_MODEL_HEADER
+        ${CMAKE_CURRENT_BINARY_DIR}/generated/OffgridAINeuralStreamerEmbeddedModel.h)
+    add_custom_command(
+        OUTPUT ${LIPLAB_EMBEDDED_MODEL_HEADER}
+        COMMAND ${CMAKE_COMMAND}
+            -DINPUT=${LIPLAB_NEURAL_MODEL}
+            -DOUTPUT=${LIPLAB_EMBEDDED_MODEL_HEADER}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmbedBinary.cmake
+        DEPENDS ${LIPLAB_NEURAL_MODEL} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/EmbedBinary.cmake
+        VERBATIM)
+    add_executable(liplab_neural_runtime_smoke
+        harness/ml/neural_runtime_smoke.cpp
+        ${LIPLAB_EMBEDDED_MODEL_HEADER})
+    target_include_directories(liplab_neural_runtime_smoke PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}/generated)
+    target_link_libraries(liplab_neural_runtime_smoke PRIVATE
+        liplab_neural_streamer_cuda liplab_core)
+endif()
+
+if(LIPLAB_ENABLE_TORCH)
+    find_package(Torch CONFIG REQUIRED)
     add_executable(liplab_monotonic_aligner_torch harness/ml/monotonic_aligner_torch.cpp)
-    target_include_directories(liplab_monotonic_aligner_torch PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/harness/ml)
+    target_include_directories(liplab_monotonic_aligner_torch PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/offgrid_dropin/Public)
     target_link_libraries(liplab_monotonic_aligner_torch PRIVATE
         ${TORCH_LIBRARIES}
         liplab_neural_streamer_cuda

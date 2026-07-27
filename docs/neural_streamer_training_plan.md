@@ -67,7 +67,8 @@ Offgrid runtime, using the same persistent fixed-lag state without CSV files.
 
 Operational TTS owns the valuable GPU budget. Lipsync therefore does not load
 LibTorch, cuDNN, or a general graph executor at inference time. Training exports
-a versioned flat checkpoint, and `NeuralStreamerCudaRuntime` executes two small
+a versioned flat checkpoint, and the authoritative
+`OffgridAINeuralStreamerRuntime` in `offgrid_dropin` executes two small
 fused kernels using CUDA Runtime only:
 
 - model weights are resident FP16 (85,706 bytes) with FP32 accumulation;

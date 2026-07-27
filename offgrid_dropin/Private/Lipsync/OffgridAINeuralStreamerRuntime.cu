@@ -1,5 +1,5 @@
-#include "NeuralStreamerCudaRuntime.h"
-#include "NeuralStreamerModelFormat.h"
+#include "Lipsync/OffgridAINeuralStreamerRuntime.h"
+#include "Lipsync/OffgridAINeuralStreamerModelFormat.h"
 
 #include <cuda_fp16.h>
 #include <cuda_runtime.h>
@@ -202,6 +202,7 @@ struct CudaRuntime::Impl {
     int StreamPriority = 0;
     int ContextFrameCount = 0;
     std::size_t CheckpointBytes = 0;
+    std::uint64_t CheckpointFingerprint = 0;
     std::array<float, kCausalContextFrames * kAudioFeatureCount> Context{};
     std::string Error;
 
@@ -282,37 +283,64 @@ CudaRuntime::~CudaRuntime() = default;
 
 bool CudaRuntime::LoadCheckpoint(const std::string& path)
 {
+    std::ifstream input(path, std::ios::binary | std::ios::ate);
+    if (!input) return State->fail("cannot open checkpoint: " + path);
+    const std::size_t size = static_cast<std::size_t>(input.tellg());
+    input.seekg(0);
+    std::vector<std::uint8_t> bytes(size);
+    input.read(reinterpret_cast<char*>(bytes.data()), static_cast<std::streamsize>(size));
+    if (!input) return State->fail("cannot read checkpoint: " + path);
+    return LoadCheckpoint(bytes.data(), bytes.size());
+}
+
+bool CudaRuntime::LoadCheckpoint(const void* data, std::size_t size)
+{
     State->Error.clear();
     if (!State->Stream || !State->HostAudio || !State->HostScores
         || !State->HostRegionLogits || !State->DeviceAudio || !State->DeviceScores
         || !State->DeviceRegionLogits)
         return State->fail("CUDA runtime initialization failed");
-    std::ifstream input(path, std::ios::binary | std::ios::ate);
-    if (!input) return State->fail("cannot open checkpoint: " + path);
-    State->CheckpointBytes = static_cast<std::size_t>(input.tellg());
-    input.seekg(0);
+    constexpr std::size_t expected_size =
+        sizeof(CheckpointHeader) + kCheckpointFloatCount * sizeof(float);
+    if (!data || size != expected_size)
+        return State->fail("checkpoint byte count mismatch");
+    const auto* bytes = static_cast<const std::uint8_t*>(data);
+    std::uint64_t fingerprint = 14695981039346656037ull;
+    for (std::size_t index = 0; index < size; ++index) {
+        fingerprint ^= bytes[index];
+        fingerprint *= 1099511628211ull;
+    }
     CheckpointHeader header;
-    input.read(reinterpret_cast<char*>(&header), sizeof(header));
-    if (!input || header.Magic != kCheckpointMagic || header.Version != kCheckpointVersion
+    std::memcpy(&header, bytes, sizeof(header));
+    if (header.Magic != kCheckpointMagic || header.Version != kCheckpointVersion
         || header.AudioFeatures != kAudioFeatureCount
         || header.TokenFeatures != kTokenDimensions
         || header.HiddenDimensions != kHiddenDimensions
         || header.ParameterCount != kCheckpointFloatCount)
         return State->fail("checkpoint schema mismatch");
     std::vector<float> values(kCheckpointFloatCount);
-    input.read(reinterpret_cast<char*>(values.data()), values.size() * sizeof(float));
-    if (!input) return State->fail("truncated checkpoint");
+    std::memcpy(values.data(), bytes + sizeof(header), values.size() * sizeof(float));
     std::vector<__half> half_values(values.size());
     std::transform(values.begin(), values.end(), half_values.begin(),
         [](float value) { return __float2half(value); });
-    if (State->DeviceWeights) cudaFree(State->DeviceWeights);
-    cudaError_t error = cudaMalloc(&State->DeviceWeights, half_values.size() * sizeof(__half));
+    __half* new_weights = nullptr;
+    cudaError_t error = cudaMalloc(&new_weights, half_values.size() * sizeof(__half));
     if (error != cudaSuccess) return State->fail(cuda_error("cudaMalloc weights", error));
-    error = cudaMemcpyAsync(State->DeviceWeights, half_values.data(),
+    error = cudaMemcpyAsync(new_weights, half_values.data(),
         half_values.size() * sizeof(__half), cudaMemcpyHostToDevice, State->Stream);
-    if (error != cudaSuccess) return State->fail(cuda_error("copy weights", error));
+    if (error != cudaSuccess) {
+        cudaFree(new_weights);
+        return State->fail(cuda_error("copy weights", error));
+    }
     error = cudaStreamSynchronize(State->Stream);
-    if (error != cudaSuccess) return State->fail(cuda_error("synchronize weights", error));
+    if (error != cudaSuccess) {
+        cudaFree(new_weights);
+        return State->fail(cuda_error("synchronize weights", error));
+    }
+    if (State->DeviceWeights) cudaFree(State->DeviceWeights);
+    State->DeviceWeights = new_weights;
+    State->CheckpointBytes = size;
+    State->CheckpointFingerprint = fingerprint;
     return true;
 }
 
@@ -413,6 +441,7 @@ RuntimeFootprint CudaRuntime::Footprint() const
     result.TokenBytes = static_cast<std::size_t>(State->TokenCount)
         * (kHiddenDimensions * sizeof(__half) + sizeof(float));
     result.StreamPriority = State->StreamPriority;
+    result.CheckpointFingerprint = State->CheckpointFingerprint;
     return result;
 }
 
