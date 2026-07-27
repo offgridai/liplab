@@ -61,6 +61,14 @@ if(LIPLAB_ENABLE_NEURAL_RUNTIME)
         CUDA_ARCHITECTURES "${LIPLAB_CUDA_ARCHITECTURES}")
     message(STATUS "LipLab CUDA runtime architectures: ${LIPLAB_CUDA_ARCHITECTURES}")
 
+    target_sources(liplab_core PRIVATE
+        offgrid_dropin/Private/Lipsync/OffgridAINeuralStreamingAligner.cpp)
+    target_include_directories(liplab_core PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/offgrid_dropin/Private)
+    target_compile_definitions(liplab_core PUBLIC
+        OFFGRIDAI_WITH_NEURAL_LIPSYNC=1)
+    target_link_libraries(liplab_core PUBLIC liplab_neural_streamer_cuda)
+
     set(LIPLAB_NEURAL_MODEL
         ${CMAKE_CURRENT_SOURCE_DIR}/offgrid_dropin/Private/Lipsync/Models/OffgridAINeuralStreamerV3.bin)
     set(LIPLAB_EMBEDDED_MODEL_HEADER

@@ -5,23 +5,16 @@
 #include "Lipsync/OffgridAITextVisemePlanner.h"
 #include "Lipsync/OffgridAIStreamingSpeechDetector.h"
 
-// Transcript identity and streamed acoustic evidence are deliberately separate.
-// The transcript owns event order; audio owns region timing and optional pulse
-// anchors for the uncommitted suffix.
-struct FOffgridAILipsyncRuntimeUpdateInput
+#include <memory>
+
+#ifndef OFFGRIDAI_WITH_NEURAL_LIPSYNC
+#define OFFGRIDAI_WITH_NEURAL_LIPSYNC 0
+#endif
+
+enum class EOffgridAILipsyncRuntimeBackend : uint8
 {
-    const FOffgridAITextVisemePlan* TextPlan = nullptr;
-    const TArray<FOffgridAIStreamingSpeechRegion>* SpeechRegions = nullptr;
-    const TArray<FOffgridAIStreamingAudioFeatureFrame>* AudioFeatureFrames = nullptr;
-
-    float CurrentPlaybackSec = 0.0f;
-    float PrerollSec = 0.350f;
-    float ObservedAudioBufferEndSec = 0.0f;
-    bool bInputStreamClosed = false;
-    bool bPlaybackFinalized = false;
-
-    FName NPCID = NAME_None;
-    FName LineID = NAME_None;
+    Disabled,
+    NeuralCuda,
 };
 
 struct FOffgridAIStreamTailDiagnosticRow
@@ -88,7 +81,8 @@ struct FOffgridAIRuntimeSyllableAssignmentDiagnosticRow
     int32 VisualAnchorPhoneIndex = INDEX_NONE;
 };
 
-// Compact state trace for the single audio-primary scheduler.
+// Compact state trace retained for host diagnostic-file compatibility. Its
+// fields now describe the neural decoder only; there is no alternate scheduler.
 struct FOffgridAIRuntimeBoundaryDiagnosticRow
 {
     FName LineID = NAME_None;
@@ -122,39 +116,19 @@ struct FOffgridAILipsyncRuntimeBeginInput
     FName NPCID = NAME_None;
     FName LineID = NAME_None;
     float PrerollSec = 0.350f;
-};
-
-// Complete mutable state for the single monotonic scheduler.
-struct FOffgridAILipsyncSchedulerState
-{
-    bool bPlayheadStarted = false;
-    int32 NextTextEventIndex = 0;
-    int32 ActiveSpeechRegionIndex = INDEX_NONE;
-    int32 ActiveTextSpeechRegionIndex = INDEX_NONE;
-    float TimelineRate = 1.0f;
-    int32 LastMatchedSyllableIndex = INDEX_NONE;
-    int32 LastMatchedSyllablePhoneIndex = INDEX_NONE;
-    float LastMatchedSyllableAudioSec = -1.0f;
-    float LastMatchedSyllableConfidence = 0.0f;
-    float LastProcessedSyllablePulseSec = -1.0f;
-    int32 LastCommittedWordIndex = INDEX_NONE;
-    int32 LastWordAnchorAudioRegionIndex = INDEX_NONE;
-    float LastWordAnchorAudioSec = -1.0f;
-    float LastWordAnchorPriorSec = -1.0f;
-    float AdaptiveWordPriorRate = 1.0f;
-    TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow> PendingSyllableAssignments;
-
-    int32 SchedulerNextEventIndex = INDEX_NONE;
-    int32 SchedulerNextPhoneIndex = INDEX_NONE;
-    float SchedulerCandidateCenterSec = -1.0f;
-    float SchedulerCommitFrontierSec = -1.0f;
-    float SchedulerCommitLeadSec = -1.0f;
-    FName SchedulerBlockReason = NAME_None;
+    // Packaged CUDA checkpoint. An empty or invalid path leaves lipsync
+    // disabled; runtime never substitutes another scheduler.
+    FString NeuralCheckpointPath;
 };
 
 class OFFGRIDAI_API FOffgridAILipsyncRuntimeSession
 {
 public:
+    FOffgridAILipsyncRuntimeSession();
+    ~FOffgridAILipsyncRuntimeSession();
+    FOffgridAILipsyncRuntimeSession(const FOffgridAILipsyncRuntimeSession&) = delete;
+    FOffgridAILipsyncRuntimeSession& operator=(const FOffgridAILipsyncRuntimeSession&) = delete;
+
     static const TCHAR* GetImplementationVersion();
     static int32 GetDiagnosticSchemaVersion();
 
@@ -176,8 +150,11 @@ public:
     FOffgridAICommittedVisemeTrack& GetMutableCommittedTrack() { return CommittedTrack; }
     bool IsCommittedTrackBuilt() const { return bCommittedTrackBuilt; }
     float GetPlaybackSeconds() const { return PlaybackSec; }
+    EOffgridAILipsyncRuntimeBackend GetBackend() const { return Backend; }
+    const FString& GetBackendError() const { return BackendError; }
 
 private:
+    void DisableNeuralRuntime(const FString& Reason);
     void RefreshResolvedSpeechRegions();
     void RecordRuntimeDiagnostics(float CurrentPlaybackSec, bool bFinalReplay);
 
@@ -189,6 +166,8 @@ private:
     bool bBegun = false;
     bool bCommittedTrackBuilt = false;
     bool bInputStreamClosed = false;
+    EOffgridAILipsyncRuntimeBackend Backend = EOffgridAILipsyncRuntimeBackend::Disabled;
+    FString BackendError;
     FOffgridAITextVisemePlan TextPlan;
     FOffgridAIStreamingSpeechDetector Detector;
     TArray<FOffgridAIStreamingSpeechRegion> ResolvedSpeechRegions;
@@ -205,5 +184,7 @@ private:
     int32 LastPCMChunkChannels = 0;
     int64 LastPCMChunkStartSample = -1;
     int64 LastPCMChunkEndSample = -1;
-    FOffgridAILipsyncSchedulerState PlaybackState;
+#if OFFGRIDAI_WITH_NEURAL_LIPSYNC
+    std::unique_ptr<class FOffgridAINeuralStreamingAligner> NeuralAligner;
+#endif
 };

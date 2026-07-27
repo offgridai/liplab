@@ -2,6 +2,7 @@ import csv
 import json
 import pathlib
 import re
+import statistics
 import sys
 
 
@@ -69,6 +70,8 @@ def main() -> int:
     cases: list[dict] = []
     words_out: list[dict] = []
     boundaries_out: list[dict] = []
+    word_duration_ratios: list[float] = []
+    sentence_duration_ratios: list[float] = []
 
     for focus_path in sorted(latest.glob("*/focus_alignment_grade.json")):
         ownership_path = focus_path.parent / "region_ownership_grade.json"
@@ -86,6 +89,14 @@ def main() -> int:
         )
         nearby_nucleus = (
             load_json(nearby_nucleus_path) if nearby_nucleus_path.exists() else {}
+        )
+        delivery_path = focus_path.parent / "runtime_delivery_grade.json"
+        delivery = load_json(delivery_path) if delivery_path.exists() else {}
+        word_duration_ratios.extend(
+            float(value) for value in delivery.get("word_duration_ratios", [])
+        )
+        sentence_duration_ratios.extend(
+            float(value) for value in delivery.get("sentence_duration_ratios", [])
         )
         current_case_name = focus_path.parent.name
         gold_dir = root / "inputs" / "gold" / current_case_name
@@ -665,6 +676,46 @@ def main() -> int:
             "planned_event_count": planned_events,
             "committed_event_count": committed_events,
             "event_completion_rate": ratio(committed_events, planned_events),
+            "delivery_planned_events": int(
+                delivery.get("planned_candidate_events", 0)
+            ),
+            "delivery_committed_events": int(
+                delivery.get("committed_candidate_events", 0)
+            ),
+            "delivered_events": int(delivery.get("delivered_events", 0)),
+            "late_after_window_events": int(
+                delivery.get("late_after_window_events", 0)
+            ),
+            "delivery_expected_words": int(delivery.get("expected_words", 0)),
+            "delivery_missing_words": int(delivery.get("missing_words", 0)),
+            "compressed_words": int(delivery.get("compressed_words", 0)),
+            "word_duration_ratio_mean": float(
+                delivery.get("word_duration_ratio_mean", 0.0)
+            ),
+            "word_duration_ratio_median": float(
+                delivery.get("word_duration_ratio_median", 0.0)
+            ),
+            "delivery_expected_speech_regions": int(
+                delivery.get("expected_speech_regions", 0)
+            ),
+            "empty_speech_regions": int(
+                delivery.get("empty_speech_regions", 0)
+            ),
+            "delivery_expected_sentences": int(
+                delivery.get("expected_sentences", 0)
+            ),
+            "delivery_missing_sentences": int(
+                delivery.get("missing_sentences", 0)
+            ),
+            "compressed_sentences": int(
+                delivery.get("compressed_sentences", 0)
+            ),
+            "sentence_duration_ratio_mean": float(
+                delivery.get("sentence_duration_ratio_mean", 0.0)
+            ),
+            "sentence_duration_ratio_median": float(
+                delivery.get("sentence_duration_ratio_median", 0.0)
+            ),
             "order_violations": int(grade.get("order_violations", 0)),
             "region_boundary_count": len(case_boundaries),
             "exact_three_level_boundary_count": exact_boundary_count,
@@ -716,6 +767,14 @@ def main() -> int:
     pause_leakage = totals("pause_leakage_ms")
     planned_events = totals("planned_event_count")
     committed_events = totals("committed_event_count")
+    delivery_planned_events = totals("delivery_planned_events")
+    delivered_events = totals("delivered_events")
+    delivery_expected_words = totals("delivery_expected_words")
+    delivery_missing_words = totals("delivery_missing_words")
+    delivery_expected_regions = totals("delivery_expected_speech_regions")
+    empty_speech_regions = totals("empty_speech_regions")
+    delivery_expected_sentences = totals("delivery_expected_sentences")
+    delivery_missing_sentences = totals("delivery_missing_sentences")
     exact_three_level_boundaries = sum(
         int(bool(row["exact_three_level_boundary"])) for row in boundaries_out
     )
@@ -929,6 +988,68 @@ def main() -> int:
             "event_completion_rate": ratio(committed_events, planned_events),
             "order_violations": totals("order_violations"),
             "order_violation_cases": sum(1 for row in cases if row["order_violations"]),
+        },
+        "runtime_delivery": {
+            "planned_candidate_events": delivery_planned_events,
+            "delivered_events": delivered_events,
+            "event_delivery_rate": ratio(
+                delivered_events, delivery_planned_events
+            ),
+            "late_after_window_events": totals("late_after_window_events"),
+            "late_after_window_cases": sum(
+                1 for row in cases if row["late_after_window_events"]
+            ),
+            "expected_words": delivery_expected_words,
+            "missing_words": delivery_missing_words,
+            "missing_word_cases": sum(
+                1 for row in cases if row["delivery_missing_words"]
+            ),
+            "word_delivery_rate": ratio(
+                delivery_expected_words - delivery_missing_words,
+                delivery_expected_words,
+            ),
+            "compressed_words": totals("compressed_words"),
+            "compressed_word_cases": sum(
+                1 for row in cases if row["compressed_words"]
+            ),
+            "word_duration_ratio_mean": (
+                statistics.fmean(word_duration_ratios)
+                if word_duration_ratios else 0.0
+            ),
+            "word_duration_ratio_median": (
+                statistics.median(word_duration_ratios)
+                if word_duration_ratios else 0.0
+            ),
+            "expected_speech_regions": delivery_expected_regions,
+            "empty_speech_regions": empty_speech_regions,
+            "empty_speech_region_cases": sum(
+                1 for row in cases if row["empty_speech_regions"]
+            ),
+            "speech_region_delivery_rate": ratio(
+                delivery_expected_regions - empty_speech_regions,
+                delivery_expected_regions,
+            ),
+            "expected_sentences": delivery_expected_sentences,
+            "missing_sentences": delivery_missing_sentences,
+            "missing_sentence_cases": sum(
+                1 for row in cases if row["delivery_missing_sentences"]
+            ),
+            "sentence_delivery_rate": ratio(
+                delivery_expected_sentences - delivery_missing_sentences,
+                delivery_expected_sentences,
+            ),
+            "compressed_sentences": totals("compressed_sentences"),
+            "compressed_sentence_cases": sum(
+                1 for row in cases if row["compressed_sentences"]
+            ),
+            "sentence_duration_ratio_mean": (
+                statistics.fmean(sentence_duration_ratios)
+                if sentence_duration_ratios else 0.0
+            ),
+            "sentence_duration_ratio_median": (
+                statistics.median(sentence_duration_ratios)
+                if sentence_duration_ratios else 0.0
+            ),
         },
         "strict_region_segmentation": {
             "boundaries": len(boundaries_out),

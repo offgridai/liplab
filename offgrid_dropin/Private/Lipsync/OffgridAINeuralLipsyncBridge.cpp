@@ -25,6 +25,7 @@ struct FBridgeToken
     int32 EventIndex = INDEX_NONE;
     int32 WordIndex = INDEX_NONE;
     int32 PhoneIndex = INDEX_NONE;
+    int32 SentenceIndex = INDEX_NONE;
     float DurationPriorSec = 0.075f;
     float IsVowel = 0.0f;
     float VisualRole = 0.0f;
@@ -33,6 +34,7 @@ struct FBridgeToken
     float IsSilence = 0.0f;
     float IsWordStart = 0.0f;
     float IsWordEnd = 0.0f;
+    bool IsSentenceBoundary = false;
 };
 
 static FBridgeToken SilenceToken(float TextCenterNorm)
@@ -62,6 +64,7 @@ FOffgridAINeuralTranscriptTensor FOffgridAINeuralLipsyncBridge::BuildTranscriptT
         Token.EventIndex = EventIndex;
         Token.WordIndex = Event.WordIndex;
         Token.PhoneIndex = Event.SourcePhoneGlobalIndex;
+        Token.SentenceIndex = Event.SentenceIndex;
         Token.VisualRole = static_cast<float>(Event.VisualRole);
         Token.TextCenterNorm = Event.StartNorm
             + 0.5f * (Event.EndNorm - Event.StartNorm);
@@ -92,9 +95,14 @@ FOffgridAINeuralTranscriptTensor FOffgridAINeuralLipsyncBridge::BuildTranscriptT
             if (Index + 1 < Visible.Num()
                 && Visible[Index].WordIndex != Visible[Index + 1].WordIndex)
             {
-                Sequence.Add(SilenceToken(0.5f
+                FBridgeToken Silence = SilenceToken(0.5f
                     * (Visible[Index].TextCenterNorm
-                        + Visible[Index + 1].TextCenterNorm)));
+                        + Visible[Index + 1].TextCenterNorm));
+                Silence.SentenceIndex = Visible[Index + 1].SentenceIndex;
+                Silence.IsSentenceBoundary =
+                    Visible[Index].SentenceIndex != Visible[Index + 1].SentenceIndex;
+                if (Silence.IsSentenceBoundary) Silence.DurationPriorSec = 0.120f;
+                Sequence.Add(MoveTemp(Silence));
             }
         }
         Sequence.Add(SilenceToken(1.0f));
@@ -123,6 +131,7 @@ FOffgridAINeuralTranscriptTensor FOffgridAINeuralLipsyncBridge::BuildTranscriptT
         Result.WordIndices.Add(Token.WordIndex);
         Result.PhoneIndices.Add(Token.PhoneIndex);
         Result.SilenceTokens.Add(Token.IsSilence > 0.5f);
+        Result.SentenceBoundaryTokens.Add(Token.IsSentenceBoundary);
     }
     return Result;
 }

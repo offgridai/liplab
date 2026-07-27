@@ -32,6 +32,15 @@ public:
         float* scores,
         int& scored_token_count,
         float* region_logits = nullptr);
+    // Scores the complete transcript lattice for the authoritative fixed-lag
+    // Viterbi decoder. This avoids a heuristic moving beam at the cost of a
+    // still-small token loop inside the same fused kernel launch.
+    bool PushChunkAllTokens(
+        const float* audio_features,
+        int frame_count,
+        float* scores,
+        int& scored_token_count,
+        float* region_logits = nullptr);
     const std::string& LastError() const;
     RuntimeFootprint Footprint() const;
 

@@ -38,3 +38,4 @@ if not errorlevel 1 (
 
 echo Standalone neural runtime is ready: build-neural-runtime\liplab_neural_runtime_smoke.exe
 endlocal
+exit /b 0

@@ -31,13 +31,8 @@ Important distinction:
 - Likewise, a detected speech-region end is discovered in ingested-audio time.
   It must not cause the region's remaining viseme suffix to be dropped until
   audible playback has actually reached that region end.
-- If a word has already started in that region, the shared scheduler preserves
-  its atomic ownership with the bounded tail-compaction rule documented in
-  `lipsync.md`. LineCoach must not independently move or split that word.
-- A terminal `final_speech_closed_with_unplayed_suffix` block reason is a host
-  lifecycle failure even if the visual result appears mostly complete. Capture
-  the implementation version, observed audio end, close/finalize order, and
-  audible playback time so the same WAV can be compared with the harness.
+- LineCoach must not independently move, split, repair, or replace neural
+  events. A failed neural session remains neutral.
 
 LineCoach should not contain:
 
@@ -45,7 +40,7 @@ LineCoach should not contain:
 - phone/word scheduling,
 - speech-region ownership rules,
 - speech-region merging,
-- fallback viseme placement,
+- alternate viseme placement,
 - TTS hint interpretation.
 
 The shared source set includes `OffgridAIAcousticEvidence.*`. The former
@@ -57,14 +52,10 @@ Offgrid transplant.
 Each captured line must record
 `FOffgridAILipsyncRuntimeSession::GetImplementationVersion()` and
 `GetDiagnosticSchemaVersion()`. The current shared source identifies itself as
-`2026.07.20-class-aware-visual-anchors-v15`, diagnostic schema `7`.
+`2026.07.26-neural-only-streamer-v17`, diagnostic schema `8`.
 
-For every word, `word_pacing.csv` should preserve `NucleusAudioSec`,
-`VisualAnchorAudioSec`, `VisualAnchorKind`, and `VisualAnchorPhoneIndex`.
-`NucleusAudioSec` describes the syllable estimator. `VisualAnchorAudioSec` is
-the actual class-aware presentation target and is therefore the field used to
-grade the first visible gesture. Keeping both prevents a consonant-led word
-from being incorrectly diagnosed against its later vowel nucleus.
+Diagnostics must record the selected backend. The only operational backend is
+`NeuralCuda`; `Disabled` is a failure state that emits no committed track.
 
 LineCoach should also not:
 

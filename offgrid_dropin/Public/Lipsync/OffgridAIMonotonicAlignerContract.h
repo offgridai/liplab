@@ -46,7 +46,6 @@ struct AlignmentDecision {
     bool ResumedSpeech = false;
     bool StartedWord = false;
     bool ReachedSyllableNucleus = false;
-    bool UseDeterministicFallback = false;
 };
 
 // Implementations own the persistent forward/Viterbi state. PushFrame is

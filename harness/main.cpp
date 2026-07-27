@@ -3562,6 +3562,7 @@ static std::string monotonic_tokens_csv(
         int WordIndex = INDEX_NONE;
         int PhoneIndexInWord = INDEX_NONE;
         int PhoneGlobalIndex = INDEX_NONE;
+        int SentenceIndex = INDEX_NONE;
         double DurationPrior = 0.075;
         double TextCenterNorm = 0.0;
         double Strength = 0.0;
@@ -3572,6 +3573,7 @@ static std::string monotonic_tokens_csv(
         bool IsWordEnd = false;
         bool IsRegionStart = false;
         bool IsRegionEnd = false;
+        bool IsSentenceBoundary = false;
         double Center = -1.0;
         double Duration = 0.020;
     };
@@ -3588,6 +3590,7 @@ static std::string monotonic_tokens_csv(
         target.WordIndex = event.WordIndex;
         target.PhoneIndexInWord = event.SourcePhoneIndex;
         target.PhoneGlobalIndex = event.SourcePhoneGlobalIndex;
+        target.SentenceIndex = event.SentenceIndex;
         const FOffgridAIExpectedPhone* phone = plan.ExpectedPhones.IsValidIndex(event.SourcePhoneGlobalIndex)
             ? &plan.ExpectedPhones[event.SourcePhoneGlobalIndex] : nullptr;
         target.DurationPrior = phone ? phone->WeightSeconds : 0.075f;
@@ -3689,6 +3692,10 @@ static std::string monotonic_tokens_csv(
             const double text_center = 0.5
                 * (targets[index].TextCenterNorm + targets[index + 1].TextCenterNorm);
             TokenTarget silence = silence_target(center, gap_end - gap_start, text_center);
+            silence.SentenceIndex = targets[index + 1].SentenceIndex;
+            silence.IsSentenceBoundary =
+                targets[index].SentenceIndex != targets[index + 1].SentenceIndex;
+            if (silence.IsSentenceBoundary) silence.DurationPrior = 0.120;
             silence.IsRegionEnd = targets[index].IsRegionEnd;
             silence.IsRegionStart = targets[index + 1].IsRegionStart;
             sequence.push_back(std::move(silence));
@@ -3702,8 +3709,8 @@ static std::string monotonic_tokens_csv(
 
     std::ostringstream out;
     out << "schema_version,token_index,event_index,pose,phone_base,word_index,phone_index_in_word,"
-        << "phone_global_index,duration_prior_sec,is_vowel,visual_role,text_center_norm,strength,"
-        << "is_silence,is_word_start,is_word_end,is_region_start,is_region_end,"
+        << "phone_global_index,sentence_index,duration_prior_sec,is_vowel,visual_role,text_center_norm,strength,"
+        << "is_silence,is_word_start,is_word_end,is_region_start,is_region_end,is_sentence_boundary,"
         << "target_center_sec,target_duration_sec,has_mfa_target\n";
     out << std::fixed << std::setprecision(6);
     for (size_t token_index = 0; token_index < targets.size(); ++token_index)
@@ -3712,11 +3719,12 @@ static std::string monotonic_tokens_csv(
         out << 1 << ',' << token_index << ',' << target.EventIndex << ','
             << csv_value(target.Pose) << ',' << csv_value(target.Phone) << ','
             << target.WordIndex << ',' << target.PhoneIndexInWord << ',' << target.PhoneGlobalIndex << ','
+            << target.SentenceIndex << ','
             << target.DurationPrior << ',' << (target.IsVowel ? 1 : 0) << ','
             << target.VisualRole << ',' << target.TextCenterNorm << ',' << target.Strength << ','
             << (target.IsSilence ? 1 : 0) << ',' << (target.IsWordStart ? 1 : 0) << ','
             << (target.IsWordEnd ? 1 : 0) << ',' << (target.IsRegionStart ? 1 : 0) << ','
-            << (target.IsRegionEnd ? 1 : 0) << ','
+            << (target.IsRegionEnd ? 1 : 0) << ',' << (target.IsSentenceBoundary ? 1 : 0) << ','
             << target.Center << ',' << target.Duration << ',' << (target.Gold ? 1 : 0) << '\n';
     }
     return out.str();
@@ -4822,6 +4830,236 @@ static std::array<double, 6> pose_channels(const FOffgridAILipsyncPoseRuntimeSta
     };
 }
 
+static std::string runtime_delivery_grade_json(
+    const FOffgridAIAlignedVisemeTrack& track,
+    const FOffgridAITextVisemePlan& plan,
+    const std::vector<GoldWordTiming>& gold_words,
+    const std::vector<GoldSpeechRegion>& gold_speech)
+{
+    constexpr double sample_seconds = 0.010;
+    constexpr double visible_weight = 0.20;
+    constexpr int minimum_visible_samples = 2;
+
+    struct Delivery
+    {
+        double peak = 0.0;
+        int visible_samples = 0;
+    };
+    std::map<int, Delivery> delivery;
+    double end_seconds = std::max(0.0, static_cast<double>(track.SpeechEndSeconds));
+    for (const auto& event : track.Events)
+        end_seconds = std::max(end_seconds, static_cast<double>(event.RenderEndSeconds));
+    for (double seconds = 0.0; seconds <= end_seconds + 0.0001; seconds += sample_seconds)
+    {
+        const auto samples = FOffgridAIVisemePerformer::Sample(
+            track, static_cast<float>(seconds), true);
+        for (const auto& sample : samples)
+        {
+            if (sample.EventIndex < 0 || sample.SubmittedWeight < visible_weight) continue;
+            const auto event = std::find_if(
+                track.Events.begin(), track.Events.end(), [&](const auto& candidate) {
+                    return candidate.EventIndex == sample.EventIndex;
+                });
+            if (event == track.Events.end()
+                || seconds + 0.0005 < static_cast<double>(event->CommitPlaybackSeconds))
+                continue;
+            Delivery& row = delivery[sample.EventIndex];
+            row.peak = std::max(row.peak, static_cast<double>(sample.SubmittedWeight));
+            ++row.visible_samples;
+        }
+    }
+
+    auto is_planned_candidate = [](const FOffgridAITextVisemeEvent& event) {
+        return event.bIsRenderable && event.Strength > 0.012f;
+    };
+    auto is_committed_candidate = [](const FOffgridAIAlignedVisemeEvent& event) {
+        return event.bIsRenderable && !event.bCanceledByWordHandoff
+            && event.Strength > 0.012f;
+    };
+    auto was_delivered = [&](const auto& event) {
+        const auto found = delivery.find(event.EventIndex);
+        return found != delivery.end()
+            && found->second.peak >= visible_weight
+            && found->second.visible_samples >= minimum_visible_samples;
+    };
+
+    int planned_candidates = 0;
+    std::map<int, int> planned_by_word;
+    std::map<int, int> sentence_for_word;
+    for (const auto& event : plan.Events)
+    {
+        if (!is_planned_candidate(event)) continue;
+        ++planned_candidates;
+        ++planned_by_word[event.WordIndex];
+        sentence_for_word[event.WordIndex] = event.SentenceIndex;
+    }
+
+    int committed_candidates = 0;
+    int delivered_events = 0;
+    int late_after_window = 0;
+    std::map<int, int> delivered_by_word;
+    std::map<int, std::vector<const FOffgridAIAlignedVisemeEvent*>> committed_by_word;
+    for (const auto& event : track.Events)
+    {
+        if (!is_committed_candidate(event)) continue;
+        ++committed_candidates;
+        committed_by_word[event.WordIndex].push_back(&event);
+        if (event.CommitPlaybackSeconds > event.RenderEndSeconds + 0.001f)
+            ++late_after_window;
+        if (was_delivered(event))
+        {
+            ++delivered_events;
+            ++delivered_by_word[event.WordIndex];
+        }
+    }
+
+    int expected_words = 0;
+    int missing_words = 0;
+    int compressed_words = 0;
+    std::vector<double> word_duration_ratios;
+    for (const auto& gold : gold_words)
+    {
+        if (planned_by_word[gold.word_index] <= 0) continue;
+        ++expected_words;
+        if (delivered_by_word[gold.word_index] <= 0) ++missing_words;
+        const auto found = committed_by_word.find(gold.word_index);
+        if (found == committed_by_word.end() || found->second.size() < 2) continue;
+        double runtime_start = std::numeric_limits<double>::infinity();
+        double runtime_end = 0.0;
+        for (const auto* event : found->second)
+        {
+            runtime_start = std::min(runtime_start, static_cast<double>(event->RenderStartSeconds));
+            runtime_end = std::max(runtime_end, static_cast<double>(event->RenderEndSeconds));
+        }
+        const double gold_duration = std::max(0.0, gold.end - gold.start);
+        const double runtime_duration = std::max(0.0, runtime_end - runtime_start);
+        if (gold_duration >= 0.120)
+            word_duration_ratios.push_back(runtime_duration / gold_duration);
+        if (gold_duration >= 0.120
+            && runtime_duration + 0.080 < gold_duration
+            && runtime_duration < 0.45 * gold_duration)
+            ++compressed_words;
+    }
+
+    int empty_speech_regions = 0;
+    for (const auto& region : gold_speech)
+    {
+        bool has_delivery = false;
+        for (const auto& event : track.Events)
+        {
+            if (!is_committed_candidate(event) || !was_delivered(event)) continue;
+            if (event.FinalRenderCenterSeconds >= region.start - 0.001
+                && event.FinalRenderCenterSeconds <= region.end + 0.001)
+            {
+                has_delivery = true;
+                break;
+            }
+        }
+        if (!has_delivery) ++empty_speech_regions;
+    }
+
+    struct SentenceWindow
+    {
+        double gold_start = std::numeric_limits<double>::infinity();
+        double gold_end = 0.0;
+        int expected_events = 0;
+        std::vector<const FOffgridAIAlignedVisemeEvent*> events;
+    };
+    std::map<int, SentenceWindow> sentences;
+    for (const auto& event : plan.Events)
+        if (is_planned_candidate(event)) ++sentences[event.SentenceIndex].expected_events;
+    for (const auto& gold : gold_words)
+    {
+        const auto found = sentence_for_word.find(gold.word_index);
+        if (found == sentence_for_word.end()) continue;
+        auto& sentence = sentences[found->second];
+        sentence.gold_start = std::min(sentence.gold_start, gold.start);
+        sentence.gold_end = std::max(sentence.gold_end, gold.end);
+    }
+    for (const auto& event : track.Events)
+        if (is_committed_candidate(event)) sentences[event.SentenceIndex].events.push_back(&event);
+
+    int expected_sentences = 0;
+    int missing_sentences = 0;
+    int compressed_sentences = 0;
+    std::vector<double> sentence_duration_ratios;
+    for (const auto& pair : sentences)
+    {
+        const SentenceWindow& sentence = pair.second;
+        if (sentence.expected_events <= 0 || !std::isfinite(sentence.gold_start)) continue;
+        ++expected_sentences;
+        bool delivered_in_window = false;
+        double runtime_start = std::numeric_limits<double>::infinity();
+        double runtime_end = 0.0;
+        for (const auto* event : sentence.events)
+        {
+            runtime_start = std::min(runtime_start, static_cast<double>(event->RenderStartSeconds));
+            runtime_end = std::max(runtime_end, static_cast<double>(event->RenderEndSeconds));
+            if (was_delivered(*event)
+                && event->FinalRenderCenterSeconds >= sentence.gold_start - 0.001
+                && event->FinalRenderCenterSeconds <= sentence.gold_end + 0.001)
+                delivered_in_window = true;
+        }
+        if (!delivered_in_window) ++missing_sentences;
+        const double gold_duration = sentence.gold_end - sentence.gold_start;
+        const double runtime_duration = std::max(0.0, runtime_end - runtime_start);
+        if (sentence.events.size() >= 2 && gold_duration >= 0.300)
+            sentence_duration_ratios.push_back(runtime_duration / gold_duration);
+        if (sentence.events.size() >= 2 && gold_duration >= 0.300
+            && runtime_duration + 0.150 < gold_duration
+            && runtime_duration < 0.65 * gold_duration)
+            ++compressed_sentences;
+    }
+
+    const auto rate = [](int numerator, int denominator) {
+        return denominator > 0
+            ? static_cast<double>(numerator) / static_cast<double>(denominator)
+            : 1.0;
+    };
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(6)
+        << "{\n"
+        << "  \"planned_candidate_events\": " << planned_candidates << ",\n"
+        << "  \"committed_candidate_events\": " << committed_candidates << ",\n"
+        << "  \"delivered_events\": " << delivered_events << ",\n"
+        << "  \"event_delivery_rate\": " << rate(delivered_events, planned_candidates) << ",\n"
+        << "  \"late_after_window_events\": " << late_after_window << ",\n"
+        << "  \"expected_words\": " << expected_words << ",\n"
+        << "  \"missing_words\": " << missing_words << ",\n"
+        << "  \"word_delivery_rate\": " << rate(expected_words - missing_words, expected_words) << ",\n"
+        << "  \"compressed_words\": " << compressed_words << ",\n"
+        << "  \"word_duration_ratio_mean\": " << mean_ms(word_duration_ratios) << ",\n"
+        << "  \"word_duration_ratio_median\": " << percentile_ms(word_duration_ratios, 0.5) << ",\n"
+        << "  \"word_duration_ratios\": [";
+    for (size_t index = 0; index < word_duration_ratios.size(); ++index)
+    {
+        if (index > 0) out << ',';
+        out << word_duration_ratios[index];
+    }
+    out << "],\n"
+        << "  \"expected_speech_regions\": " << gold_speech.size() << ",\n"
+        << "  \"empty_speech_regions\": " << empty_speech_regions << ",\n"
+        << "  \"speech_region_delivery_rate\": "
+        << rate(static_cast<int>(gold_speech.size()) - empty_speech_regions,
+            static_cast<int>(gold_speech.size())) << ",\n"
+        << "  \"expected_sentences\": " << expected_sentences << ",\n"
+        << "  \"missing_sentences\": " << missing_sentences << ",\n"
+        << "  \"compressed_sentences\": " << compressed_sentences << ",\n"
+        << "  \"sentence_duration_ratio_mean\": " << mean_ms(sentence_duration_ratios) << ",\n"
+        << "  \"sentence_duration_ratio_median\": " << percentile_ms(sentence_duration_ratios, 0.5) << ",\n"
+        << "  \"sentence_duration_ratios\": [";
+    for (size_t index = 0; index < sentence_duration_ratios.size(); ++index)
+    {
+        if (index > 0) out << ',';
+        out << sentence_duration_ratios[index];
+    }
+    out << "],\n"
+        << "  \"sentence_delivery_rate\": "
+        << rate(expected_sentences - missing_sentences, expected_sentences) << "\n"
+        << "}\n";
+    return out.str();
+}
+
 static std::string presentation_motion_grade_json(
     const FOffgridAIAlignedVisemeTrack& track)
 {
@@ -5465,6 +5703,7 @@ struct RunnerCliConfig
     bool fast_batch = false;
     std::string case_filter;
     fs::path neural_track_csv;
+    fs::path neural_checkpoint;
 };
 
 static RunnerCliConfig parse_cli_config(int argc, char** argv)
@@ -5565,6 +5804,16 @@ static RunnerCliConfig parse_cli_config(int argc, char** argv)
         else if (starts_with(arg, "--neural-track-csv="))
         {
             cli.neural_track_csv = fs::path(arg.substr(std::string("--neural-track-csv=").size()));
+        }
+        else if (arg == "--neural-checkpoint")
+        {
+            if (i + 1 >= argc) throw std::runtime_error("--neural-checkpoint requires a value");
+            cli.neural_checkpoint = fs::path(argv[++i]);
+        }
+        else if (starts_with(arg, "--neural-checkpoint="))
+        {
+            cli.neural_checkpoint = fs::path(
+                arg.substr(std::string("--neural-checkpoint=").size()));
         }
         else if (arg == "--case")
         {
@@ -5738,6 +5987,8 @@ int main(int argc, char** argv)
             begin.LineID = FName(stem);
             begin.NPCID = FName("liplab");
             begin.PrerollSec = stream.buffer_seconds;
+            if (!cli.neural_checkpoint.empty())
+                begin.NeuralCheckpointPath = FString(cli.neural_checkpoint.string());
             if (!cli.case_filter.empty()) std::cerr << "[case] begin " << stem << std::endl;
             session.BeginLine(begin);
             if (!cli.case_filter.empty()) std::cerr << "[case] stream " << stem << std::endl;
@@ -5880,6 +6131,9 @@ int main(int argc, char** argv)
                 write_text(case_dir / "gold_visible_visemes.csv", gold_visible_visemes_csv(handmade));
                 write_text(case_dir / "focus_alignment_grade.json",
                     focus_alignment_grade_json(committed, plan, handmade, gold_speech));
+                write_text(case_dir / "runtime_delivery_grade.json",
+                    runtime_delivery_grade_json(
+                        committed, plan, gold_words, gold_speech));
                 write_text(case_dir / "region_ownership_grade.json",
                     region_ownership_grade_json(committed, plan, gold_words, gold_speech));
                 report = grade(committed, speech, handmade, gold_words, gold_speech);

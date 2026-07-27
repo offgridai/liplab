@@ -56,6 +56,6 @@ asset form is useful for research builds. An out-of-process service is not
 required and would add IPC latency, buffering, and another lifecycle boundary.
 
 Failure remains explicit: if CUDA initialization, checkpoint validation, token
-setup, or inference fails, `LastError()` describes the reason so the Offgrid host
-can activate its deterministic emergency fallback. The neural and deterministic
-schedulers should not run concurrently during normal operation.
+setup, or inference fails, `LastError()` describes the reason and the Offgrid
+host emits no lipsync track for that utterance. There is no non-neural runtime
+scheduler.

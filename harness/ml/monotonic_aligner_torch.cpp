@@ -31,13 +31,14 @@ constexpr int kTokenContinuous = offgridai::neural_streamer::kTokenContinuous;
 constexpr int kTokenDimensions = offgridai::neural_streamer::kTokenDimensions;
 constexpr int kHiddenDimensions = offgridai::neural_streamer::kHiddenDimensions;
 constexpr int kFrameMilliseconds = 10;
-constexpr int kStreamingLagFrames = 35;
+constexpr int kStreamingLagFrames = 30;
 constexpr int kForwardSumCadence = 16;
 
 struct TokenRow {
     int EventIndex = -1;
     std::string Pose;
     std::string Phone;
+    int SentenceIndex = -1;
     float DurationPrior = 0.075f;
     float IsVowel = 0.0f;
     float VisualRole = 0.0f;
@@ -48,6 +49,7 @@ struct TokenRow {
     float IsWordEnd = 0.0f;
     float IsRegionStart = 0.0f;
     float IsRegionEnd = 0.0f;
+    bool IsSentenceBoundary = false;
     float TargetCenter = 0.0f;
     float TargetDuration = 0.02f;
     float HasMfaTarget = 0.0f;
@@ -161,6 +163,7 @@ static SequenceCase read_case(const fs::path& case_dir, const std::string& split
             token.EventIndex = std::stoi(cell(row, header, "event_index"));
             token.Pose = cell(row, header, "pose");
             token.Phone = cell(row, header, "phone_base");
+            token.SentenceIndex = std::stoi(cell(row, header, "sentence_index"));
             token.DurationPrior = std::stof(cell(row, header, "duration_prior_sec"));
             token.IsVowel = std::stof(cell(row, header, "is_vowel"));
             token.VisualRole = std::stof(cell(row, header, "visual_role"));
@@ -171,6 +174,8 @@ static SequenceCase read_case(const fs::path& case_dir, const std::string& split
             token.IsWordEnd = std::stof(cell(row, header, "is_word_end"));
             token.IsRegionStart = std::stof(cell(row, header, "is_region_start"));
             token.IsRegionEnd = std::stof(cell(row, header, "is_region_end"));
+            token.IsSentenceBoundary =
+                std::stoi(cell(row, header, "is_sentence_boundary")) != 0;
             token.TargetCenter = std::stof(cell(row, header, "target_center_sec"));
             token.TargetDuration = std::stof(cell(row, header, "target_duration_sec"));
             token.HasMfaTarget = std::stof(cell(row, header, "has_mfa_target"));
@@ -297,6 +302,10 @@ static CaseTensors tensors(const SequenceCase& sequence)
             weight = std::max(weight, 7.0f);
         if (selected.IsRegionStart > 0.5f || selected.IsRegionEnd > 0.5f)
             curriculum_weight = std::max(curriculum_weight, 12.0f);
+        if (selected.IsSentenceBoundary) {
+            weight = std::max(weight, 8.0f);
+            curriculum_weight = std::max(curriculum_weight, 12.0f);
+        }
         frame_weights.push_back(weight);
         curriculum_frame_weights.push_back(curriculum_weight);
         const bool outside_region = selected.IsSilence > 0.5f
@@ -331,6 +340,11 @@ static CaseTensors tensors(const SequenceCase& sequence)
         if (before.IsRegionEnd > 0.5f || after.IsRegionStart > 0.5f) {
             boundary_weight = std::max(boundary_weight, 14.0f);
             curriculum_boundary_weight = std::max(curriculum_boundary_weight, 18.0f);
+        }
+        if (before.IsSentenceBoundary || after.IsSentenceBoundary) {
+            boundary_weight = std::max(boundary_weight, 14.0f);
+            curriculum_boundary_weight = std::max(
+                curriculum_boundary_weight, 18.0f);
         }
         constexpr int kBoundaryRadiusFrames = 4;
         for (int nearby = std::max(0, frame - kBoundaryRadiusFrames);
@@ -427,6 +441,7 @@ TORCH_MODULE(MonotonicNetwork);
 
 static std::vector<int> viterbi_path(
     const torch::Tensor& score_tensor,
+    const torch::Tensor& region_logit_tensor,
     const std::vector<TokenRow>& tokens,
     int fixed_lag_frames);
 
@@ -513,7 +528,8 @@ static RuntimeBenchmark benchmark_runtime(
     const torch::Tensor reference = reference_output.first.to(torch::kCPU).contiguous();
     const torch::Tensor reference_regions =
         reference_output.second.to(torch::kCPU).contiguous();
-    const std::vector<int> path = viterbi_path(reference, selected->Tokens, kStreamingLagFrames);
+    const std::vector<int> path = viterbi_path(
+        reference, reference_regions, selected->Tokens, kStreamingLagFrames);
     const torch::Tensor frame_major = row.Audio.squeeze(0).transpose(0, 1).contiguous();
     const float* frames = frame_major.data_ptr<float>();
     const int frame_count = static_cast<int>(frame_major.size(0));
@@ -589,34 +605,78 @@ static RuntimeBenchmark benchmark_runtime(
 }
 
 static std::vector<int> viterbi_path(const torch::Tensor& score_tensor,
+    const torch::Tensor& region_logit_tensor,
     const std::vector<TokenRow>& tokens, int fixed_lag_frames)
 {
     const torch::Tensor scores = torch::log_softmax(score_tensor, 1).to(torch::kCPU);
+    const torch::Tensor speech_probability = torch::sigmoid(region_logit_tensor)
+        .to(torch::kCPU).clamp(0.02f, 0.98f);
     const int frames = static_cast<int>(scores.size(0));
     const int count = static_cast<int>(scores.size(1));
     const auto access = scores.accessor<float, 2>();
+    const auto occupancy = speech_probability.accessor<float, 1>();
     const float negative = -1.0e30f;
     std::vector<float> previous(count, negative), current(count, negative);
+    std::vector<int> previous_dwell(count, 0), current_dwell(count, 0);
     std::vector<std::uint8_t> advanced(static_cast<size_t>(frames) * count, 0);
-    previous[0] = access[0][0];
+    constexpr float kOccupancyLogWeight = 1.75f;
+    previous[0] = access[0][0]
+        + kOccupancyLogWeight * std::log(std::max(1.0f - occupancy[0], 0.02f));
+    previous_dwell[0] = 1;
     std::vector<int> path(frames, -1);
     path[0] = 0;
     for (int frame = 1; frame < frames; ++frame) {
         std::fill(current.begin(), current.end(), negative);
+        std::fill(current_dwell.begin(), current_dwell.end(), 0);
         for (int token = 0; token < count; ++token) {
+            const float occupancy_probability = tokens[token].IsSilence > 0.5f
+                ? 1.0f - occupancy[frame]
+                : occupancy[frame];
+            const float emission = access[frame][token]
+                + kOccupancyLogWeight * std::log(std::clamp(
+                    occupancy_probability, 0.02f, 0.98f));
+            const auto minimum_dwell = [&](int candidate) {
+                if (tokens[candidate].IsSentenceBoundary) return 8;
+                if (tokens[candidate].IsSilence > 0.5f) return 1;
+                return std::clamp(
+                    static_cast<int>(std::ceil(tokens[candidate].DurationPrior * 35.0f)),
+                    1, 5);
+            };
             const float advance_probability = std::clamp(
                 0.010f / std::max(tokens[token].DurationPrior, 0.020f), 0.02f, 0.80f);
-            const float stay = previous[token] + std::log1p(-advance_probability);
-            const float advance = token > 0
-                ? previous[token - 1] + std::log(std::clamp(
-                    0.010f / std::max(tokens[token - 1].DurationPrior, 0.020f), 0.02f, 0.80f))
-                : negative;
+            float stay = previous[token] + std::log1p(-advance_probability);
+            const int maximum_dwell = std::clamp(
+                static_cast<int>(std::ceil(tokens[token].DurationPrior * 450.0f)),
+                6,
+                45);
+            if (tokens[token].IsSilence <= 0.5f
+                && previous_dwell[token] >= maximum_dwell) {
+                stay = negative;
+            }
+            float advance = negative;
+            if (token > 0) {
+                const int missing_dwell = std::max(
+                    minimum_dwell(token - 1) - previous_dwell[token - 1], 0);
+                const float early_penalty = missing_dwell
+                    * (tokens[token - 1].IsSentenceBoundary ? 0.75f : 0.35f);
+                if (tokens[token - 1].IsSilence > 0.5f
+                    || previous_dwell[token - 1] >= 2) {
+                    advance = previous[token - 1] + std::log(std::clamp(
+                        0.010f / std::max(tokens[token - 1].DurationPrior, 0.020f),
+                        0.02f, 0.80f)) - early_penalty;
+                }
+            }
             if (advance > stay) {
-                current[token] = advance + access[frame][token];
+                current[token] = advance + emission;
+                current_dwell[token] = 1;
                 advanced[static_cast<size_t>(frame) * count + token] = 1;
-            } else current[token] = stay + access[frame][token];
+            } else {
+                current[token] = stay + emission;
+                current_dwell[token] = previous_dwell[token] + 1;
+            }
         }
         previous.swap(current);
+        previous_dwell.swap(current_dwell);
 
         // Commit only the state far enough behind the live frontier. This is
         // the fixed-lag streaming approximation: it never consults frames
@@ -821,7 +881,8 @@ static void write_predictions(const fs::path& path, MonotonicNetwork& model,
                 << ",1,0," << region << ',' << regions[region].StartSec << ','
                 << regions[region].EndSec << '\n';
         }
-        const std::vector<int> path = viterbi_path(scores, sequence.Tokens, kStreamingLagFrames);
+        const std::vector<int> path = viterbi_path(
+            scores, output.second, sequence.Tokens, kStreamingLagFrames);
         const torch::Tensor probabilities = torch::softmax(scores, 1).to(torch::kCPU);
         const auto probability = probabilities.accessor<float, 2>();
         std::vector<int> first(sequence.Tokens.size(), -1), last(sequence.Tokens.size(), -1);
@@ -889,7 +950,7 @@ int main(int argc, char** argv)
         double best_validation = std::numeric_limits<double>::infinity();
         int best_epoch = -1;
         int stale = 0;
-        for (int epoch = 1; epoch <= 16; ++epoch) {
+        for (int epoch = 1; epoch <= 20; ++epoch) {
             model->train();
             std::vector<size_t> epoch_indices = training_indices;
             if (epoch <= 6) {
@@ -900,6 +961,18 @@ int main(int argc, char** argv)
                                 && (token.IsRegionStart > 0.5f || token.IsRegionEnd > 0.5f);
                         });
                     if (has_region_gap) epoch_indices.push_back(index);
+                }
+            }
+            if (epoch <= 6) {
+                for (size_t index : training_indices) {
+                    const bool has_sentence_boundary = std::any_of(
+                        dataset[index].Tokens.begin(), dataset[index].Tokens.end(),
+                        [](const TokenRow& token) {
+                            return token.IsSentenceBoundary;
+                        });
+                    if (has_sentence_boundary) {
+                        epoch_indices.push_back(index);
+                    }
                 }
             }
             std::shuffle(epoch_indices.begin(), epoch_indices.end(), random);

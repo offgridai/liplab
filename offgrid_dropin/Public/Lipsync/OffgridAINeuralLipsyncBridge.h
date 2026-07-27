@@ -15,6 +15,7 @@ struct FOffgridAINeuralTranscriptTensor
     TArray<int32> WordIndices;
     TArray<int32> PhoneIndices;
     TArray<bool> SilenceTokens;
+    TArray<bool> SentenceBoundaryTokens;
 
     int32 NumTokens() const { return EventIndices.Num(); }
 };

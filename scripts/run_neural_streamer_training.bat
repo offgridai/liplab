@@ -7,6 +7,7 @@ if not "%~1"=="" set "TORCH_ROOT=%~1"
 set "VS_DEV_CMD=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
 set "CMAKE_EXE=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
 set "ARTIFACT_DIR=outputs\runs\neural_streamer_artifacts\current"
+set "NEURAL_MODEL=offgrid_dropin\Private\Lipsync\Models\OffgridAINeuralStreamerV3.bin"
 
 if not exist "%TORCH_ROOT%\share\cmake\Torch\TorchConfig.cmake" (
     echo TorchConfig.cmake not found under %TORCH_ROOT%
@@ -36,14 +37,15 @@ if errorlevel 1 exit /b 1
 echo [phase] prove_libtorch_free_runtime
 build-torch\liplab_neural_runtime_smoke.exe
 if errorlevel 1 exit /b 1
-dumpbin /dependents build-torch\liplab_neural_runtime_smoke.exe | findstr /i "torch c10" >nul
+dumpbin /dependents build-torch\liplab_neural_runtime_smoke.exe | findstr /i "\.dll" | findstr /i "torch c10" >nul
 if not errorlevel 1 (
     echo Standalone neural runtime unexpectedly depends on LibTorch.
     exit /b 1
 )
 
 echo [phase] export_sequence_dataset
-build-torch\liplab_runner.exe . --fast-batch --tick-ms 40 --export-monotonic-dataset
+build-torch\liplab_runner.exe . --fast-batch --tick-ms 40 --export-monotonic-dataset ^
+    --neural-checkpoint "%NEURAL_MODEL%"
 if errorlevel 1 exit /b 1
 
 echo [phase] train_curriculum

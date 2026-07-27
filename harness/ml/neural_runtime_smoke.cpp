@@ -4,10 +4,12 @@
 #include "OffgridAINeuralStreamerEmbeddedModel.h"
 
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
+#include <vector>
 
 int main()
 {
@@ -80,14 +82,34 @@ int main()
     for (float value : region_logits)
         if (!std::isfinite(value)) return 8;
 
+    std::vector<float> full_scores(
+        static_cast<size_t>(kRuntimeChunkFrames) * transcript.NumTokens());
+    constexpr int kFullLatticeCalls = 256;
+    const auto full_begin = std::chrono::steady_clock::now();
+    for (int call = 0; call < kFullLatticeCalls; ++call) {
+        if (!runtime.PushChunkAllTokens(
+                audio.data(), kRuntimeChunkFrames, full_scores.data(),
+                scored_tokens, region_logits.data())) {
+            std::cerr << "full-lattice CUDA inference failed: "
+                << runtime.LastError() << '\n';
+            return 9;
+        }
+    }
+    const auto full_end = std::chrono::steady_clock::now();
+    if (scored_tokens != transcript.NumTokens()) return 10;
+    const double full_mean_us = std::chrono::duration<double, std::micro>(
+        full_end - full_begin).count() / kFullLatticeCalls;
+
     const RuntimeFootprint footprint = runtime.Footprint();
     if (footprint.CheckpointBytes != offgridai::embedded_neural_streamer::ModelSize
         || footprint.CheckpointFingerprint == 0)
-        return 9;
+        return 11;
     std::cout << "standalone_cuda_runtime=ok"
         << " model_bytes=" << footprint.CheckpointBytes
         << " weight_bytes=" << footprint.WeightBytes
         << " token_bytes=" << footprint.TokenBytes
+        << " full_lattice_mean_us=" << std::fixed << std::setprecision(1)
+        << full_mean_us
         << " stream_priority=" << footprint.StreamPriority
         << " fingerprint=0x" << std::hex << footprint.CheckpointFingerprint
         << " sha256=" << offgridai::embedded_neural_streamer::ModelSha256

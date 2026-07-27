@@ -77,6 +77,7 @@ __global__ void score_chunk_kernel(
     const float* token_silence_mask,
     int active_token,
     int scored_tokens,
+    int score_stride,
     float* scores,
     float* region_logits)
 {
@@ -174,7 +175,7 @@ __global__ void score_chunk_kernel(
                 __syncthreads();
             }
             if (hidden == 0)
-                scores[frame * kForwardTokenWindow + token] = reduction[0] / 8.0f
+                scores[frame * score_stride + token] = reduction[0] / 8.0f
                     + 2.0f * tanhf(region_score[frame])
                     * (1.0f - 2.0f * token_silence_mask[active_token + token]);
             __syncthreads();
@@ -193,9 +194,11 @@ struct CudaRuntime::Impl {
     float* DeviceAudio = nullptr;
     float* DeviceScores = nullptr;
     float* DeviceRegionLogits = nullptr;
+    float* DeviceAllScores = nullptr;
     float* HostAudio = nullptr;
     float* HostScores = nullptr;
     float* HostRegionLogits = nullptr;
+    float* HostAllScores = nullptr;
     float* HostTokenFeatures = nullptr;
     int TokenCapacity = 0;
     int TokenCount = 0;
@@ -236,9 +239,11 @@ struct CudaRuntime::Impl {
         if (DeviceAudio) cudaFree(DeviceAudio);
         if (DeviceScores) cudaFree(DeviceScores);
         if (DeviceRegionLogits) cudaFree(DeviceRegionLogits);
+        if (DeviceAllScores) cudaFree(DeviceAllScores);
         if (HostAudio) cudaFreeHost(HostAudio);
         if (HostScores) cudaFreeHost(HostScores);
         if (HostRegionLogits) cudaFreeHost(HostRegionLogits);
+        if (HostAllScores) cudaFreeHost(HostAllScores);
         if (HostTokenFeatures) cudaFreeHost(HostTokenFeatures);
         if (Stream) cudaStreamDestroy(Stream);
     }
@@ -260,6 +265,10 @@ struct CudaRuntime::Impl {
         DeviceTokenSilenceMask = nullptr;
         DeviceTokenFeatures = nullptr;
         HostTokenFeatures = nullptr;
+        if (DeviceAllScores) cudaFree(DeviceAllScores);
+        if (HostAllScores) cudaFreeHost(HostAllScores);
+        DeviceAllScores = nullptr;
+        HostAllScores = nullptr;
         TokenCapacity = std::max(count, 256);
         const std::size_t feature_bytes =
             static_cast<std::size_t>(TokenCapacity) * kTokenDimensions * sizeof(float);
@@ -274,6 +283,12 @@ struct CudaRuntime::Impl {
         error = cudaMalloc(&DeviceTokenSilenceMask,
             static_cast<std::size_t>(TokenCapacity) * sizeof(float));
         if (error != cudaSuccess) return fail(cuda_error("cudaMalloc token silence mask", error));
+        const std::size_t all_score_bytes = static_cast<std::size_t>(TokenCapacity)
+            * kRuntimeChunkFrames * sizeof(float);
+        error = cudaMallocHost(&HostAllScores, all_score_bytes);
+        if (error != cudaSuccess) return fail(cuda_error("cudaMallocHost all scores", error));
+        error = cudaMalloc(&DeviceAllScores, all_score_bytes);
+        if (error != cudaSuccess) return fail(cuda_error("cudaMalloc all scores", error));
         return true;
     }
 };
@@ -398,6 +413,7 @@ bool CudaRuntime::PushChunk(
         State->DeviceAudio, State->ContextFrameCount, frame_count, State->DeviceWeights,
         State->DeviceTokenEmbeddings, State->DeviceTokenSilenceMask,
         active_token, scored_token_count,
+        kForwardTokenWindow,
         State->DeviceScores, State->DeviceRegionLogits);
     error = cudaGetLastError();
     if (error != cudaSuccess) return State->fail(cuda_error("score chunk launch", error));
@@ -413,6 +429,67 @@ bool CudaRuntime::PushChunk(
     error = cudaStreamSynchronize(State->Stream);
     if (error != cudaSuccess) return State->fail(cuda_error("score chunk", error));
     std::memcpy(scores, State->HostScores, output_bytes);
+    if (region_logits)
+        std::memcpy(region_logits, State->HostRegionLogits,
+            static_cast<std::size_t>(frame_count) * sizeof(float));
+
+    std::array<float, (kCausalContextFrames + kRuntimeChunkFrames) * kAudioFeatureCount> combined{};
+    std::memcpy(combined.data(), State->Context.data(), context_values * sizeof(float));
+    std::memcpy(combined.data() + context_values, audio_features,
+        static_cast<std::size_t>(frame_count) * kAudioFeatureCount * sizeof(float));
+    const int total_frames = State->ContextFrameCount + frame_count;
+    const int kept_frames = std::min(kCausalContextFrames, total_frames);
+    const int first_kept = total_frames - kept_frames;
+    std::memcpy(State->Context.data(),
+        combined.data() + first_kept * kAudioFeatureCount,
+        static_cast<std::size_t>(kept_frames) * kAudioFeatureCount * sizeof(float));
+    State->ContextFrameCount = kept_frames;
+    return true;
+}
+
+bool CudaRuntime::PushChunkAllTokens(
+    const float* audio_features,
+    int frame_count,
+    float* scores,
+    int& scored_token_count,
+    float* region_logits)
+{
+    State->Error.clear();
+    scored_token_count = 0;
+    if (!audio_features || !scores || frame_count <= 0 || frame_count > kRuntimeChunkFrames)
+        return State->fail("invalid audio chunk");
+    if (State->TokenCount <= 0 || !State->DeviceAllScores || !State->HostAllScores)
+        return State->fail("token sequence is not initialized");
+    scored_token_count = State->TokenCount;
+    const std::size_t context_values = static_cast<std::size_t>(State->ContextFrameCount)
+        * kAudioFeatureCount;
+    std::memcpy(State->HostAudio, State->Context.data(), context_values * sizeof(float));
+    std::memcpy(State->HostAudio + context_values, audio_features,
+        static_cast<std::size_t>(frame_count) * kAudioFeatureCount * sizeof(float));
+    const std::size_t input_bytes = static_cast<std::size_t>(
+        State->ContextFrameCount + frame_count) * kAudioFeatureCount * sizeof(float);
+    cudaError_t error = cudaMemcpyAsync(State->DeviceAudio, State->HostAudio,
+        input_bytes, cudaMemcpyHostToDevice, State->Stream);
+    if (error != cudaSuccess) return State->fail(cuda_error("copy audio", error));
+    score_chunk_kernel<<<1, kHiddenDimensions, 0, State->Stream>>>(
+        State->DeviceAudio, State->ContextFrameCount, frame_count, State->DeviceWeights,
+        State->DeviceTokenEmbeddings, State->DeviceTokenSilenceMask,
+        0, State->TokenCount, State->TokenCount,
+        State->DeviceAllScores, State->DeviceRegionLogits);
+    error = cudaGetLastError();
+    if (error != cudaSuccess) return State->fail(cuda_error("score all tokens launch", error));
+    const std::size_t output_bytes = static_cast<std::size_t>(frame_count)
+        * State->TokenCount * sizeof(float);
+    error = cudaMemcpyAsync(State->HostAllScores, State->DeviceAllScores,
+        output_bytes, cudaMemcpyDeviceToHost, State->Stream);
+    if (error != cudaSuccess) return State->fail(cuda_error("copy all scores", error));
+    error = cudaMemcpyAsync(State->HostRegionLogits, State->DeviceRegionLogits,
+        static_cast<std::size_t>(frame_count) * sizeof(float),
+        cudaMemcpyDeviceToHost, State->Stream);
+    if (error != cudaSuccess) return State->fail(cuda_error("copy region logits", error));
+    error = cudaStreamSynchronize(State->Stream);
+    if (error != cudaSuccess) return State->fail(cuda_error("score all tokens", error));
+    std::memcpy(scores, State->HostAllScores, output_bytes);
     if (region_logits)
         std::memcpy(region_logits, State->HostRegionLogits,
             static_cast<std::size_t>(frame_count) * sizeof(float));

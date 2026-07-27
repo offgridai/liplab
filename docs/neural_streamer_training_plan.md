@@ -16,10 +16,9 @@ The neural path owns:
 
 Audio cannot invent viseme identity. The transcript planner constructs the
 complete identity sequence before audio begins, and the monotonic graph cannot
-delete or reorder it. The deterministic scheduler is not a model input. It
-remains outside the model as the deployable emergency fallback until the
-streaming aligner is integrated into `offgrid_dropin` and clears its promotion
-gates.
+delete or reorder it. The deterministic scheduler is neither a model input nor
+a deployable runtime path. If inference is unavailable, lipsync is disabled for
+that utterance.
 
 ## Inputs and supervision
 
@@ -159,7 +158,7 @@ neural vowel observations.
 - syllable recall above 0.90 with comprehensive center mean below 40 ms;
 - word-onset comprehensive mean below 75 ms;
 - zero ordering violations;
-- calibrated deterministic fallback below 5%;
+- zero non-neural runtime scheduling;
 - equivalent scores from the live C++ streaming integration, not CSV replay.
 
 The next data-factory expansion should emphasize 120-600 ms mid-sentence

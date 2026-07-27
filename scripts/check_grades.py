@@ -80,6 +80,56 @@ if order_violations > int(thresholds["max_order_violations"]):
     )
     failed = True
 
+delivery_checks = [
+    (
+        "runtime_delivery.event_delivery_rate",
+        "min_runtime_event_delivery_rate",
+        "min",
+    ),
+    (
+        "runtime_delivery.word_delivery_rate",
+        "min_runtime_word_delivery_rate",
+        "min",
+    ),
+    (
+        "runtime_delivery.speech_region_delivery_rate",
+        "min_runtime_speech_region_delivery_rate",
+        "min",
+    ),
+    (
+        "runtime_delivery.sentence_delivery_rate",
+        "min_runtime_sentence_delivery_rate",
+        "min",
+    ),
+    (
+        "runtime_delivery.late_after_window_events",
+        "max_late_after_window_events",
+        "max",
+    ),
+    (
+        "runtime_delivery.empty_speech_regions",
+        "max_empty_speech_regions",
+        "max",
+    ),
+    (
+        "runtime_delivery.missing_sentences",
+        "max_missing_sentences",
+        "max",
+    ),
+    (
+        "runtime_delivery.compressed_sentences",
+        "max_compressed_sentences",
+        "max",
+    ),
+]
+for metric, threshold_name, direction in delivery_checks:
+    actual = float(value(summary, metric))
+    limit = float(thresholds[threshold_name])
+    ok = actual >= limit if direction == "min" else actual <= limit
+    if not ok:
+        print(f"FAIL {metric}: actual={actual:.6f} limit={limit:.6f}")
+        failed = True
+
 if failed:
     print("See alignment_cases.csv and alignment_words.csv for the failing cases.")
     sys.exit(1)
