@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Lipsync/OffgridAILipsyncTypes.h"
 #include "Lipsync/OffgridAITextVisemePlanner.h"
-#include "Lipsync/OffgridAIStreamingSpeechDetector.h"
+#include "Lipsync/OffgridAIStreamingAudioFeatures.h"
 
 #include <memory>
 
@@ -55,32 +55,6 @@ struct FOffgridAIRuntimeSpeechRegionDiagnosticRow
     FName DiagnosticKind = NAME_None;
 };
 
-struct FOffgridAIRuntimeSyllableAssignmentDiagnosticRow
-{
-    FName LineID = NAME_None;
-    int32 UpdateOrdinal = 0;
-    int32 AudioSpeechRegionIndex = INDEX_NONE;
-    int32 TextSpeechRegionIndex = INDEX_NONE;
-    int32 PhoneIndex = INDEX_NONE;
-    float ObservedAudioSec = 0.0f;
-    float Prominence = 0.0f;
-    float Confidence = 0.0f;
-    int32 SkipCount = 0;
-    FName AnchorKind = NAME_None;
-    float TimelineCorrectionSec = 0.0f;
-    // Word-paced experiment diagnostics. A word's rate is immutable once it
-    // starts; an observed interval only updates the rate for later words.
-    int32 WordIndex = INDEX_NONE;
-    float WordPriorRate = 1.0f;
-    float ObservedWordIntervalSec = -1.0f;
-    float PriorWordIntervalSec = -1.0f;
-    int32 CanceledPriorWordEventCount = 0;
-    float NucleusAudioSec = -1.0f;
-    float VisualAnchorAudioSec = -1.0f;
-    FName VisualAnchorKind = NAME_None;
-    int32 VisualAnchorPhoneIndex = INDEX_NONE;
-};
-
 // Compact state trace retained for host diagnostic-file compatibility. Its
 // fields now describe the neural decoder only; there is no alternate scheduler.
 struct FOffgridAIRuntimeBoundaryDiagnosticRow
@@ -92,17 +66,10 @@ struct FOffgridAIRuntimeBoundaryDiagnosticRow
     bool bPlayheadStarted = false;
     bool bAudioSpeechActive = false;
     int32 ActiveSpeechRegionIndex = INDEX_NONE;
-    int32 ActiveTextSpeechRegionIndex = INDEX_NONE;
     float ActiveRegionStartSec = -1.0f;
     float ActiveRegionEndSec = -1.0f;
-    float TimelineRate = 1.0f;
-    int32 LastMatchedSyllableIndex = INDEX_NONE;
-    int32 LastMatchedSyllablePhoneIndex = INDEX_NONE;
-    float LastMatchedSyllableAudioSec = -1.0f;
-    float LastMatchedSyllableConfidence = 0.0f;
     int32 SchedulerNextEventIndex = INDEX_NONE;
     int32 SchedulerNextPhoneIndex = INDEX_NONE;
-    float SchedulerCandidateCenterSec = -1.0f;
     float SchedulerCommitFrontierSec = -1.0f;
     float SchedulerCommitLeadSec = -1.0f;
     FString SchedulerBlockReason;
@@ -140,12 +107,14 @@ public:
     void Finalize(float FinalPlaybackSec);
 
     const FOffgridAITextVisemePlan& GetTextPlan() const { return TextPlan; }
-    const FOffgridAIStreamingSpeechDetector& GetSpeechDetector() const { return Detector; }
+    const FOffgridAIStreamingAudioFeatureExtractor& GetAudioFeatureExtractor() const
+    {
+        return AudioFeatures;
+    }
     const TArray<FOffgridAIStreamingSpeechRegion>& GetSpeechRegions() const { return ResolvedSpeechRegions; }
     const FOffgridAICommittedVisemeTrack& GetCommittedTrack() const { return CommittedTrack; }
     const TArray<FOffgridAIRuntimeSpeechRegionDiagnosticRow>& GetRuntimeSpeechRegionDiagnosticRows() const { return RuntimeSpeechRegionDiagnosticRows; }
     const TArray<FOffgridAIRuntimeBoundaryDiagnosticRow>& GetRuntimeBoundaryDiagnosticRows() const { return RuntimeBoundaryDiagnosticRows; }
-    const TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow>& GetRuntimeSyllableAssignmentDiagnosticRows() const { return RuntimeSyllableAssignmentDiagnosticRows; }
     const FOffgridAIStreamTailDiagnosticRow& GetStreamTailDiagnosticRow() const { return StreamTailDiagnosticRow; }
     FOffgridAICommittedVisemeTrack& GetMutableCommittedTrack() { return CommittedTrack; }
     bool IsCommittedTrackBuilt() const { return bCommittedTrackBuilt; }
@@ -169,12 +138,11 @@ private:
     EOffgridAILipsyncRuntimeBackend Backend = EOffgridAILipsyncRuntimeBackend::Disabled;
     FString BackendError;
     FOffgridAITextVisemePlan TextPlan;
-    FOffgridAIStreamingSpeechDetector Detector;
+    FOffgridAIStreamingAudioFeatureExtractor AudioFeatures;
     TArray<FOffgridAIStreamingSpeechRegion> ResolvedSpeechRegions;
     FOffgridAICommittedVisemeTrack CommittedTrack;
     TArray<FOffgridAIRuntimeSpeechRegionDiagnosticRow> RuntimeSpeechRegionDiagnosticRows;
     TArray<FOffgridAIRuntimeBoundaryDiagnosticRow> RuntimeBoundaryDiagnosticRows;
-    TArray<FOffgridAIRuntimeSyllableAssignmentDiagnosticRow> RuntimeSyllableAssignmentDiagnosticRows;
     int32 DiagnosticUpdateOrdinal = 0;
     FOffgridAIStreamTailDiagnosticRow StreamTailDiagnosticRow;
     int32 PCMChunkCount = 0;

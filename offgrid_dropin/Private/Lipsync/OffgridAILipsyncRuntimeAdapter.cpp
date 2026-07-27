@@ -50,12 +50,11 @@ void FOffgridAILipsyncRuntimeSession::Reset()
     Backend = EOffgridAILipsyncRuntimeBackend::Disabled;
     BackendError.Reset();
     TextPlan = FOffgridAITextVisemePlan();
-    Detector.Reset();
+    AudioFeatures.Reset();
     ResolvedSpeechRegions.Reset();
     CommittedTrack = FOffgridAICommittedVisemeTrack();
     RuntimeSpeechRegionDiagnosticRows.Reset();
     RuntimeBoundaryDiagnosticRows.Reset();
-    RuntimeSyllableAssignmentDiagnosticRows.Reset();
     DiagnosticUpdateOrdinal = 0;
     StreamTailDiagnosticRow = FOffgridAIStreamTailDiagnosticRow();
     PCMChunkCount = 0;
@@ -127,12 +126,11 @@ void FOffgridAILipsyncRuntimeSession::PushAudioPCM16(
     // Disabled means exactly that: no analysis, no scheduler, and no track.
     if (Backend != EOffgridAILipsyncRuntimeBackend::NeuralCuda) return;
 
-    // The detector is retained solely as the canonical causal PCM feature
-    // extractor. Its occupancy and timing decisions are never consumed here.
-    Detector.AppendPCM16(PCMChunk, BytesToUse, SampleRate, NumChannels, ChunkStartSample);
+    AudioFeatures.AppendPCM16(
+        PCMChunk, BytesToUse, SampleRate, NumChannels, ChunkStartSample);
 #if OFFGRIDAI_WITH_NEURAL_LIPSYNC
     if (!NeuralAligner || !NeuralAligner->ProcessAvailableFrames(
-            Detector.GetFeatureFrames(), PlaybackSec, CommittedTrack, BackendError))
+            AudioFeatures.GetFeatureFrames(), PlaybackSec, CommittedTrack, BackendError))
     {
         DisableNeuralRuntime(BackendError.IsEmpty()
             ? FString(TEXT("neural inference failed"))
@@ -148,10 +146,10 @@ void FOffgridAILipsyncRuntimeSession::CloseInputStream()
 {
     bInputStreamClosed = true;
     if (Backend != EOffgridAILipsyncRuntimeBackend::NeuralCuda) return;
-    Detector.Finalize(Detector.GetObservedAudioBufferEndSec());
+    AudioFeatures.Finalize(AudioFeatures.GetObservedAudioBufferEndSec());
 #if OFFGRIDAI_WITH_NEURAL_LIPSYNC
     if (!NeuralAligner || !NeuralAligner->ProcessAvailableFrames(
-            Detector.GetFeatureFrames(), PlaybackSec, CommittedTrack, BackendError))
+            AudioFeatures.GetFeatureFrames(), PlaybackSec, CommittedTrack, BackendError))
     {
         DisableNeuralRuntime(BackendError.IsEmpty()
             ? FString(TEXT("neural close failed"))
@@ -164,7 +162,7 @@ void FOffgridAILipsyncRuntimeSession::CloseInputStream()
     // playback has already ended. Finalize() remains idempotent and records
     // terminal diagnostics later at the true final playback time.
     NeuralAligner->Finalize(
-        Detector.GetObservedAudioBufferEndSec(), PlaybackSec, CommittedTrack);
+        AudioFeatures.GetObservedAudioBufferEndSec(), PlaybackSec, CommittedTrack);
 #endif
     RefreshResolvedSpeechRegions();
     bCommittedTrackBuilt = CommittedTrack.Events.Num() > 0;
@@ -193,10 +191,10 @@ void FOffgridAILipsyncRuntimeSession::Finalize(float FinalPlaybackSec)
         return;
     }
 
-    Detector.Finalize(Detector.GetObservedAudioBufferEndSec());
+    AudioFeatures.Finalize(AudioFeatures.GetObservedAudioBufferEndSec());
 #if OFFGRIDAI_WITH_NEURAL_LIPSYNC
     if (!NeuralAligner || !NeuralAligner->ProcessAvailableFrames(
-            Detector.GetFeatureFrames(), PlaybackSec, CommittedTrack, BackendError))
+            AudioFeatures.GetFeatureFrames(), PlaybackSec, CommittedTrack, BackendError))
     {
         DisableNeuralRuntime(BackendError.IsEmpty()
             ? FString(TEXT("neural final inference failed"))
@@ -205,7 +203,7 @@ void FOffgridAILipsyncRuntimeSession::Finalize(float FinalPlaybackSec)
         return;
     }
     NeuralAligner->Finalize(
-        Detector.GetObservedAudioBufferEndSec(), PlaybackSec, CommittedTrack);
+        AudioFeatures.GetObservedAudioBufferEndSec(), PlaybackSec, CommittedTrack);
 #endif
     RefreshResolvedSpeechRegions();
     bCommittedTrackBuilt = CommittedTrack.Events.Num() > 0;
@@ -236,7 +234,7 @@ void FOffgridAILipsyncRuntimeSession::RecordRuntimeDiagnostics(
     StreamTailDiagnosticRow.LastChunkEndSample = LastPCMChunkEndSample;
     StreamTailDiagnosticRow.ObservedAudioBufferEndSec =
         Backend == EOffgridAILipsyncRuntimeBackend::NeuralCuda
-            ? Detector.GetObservedAudioBufferEndSec()
+            ? AudioFeatures.GetObservedAudioBufferEndSec()
             : 0.0f;
     StreamTailDiagnosticRow.FirstSpeechAudioBufferStartSec =
         ResolvedSpeechRegions.Num() > 0

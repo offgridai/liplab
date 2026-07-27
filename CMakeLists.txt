@@ -11,13 +11,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(liplab_core
     offgrid_dropin/Private/Lipsync/OffgridAICmudictData.cpp
-    offgrid_dropin/Private/Lipsync/OffgridAIStreamingSpeechDetector.cpp
+    offgrid_dropin/Private/Lipsync/OffgridAIStreamingAudioFeatures.cpp
     offgrid_dropin/Private/Lipsync/OffgridAITextVisemePlanner.cpp
     offgrid_dropin/Private/Lipsync/OffgridAIVisemePerformer.cpp
     offgrid_dropin/Private/Lipsync/OffgridAILipsyncRuntimeAdapter.cpp
-    offgrid_dropin/Private/Lipsync/OffgridAIAcousticEvidence.cpp
-    offgrid_dropin/Private/Lipsync/OffgridAIStreamingEvidenceSurface.cpp
-    offgrid_dropin/Private/Lipsync/OffgridAIStreamingSyllablePositionEstimator.cpp
     offgrid_dropin/Private/Lipsync/OffgridAINeuralLipsyncBridge.cpp
 )
 

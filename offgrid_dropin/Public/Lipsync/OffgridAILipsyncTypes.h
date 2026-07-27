@@ -2,6 +2,20 @@
 
 #include "CoreMinimal.h"
 
+struct FOffgridAIStreamingSpeechRegion
+{
+    int32 SpeechRegionIndex = INDEX_NONE;
+    float AudioBufferStartSec = 0.0f;
+    float AudioBufferLastSpeechSec = 0.0f;
+    float AudioBufferEndSec = 0.0f;
+    bool bStarted = false;
+    bool bEnded = false;
+    float ProvisionalEndSec = -1.0f;
+    float EndDecisionSec = -1.0f;
+    int32 ReopenCount = 0;
+    FName EndReason = NAME_None;
+};
+
 struct FOffgridAICommittedVisemeEvent
 {
     int32 EventIndex = INDEX_NONE;
@@ -83,7 +97,7 @@ struct FOffgridAICommittedVisemeTrack
     FName LineID = NAME_None;
     float SpeechStartSeconds = 0.0f;
     float SpeechEndSeconds = 0.0f;
-    // Detector-owned region bounds used only to gate pose envelopes. Event
+    // Neural region bounds used only to gate pose envelopes. Event
     // centers and identity remain immutable once committed.
     TArray<FSpeechRegion> SpeechRegions;
     TArray<FOffgridAICommittedVisemeEvent> Events;

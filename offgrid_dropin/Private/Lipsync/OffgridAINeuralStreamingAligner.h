@@ -4,7 +4,7 @@
 #include "Lipsync/OffgridAILipsyncTypes.h"
 #include "Lipsync/OffgridAINeuralLipsyncBridge.h"
 #include "Lipsync/OffgridAINeuralStreamerRuntime.h"
-#include "Lipsync/OffgridAIStreamingSpeechDetector.h"
+#include "Lipsync/OffgridAIStreamingAudioFeatures.h"
 #include "Lipsync/OffgridAITextVisemePlanner.h"
 
 #include <array>

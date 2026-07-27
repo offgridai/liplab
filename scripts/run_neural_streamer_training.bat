@@ -58,18 +58,20 @@ copy /y outputs\runs\latest\neural_streamer.pt "%ARTIFACT_DIR%\neural_streamer.p
 if errorlevel 1 exit /b 1
 copy /y outputs\runs\latest\neural_streamer_cuda.bin "%ARTIFACT_DIR%\neural_streamer_cuda.bin" >nul
 if errorlevel 1 exit /b 1
-copy /y outputs\runs\latest\neural_streamer_predictions.csv "%ARTIFACT_DIR%\neural_streamer_predictions.csv" >nul
-if errorlevel 1 exit /b 1
 copy /y outputs\runs\latest\neural_streamer_report.json "%ARTIFACT_DIR%\neural_streamer_report.json" >nul
 if errorlevel 1 exit /b 1
 
-echo [phase] replay_neural_owned_stream
+echo [phase] replay_packaged_runtime
 build-torch\liplab_runner.exe . --fast-batch --tick-ms 40 ^
-    --neural-track-csv "%ARTIFACT_DIR%\neural_streamer_predictions.csv"
+    --neural-checkpoint "%ARTIFACT_DIR%\neural_streamer_cuda.bin"
 if errorlevel 1 exit /b 1
 
-echo [phase] summarize_neural_owned_stream
-python scripts\summarize_neural_track.py --output "%ARTIFACT_DIR%\grade_summary.json"
+echo [phase] grade_packaged_runtime
+python scripts\summarize.py
+if errorlevel 1 exit /b 1
+python scripts\check_grades.py
+if errorlevel 1 exit /b 1
+copy /y outputs\runs\latest\summary.json "%ARTIFACT_DIR%\grade_summary.json" >nul
 if errorlevel 1 exit /b 1
 
 echo Neural streamer training and scoring completed.

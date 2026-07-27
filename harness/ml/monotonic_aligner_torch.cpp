@@ -786,139 +786,6 @@ static double validation_loss(MonotonicNetwork& model, const std::vector<Sequenc
     return total / std::max(count, 1);
 }
 
-struct NeuralSpeechRegion {
-    float StartSec = 0.0f;
-    float EndSec = 0.0f;
-};
-
-static std::vector<NeuralSpeechRegion> decode_speech_regions(
-    const torch::Tensor& region_logits,
-    const torch::Tensor& frame_times)
-{
-    constexpr float kSpeechThreshold = 0.45f;
-    constexpr int kMinimumSpeechFrames = 2;
-    constexpr int kMinimumPauseFrames = 12;
-    const torch::Tensor probability = torch::sigmoid(region_logits).to(torch::kCPU);
-    const auto speech = probability.accessor<float, 1>();
-    const auto times = frame_times.accessor<float, 1>();
-    const int frames = static_cast<int>(probability.size(0));
-    std::vector<NeuralSpeechRegion> regions;
-    bool in_speech = false;
-    int speech_candidate = -1;
-    int quiet_candidate = -1;
-    float last_speech_end = 0.0f;
-    for (int frame = 0; frame < frames; ++frame) {
-        const bool active = speech[frame] >= kSpeechThreshold;
-        if (!in_speech) {
-            if (!active) {
-                speech_candidate = -1;
-                continue;
-            }
-            if (speech_candidate < 0) speech_candidate = frame;
-            if (frame - speech_candidate + 1 < kMinimumSpeechFrames) continue;
-            const float start = std::max(0.0f, times[speech_candidate] - 0.005f);
-            last_speech_end = times[frame] + 0.005f;
-            regions.push_back({start, last_speech_end});
-            in_speech = true;
-            speech_candidate = -1;
-            quiet_candidate = -1;
-            continue;
-        }
-        if (active) {
-            quiet_candidate = -1;
-            last_speech_end = times[frame] + 0.005f;
-            regions.back().EndSec = last_speech_end;
-            continue;
-        }
-        if (quiet_candidate < 0) quiet_candidate = frame;
-        if (frame - quiet_candidate + 1 < kMinimumPauseFrames) continue;
-        regions.back().EndSec = std::max(
-            regions.back().StartSec, times[quiet_candidate] - 0.005f);
-        in_speech = false;
-        quiet_candidate = -1;
-        speech_candidate = -1;
-    }
-    if (in_speech) regions.back().EndSec = std::max(regions.back().StartSec, last_speech_end);
-    return regions;
-}
-
-static int nearest_speech_region(
-    const std::vector<NeuralSpeechRegion>& regions, float center)
-{
-    int best = -1;
-    float best_distance = std::numeric_limits<float>::infinity();
-    for (size_t index = 0; index < regions.size(); ++index) {
-        const float distance = center < regions[index].StartSec
-            ? regions[index].StartSec - center
-            : (center > regions[index].EndSec ? center - regions[index].EndSec : 0.0f);
-        if (distance < best_distance) {
-            best_distance = distance;
-            best = static_cast<int>(index);
-        }
-    }
-    return best;
-}
-
-static void write_predictions(const fs::path& path, MonotonicNetwork& model,
-    const std::vector<SequenceCase>& dataset, const torch::Device& device)
-{
-    torch::NoGradGuard no_grad;
-    model->eval();
-    std::ofstream out(path);
-    out << "case_id,token_index,event_index,is_silence,center_sec,duration_sec,confidence,"
-        << "fallback_used,speech_region_index,speech_region_start_sec,speech_region_end_sec\n";
-    out << std::fixed << std::setprecision(6);
-    for (const SequenceCase& sequence : dataset) {
-        CaseTensors row = tensors(sequence);
-        const auto output = model->forward(row.Audio.to(device), row.Tokens.to(device));
-        const torch::Tensor scores = output.first;
-        std::vector<NeuralSpeechRegion> regions = decode_speech_regions(
-            output.second, row.FrameTimes);
-        for (size_t region = 0; region < regions.size(); ++region) {
-            out << sequence.CaseId << ",-1,-1,1,"
-                << 0.5f * (regions[region].StartSec + regions[region].EndSec) << ','
-                << regions[region].EndSec - regions[region].StartSec
-                << ",1,0," << region << ',' << regions[region].StartSec << ','
-                << regions[region].EndSec << '\n';
-        }
-        const std::vector<int> path = viterbi_path(
-            scores, output.second, sequence.Tokens, kStreamingLagFrames);
-        const torch::Tensor probabilities = torch::softmax(scores, 1).to(torch::kCPU);
-        const auto probability = probabilities.accessor<float, 2>();
-        std::vector<int> first(sequence.Tokens.size(), -1), last(sequence.Tokens.size(), -1);
-        std::vector<float> confidence(sequence.Tokens.size(), 0.0f);
-        for (int frame = 0; frame < static_cast<int>(path.size()); ++frame) {
-            const int token = path[frame];
-            if (first[token] < 0) first[token] = frame;
-            last[token] = frame;
-            confidence[token] = std::max(confidence[token], probability[frame][token]);
-        }
-        for (size_t token = 0; token < sequence.Tokens.size(); ++token) {
-            float center = row.FrameTimes[std::min<int>(
-                static_cast<int>(token), static_cast<int>(row.FrameTimes.size(0)) - 1)].item<float>();
-            float duration = 0.020f;
-            if (first[token] >= 0) {
-                const float start = row.FrameTimes[first[token]].item<float>();
-                const float end = row.FrameTimes[last[token]].item<float>();
-                center = 0.5f * (start + end);
-                duration = std::max(0.010f, end - start + 0.010f);
-            }
-            if (regions.empty() && sequence.Tokens[token].IsSilence < 0.5f)
-                regions.push_back({std::max(0.0f, center - 0.5f * duration),
-                    center + 0.5f * duration});
-            const int region = sequence.Tokens[token].IsSilence > 0.5f
-                ? -1 : nearest_speech_region(regions, center);
-            out << sequence.CaseId << ',' << token << ',' << sequence.Tokens[token].EventIndex << ','
-                << static_cast<int>(sequence.Tokens[token].IsSilence) << ',' << center << ',' << duration << ','
-                << confidence[token] << ",0," << region << ',';
-            if (region >= 0) out << regions[static_cast<size_t>(region)].StartSec << ','
-                << regions[static_cast<size_t>(region)].EndSec;
-            else out << "-1,-1";
-            out << '\n';
-        }
-    }
-}
-
 int main(int argc, char** argv)
 {
     try {
@@ -1027,8 +894,6 @@ int main(int argc, char** argv)
             runtime_checkpoint, model, dataset, device);
         if (runtime.P95Microseconds > 1000.0)
             throw std::runtime_error("CUDA runtime exceeds the 1 ms p95 budget");
-        const fs::path predictions = root / "outputs/runs/latest/neural_streamer_predictions.csv";
-        write_predictions(predictions, model, dataset, device);
         const fs::path report = root / "outputs/runs/latest/neural_streamer_report.json";
         std::ofstream out(report);
         out << std::fixed << std::setprecision(6)
@@ -1073,7 +938,7 @@ int main(int argc, char** argv)
         std::cout << "CUDA runtime p95 " << runtime.P95Microseconds << " us, weights "
             << runtime.Footprint.WeightBytes << " bytes, max logit error "
             << runtime.MaxLogitError << '\n';
-        std::cout << "Wrote " << predictions << '\n';
+        std::cout << "Wrote " << runtime_checkpoint << '\n';
         return 0;
     } catch (const std::exception& error) {
         std::cerr << "error: " << error.what() << '\n';

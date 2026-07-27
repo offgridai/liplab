@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Lipsync/OffgridAINeuralStreamerModelFormat.h"
-#include "Lipsync/OffgridAIStreamingSpeechDetector.h"
+#include "Lipsync/OffgridAIStreamingAudioFeatures.h"
 #include "Lipsync/OffgridAITextVisemePlanner.h"
 
 // Engine-facing tensor adapters for the standalone CUDA runtime. These are the

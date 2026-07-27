@@ -100,16 +100,14 @@ if errorlevel 1 exit /b 1
 echo [phase] run_corpus
 set "LIPLAB_PREROLL_MS=350"
 if not "%~1"=="" set "LIPLAB_PREROLL_MS=%~1"
-set "LIPLAB_EVIDENCE_POSTROLL_MS=1500"
-if not "%~2"=="" set "LIPLAB_EVIDENCE_POSTROLL_MS=%~2"
-echo Using preroll !LIPLAB_PREROLL_MS! ms, evidence postroll !LIPLAB_EVIDENCE_POSTROLL_MS! ms
+echo Using preroll !LIPLAB_PREROLL_MS! ms
 
 if exist "!BUILD_DIR!\liplab_runner.exe" (
-    "!BUILD_DIR!\liplab_runner.exe" . --preroll-ms !LIPLAB_PREROLL_MS! --evidence-postroll-ms !LIPLAB_EVIDENCE_POSTROLL_MS! --neural-checkpoint "!NEURAL_MODEL!"
+    "!BUILD_DIR!\liplab_runner.exe" . --preroll-ms !LIPLAB_PREROLL_MS! --neural-checkpoint "!NEURAL_MODEL!"
 ) else if exist build\Release\liplab_runner.exe (
-    build\Release\liplab_runner.exe . --preroll-ms !LIPLAB_PREROLL_MS! --evidence-postroll-ms !LIPLAB_EVIDENCE_POSTROLL_MS! --neural-checkpoint "!NEURAL_MODEL!"
+    build\Release\liplab_runner.exe . --preroll-ms !LIPLAB_PREROLL_MS! --neural-checkpoint "!NEURAL_MODEL!"
 ) else if exist build\liplab_runner.exe (
-    build\liplab_runner.exe . --preroll-ms !LIPLAB_PREROLL_MS! --evidence-postroll-ms !LIPLAB_EVIDENCE_POSTROLL_MS! --neural-checkpoint "!NEURAL_MODEL!"
+    build\liplab_runner.exe . --preroll-ms !LIPLAB_PREROLL_MS! --neural-checkpoint "!NEURAL_MODEL!"
 ) else (
     echo liplab_runner.exe not found under !BUILD_DIR!, build\Release, or build\
     exit /b 1

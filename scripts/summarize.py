@@ -7,14 +7,6 @@ import sys
 def main() -> int:
     root = pathlib.Path(__file__).resolve().parents[1]
     latest = root / "outputs" / "runs" / "latest"
-    for obsolete_name in (
-        "focus_alignment_ranking.csv",
-        "focus_alignment_summary.json",
-        "region_ownership_cases.csv",
-        "region_ownership_words.csv",
-        "region_ownership_summary.json",
-    ):
-        (latest / obsolete_name).unlink(missing_ok=True)
     alignment_script = root / "scripts" / "summarize_alignment.py"
     if subprocess.call([sys.executable, str(alignment_script)]) != 0:
         return 2

@@ -41,16 +41,6 @@ checks = [
         "max",
         "max_word_onset_mae_ms_increase",
     ),
-    (
-        "class_aware_visual_anchor.success_rate",
-        "min",
-        "max_visual_anchor_success_drop",
-    ),
-    (
-        "class_aware_visual_anchor.mean_abs_error_ms",
-        "max",
-        "max_visual_anchor_mae_ms_increase",
-    ),
     ("strict_region_segmentation.exact_boundary_rate", "min", "max_strict_region_drop"),
     (
         "strict_three_level_word_assignment.success_rate",

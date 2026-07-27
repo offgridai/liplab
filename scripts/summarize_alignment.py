@@ -96,14 +96,6 @@ def main() -> int:
         focus = load_json(focus_path)
         ownership = load_json(ownership_path)
         grade = load_json(grade_path)
-        word_nucleus_path = focus_path.parent / "runtime_word_start_nucleus_grade.json"
-        word_nucleus = load_json(word_nucleus_path) if word_nucleus_path.exists() else {}
-        nearby_nucleus_path = (
-            focus_path.parent / "performed_word_head_nearby_nucleus_grade.json"
-        )
-        nearby_nucleus = (
-            load_json(nearby_nucleus_path) if nearby_nucleus_path.exists() else {}
-        )
         delivery_path = focus_path.parent / "runtime_delivery_grade.json"
         delivery = load_json(delivery_path) if delivery_path.exists() else {}
         word_duration_ratios.extend(
@@ -130,22 +122,11 @@ def main() -> int:
         gold_words = {
             int(row["word_index"]): row for row in load_csv(gold_dir / "words.csv")
         }
-        gold_phones = {
-            (int(row["word_index"]), int(row["phone_index"])): row
-            for row in load_csv(gold_dir / "phones.csv")
-        }
         gold_speech = {
             int(row["index"]): row for row in load_csv(gold_dir / "speech.csv")
         }
         detected_speech = load_csv(focus_path.parent / "speech_regions.csv")
         committed_rows = load_csv(focus_path.parent / "committed.csv")
-        visual_anchor_rows = load_csv(
-            focus_path.parent / "runtime_syllable_anchor_diagnostics.csv"
-        )
-        expected_phones = {
-            int(row["phone_index"]): row
-            for row in load_csv(focus_path.parent / "expected_phones.csv")
-        }
         word_onset_rows = load_csv(focus_path.parent / "word_onset_diagnostics.csv")
         ownership_words = {
             int(word["word_index"]): word for word in ownership.get("words", [])
@@ -592,41 +573,6 @@ def main() -> int:
         exact_boundary_count = sum(
             int(bool(row["exact_three_level_boundary"])) for row in case_boundaries
         )
-        class_anchor_errors: list[float] = []
-        class_anchor_successes = 0
-        class_anchor_kind_counts: dict[str, int] = {}
-        for anchor in visual_anchor_rows:
-            kind = anchor.get("visual_anchor_kind", "").strip()
-            if not kind or kind == "recovered_prior":
-                continue
-            phone_field = (
-                "nucleus_phone_index"
-                if kind == "nucleus"
-                else "visual_anchor_phone_index"
-            )
-            try:
-                phone_index = int(anchor.get(phone_field, -1))
-                visual_sec = float(anchor.get("visual_anchor_audio_sec", -1.0))
-            except (TypeError, ValueError):
-                continue
-            expected_phone = expected_phones.get(phone_index)
-            if expected_phone is None:
-                continue
-            gold_phone = gold_phones.get((
-                int(expected_phone["word_index"]),
-                int(expected_phone["word_phone_index"]),
-            ))
-            if gold_phone is None or visual_sec < 0.0:
-                continue
-            target_sec = (
-                (float(gold_phone["start"]) + float(gold_phone["end"])) * 0.5
-                if kind == "nucleus"
-                else float(gold_phone["start"])
-            )
-            error_ms = abs(visual_sec - target_sec) * 1000.0
-            class_anchor_errors.append(error_ms)
-            class_anchor_successes += int(error_ms <= START_TOLERANCE_MS)
-            class_anchor_kind_counts[kind] = class_anchor_kind_counts.get(kind, 0) + 1
         cases.append({
             "case": case_id(focus_path),
             "case_name": focus_path.parent.name,
@@ -652,39 +598,11 @@ def main() -> int:
             "word_start_successes": word_successes,
             "word_start_success_rate": ratio(word_successes, word_expected),
             "word_start_mean_abs_error_ms": ratio(sum(word_errors), len(word_errors), 0.0),
-            "class_anchor_expected": len(class_anchor_errors),
-            "class_anchor_successes": class_anchor_successes,
-            "class_anchor_success_rate": ratio(
-                class_anchor_successes, len(class_anchor_errors)
-            ),
-            "class_anchor_mean_abs_error_ms": ratio(
-                sum(class_anchor_errors), len(class_anchor_errors), 0.0
-            ),
-            "class_anchor_kind_counts": "|".join(
-                f"{kind}:{count}"
-                for kind, count in sorted(class_anchor_kind_counts.items())
-            ),
             "animation_onset_expected": animation_onset_expected,
             "animation_onset_matched": animation_onset_matched,
             "animation_onset_successes": animation_onset_successes,
             "animation_onset_mean_abs_error_ms": ratio(
                 sum(animation_onset_errors), animation_onset_matched, 0.0
-            ),
-            "word_nucleus_target_count": int(word_nucleus.get("target_count", 0)),
-            "word_nucleus_observation_count": int(word_nucleus.get("observation_count", 0)),
-            "word_nucleus_match_count": int(word_nucleus.get("matched_count", 0)),
-            "word_nucleus_mean_abs_error_ms": float(
-                word_nucleus.get("mean_abs_error_ms", 0.0)
-            ),
-            "nearby_nucleus_target_count": int(nearby_nucleus.get("target_count", 0)),
-            "nearby_nucleus_observation_count": int(
-                nearby_nucleus.get("raw_observation_count", 0)
-            ),
-            "nearby_nucleus_match_count": int(
-                nearby_nucleus.get("raw_matched_count", 0)
-            ),
-            "nearby_nucleus_mean_abs_error_ms": float(
-                nearby_nucleus.get("raw_mean_abs_error_ms", 0.0)
             ),
             "word_region_expected": assignment_expected,
             "word_region_successes": assignment_successes,
@@ -875,30 +793,6 @@ def main() -> int:
         * int(row["animation_onset_matched"])
         for row in cases
     )
-    class_anchor_expected = totals("class_anchor_expected")
-    class_anchor_successes = totals("class_anchor_successes")
-    class_anchor_error_total = sum(
-        float(row["class_anchor_mean_abs_error_ms"])
-        * int(row["class_anchor_expected"])
-        for row in cases
-    )
-    word_nucleus_targets = totals("word_nucleus_target_count")
-    word_nucleus_observations = totals("word_nucleus_observation_count")
-    word_nucleus_matches = totals("word_nucleus_match_count")
-    word_nucleus_error_total = sum(
-        float(row["word_nucleus_mean_abs_error_ms"])
-        * int(row["word_nucleus_match_count"])
-        for row in cases
-    )
-    nearby_nucleus_targets = totals("nearby_nucleus_target_count")
-    nearby_nucleus_observations = totals("nearby_nucleus_observation_count")
-    nearby_nucleus_matches = totals("nearby_nucleus_match_count")
-    nearby_nucleus_error_total = sum(
-        float(row["nearby_nucleus_mean_abs_error_ms"])
-        * int(row["nearby_nucleus_match_count"])
-        for row in cases
-    )
-
     summary = {
         "cases": len(cases),
         "start_tolerance_ms": START_TOLERANCE_MS,
@@ -940,48 +834,6 @@ def main() -> int:
                 animation_onset_error_total, animation_onset_matched, 0.0
             ),
             "tolerance_ms": START_TOLERANCE_MS,
-        },
-        "class_aware_visual_anchor": {
-            "expected": class_anchor_expected,
-            "successful": class_anchor_successes,
-            "success_rate": ratio(class_anchor_successes, class_anchor_expected),
-            "mean_abs_error_ms": ratio(
-                class_anchor_error_total, class_anchor_expected, 0.0
-            ),
-            "tolerance_ms": START_TOLERANCE_MS,
-            "target_rule": (
-                "vowels use MFA nucleus center; consonant landmarks use MFA phone onset"
-            ),
-        },
-        "legacy_word_head_pose_center": {
-            "expected": word_expected,
-            "successful": word_successes,
-            "success_rate": ratio(word_successes, word_expected),
-            "mean_abs_error_ms": ratio(word_error_total, matched_word_count, 0.0),
-        },
-        "performed_word_start_nucleus": {
-            "expected": word_nucleus_targets,
-            "observed": word_nucleus_observations,
-            "matched": word_nucleus_matches,
-            "precision": ratio(
-                word_nucleus_matches, word_nucleus_observations, 0.0
-            ),
-            "recall": ratio(word_nucleus_matches, word_nucleus_targets, 0.0),
-            "mean_abs_error_ms": ratio(
-                word_nucleus_error_total, word_nucleus_matches, 0.0
-            ),
-        },
-        "performed_word_head_nearby_nucleus": {
-            "mfa_nuclei": nearby_nucleus_targets,
-            "performed_word_heads": nearby_nucleus_observations,
-            "matched": nearby_nucleus_matches,
-            "precision": ratio(
-                nearby_nucleus_matches, nearby_nucleus_observations, 0.0
-            ),
-            "recall": ratio(nearby_nucleus_matches, nearby_nucleus_targets, 0.0),
-            "mean_abs_error_ms": ratio(
-                nearby_nucleus_error_total, nearby_nucleus_matches, 0.0
-            ),
         },
         "word_region_assignment": {
             "expected": assignment_expected,
@@ -1255,24 +1107,6 @@ def main() -> int:
         f"P1 word animation onset: "
         f"{summary['word_animation_onset']['success_rate']:.3f} "
         f"({summary['word_animation_onset']['mean_abs_error_ms']:.1f} ms MAE)"
-    )
-    print(
-        f"Class-aware visual anchors: "
-        f"{summary['class_aware_visual_anchor']['success_rate']:.3f} "
-        f"({summary['class_aware_visual_anchor']['mean_abs_error_ms']:.1f} ms MAE)"
-    )
-    word_nucleus = summary["performed_word_start_nucleus"]
-    nearby_nucleus = summary["performed_word_head_nearby_nucleus"]
-    print(
-        "Acoustic word-head anchors: "
-        f"precision={nearby_nucleus['precision']:.3f} "
-        f"({nearby_nucleus['mean_abs_error_ms']:.1f} ms MAE)"
-    )
-    print(
-        "P2 correct word-head nuclei: "
-        f"precision={word_nucleus['precision']:.3f} "
-        f"recall={word_nucleus['recall']:.3f} "
-        f"({word_nucleus['mean_abs_error_ms']:.1f} ms matched MAE)"
     )
     print(f"Word-region assignment: {summary['word_region_assignment']['success_rate']:.3f}")
     confusion = summary["word_region_confusion"]
