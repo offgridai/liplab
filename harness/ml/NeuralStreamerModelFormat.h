@@ -6,15 +6,20 @@
 namespace offgridai::neural_streamer {
 
 constexpr std::uint32_t kCheckpointMagic = 0x4c504e53u;  // "SNPL"
-constexpr std::uint32_t kCheckpointVersion = 1;
-constexpr int kAudioFeatureCount = 20;
+constexpr std::uint32_t kCheckpointVersion = 3;
+constexpr int kAudioFeatureCount = 18;
 constexpr int kPhoneBuckets = 64;
 constexpr int kPoseBuckets = 32;
 constexpr int kTokenContinuous = 10;
 constexpr int kTokenDimensions = kPhoneBuckets + kPoseBuckets + kTokenContinuous;
 constexpr int kHiddenDimensions = 64;
 constexpr int kConvolutionKernel = 3;
-constexpr int kCausalContextFrames = 4;
+constexpr int kAudioConv1Dilation = 1;
+constexpr int kAudioConv2Dilation = 1;
+constexpr int kRegionConv1Dilation = 1;
+constexpr int kRegionConv2Dilation = 4;
+constexpr int kCausalContextFrames =
+    (kConvolutionKernel - 1) * (kRegionConv1Dilation + kRegionConv2Dilation);
 constexpr int kRuntimeChunkFrames = 4;
 constexpr int kForwardTokenWindow = 4;
 
@@ -30,12 +35,21 @@ constexpr std::size_t kTokenLinear1WeightCount = kHiddenDimensions * kTokenDimen
 constexpr std::size_t kTokenLinear1BiasCount = kHiddenDimensions;
 constexpr std::size_t kTokenLinear2WeightCount = kHiddenDimensions * kHiddenDimensions;
 constexpr std::size_t kTokenLinear2BiasCount = kHiddenDimensions;
+constexpr std::size_t kRegionConv1WeightCount = kAudioConv1WeightCount;
+constexpr std::size_t kRegionConv1BiasCount = kAudioConv1BiasCount;
+constexpr std::size_t kRegionConv2WeightCount = kAudioConv2WeightCount;
+constexpr std::size_t kRegionConv2BiasCount = kAudioConv2BiasCount;
+constexpr std::size_t kRegionLinearWeightCount = kHiddenDimensions;
+constexpr std::size_t kRegionLinearBiasCount = 1;
 constexpr std::size_t kCheckpointFloatCount =
     kAudioMeanCount + kAudioScaleCount
     + kAudioConv1WeightCount + kAudioConv1BiasCount
     + kAudioConv2WeightCount + kAudioConv2BiasCount
     + kTokenLinear1WeightCount + kTokenLinear1BiasCount
-    + kTokenLinear2WeightCount + kTokenLinear2BiasCount;
+    + kTokenLinear2WeightCount + kTokenLinear2BiasCount
+    + kRegionConv1WeightCount + kRegionConv1BiasCount
+    + kRegionConv2WeightCount + kRegionConv2BiasCount
+    + kRegionLinearWeightCount + kRegionLinearBiasCount;
 
 struct CheckpointHeader {
     std::uint32_t Magic = kCheckpointMagic;

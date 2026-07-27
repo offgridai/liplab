@@ -401,6 +401,9 @@ struct PredictedNeuralTrackEvent
     double duration_sec = 0.08;
     double confidence = 0.0;
     bool fallback_used = false;
+    int speech_region_index = -1;
+    double speech_region_start_sec = -1.0;
+    double speech_region_end_sec = -1.0;
 };
 
 using PredictedNeuralTrackByCase =
@@ -506,6 +509,9 @@ static PredictedNeuralTrackByCase read_predicted_neural_track_csv(const fs::path
     const int confidence_column = header_index(header, "confidence");
     const int fallback_column = header_index(header, "fallback_used");
     const int silence_column = header_index(header, "is_silence");
+    const int region_index_column = header_index(header, "speech_region_index");
+    const int region_start_column = header_index(header, "speech_region_start_sec");
+    const int region_end_column = header_index(header, "speech_region_end_sec");
     if (case_column < 0 || token_column < 0 || event_column < 0 || center_column < 0
         || duration_column < 0 || confidence_column < 0 || fallback_column < 0)
     {
@@ -524,6 +530,12 @@ static PredictedNeuralTrackByCase read_predicted_neural_track_csv(const fs::path
         event.duration_sec = std::stod(csv_cell(cells, duration_column));
         event.confidence = std::stod(csv_cell(cells, confidence_column));
         event.fallback_used = std::stoi(csv_cell(cells, fallback_column)) != 0;
+        if (region_index_column >= 0)
+            event.speech_region_index = std::stoi(csv_cell(cells, region_index_column));
+        if (region_start_column >= 0)
+            event.speech_region_start_sec = std::stod(csv_cell(cells, region_start_column));
+        if (region_end_column >= 0)
+            event.speech_region_end_sec = std::stod(csv_cell(cells, region_end_column));
         result[csv_cell(cells, case_column)].push_back(std::move(event));
     }
     for (auto& [case_id, events] : result)
@@ -3254,6 +3266,34 @@ static PredictedNeuralTrackResult build_predicted_neural_track(
     const std::vector<PredictedNeuralTrackEvent>& predictions)
 {
     PredictedNeuralTrackResult result;
+    const bool has_neural_regions = std::any_of(
+        predictions.begin(), predictions.end(), [](const auto& prediction) {
+            return prediction.speech_region_index >= 0
+                && prediction.speech_region_start_sec >= 0.0
+                && prediction.speech_region_end_sec >= prediction.speech_region_start_sec;
+        });
+    if (has_neural_regions)
+    {
+        for (const auto& prediction : predictions)
+        {
+            if (prediction.speech_region_index < 0) continue;
+            while (result.speech_regions.Num() <= prediction.speech_region_index)
+            {
+                FOffgridAIStreamingSpeechRegion region;
+                region.SpeechRegionIndex = result.speech_regions.Num();
+                result.speech_regions.Add(region);
+            }
+            auto& region = result.speech_regions[prediction.speech_region_index];
+            region.AudioBufferStartSec = static_cast<float>(prediction.speech_region_start_sec);
+            region.AudioBufferLastSpeechSec = static_cast<float>(prediction.speech_region_end_sec);
+            region.AudioBufferEndSec = region.AudioBufferLastSpeechSec;
+            region.ProvisionalEndSec = region.AudioBufferEndSec;
+            region.EndDecisionSec = region.AudioBufferEndSec;
+            region.bStarted = true;
+            region.bEnded = true;
+            region.EndReason = FName(TEXT("neural_region_head"));
+        }
+    }
     float last_center = 0.0f;
     int remaining_visible = static_cast<int>(std::count_if(
         predictions.begin(), predictions.end(), [](const auto& prediction) {
@@ -3267,6 +3307,7 @@ static PredictedNeuralTrackResult build_predicted_neural_track(
     for (const PredictedNeuralTrackEvent& prediction : predictions)
     {
         ++result.prediction_count;
+        if (prediction.token_index < 0) continue;
         const float requested_center = static_cast<float>(std::max(0.0, prediction.center_sec));
         const float center = std::max(requested_center, last_center);
         const float duration = static_cast<float>(std::clamp(prediction.duration_sec, 0.010, 0.500));
@@ -3275,7 +3316,8 @@ static PredictedNeuralTrackResult build_predicted_neural_track(
         if (prediction.is_silence)
         {
             const bool leading_or_trailing = result.accepted_count == 0 || remaining_visible == 0;
-            if (region_open && (duration >= kNeuralPauseSplitSeconds || leading_or_trailing))
+            if (!has_neural_regions
+                && region_open && (duration >= kNeuralPauseSplitSeconds || leading_or_trailing))
             {
                 auto& region = result.speech_regions.Last();
                 region.AudioBufferLastSpeechSec = std::max(region.AudioBufferStartSec, predicted_start);
@@ -3294,7 +3336,13 @@ static PredictedNeuralTrackResult build_predicted_neural_track(
         if (!source.bIsRenderable) continue;
         --remaining_visible;
 
-        if (!region_open)
+        if (has_neural_regions)
+        {
+            if (prediction.speech_region_index < 0
+                || !result.speech_regions.IsValidIndex(prediction.speech_region_index))
+                continue;
+        }
+        else if (!region_open)
         {
             FOffgridAIStreamingSpeechRegion region;
             region.SpeechRegionIndex = result.speech_regions.Num();
@@ -3321,7 +3369,9 @@ static PredictedNeuralTrackResult build_predicted_neural_track(
         event.SourceWord = source.SourceText;
         event.WordIndex = source.WordIndex;
         event.SentenceIndex = source.SentenceIndex;
-        event.SpeechRegionIndex = result.speech_regions.Last().SpeechRegionIndex;
+        event.SpeechRegionIndex = has_neural_regions
+            ? prediction.speech_region_index
+            : result.speech_regions.Last().SpeechRegionIndex;
         event.bIsStrongVisibleEvent = source.bIsStrongVisibleEvent;
         event.bIsRenderable = true;
         event.bCanceledByWordHandoff = false;
@@ -3348,7 +3398,7 @@ static PredictedNeuralTrackResult build_predicted_neural_track(
         ++result.accepted_count;
         if (prediction.fallback_used) ++result.deterministic_fallback_count;
     }
-    if (region_open)
+    if (!has_neural_regions && region_open)
     {
         auto& region = result.speech_regions.Last();
         region.bEnded = true;
@@ -3453,25 +3503,25 @@ static void append_monotonic_audio_features(
     std::ostringstream& out,
     const FOffgridAIStreamingAudioFeatureFrame& frame)
 {
-    out << frame.RMSNorm << ',' << frame.DeltaRMS << ',' << frame.Flux << ',' << frame.ZCR << ','
+    out << std::log(std::max(frame.RMS, 1.0e-6f)) << ','
+        << frame.RMSNorm << ',' << frame.DeltaRMS << ',' << frame.Flux << ',' << frame.ZCR << ','
         << frame.LowBandNorm << ',' << frame.MidBandNorm << ',' << frame.HighBandNorm << ','
         << frame.SpectralCentroidNorm << ',' << frame.Periodicity << ','
         << frame.RichLowBandNorm << ',' << frame.RichMidBandNorm << ',' << frame.RichHighBandNorm << ','
         << frame.RichSpectralCentroidNorm << ',' << frame.RichSpectralRolloffNorm << ','
         << frame.RichSpectralFlatness << ',' << frame.RichSpectralFlux << ','
-        << frame.RichPeriodicity << ',' << frame.SpeechEvidence << ',' << frame.SilenceAccumSec << ','
-        << (frame.bInSpeechAfterFrame ? 1 : 0);
+        << frame.RichPeriodicity << ',' << frame.LearnedSpeechProbability;
 }
 
 static std::string monotonic_audio_frames_csv(
     const TArray<FOffgridAIStreamingAudioFeatureFrame>& frames)
 {
     std::ostringstream out;
-    out << "schema_version,frame_index,start_sec,end_sec,rms_norm,delta_rms,flux,zcr,"
+    out << "schema_version,frame_index,start_sec,end_sec,log_rms,rms_norm,delta_rms,flux,zcr,"
         << "low_band_norm,mid_band_norm,high_band_norm,spectral_centroid_norm,periodicity,"
         << "rich_low_band_norm,rich_mid_band_norm,rich_high_band_norm,rich_spectral_centroid_norm,"
         << "rich_spectral_rolloff_norm,rich_spectral_flatness,rich_spectral_flux,rich_periodicity,"
-        << "speech_evidence,silence_accum_sec,in_speech\n";
+        << "teacher_speech_probability\n";
     out << std::fixed << std::setprecision(6);
     for (int32 index = 0; index < frames.Num(); ++index)
     {

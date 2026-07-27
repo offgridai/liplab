@@ -134,11 +134,11 @@ static SequenceCase read_case(const fs::path& case_dir, const std::string& split
         std::getline(input, line);
         const auto header = columns(line);
         const std::vector<std::string> feature_names = {
-            "rms_norm", "delta_rms", "flux", "zcr", "low_band_norm", "mid_band_norm",
+            "log_rms", "rms_norm", "delta_rms", "flux", "zcr", "low_band_norm", "mid_band_norm",
             "high_band_norm", "spectral_centroid_norm", "periodicity", "rich_low_band_norm",
             "rich_mid_band_norm", "rich_high_band_norm", "rich_spectral_centroid_norm",
             "rich_spectral_rolloff_norm", "rich_spectral_flatness", "rich_spectral_flux",
-            "rich_periodicity", "speech_evidence", "silence_accum_sec", "in_speech"};
+            "rich_periodicity"};
         while (std::getline(input, line)) {
             if (line.empty()) continue;
             const auto row = parse_csv_row(line);
@@ -232,6 +232,8 @@ struct CaseTensors {
     torch::Tensor Target;
     torch::Tensor FrameWeights;
     torch::Tensor CurriculumFrameWeights;
+    torch::Tensor RegionTarget;
+    torch::Tensor RegionWeights;
     torch::Tensor FrameTimes;
     int BeginFrame = 0;
     int EndFrame = 0;
@@ -242,26 +244,10 @@ static CaseTensors tensors(const SequenceCase& sequence)
     const int frame_count = static_cast<int>(sequence.FrameTimes.size());
     const int token_count = static_cast<int>(sequence.Tokens.size());
     CaseTensors result;
-    // The MFA target is training supervision, never an inference-time crop.
-    // Use the same causal speech-detector feature available to the runtime and
-    // retain a small buffered margin around its first/last active frames.
-    int first_speech = -1;
-    int last_speech = -1;
-    for (int frame = 0; frame < frame_count; ++frame) {
-        if (sequence.Audio[static_cast<size_t>(frame) * kAudioDimensions + 19] > 0.5f) {
-            if (first_speech < 0) first_speech = frame;
-            last_speech = frame;
-        }
-    }
-    if (first_speech < 0) {
-        result.BeginFrame = 0;
-        result.EndFrame = frame_count;
-    } else {
-        result.BeginFrame = std::max(0, first_speech - 10);
-        result.EndFrame = std::min(frame_count, last_speech + 21);
-    }
-    if (result.EndFrame - result.BeginFrame < token_count)
-        result.EndFrame = std::min(frame_count, result.BeginFrame + token_count);
+    // Keep the complete audio stream. Cropping from detector occupancy made
+    // the nominally neural path depend on the detector before inference began.
+    result.BeginFrame = 0;
+    result.EndFrame = frame_count;
     const int used_frames = result.EndFrame - result.BeginFrame;
     result.Audio = torch::from_blob(
         const_cast<float*>(sequence.Audio.data()) + result.BeginFrame * kAudioDimensions,
@@ -291,6 +277,8 @@ static CaseTensors tensors(const SequenceCase& sequence)
         torch::TensorOptions().dtype(torch::kInt64)).clone();
     std::vector<float> frame_weights;
     std::vector<float> curriculum_frame_weights;
+    std::vector<float> region_targets;
+    std::vector<float> region_weights;
     frame_weights.reserve(used_frames);
     curriculum_frame_weights.reserve(used_frames);
     for (std::int64_t target : targets) {
@@ -311,6 +299,10 @@ static CaseTensors tensors(const SequenceCase& sequence)
             curriculum_weight = std::max(curriculum_weight, 12.0f);
         frame_weights.push_back(weight);
         curriculum_frame_weights.push_back(curriculum_weight);
+        const bool outside_region = selected.IsSilence > 0.5f
+            && (selected.IsRegionStart > 0.5f || selected.IsRegionEnd > 0.5f);
+        region_targets.push_back(outside_region ? 0.0f : 1.0f);
+        region_weights.push_back(outside_region ? 2.0f : 1.0f);
     }
     // Occupancy weighting alone spends most of its gradient on token interiors.
     // Put a narrow, symmetric band around the transitions that drive the
@@ -353,6 +345,17 @@ static CaseTensors tensors(const SequenceCase& sequence)
     result.FrameWeights = torch::from_blob(frame_weights.data(), {used_frames}).clone();
     result.CurriculumFrameWeights = torch::from_blob(
         curriculum_frame_weights.data(), {used_frames}).clone();
+    for (int frame = 1; frame < used_frames; ++frame) {
+        if (region_targets[static_cast<size_t>(frame)]
+            == region_targets[static_cast<size_t>(frame - 1)]) continue;
+        constexpr int kRegionBoundaryRadiusFrames = 10;
+        for (int nearby = std::max(0, frame - kRegionBoundaryRadiusFrames);
+             nearby < std::min(used_frames, frame + kRegionBoundaryRadiusFrames + 1); ++nearby)
+            region_weights[static_cast<size_t>(nearby)] = std::max(
+                region_weights[static_cast<size_t>(nearby)], 6.0f);
+    }
+    result.RegionTarget = torch::from_blob(region_targets.data(), {used_frames}).clone();
+    result.RegionWeights = torch::from_blob(region_weights.data(), {used_frames}).clone();
     return result;
 }
 
@@ -360,18 +363,32 @@ struct MonotonicNetworkImpl : torch::nn::Module {
     MonotonicNetworkImpl()
     {
         AudioConv1 = register_module("audio_conv1", torch::nn::Conv1d(
-            torch::nn::Conv1dOptions(kAudioDimensions, kHiddenDimensions, 3).padding(2)));
+            torch::nn::Conv1dOptions(kAudioDimensions, kHiddenDimensions, 3)
+                .padding(2 * offgridai::neural_streamer::kAudioConv1Dilation)
+                .dilation(offgridai::neural_streamer::kAudioConv1Dilation)));
         AudioConv2 = register_module("audio_conv2", torch::nn::Conv1d(
-            torch::nn::Conv1dOptions(kHiddenDimensions, kHiddenDimensions, 3).padding(2)));
+            torch::nn::Conv1dOptions(kHiddenDimensions, kHiddenDimensions, 3)
+                .padding(2 * offgridai::neural_streamer::kAudioConv2Dilation)
+                .dilation(offgridai::neural_streamer::kAudioConv2Dilation)));
+        RegionConv1 = register_module("region_conv1", torch::nn::Conv1d(
+            torch::nn::Conv1dOptions(kAudioDimensions, kHiddenDimensions, 3)
+                .padding(2 * offgridai::neural_streamer::kRegionConv1Dilation)
+                .dilation(offgridai::neural_streamer::kRegionConv1Dilation)));
+        RegionConv2 = register_module("region_conv2", torch::nn::Conv1d(
+            torch::nn::Conv1dOptions(kHiddenDimensions, kHiddenDimensions, 3)
+                .padding(2 * offgridai::neural_streamer::kRegionConv2Dilation)
+                .dilation(offgridai::neural_streamer::kRegionConv2Dilation)));
         TokenLinear1 = register_module("token_linear_1",
             torch::nn::Linear(kTokenDimensions, kHiddenDimensions));
         TokenLinear2 = register_module("token_linear_2",
             torch::nn::Linear(kHiddenDimensions, kHiddenDimensions));
+        RegionLinear = register_module("region_linear",
+            torch::nn::Linear(kHiddenDimensions, 1));
         AudioMean = register_buffer("audio_mean", torch::zeros({1, kAudioDimensions, 1}));
         AudioScale = register_buffer("audio_scale", torch::ones({1, kAudioDimensions, 1}));
     }
 
-    torch::Tensor forward(torch::Tensor audio, torch::Tensor token)
+    std::pair<torch::Tensor, torch::Tensor> forward(torch::Tensor audio, torch::Tensor token)
     {
         const std::int64_t frames = audio.size(2);
         audio = (audio - AudioMean) / AudioScale;
@@ -380,14 +397,29 @@ struct MonotonicNetworkImpl : torch::nn::Module {
         audio_state = audio_state.slice(2, 0, frames);
         audio_state = torch::relu(AudioConv2->forward(audio_state));
         audio_state = audio_state.slice(2, 0, frames).squeeze(0).transpose(0, 1);
+        torch::Tensor region_state = torch::relu(RegionConv1->forward(audio));
+        region_state = region_state.slice(2, 0, frames);
+        region_state = torch::relu(RegionConv2->forward(region_state));
+        region_state = region_state.slice(2, 0, frames).squeeze(0).transpose(0, 1);
         torch::Tensor token_state = TokenLinear2->forward(torch::relu(TokenLinear1->forward(token)));
-        return torch::matmul(audio_state, token_state.transpose(0, 1)) / 8.0f;
+        torch::Tensor region_logits = RegionLinear->forward(region_state).squeeze(1);
+        const torch::Tensor silence_mask = token.index({torch::indexing::Slice(),
+            kPhoneBuckets + kPoseBuckets + 7}).unsqueeze(0);
+        const torch::Tensor occupancy_bias = 2.0f * torch::tanh(region_logits.detach()).unsqueeze(1)
+            * (1.0f - 2.0f * silence_mask);
+        return {
+            torch::matmul(audio_state, token_state.transpose(0, 1)) / 8.0f + occupancy_bias,
+            region_logits
+        };
     }
 
     torch::nn::Conv1d AudioConv1{nullptr};
     torch::nn::Conv1d AudioConv2{nullptr};
+    torch::nn::Conv1d RegionConv1{nullptr};
+    torch::nn::Conv1d RegionConv2{nullptr};
     torch::nn::Linear TokenLinear1{nullptr};
     torch::nn::Linear TokenLinear2{nullptr};
+    torch::nn::Linear RegionLinear{nullptr};
     torch::Tensor AudioMean;
     torch::Tensor AudioScale;
 };
@@ -420,6 +452,12 @@ static void write_runtime_checkpoint(const fs::path& path, const MonotonicNetwor
     append_tensor(values, model->TokenLinear1->bias);
     append_tensor(values, model->TokenLinear2->weight);
     append_tensor(values, model->TokenLinear2->bias);
+    append_tensor(values, model->RegionConv1->weight);
+    append_tensor(values, model->RegionConv1->bias);
+    append_tensor(values, model->RegionConv2->weight);
+    append_tensor(values, model->RegionConv2->bias);
+    append_tensor(values, model->RegionLinear->weight);
+    append_tensor(values, model->RegionLinear->bias);
     if (values.size() != kCheckpointFloatCount)
         throw std::runtime_error("runtime checkpoint parameter count changed");
     const CheckpointHeader header;
@@ -470,8 +508,11 @@ static RuntimeBenchmark benchmark_runtime(
     CaseTensors row = tensors(*selected);
     model->eval();
     torch::InferenceMode inference_guard;
-    const torch::Tensor reference = model->forward(
-        row.Audio.to(device), row.Tokens.to(device)).to(torch::kCPU).contiguous();
+    const auto reference_output = model->forward(
+        row.Audio.to(device), row.Tokens.to(device));
+    const torch::Tensor reference = reference_output.first.to(torch::kCPU).contiguous();
+    const torch::Tensor reference_regions =
+        reference_output.second.to(torch::kCPU).contiguous();
     const std::vector<int> path = viterbi_path(reference, selected->Tokens, kStreamingLagFrames);
     const torch::Tensor frame_major = row.Audio.squeeze(0).transpose(0, 1).contiguous();
     const float* frames = frame_major.data_ptr<float>();
@@ -491,19 +532,25 @@ static RuntimeBenchmark benchmark_runtime(
         token_end - token_begin).count();
     const auto reference_values = reference.accessor<float, 2>();
     std::array<float, kRuntimeChunkFrames * kForwardTokenWindow> scores{};
+    std::array<float, kRuntimeChunkFrames> region_logits{};
     for (int begin = 0; begin < frame_count; begin += kRuntimeChunkFrames) {
         const int count = std::min(kRuntimeChunkFrames, frame_count - begin);
         const int active = std::clamp(path[static_cast<std::size_t>(begin)],
             0, token_count - 1);
         int scored_tokens = 0;
         if (!runtime.PushChunk(frames + begin * kAudioFeatureCount, count,
-                active, scores.data(), scored_tokens))
+                active, scores.data(), scored_tokens, region_logits.data()))
             throw std::runtime_error(runtime.LastError());
         for (int frame = 0; frame < count; ++frame)
             for (int token = 0; token < scored_tokens; ++token)
                 result.MaxLogitError = std::max(result.MaxLogitError,
                     std::abs(static_cast<double>(scores[frame * kForwardTokenWindow + token])
                         - reference_values[begin + frame][active + token]));
+        const auto reference_region_values = reference_regions.accessor<float, 1>();
+        for (int frame = 0; frame < count; ++frame)
+            result.MaxLogitError = std::max(result.MaxLogitError,
+                std::abs(static_cast<double>(region_logits[frame])
+                    - reference_region_values[begin + frame]));
     }
     if (result.MaxLogitError > 0.10)
         throw std::runtime_error("FP16 CUDA runtime diverges from LibTorch reference; max error "
@@ -524,7 +571,7 @@ static RuntimeBenchmark benchmark_runtime(
         int scored_tokens = 0;
         const auto start = clock::now();
         if (!runtime.PushChunk(frames + begin * kAudioFeatureCount, count,
-                active, scores.data(), scored_tokens))
+                active, scores.data(), scored_tokens, region_logits.data()))
             throw std::runtime_error(runtime.LastError());
         const auto end = clock::now();
         if (call >= 16)
@@ -661,15 +708,95 @@ static double validation_loss(MonotonicNetwork& model, const std::vector<Sequenc
     for (const SequenceCase& sequence : dataset) {
         if (sequence.Split != "validation") continue;
         CaseTensors row = tensors(sequence);
-        const torch::Tensor scores = model->forward(row.Audio.to(device), row.Tokens.to(device));
+        const auto output = model->forward(row.Audio.to(device), row.Tokens.to(device));
+        const torch::Tensor scores = output.first;
         const torch::Tensor per_frame = torch::nn::functional::cross_entropy(
             scores, row.Target.to(device),
             torch::nn::functional::CrossEntropyFuncOptions().reduction(torch::kNone));
         const torch::Tensor weights = row.FrameWeights.to(device);
-        total += ((per_frame * weights).sum() / weights.sum()).item<double>();
+        const torch::Tensor region_weights = row.RegionWeights.to(device);
+        const torch::Tensor region_loss = torch::nn::functional::binary_cross_entropy_with_logits(
+            output.second, row.RegionTarget.to(device),
+            torch::nn::functional::BinaryCrossEntropyWithLogitsFuncOptions()
+                .weight(region_weights).reduction(torch::kSum)) / region_weights.sum();
+        total += (((per_frame * weights).sum() / weights.sum())
+            + 0.45f * region_loss).item<double>();
         ++count;
     }
     return total / std::max(count, 1);
+}
+
+struct NeuralSpeechRegion {
+    float StartSec = 0.0f;
+    float EndSec = 0.0f;
+};
+
+static std::vector<NeuralSpeechRegion> decode_speech_regions(
+    const torch::Tensor& region_logits,
+    const torch::Tensor& frame_times)
+{
+    constexpr float kSpeechThreshold = 0.45f;
+    constexpr int kMinimumSpeechFrames = 2;
+    constexpr int kMinimumPauseFrames = 14;
+    const torch::Tensor probability = torch::sigmoid(region_logits).to(torch::kCPU);
+    const auto speech = probability.accessor<float, 1>();
+    const auto times = frame_times.accessor<float, 1>();
+    const int frames = static_cast<int>(probability.size(0));
+    std::vector<NeuralSpeechRegion> regions;
+    bool in_speech = false;
+    int speech_candidate = -1;
+    int quiet_candidate = -1;
+    float last_speech_end = 0.0f;
+    for (int frame = 0; frame < frames; ++frame) {
+        const bool active = speech[frame] >= kSpeechThreshold;
+        if (!in_speech) {
+            if (!active) {
+                speech_candidate = -1;
+                continue;
+            }
+            if (speech_candidate < 0) speech_candidate = frame;
+            if (frame - speech_candidate + 1 < kMinimumSpeechFrames) continue;
+            const float start = std::max(0.0f, times[speech_candidate] - 0.005f);
+            last_speech_end = times[frame] + 0.005f;
+            regions.push_back({start, last_speech_end});
+            in_speech = true;
+            speech_candidate = -1;
+            quiet_candidate = -1;
+            continue;
+        }
+        if (active) {
+            quiet_candidate = -1;
+            last_speech_end = times[frame] + 0.005f;
+            regions.back().EndSec = last_speech_end;
+            continue;
+        }
+        if (quiet_candidate < 0) quiet_candidate = frame;
+        if (frame - quiet_candidate + 1 < kMinimumPauseFrames) continue;
+        regions.back().EndSec = std::max(
+            regions.back().StartSec, times[quiet_candidate] - 0.005f);
+        in_speech = false;
+        quiet_candidate = -1;
+        speech_candidate = -1;
+    }
+    if (in_speech) regions.back().EndSec = std::max(regions.back().StartSec, last_speech_end);
+    return regions;
+}
+
+static int nearest_speech_region(
+    const std::vector<NeuralSpeechRegion>& regions, float center)
+{
+    int best = -1;
+    float best_distance = std::numeric_limits<float>::infinity();
+    for (size_t index = 0; index < regions.size(); ++index) {
+        const float distance = center < regions[index].StartSec
+            ? regions[index].StartSec - center
+            : (center > regions[index].EndSec ? center - regions[index].EndSec : 0.0f);
+        if (distance < best_distance) {
+            best_distance = distance;
+            best = static_cast<int>(index);
+        }
+    }
+    return best;
 }
 
 static void write_predictions(const fs::path& path, MonotonicNetwork& model,
@@ -678,11 +805,22 @@ static void write_predictions(const fs::path& path, MonotonicNetwork& model,
     torch::NoGradGuard no_grad;
     model->eval();
     std::ofstream out(path);
-    out << "case_id,token_index,event_index,is_silence,center_sec,duration_sec,confidence,fallback_used\n";
+    out << "case_id,token_index,event_index,is_silence,center_sec,duration_sec,confidence,"
+        << "fallback_used,speech_region_index,speech_region_start_sec,speech_region_end_sec\n";
     out << std::fixed << std::setprecision(6);
     for (const SequenceCase& sequence : dataset) {
         CaseTensors row = tensors(sequence);
-        const torch::Tensor scores = model->forward(row.Audio.to(device), row.Tokens.to(device));
+        const auto output = model->forward(row.Audio.to(device), row.Tokens.to(device));
+        const torch::Tensor scores = output.first;
+        std::vector<NeuralSpeechRegion> regions = decode_speech_regions(
+            output.second, row.FrameTimes);
+        for (size_t region = 0; region < regions.size(); ++region) {
+            out << sequence.CaseId << ",-1,-1,1,"
+                << 0.5f * (regions[region].StartSec + regions[region].EndSec) << ','
+                << regions[region].EndSec - regions[region].StartSec
+                << ",1,0," << region << ',' << regions[region].StartSec << ','
+                << regions[region].EndSec << '\n';
+        }
         const std::vector<int> path = viterbi_path(scores, sequence.Tokens, kStreamingLagFrames);
         const torch::Tensor probabilities = torch::softmax(scores, 1).to(torch::kCPU);
         const auto probability = probabilities.accessor<float, 2>();
@@ -704,9 +842,18 @@ static void write_predictions(const fs::path& path, MonotonicNetwork& model,
                 center = 0.5f * (start + end);
                 duration = std::max(0.010f, end - start + 0.010f);
             }
+            if (regions.empty() && sequence.Tokens[token].IsSilence < 0.5f)
+                regions.push_back({std::max(0.0f, center - 0.5f * duration),
+                    center + 0.5f * duration});
+            const int region = sequence.Tokens[token].IsSilence > 0.5f
+                ? -1 : nearest_speech_region(regions, center);
             out << sequence.CaseId << ',' << token << ',' << sequence.Tokens[token].EventIndex << ','
                 << static_cast<int>(sequence.Tokens[token].IsSilence) << ',' << center << ',' << duration << ','
-                << confidence[token] << ",0\n";
+                << confidence[token] << ",0," << region << ',';
+            if (region >= 0) out << regions[static_cast<size_t>(region)].StartSec << ','
+                << regions[static_cast<size_t>(region)].EndSec;
+            else out << "-1,-1";
+            out << '\n';
         }
     }
 }
@@ -759,21 +906,29 @@ int main(int argc, char** argv)
             double epoch_loss = 0.0;
             for (size_t index : epoch_indices) {
                 CaseTensors row = tensors(dataset[index]);
-                const torch::Tensor scores = model->forward(row.Audio.to(device), row.Tokens.to(device));
+                const auto output = model->forward(row.Audio.to(device), row.Tokens.to(device));
+                const torch::Tensor scores = output.first;
                 const torch::Tensor per_frame = torch::nn::functional::cross_entropy(
                     scores, row.Target.to(device),
                     torch::nn::functional::CrossEntropyFuncOptions().reduction(torch::kNone));
                 const torch::Tensor weights = (epoch <= 4
                     ? row.CurriculumFrameWeights : row.FrameWeights).to(device);
                 const torch::Tensor frame_loss = (per_frame * weights).sum() / weights.sum();
+                const torch::Tensor region_weights = row.RegionWeights.to(device);
+                const torch::Tensor region_loss =
+                    torch::nn::functional::binary_cross_entropy_with_logits(
+                        output.second, row.RegionTarget.to(device),
+                        torch::nn::functional::BinaryCrossEntropyWithLogitsFuncOptions()
+                            .weight(region_weights).reduction(torch::kSum))
+                    / region_weights.sum();
                 // Rotate the expensive full-lattice objective across cases so
                 // every training utterance receives it once in 16 epochs,
                 // while dense occupancy supervision remains present each pass.
                 const bool apply_forward_sum =
                     (fnv1a(dataset[index].CaseId) + epoch) % kForwardSumCadence == 0;
-                const torch::Tensor loss = apply_forward_sum
-                    ? frame_loss + 0.25f * forward_sum_loss(scores, dataset[index].Tokens)
-                    : frame_loss;
+                torch::Tensor loss = frame_loss + 0.45f * region_loss;
+                if (apply_forward_sum)
+                    loss = loss + 0.25f * forward_sum_loss(scores, dataset[index].Tokens);
                 optimizer.zero_grad();
                 loss.backward();
                 torch::nn::utils::clip_grad_norm_(model->parameters(), 1.0);
@@ -804,7 +959,7 @@ int main(int argc, char** argv)
         const fs::path report = root / "outputs/runs/latest/neural_streamer_report.json";
         std::ofstream out(report);
         out << std::fixed << std::setprecision(6)
-            << "{\n  \"schema_version\": 2,\n  \"device\": \"" << device << "\",\n"
+            << "{\n  \"schema_version\": 3,\n  \"device\": \"" << device << "\",\n"
             << "  \"utterance_count\": " << dataset.size() << ",\n"
             << "  \"selected_epoch\": " << best_epoch << ",\n"
             << "  \"validation_cross_entropy\": " << best_validation << ",\n"
@@ -814,6 +969,15 @@ int main(int argc, char** argv)
             << "  \"boundary_curriculum_epochs\": 6,\n"
             << "  \"boundary_band_radius_ms\": 40,\n"
             << "  \"feature_noise_stddev\": 0.015,\n"
+            << "  \"audio_feature_count\": " << kAudioDimensions << ",\n"
+            << "  \"detector_runtime_feature_count\": 0,\n"
+            << "  \"region_head\": {\n"
+            << "    \"speech_threshold\": 0.45,\n"
+            << "    \"minimum_speech_ms\": 20,\n"
+            << "    \"minimum_pause_ms\": 140,\n"
+            << "    \"causal_context_ms\": 100,\n"
+            << "    \"occupancy_gate_scale\": 2.0\n"
+            << "  },\n"
             << "  \"runtime\": {\n"
             << "    \"backend\": \"fused_cuda_fp16\",\n"
             << "    \"chunk_frames\": "

@@ -25,17 +25,21 @@ gates.
 
 - The transcript encoder receives phone, pose, vowel/consonant role, word
   position, visual role, strength, and corpus duration priors.
-- The audio encoder receives the existing causal 20-feature, 10 ms acoustic
-  frames. Speech-detector decisions are features, not scheduling ownership.
+- The token and region encoders receive 18 raw causal acoustic features at 10
+  ms cadence. Detector speech evidence, accumulated silence, and detector
+  occupancy are not model inputs.
 - MFA phone, word, speech-region, and vowel-nucleus timings are training labels
   only. They are not inference inputs.
 - Frozen train, validation, unseen-text, and held-out-speaker splits prevent
   generated variants of the same transcript from crossing text splits.
 
-The C++/LibTorch CUDA trainer uses two causal temporal convolutions, transcript
-token embeddings, duration-aware stay/advance Viterbi decoding, dense MFA
-occupancy supervision, a rotating forward-sum loss, boundary-focused curriculum
-weights, and deterministic fixed seeds.
+The C++/LibTorch CUDA trainer uses a local token encoder and a separate 100 ms
+causal region encoder. The region head receives dense MFA occupancy and boundary
+supervision; its detached probability gates silence versus visible transcript
+states without allowing alignment gradients to corrupt region learning. Token
+placement retains duration-aware stay/advance Viterbi decoding, a rotating
+forward-sum loss, boundary-focused curriculum weights, and deterministic fixed
+seeds.
 
 ## Canonical workflow
 
@@ -66,12 +70,12 @@ LibTorch, cuDNN, or a general graph executor at inference time. Training exports
 a versioned flat checkpoint, and `NeuralStreamerCudaRuntime` executes two small
 fused kernels using CUDA Runtime only:
 
-- model weights are resident FP16 (54,608 bytes) with FP32 accumulation;
+- model weights are resident FP16 (85,706 bytes) with FP32 accumulation;
 - transcript tokens are encoded once per utterance and cached as FP16 (6,912
   bytes in the measured benchmark utterance);
 - inference batches four 10 ms acoustic frames and scores only the current four
   monotonic token candidates;
-- four causal history frames are retained, so no growing audio tensor or model
+- ten causal history frames are retained, so no growing audio tensor or model
   replay is required;
 - pinned host buffers and all GPU allocations are established outside the
   per-chunk path;
@@ -87,14 +91,14 @@ workflow inspects the finished archive with `cuobjdump` and fails if `sm_89` is
 absent, so 4090 support cannot silently regress even though the current machine
 cannot execute that code path.
 
-The runtime benchmark compares every candidate logit against the LibTorch
-reference before scoring. On the current CUDA system, 512 synchronized 40 ms
-chunks measured 121.4 us mean, 121.0 us median, 123.6 us p95, and 185 us max.
-Maximum FP16/reference logit error was 0.0095. Transcript setup measured 48.7 ms
-once per utterance; this is not on the recurring audio-chunk path. The flat
-checkpoint is 109,240 bytes and resident weights are about 53.3 KiB. These are
-isolated-kernel measurements; TTS-coexistence latency still needs an integration
-benchmark under actual synthesis load.
+The runtime benchmark compares every candidate and region logit against the
+LibTorch reference before scoring. On the current CUDA system, 512 synchronized
+40 ms chunks measured 165.3 us mean, 164.6 us median, 168.6 us p95, and 442.7 us
+max. Maximum FP16/reference logit error was 0.0094. Transcript setup measured
+0.30 ms once per utterance; this is not on the recurring audio-chunk path. The
+flat checkpoint is 171,436 bytes and resident weights are about 83.7 KiB. These
+are isolated-kernel measurements; TTS-coexistence latency still needs an
+integration benchmark under actual synthesis load.
 
 ## Reporting contract
 
@@ -107,24 +111,23 @@ Speech regions use order-preserving overlap alignment. Reports distinguish
 clean one-to-one matches, merges, splits, missing regions, and extra regions so
 a single pause error cannot shift every later boundary pairing.
 
-The current 750-case neural replay scores 0.9531 exact viseme match with 17.62 ms
-matched-center mean and 25.23 ms all-reference mean, zero deterministic fallback,
+The current 750-case neural replay scores 0.9468 exact viseme match with 17.62 ms
+matched-center mean and 26.25 ms all-reference mean, zero deterministic fallback,
 and zero ordering violations. Validation, unseen-text, and held-out-speaker match
-rates are 0.9512, 0.9483, and 0.9349. Overlap-aware speech-region recall/precision
-are 0.9411/0.9469; comprehensive start and end means are 136.7/138.8 ms with
-20/20 ms medians. Word-onset comprehensive mean is 59.1 ms. Syllable coverage is
-0.9387 with a 20.9 ms comprehensive mean and 10 ms median. Held-out-speaker,
-validation, and unseen-text syllable coverage are 0.9208, 0.9326, and 0.9343.
+rates are 0.9290, 0.9555, and 0.9370. Overlap-aware speech-region recall/precision
+are 0.9711/0.9744; comprehensive start and end means are 76.8/68.4 ms with 10/10
+ms medians. Word-onset comprehensive mean is 60.7 ms. Syllable coverage is
+0.9324. The region head also clears the former refined detector's 0.9506/0.9689
+recall/precision and 118.4/107.5 ms comprehensive boundary means.
 These are research scores, not evidence that live Offgrid inference is integrated
 yet.
 
-This improvement comes from symmetric 40 ms supervision bands around learned
-pause/resume, word-start, and vowel-nucleus transitions, plus a 120 ms neural
-silence-state region boundary calibrated on the frozen corpus. Region-boundary
-flags remain training labels only and are deliberately absent from runtime token
-features. The next accuracy work should prioritize syllable recall and the
-remaining long-tail speech-start errors; broad viseme timing and word starts are
-no longer the dominant failures.
+Region segmentation comes directly from the neural occupancy head with 20 ms
+speech confirmation and 140 ms silence confirmation. The older 120 ms
+silence-token shortcut has been removed. Region-boundary flags remain training
+labels only and are deliberately absent from runtime token features. The next
+accuracy work should recover the remaining 0.63-point aggregate viseme tradeoff,
+especially on the validation split, without weakening the new region head.
 
 Neural syllable grading compares the complete chronological neural-vowel stream
 against the complete chronological MFA-vowel stream with a maximum-cardinality,

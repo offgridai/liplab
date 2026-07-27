@@ -24,7 +24,13 @@ constexpr std::size_t kToken1WeightOffset = kConv2BiasOffset + kAudioConv2BiasCo
 constexpr std::size_t kToken1BiasOffset = kToken1WeightOffset + kTokenLinear1WeightCount;
 constexpr std::size_t kToken2WeightOffset = kToken1BiasOffset + kTokenLinear1BiasCount;
 constexpr std::size_t kToken2BiasOffset = kToken2WeightOffset + kTokenLinear2WeightCount;
-static_assert(kToken2BiasOffset + kTokenLinear2BiasCount == kCheckpointFloatCount);
+constexpr std::size_t kRegionConv1WeightOffset = kToken2BiasOffset + kTokenLinear2BiasCount;
+constexpr std::size_t kRegionConv1BiasOffset = kRegionConv1WeightOffset + kRegionConv1WeightCount;
+constexpr std::size_t kRegionConv2WeightOffset = kRegionConv1BiasOffset + kRegionConv1BiasCount;
+constexpr std::size_t kRegionConv2BiasOffset = kRegionConv2WeightOffset + kRegionConv2WeightCount;
+constexpr std::size_t kRegionWeightOffset = kRegionConv2BiasOffset + kRegionConv2BiasCount;
+constexpr std::size_t kRegionBiasOffset = kRegionWeightOffset + kRegionLinearWeightCount;
+static_assert(kRegionBiasOffset + kRegionLinearBiasCount == kCheckpointFloatCount);
 
 static std::string cuda_error(const char* operation, cudaError_t error)
 {
@@ -37,7 +43,8 @@ __global__ void encode_tokens_kernel(
     const float* features,
     int token_count,
     const __half* weights,
-    __half* embeddings)
+    __half* embeddings,
+    float* silence_mask)
 {
     const int token = blockIdx.x;
     const int hidden = threadIdx.x;
@@ -57,6 +64,8 @@ __global__ void encode_tokens_kernel(
     for (int input = 0; input < kHiddenDimensions; ++input)
         value += __half2float(row[input]) * first[input];
     embeddings[token * kHiddenDimensions + hidden] = __float2half(value);
+    if (hidden == 0)
+        silence_mask[token] = token_features[kPhoneBuckets + kPoseBuckets + 7];
 }
 
 __global__ void score_chunk_kernel(
@@ -65,56 +74,96 @@ __global__ void score_chunk_kernel(
     int frame_count,
     const __half* weights,
     const __half* token_embeddings,
+    const float* token_silence_mask,
     int active_token,
     int scored_tokens,
-    float* scores)
+    float* scores,
+    float* region_logits)
 {
     const int hidden = threadIdx.x;
     if (hidden >= kHiddenDimensions) return;
     constexpr int kWindowFrames = kCausalContextFrames + kRuntimeChunkFrames;
     __shared__ float conv1[kWindowFrames * kHiddenDimensions];
     __shared__ float conv2[kRuntimeChunkFrames * kHiddenDimensions];
+    __shared__ float region_conv1[kWindowFrames * kHiddenDimensions];
+    __shared__ float region_conv2[kRuntimeChunkFrames * kHiddenDimensions];
     __shared__ float reduction[kHiddenDimensions];
+    __shared__ float region_score[kRuntimeChunkFrames];
     const int total_frames = context_frame_count + frame_count;
 
     for (int frame = 0; frame < total_frames; ++frame) {
         float value = __half2float(weights[kConv1BiasOffset + hidden]);
+        float region_value = __half2float(weights[kRegionConv1BiasOffset + hidden]);
         const __half* output_weights = weights + kConv1WeightOffset
+            + hidden * kAudioFeatureCount * kConvolutionKernel;
+        const __half* region_output_weights = weights + kRegionConv1WeightOffset
             + hidden * kAudioFeatureCount * kConvolutionKernel;
         for (int input = 0; input < kAudioFeatureCount; ++input) {
             const float mean = __half2float(weights[kMeanOffset + input]);
             const float scale = __half2float(weights[kScaleOffset + input]);
             for (int kernel = 0; kernel < kConvolutionKernel; ++kernel) {
-                const int source_frame = frame + kernel - (kConvolutionKernel - 1);
+                const int source_frame = frame
+                    + kernel * kAudioConv1Dilation
+                    - (kConvolutionKernel - 1) * kAudioConv1Dilation;
                 if (source_frame < 0) continue;
                 const float normalized =
                     (audio[source_frame * kAudioFeatureCount + input] - mean) / scale;
                 value += __half2float(output_weights[input * kConvolutionKernel + kernel])
                     * normalized;
+                region_value += __half2float(
+                    region_output_weights[input * kConvolutionKernel + kernel]) * normalized;
             }
         }
         conv1[frame * kHiddenDimensions + hidden] = fmaxf(0.0f, value);
+        region_conv1[frame * kHiddenDimensions + hidden] = fmaxf(0.0f, region_value);
     }
     __syncthreads();
 
     for (int output_frame = 0; output_frame < frame_count; ++output_frame) {
         const int frame = context_frame_count + output_frame;
         float value = __half2float(weights[kConv2BiasOffset + hidden]);
+        float region_value = __half2float(weights[kRegionConv2BiasOffset + hidden]);
         const __half* output_weights = weights + kConv2WeightOffset
+            + hidden * kHiddenDimensions * kConvolutionKernel;
+        const __half* region_output_weights = weights + kRegionConv2WeightOffset
             + hidden * kHiddenDimensions * kConvolutionKernel;
         for (int input = 0; input < kHiddenDimensions; ++input) {
             for (int kernel = 0; kernel < kConvolutionKernel; ++kernel) {
-                const int source_frame = frame + kernel - (kConvolutionKernel - 1);
+                const int source_frame = frame
+                    + kernel * kAudioConv2Dilation
+                    - (kConvolutionKernel - 1) * kAudioConv2Dilation;
                 if (source_frame < 0) continue;
                 value += __half2float(output_weights[input * kConvolutionKernel + kernel])
                     * conv1[source_frame * kHiddenDimensions + input];
             }
+            for (int kernel = 0; kernel < kConvolutionKernel; ++kernel) {
+                const int source_frame = frame
+                    + kernel * kRegionConv2Dilation
+                    - (kConvolutionKernel - 1) * kRegionConv2Dilation;
+                if (source_frame < 0) continue;
+                region_value += __half2float(
+                    region_output_weights[input * kConvolutionKernel + kernel])
+                    * region_conv1[source_frame * kHiddenDimensions + input];
+            }
         }
         conv2[output_frame * kHiddenDimensions + hidden] = fmaxf(0.0f, value);
+        region_conv2[output_frame * kHiddenDimensions + hidden] = fmaxf(0.0f, region_value);
     }
     __syncthreads();
 
     for (int frame = 0; frame < frame_count; ++frame) {
+        reduction[hidden] = region_conv2[frame * kHiddenDimensions + hidden]
+            * __half2float(weights[kRegionWeightOffset + hidden]);
+        __syncthreads();
+        for (int stride = kHiddenDimensions / 2; stride > 0; stride /= 2) {
+            if (hidden < stride) reduction[hidden] += reduction[hidden + stride];
+            __syncthreads();
+        }
+        if (hidden == 0) {
+            region_score[frame] = reduction[0] + __half2float(weights[kRegionBiasOffset]);
+            region_logits[frame] = region_score[frame];
+        }
+        __syncthreads();
         for (int token = 0; token < scored_tokens; ++token) {
             reduction[hidden] = conv2[frame * kHiddenDimensions + hidden]
                 * __half2float(token_embeddings[
@@ -125,7 +174,9 @@ __global__ void score_chunk_kernel(
                 __syncthreads();
             }
             if (hidden == 0)
-                scores[frame * kForwardTokenWindow + token] = reduction[0] / 8.0f;
+                scores[frame * kForwardTokenWindow + token] = reduction[0] / 8.0f
+                    + 2.0f * tanhf(region_score[frame])
+                    * (1.0f - 2.0f * token_silence_mask[active_token + token]);
             __syncthreads();
         }
     }
@@ -137,11 +188,14 @@ struct CudaRuntime::Impl {
     cudaStream_t Stream = nullptr;
     __half* DeviceWeights = nullptr;
     __half* DeviceTokenEmbeddings = nullptr;
+    float* DeviceTokenSilenceMask = nullptr;
     float* DeviceTokenFeatures = nullptr;
     float* DeviceAudio = nullptr;
     float* DeviceScores = nullptr;
+    float* DeviceRegionLogits = nullptr;
     float* HostAudio = nullptr;
     float* HostScores = nullptr;
+    float* HostRegionLogits = nullptr;
     float* HostTokenFeatures = nullptr;
     int TokenCapacity = 0;
     int TokenCount = 0;
@@ -163,10 +217,12 @@ struct CudaRuntime::Impl {
             (kCausalContextFrames + kRuntimeChunkFrames) * kAudioFeatureCount * sizeof(float));
         cudaMallocHost(&HostScores,
             kRuntimeChunkFrames * kForwardTokenWindow * sizeof(float));
+        cudaMallocHost(&HostRegionLogits, kRuntimeChunkFrames * sizeof(float));
         cudaMalloc(&DeviceAudio,
             (kCausalContextFrames + kRuntimeChunkFrames) * kAudioFeatureCount * sizeof(float));
         cudaMalloc(&DeviceScores,
             kRuntimeChunkFrames * kForwardTokenWindow * sizeof(float));
+        cudaMalloc(&DeviceRegionLogits, kRuntimeChunkFrames * sizeof(float));
     }
 
     ~Impl()
@@ -174,11 +230,14 @@ struct CudaRuntime::Impl {
         if (Stream) cudaStreamSynchronize(Stream);
         if (DeviceWeights) cudaFree(DeviceWeights);
         if (DeviceTokenEmbeddings) cudaFree(DeviceTokenEmbeddings);
+        if (DeviceTokenSilenceMask) cudaFree(DeviceTokenSilenceMask);
         if (DeviceTokenFeatures) cudaFree(DeviceTokenFeatures);
         if (DeviceAudio) cudaFree(DeviceAudio);
         if (DeviceScores) cudaFree(DeviceScores);
+        if (DeviceRegionLogits) cudaFree(DeviceRegionLogits);
         if (HostAudio) cudaFreeHost(HostAudio);
         if (HostScores) cudaFreeHost(HostScores);
+        if (HostRegionLogits) cudaFreeHost(HostRegionLogits);
         if (HostTokenFeatures) cudaFreeHost(HostTokenFeatures);
         if (Stream) cudaStreamDestroy(Stream);
     }
@@ -193,9 +252,11 @@ struct CudaRuntime::Impl {
     {
         if (count <= TokenCapacity) return true;
         if (DeviceTokenEmbeddings) cudaFree(DeviceTokenEmbeddings);
+        if (DeviceTokenSilenceMask) cudaFree(DeviceTokenSilenceMask);
         if (DeviceTokenFeatures) cudaFree(DeviceTokenFeatures);
         if (HostTokenFeatures) cudaFreeHost(HostTokenFeatures);
         DeviceTokenEmbeddings = nullptr;
+        DeviceTokenSilenceMask = nullptr;
         DeviceTokenFeatures = nullptr;
         HostTokenFeatures = nullptr;
         TokenCapacity = std::max(count, 256);
@@ -209,6 +270,9 @@ struct CudaRuntime::Impl {
         if (error != cudaSuccess) return fail(cuda_error("cudaMalloc token features", error));
         error = cudaMalloc(&DeviceTokenEmbeddings, embedding_bytes);
         if (error != cudaSuccess) return fail(cuda_error("cudaMalloc token embeddings", error));
+        error = cudaMalloc(&DeviceTokenSilenceMask,
+            static_cast<std::size_t>(TokenCapacity) * sizeof(float));
+        if (error != cudaSuccess) return fail(cuda_error("cudaMalloc token silence mask", error));
         return true;
     }
 };
@@ -220,7 +284,8 @@ bool CudaRuntime::LoadCheckpoint(const std::string& path)
 {
     State->Error.clear();
     if (!State->Stream || !State->HostAudio || !State->HostScores
-        || !State->DeviceAudio || !State->DeviceScores)
+        || !State->HostRegionLogits || !State->DeviceAudio || !State->DeviceScores
+        || !State->DeviceRegionLogits)
         return State->fail("CUDA runtime initialization failed");
     std::ifstream input(path, std::ios::binary | std::ios::ate);
     if (!input) return State->fail("cannot open checkpoint: " + path);
@@ -268,7 +333,7 @@ bool CudaRuntime::ResetTokens(const float* features, int token_count)
     if (error != cudaSuccess) return State->fail(cuda_error("copy token features", error));
     encode_tokens_kernel<<<token_count, kHiddenDimensions, 0, State->Stream>>>(
         State->DeviceTokenFeatures, token_count, State->DeviceWeights,
-        State->DeviceTokenEmbeddings);
+        State->DeviceTokenEmbeddings, State->DeviceTokenSilenceMask);
     error = cudaGetLastError();
     if (error != cudaSuccess) return State->fail(cuda_error("encode token launch", error));
     error = cudaStreamSynchronize(State->Stream);
@@ -281,7 +346,8 @@ bool CudaRuntime::PushChunk(
     int frame_count,
     int active_token,
     float* scores,
-    int& scored_token_count)
+    int& scored_token_count,
+    float* region_logits)
 {
     State->Error.clear();
     scored_token_count = 0;
@@ -302,8 +368,9 @@ bool CudaRuntime::PushChunk(
     if (error != cudaSuccess) return State->fail(cuda_error("copy audio", error));
     score_chunk_kernel<<<1, kHiddenDimensions, 0, State->Stream>>>(
         State->DeviceAudio, State->ContextFrameCount, frame_count, State->DeviceWeights,
-        State->DeviceTokenEmbeddings, active_token, scored_token_count,
-        State->DeviceScores);
+        State->DeviceTokenEmbeddings, State->DeviceTokenSilenceMask,
+        active_token, scored_token_count,
+        State->DeviceScores, State->DeviceRegionLogits);
     error = cudaGetLastError();
     if (error != cudaSuccess) return State->fail(cuda_error("score chunk launch", error));
     const std::size_t output_bytes = static_cast<std::size_t>(frame_count)
@@ -311,9 +378,16 @@ bool CudaRuntime::PushChunk(
     error = cudaMemcpyAsync(State->HostScores, State->DeviceScores,
         output_bytes, cudaMemcpyDeviceToHost, State->Stream);
     if (error != cudaSuccess) return State->fail(cuda_error("copy scores", error));
+    error = cudaMemcpyAsync(State->HostRegionLogits, State->DeviceRegionLogits,
+        static_cast<std::size_t>(frame_count) * sizeof(float),
+        cudaMemcpyDeviceToHost, State->Stream);
+    if (error != cudaSuccess) return State->fail(cuda_error("copy region logits", error));
     error = cudaStreamSynchronize(State->Stream);
     if (error != cudaSuccess) return State->fail(cuda_error("score chunk", error));
     std::memcpy(scores, State->HostScores, output_bytes);
+    if (region_logits)
+        std::memcpy(region_logits, State->HostRegionLogits,
+            static_cast<std::size_t>(frame_count) * sizeof(float));
 
     std::array<float, (kCausalContextFrames + kRuntimeChunkFrames) * kAudioFeatureCount> combined{};
     std::memcpy(combined.data(), State->Context.data(), context_values * sizeof(float));
@@ -337,7 +411,7 @@ RuntimeFootprint CudaRuntime::Footprint() const
     result.CheckpointBytes = State->CheckpointBytes;
     result.WeightBytes = kCheckpointFloatCount * sizeof(__half);
     result.TokenBytes = static_cast<std::size_t>(State->TokenCount)
-        * kHiddenDimensions * sizeof(__half);
+        * (kHiddenDimensions * sizeof(__half) + sizeof(float));
     result.StreamPriority = State->StreamPriority;
     return result;
 }

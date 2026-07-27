@@ -27,7 +27,8 @@ public:
         int frame_count,
         int active_token,
         float* scores,
-        int& scored_token_count);
+        int& scored_token_count,
+        float* region_logits = nullptr);
     const std::string& LastError() const;
     RuntimeFootprint Footprint() const;
 
