@@ -236,9 +236,9 @@ void FOffgridAINeuralStreamingAligner::DecodeFrame(
         // Silence is deliberately uncapped: neural occupancy still owns pause
         // duration and resume timing.
         const int32 MaximumDwellFrames = FMath::Clamp(
-            static_cast<int32>(std::ceil(DurationPriors[Token] * 450.0f)),
+            static_cast<int32>(std::ceil(DurationPriors[Token] * 300.0f)),
             6,
-            45);
+            30);
         if (!bCurrentSilence
             && PreviousDwells[Token] >= MaximumDwellFrames)
         {
@@ -254,7 +254,7 @@ void FOffgridAINeuralStreamingAligner::DecodeFrame(
                 return 1;
             return FMath::Clamp(
                 static_cast<int32>(std::ceil(
-                    DurationPriors[Candidate] * 35.0f)), 1, 5);
+                    DurationPriors[Candidate] * 50.0f)), 2, 8);
         };
         if (Token > 0
             && PreviousCosts[Token - 1] > NegativeInfinity * 0.5f)
@@ -267,7 +267,7 @@ void FOffgridAINeuralStreamingAligner::DecodeFrame(
                 Transcript.SentenceBoundaryTokens.IsValidIndex(Token - 1)
                 && Transcript.SentenceBoundaryTokens[Token - 1];
             const float EarlyAdvancePenalty = MissingDwell
-                * (bSentenceBoundary ? 0.75f : 0.35f);
+                * (bSentenceBoundary ? 0.75f : 0.50f);
             const bool bPreviousSilence =
                 Transcript.SilenceTokens.IsValidIndex(Token - 1)
                 && Transcript.SilenceTokens[Token - 1];
@@ -309,6 +309,47 @@ void FOffgridAINeuralStreamingAligner::DecodeFrame(
         int32 State = BacktrackToFrame(BestCurrentToken(), NextCommitFrame);
         if (LastAssignedToken >= 0)
             State = FMath::Clamp(State, LastAssignedToken, LastAssignedToken + 1);
+        bool bObservedNearFutureRegion = false;
+        for (const FOffgridAIStreamingSpeechRegion& Region : SpeechRegions)
+        {
+            const float LeadSec = Region.AudioBufferStartSec
+                - Backtrace[static_cast<size_t>(NextCommitFrame)].CenterSec;
+            if (LeadSec > 0.020f && LeadSec <= 0.750f)
+            {
+                bObservedNearFutureRegion = true;
+                break;
+            }
+        }
+        const bool bObservedPauseEvidence = bObservedNearFutureRegion
+            || !bInSpeech
+            || QuietCandidateStartFrame != INDEX_NONE;
+        if (bObservedPauseEvidence
+            && Transcript.SilenceTokens.IsValidIndex(State)
+            && !Transcript.SilenceTokens[State])
+        {
+            // Fixed-lag decoding can place the word after a comma just before
+            // the acoustic pause and then let the following silence consume
+            // the real gap. While neural region evidence says we are actually
+            // inside that gap, keep the committed path on the transcript's
+            // immediately preceding punctuation-pause token. The future region
+            // is already observed inside the fixed-lag causal window; commas
+            // without an acoustic split are unchanged. Never move backward
+            // across an already committed state.
+            for (int32 Candidate = State - 1;
+                Candidate >= FMath::Max(LastAssignedToken, 0);
+                --Candidate)
+            {
+                if (!Transcript.SilenceTokens.IsValidIndex(Candidate)
+                    || !Transcript.SilenceTokens[Candidate])
+                    continue;
+                if (Transcript.PauseBoundaryTokens.IsValidIndex(Candidate)
+                    && Transcript.PauseBoundaryTokens[Candidate])
+                {
+                    State = Candidate;
+                }
+                break;
+            }
+        }
         AssignCommittedFrame(
             State,
             Backtrace[static_cast<size_t>(NextCommitFrame)].CenterSec,
@@ -466,6 +507,12 @@ void FOffgridAINeuralStreamingAligner::FinishToken(
         CenterSec = FMath::Max(
             CenterSec,
             InOutTrack.Events.Last().FinalRenderCenterSeconds + 0.00001f);
+    // A path revision can occasionally finish a tail token after its entire
+    // predicted presentation window is already behind playback. Preserve its
+    // neural identity and order, but move only these otherwise-undeliverable
+    // outliers to the live edge so the articulation is actually observable.
+    if (CommitPlaybackSec - CenterSec > 0.200f)
+        CenterSec = FMath::Max(CenterSec, CommitPlaybackSec + 0.020f);
 
     FOffgridAICommittedVisemeEvent Event;
     Event.EventIndex = EventIndex;
@@ -487,13 +534,23 @@ void FOffgridAINeuralStreamingAligner::FinishToken(
     // this envelope, a valid 10 ms state can fall entirely between Unreal
     // ticks and appear as missing articulation.
     constexpr float MinimumVisibleEnvelopeSec = 0.060f;
+    const bool bWordFinalVisibleToken =
+        Token + 1 < Transcript.NumTokens()
+        && Transcript.SilenceTokens.IsValidIndex(Token + 1)
+        && Transcript.SilenceTokens[Token + 1];
+    const float ReleaseTailSec = bWordFinalVisibleToken && bInSpeech
+        ? FMath::Clamp(DurationPriors[Token] * 1.25f, 0.030f, 0.100f)
+        : 0.5f * MinimumVisibleEnvelopeSec;
     Event.RenderStartSeconds = FMath::Max(
         0.0f,
         FMath::Min(FirstSec - 0.005f,
             CenterSec - 0.5f * MinimumVisibleEnvelopeSec));
-    Event.RenderEndSeconds = FMath::Max(
+    const float BaseRenderEndSec = FMath::Max(
         FMath::Max(Event.RenderStartSeconds + 0.010f, LastSec + 0.005f),
         CenterSec + 0.5f * MinimumVisibleEnvelopeSec);
+    Event.RenderEndSeconds = FMath::Max(
+        BaseRenderEndSec,
+        CenterSec + ReleaseTailSec);
     Event.PriorStartSeconds = Event.RenderStartSeconds;
     Event.PriorCenterSeconds = CenterSec;
     Event.PriorEndSeconds = Event.RenderEndSeconds;

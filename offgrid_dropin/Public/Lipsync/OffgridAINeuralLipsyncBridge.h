@@ -16,6 +16,9 @@ struct FOffgridAINeuralTranscriptTensor
     TArray<int32> PhoneIndices;
     TArray<bool> SilenceTokens;
     TArray<bool> SentenceBoundaryTokens;
+    // Silence inserted after punctuation that explicitly expects a pause.
+    // The decoder uses this to wait for neural quiet-then-resume evidence.
+    TArray<bool> PauseBoundaryTokens;
 
     int32 NumTokens() const { return EventIndices.Num(); }
 };

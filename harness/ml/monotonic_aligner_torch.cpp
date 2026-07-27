@@ -639,16 +639,16 @@ static std::vector<int> viterbi_path(const torch::Tensor& score_tensor,
                 if (tokens[candidate].IsSentenceBoundary) return 8;
                 if (tokens[candidate].IsSilence > 0.5f) return 1;
                 return std::clamp(
-                    static_cast<int>(std::ceil(tokens[candidate].DurationPrior * 35.0f)),
-                    1, 5);
+                    static_cast<int>(std::ceil(tokens[candidate].DurationPrior * 50.0f)),
+                    2, 8);
             };
             const float advance_probability = std::clamp(
                 0.010f / std::max(tokens[token].DurationPrior, 0.020f), 0.02f, 0.80f);
             float stay = previous[token] + std::log1p(-advance_probability);
             const int maximum_dwell = std::clamp(
-                static_cast<int>(std::ceil(tokens[token].DurationPrior * 450.0f)),
+                static_cast<int>(std::ceil(tokens[token].DurationPrior * 300.0f)),
                 6,
-                45);
+                30);
             if (tokens[token].IsSilence <= 0.5f
                 && previous_dwell[token] >= maximum_dwell) {
                 stay = negative;
@@ -658,7 +658,7 @@ static std::vector<int> viterbi_path(const torch::Tensor& score_tensor,
                 const int missing_dwell = std::max(
                     minimum_dwell(token - 1) - previous_dwell[token - 1], 0);
                 const float early_penalty = missing_dwell
-                    * (tokens[token - 1].IsSentenceBoundary ? 0.75f : 0.35f);
+                    * (tokens[token - 1].IsSentenceBoundary ? 0.75f : 0.50f);
                 if (tokens[token - 1].IsSilence > 0.5f
                     || previous_dwell[token - 1] >= 2) {
                     advance = previous[token - 1] + std::log(std::clamp(

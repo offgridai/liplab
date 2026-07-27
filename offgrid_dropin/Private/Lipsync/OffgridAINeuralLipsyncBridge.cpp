@@ -35,6 +35,7 @@ struct FBridgeToken
     float IsWordStart = 0.0f;
     float IsWordEnd = 0.0f;
     bool IsSentenceBoundary = false;
+    bool IsPauseBoundary = false;
 };
 
 static FBridgeToken SilenceToken(float TextCenterNorm)
@@ -101,6 +102,11 @@ FOffgridAINeuralTranscriptTensor FOffgridAINeuralLipsyncBridge::BuildTranscriptT
                 Silence.SentenceIndex = Visible[Index + 1].SentenceIndex;
                 Silence.IsSentenceBoundary =
                     Visible[Index].SentenceIndex != Visible[Index + 1].SentenceIndex;
+                const int32 PreviousWordIndex = Visible[Index].WordIndex;
+                Silence.IsPauseBoundary =
+                    Plan.WordBoundaryPauseClassAfter.IsValidIndex(PreviousWordIndex)
+                    && Plan.WordBoundaryPauseClassAfter[PreviousWordIndex]
+                        != EOffgridAIBoundaryPauseClass::None;
                 if (Silence.IsSentenceBoundary) Silence.DurationPriorSec = 0.120f;
                 Sequence.Add(MoveTemp(Silence));
             }
@@ -132,6 +138,7 @@ FOffgridAINeuralTranscriptTensor FOffgridAINeuralLipsyncBridge::BuildTranscriptT
         Result.PhoneIndices.Add(Token.PhoneIndex);
         Result.SilenceTokens.Add(Token.IsSilence > 0.5f);
         Result.SentenceBoundaryTokens.Add(Token.IsSentenceBoundary);
+        Result.PauseBoundaryTokens.Add(Token.IsPauseBoundary);
     }
     return Result;
 }

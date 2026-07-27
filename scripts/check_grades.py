@@ -130,6 +130,41 @@ for metric, threshold_name, direction in delivery_checks:
         print(f"FAIL {metric}: actual={actual:.6f} limit={limit:.6f}")
         failed = True
 
+proportion_checks = [
+    (
+        "viseme_proportion.word_coverage_rate",
+        "min_viseme_proportion_word_coverage_rate",
+        "min",
+    ),
+    (
+        "viseme_proportion.run_share_abs_error_median",
+        "max_viseme_run_share_abs_error_median",
+        "max",
+    ),
+    (
+        "viseme_proportion.boundary_position_abs_error_median",
+        "max_viseme_boundary_position_abs_error_median",
+        "max",
+    ),
+    (
+        "viseme_proportion.word_total_variation_median",
+        "max_viseme_word_total_variation_median",
+        "max",
+    ),
+    (
+        "viseme_proportion.zero_runtime_words",
+        "max_viseme_zero_runtime_words",
+        "max",
+    ),
+]
+for metric, threshold_name, direction in proportion_checks:
+    actual = float(value(summary, metric))
+    limit = float(thresholds[threshold_name])
+    ok = actual >= limit if direction == "min" else actual <= limit
+    if not ok:
+        print(f"FAIL {metric}: actual={actual:.6f} limit={limit:.6f}")
+        failed = True
+
 if failed:
     print("See alignment_cases.csv and alignment_words.csv for the failing cases.")
     sys.exit(1)

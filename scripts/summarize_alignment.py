@@ -19,6 +19,17 @@ def ratio(numerator: float, denominator: float, default: float = 1.0) -> float:
     return numerator / denominator if denominator else default
 
 
+def percentile(values: list[float], quantile: float) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    position = quantile * (len(ordered) - 1)
+    lower = int(position)
+    upper = min(lower + 1, len(ordered) - 1)
+    fraction = position - lower
+    return ordered[lower] * (1.0 - fraction) + ordered[upper] * fraction
+
+
 def case_id(path: pathlib.Path) -> str:
     match = re.match(r"case_(\d+)_", path.parent.name)
     return match.group(1) if match else path.parent.name
@@ -72,6 +83,9 @@ def main() -> int:
     boundaries_out: list[dict] = []
     word_duration_ratios: list[float] = []
     sentence_duration_ratios: list[float] = []
+    viseme_run_share_errors: list[float] = []
+    viseme_boundary_errors: list[float] = []
+    viseme_word_total_variations: list[float] = []
 
     for focus_path in sorted(latest.glob("*/focus_alignment_grade.json")):
         ownership_path = focus_path.parent / "region_ownership_grade.json"
@@ -97,6 +111,18 @@ def main() -> int:
         )
         sentence_duration_ratios.extend(
             float(value) for value in delivery.get("sentence_duration_ratios", [])
+        )
+        proportion_path = focus_path.parent / "viseme_proportion_grade.json"
+        proportion = load_json(proportion_path) if proportion_path.exists() else {}
+        viseme_run_share_errors.extend(
+            float(value) for value in proportion.get("run_share_abs_errors", [])
+        )
+        viseme_boundary_errors.extend(
+            float(value)
+            for value in proportion.get("boundary_position_abs_errors", [])
+        )
+        viseme_word_total_variations.extend(
+            float(value) for value in proportion.get("word_total_variations", [])
         )
         current_case_name = focus_path.parent.name
         gold_dir = root / "inputs" / "gold" / current_case_name
@@ -716,6 +742,21 @@ def main() -> int:
             "sentence_duration_ratio_median": float(
                 delivery.get("sentence_duration_ratio_median", 0.0)
             ),
+            "viseme_proportion_planned_words": int(
+                proportion.get("planned_multi_viseme_words", 0)
+            ),
+            "viseme_proportion_gradeable_words": int(
+                proportion.get("gradeable_words", 0)
+            ),
+            "viseme_proportion_ungradeable_words": int(
+                proportion.get("ungradeable_words", 0)
+            ),
+            "viseme_proportion_zero_runtime_words": int(
+                proportion.get("zero_runtime_words", 0)
+            ),
+            "viseme_proportion_severe_words": int(
+                proportion.get("severe_words", 0)
+            ),
             "order_violations": int(grade.get("order_violations", 0)),
             "region_boundary_count": len(case_boundaries),
             "exact_three_level_boundary_count": exact_boundary_count,
@@ -1051,6 +1092,60 @@ def main() -> int:
                 if sentence_duration_ratios else 0.0
             ),
         },
+        "viseme_proportion": {
+            "planned_multi_viseme_words": totals(
+                "viseme_proportion_planned_words"
+            ),
+            "gradeable_words": totals("viseme_proportion_gradeable_words"),
+            "ungradeable_words": totals("viseme_proportion_ungradeable_words"),
+            "word_coverage_rate": ratio(
+                totals("viseme_proportion_gradeable_words"),
+                totals("viseme_proportion_planned_words"),
+            ),
+            "zero_runtime_words": totals("viseme_proportion_zero_runtime_words"),
+            "expected_viseme_runs": len(viseme_run_share_errors),
+            "runs_within_10pp": sum(
+                error <= 0.10 for error in viseme_run_share_errors
+            ),
+            "runs_within_10pp_rate": ratio(
+                sum(error <= 0.10 for error in viseme_run_share_errors),
+                len(viseme_run_share_errors),
+            ),
+            "run_share_abs_error_mean": (
+                statistics.fmean(viseme_run_share_errors)
+                if viseme_run_share_errors else 0.0
+            ),
+            "run_share_abs_error_median": (
+                statistics.median(viseme_run_share_errors)
+                if viseme_run_share_errors else 0.0
+            ),
+            "run_share_abs_error_p90": percentile(
+                viseme_run_share_errors, 0.90
+            ),
+            "boundary_position_abs_error_mean": (
+                statistics.fmean(viseme_boundary_errors)
+                if viseme_boundary_errors else 0.0
+            ),
+            "boundary_position_abs_error_median": (
+                statistics.median(viseme_boundary_errors)
+                if viseme_boundary_errors else 0.0
+            ),
+            "boundary_position_abs_error_p90": percentile(
+                viseme_boundary_errors, 0.90
+            ),
+            "word_total_variation_mean": (
+                statistics.fmean(viseme_word_total_variations)
+                if viseme_word_total_variations else 0.0
+            ),
+            "word_total_variation_median": (
+                statistics.median(viseme_word_total_variations)
+                if viseme_word_total_variations else 0.0
+            ),
+            "word_total_variation_p90": percentile(
+                viseme_word_total_variations, 0.90
+            ),
+            "severe_words": totals("viseme_proportion_severe_words"),
+        },
         "strict_region_segmentation": {
             "boundaries": len(boundaries_out),
             "exact_boundaries": exact_three_level_boundaries,
@@ -1191,6 +1286,14 @@ def main() -> int:
     print(
         f"Guardrails: completion={summary['guardrails']['event_completion_rate']:.3f} "
         f"order_violations={summary['guardrails']['order_violations']}"
+    )
+    proportions = summary["viseme_proportion"]
+    print(
+        "Within-word viseme proportions: "
+        f"run_median={proportions['run_share_abs_error_median'] * 100.0:.2f}pp "
+        f"boundary_median={proportions['boundary_position_abs_error_median'] * 100.0:.2f}pp "
+        f"word_TV_median={proportions['word_total_variation_median'] * 100.0:.2f}% "
+        f"coverage={proportions['word_coverage_rate']:.3f}"
     )
     strict_regions = summary["strict_region_segmentation"]
     print(
