@@ -264,10 +264,16 @@ def write_manifest() -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Export approved gold drafts into grader-facing inputs/gold packages.")
     parser.add_argument("--case", action="append", dest="cases", default=[])
+    parser.add_argument("--case-prefix", help="export only case IDs beginning with this prefix")
     args = parser.parse_args()
 
     exported = 0
-    for case_id in args.cases or case_stems():
+    cases = args.cases or case_stems()
+    if args.case_prefix:
+        cases = [case_id for case_id in cases if case_id.startswith(args.case_prefix)]
+    if not cases:
+        raise SystemExit("no matching cases")
+    for case_id in cases:
         if export_case(case_id):
             exported += 1
             print(f"{case_id}: exported")

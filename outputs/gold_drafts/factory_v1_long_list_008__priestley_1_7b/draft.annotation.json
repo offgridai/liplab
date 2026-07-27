@@ -1,0 +1,4600 @@
+{
+  "schema_version": 1,
+  "case_id": "factory_v1_long_list_008__priestley_1_7b",
+  "created_utc": "2026-07-26T06:26:58.528356+00:00",
+  "generator": {
+    "kind": "liplab_gold_mfa_phase1",
+    "buffer_ms": 600000,
+    "chunk_ms": 600000,
+    "mfa_num_jobs": 4,
+    "speech_merge_gap_ms": 120,
+    "source_run_dir": "outputs/offline_gold/latest/factory_v1_long_list_008__priestley_1_7b",
+    "mfa_align_dir": "outputs/mfa_align/latest"
+  },
+  "approval": {
+    "status": "approved_gold",
+    "reviewed": true,
+    "reviewer": "auto_mfa_phone_export",
+    "reviewed_utc": "2026-07-26T06:26:58.528411+00:00"
+  },
+  "review_layers": {
+    "speech_regions": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "word_heads": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "dense_visemes": {
+      "status": "reviewed_dense",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    }
+  },
+  "transcript": "We heard thunder, heavy rain, rushing water, snapping branches, barking dogs, and a distant alarm.",
+  "audio": {
+    "path": "inputs/wav/factory_v1_long_list_008__priestley_1_7b.wav",
+    "sample_rate_hz": 24000,
+    "channels": 1,
+    "frame_count": 160725,
+    "duration_sec": 6.696875
+  },
+  "speech_regions": [
+    {
+      "index": 0,
+      "start": 0.35,
+      "end": 2.15,
+      "word_start_index": 0,
+      "word_end_index": 4,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    },
+    {
+      "index": 1,
+      "start": 2.29,
+      "end": 3.05,
+      "word_start_index": 5,
+      "word_end_index": 6,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    },
+    {
+      "index": 2,
+      "start": 3.25,
+      "end": 4.27,
+      "word_start_index": 7,
+      "word_end_index": 8,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    },
+    {
+      "index": 3,
+      "start": 4.53,
+      "end": 5.38,
+      "word_start_index": 9,
+      "word_end_index": 10,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    },
+    {
+      "index": 4,
+      "start": 5.57,
+      "end": 6.64,
+      "word_start_index": 11,
+      "word_end_index": 14,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    }
+  ],
+  "pause_boundaries": [
+    {
+      "word_index": 0,
+      "word": "we",
+      "next_word_index": 1,
+      "next_word": "heard",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 1,
+      "word": "heard",
+      "next_word_index": 2,
+      "next_word": "thunder",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 2,
+      "word": "thunder",
+      "next_word_index": 3,
+      "next_word": "heavy",
+      "mark": ",",
+      "mark_sequence": ",",
+      "pause_class": "soft_pause",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.08999999999999986,
+      "phone_gap_seconds": 0.08999999999999986,
+      "wave_silence_seconds": 0.08999999999999986,
+      "acoustic_gap_seconds": 0.08999999999999986,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 3,
+      "word": "heavy",
+      "next_word_index": 4,
+      "next_word": "rain",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 4,
+      "word": "rain",
+      "next_word_index": 5,
+      "next_word": "rushing",
+      "mark": ",",
+      "mark_sequence": ",",
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "comma_with_lull",
+      "direct_word_gap_seconds": 0.14000000000000012,
+      "phone_gap_seconds": 0.14000000000000012,
+      "wave_silence_seconds": 0.14000000000000012,
+      "acoustic_gap_seconds": 0.14000000000000012,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 5,
+      "word": "rushing",
+      "next_word_index": 6,
+      "next_word": "water",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 1
+    },
+    {
+      "word_index": 6,
+      "word": "water",
+      "next_word_index": 7,
+      "next_word": "snapping",
+      "mark": ",",
+      "mark_sequence": ",",
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "comma_with_lull",
+      "direct_word_gap_seconds": 0.20000000000000018,
+      "phone_gap_seconds": 0.20000000000000018,
+      "wave_silence_seconds": 0.20000000000000018,
+      "acoustic_gap_seconds": 0.20000000000000018,
+      "speech_region_index_before": 1,
+      "speech_region_index_after": 2
+    },
+    {
+      "word_index": 7,
+      "word": "snapping",
+      "next_word_index": 8,
+      "next_word": "branches",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 2
+    },
+    {
+      "word_index": 8,
+      "word": "branches",
+      "next_word_index": 9,
+      "next_word": "barking",
+      "mark": ",",
+      "mark_sequence": ",",
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "comma_with_lull",
+      "direct_word_gap_seconds": 0.2600000000000007,
+      "phone_gap_seconds": 0.2600000000000007,
+      "wave_silence_seconds": 0.2600000000000007,
+      "acoustic_gap_seconds": 0.2600000000000007,
+      "speech_region_index_before": 2,
+      "speech_region_index_after": 3
+    },
+    {
+      "word_index": 9,
+      "word": "barking",
+      "next_word_index": 10,
+      "next_word": "dogs",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 3,
+      "speech_region_index_after": 3
+    },
+    {
+      "word_index": 10,
+      "word": "dogs",
+      "next_word_index": 11,
+      "next_word": "and",
+      "mark": ",",
+      "mark_sequence": ",",
+      "pause_class": "region_break",
+      "split_applied": true,
+      "split_reason": "comma_with_lull",
+      "direct_word_gap_seconds": 0.1900000000000004,
+      "phone_gap_seconds": 0.1900000000000004,
+      "wave_silence_seconds": 0.1900000000000004,
+      "acoustic_gap_seconds": 0.1900000000000004,
+      "speech_region_index_before": 3,
+      "speech_region_index_after": 4
+    },
+    {
+      "word_index": 11,
+      "word": "and",
+      "next_word_index": 12,
+      "next_word": "a",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 4,
+      "speech_region_index_after": 4
+    },
+    {
+      "word_index": 12,
+      "word": "a",
+      "next_word_index": 13,
+      "next_word": "distant",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 4,
+      "speech_region_index_after": 4
+    },
+    {
+      "word_index": 13,
+      "word": "distant",
+      "next_word_index": 14,
+      "next_word": "alarm",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 4,
+      "speech_region_index_after": 4
+    }
+  ],
+  "gold_words": [
+    {
+      "word_index": 0,
+      "word": "we",
+      "mfa_word": "we",
+      "start": 0.35,
+      "end": 0.48,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "heard",
+      "mfa_word": "heard",
+      "start": 0.48,
+      "end": 0.73,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 2,
+      "word": "thunder",
+      "mfa_word": "thunder",
+      "start": 0.73,
+      "end": 1.32,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 3,
+      "word": "heavy",
+      "mfa_word": "heavy",
+      "start": 1.41,
+      "end": 1.72,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 4,
+      "word": "rain",
+      "mfa_word": "rain",
+      "start": 1.72,
+      "end": 2.15,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 5,
+      "word": "rushing",
+      "mfa_word": "rushing",
+      "start": 2.29,
+      "end": 2.64,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 6,
+      "word": "water",
+      "mfa_word": "water",
+      "start": 2.64,
+      "end": 3.05,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 7,
+      "word": "snapping",
+      "mfa_word": "snapping",
+      "start": 3.25,
+      "end": 3.72,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 2
+    },
+    {
+      "word_index": 8,
+      "word": "branches",
+      "mfa_word": "branches",
+      "start": 3.72,
+      "end": 4.27,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 2
+    },
+    {
+      "word_index": 9,
+      "word": "barking",
+      "mfa_word": "barking",
+      "start": 4.53,
+      "end": 4.89,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 3
+    },
+    {
+      "word_index": 10,
+      "word": "dogs",
+      "mfa_word": "dogs",
+      "start": 4.89,
+      "end": 5.38,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 3
+    },
+    {
+      "word_index": 11,
+      "word": "and",
+      "mfa_word": "and",
+      "start": 5.57,
+      "end": 5.71,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 4
+    },
+    {
+      "word_index": 12,
+      "word": "a",
+      "mfa_word": "a",
+      "start": 5.71,
+      "end": 5.75,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 4
+    },
+    {
+      "word_index": 13,
+      "word": "distant",
+      "mfa_word": "distant",
+      "start": 5.75,
+      "end": 6.18,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 4
+    },
+    {
+      "word_index": 14,
+      "word": "alarm",
+      "mfa_word": "alarm",
+      "start": 6.18,
+      "end": 6.64,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        "."
+      ],
+      "boundary_mark_after": ".",
+      "speech_region_index": 4
+    }
+  ],
+  "word_heads": [
+    {
+      "word_index": 0,
+      "word": "we",
+      "start": 0.35,
+      "end": 0.41,
+      "pose": "W",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 1,
+      "word": "heard",
+      "start": 0.48,
+      "end": 0.57,
+      "pose": "HH",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 2,
+      "word": "thunder",
+      "start": 0.73,
+      "end": 0.88,
+      "pose": "TH",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "TH",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 3,
+      "word": "heavy",
+      "start": 1.41,
+      "end": 1.53,
+      "pose": "HH",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 4,
+      "word": "rain",
+      "start": 1.72,
+      "end": 1.82,
+      "pose": "R",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "R",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 5,
+      "word": "rushing",
+      "start": 2.29,
+      "end": 2.38,
+      "pose": "R",
+      "speech_region_index": 1,
+      "sentence_index": -1,
+      "source_phone": "R",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 6,
+      "word": "water",
+      "start": 2.64,
+      "end": 2.72,
+      "pose": "W",
+      "speech_region_index": 1,
+      "sentence_index": -1,
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 7,
+      "word": "snapping",
+      "start": 3.25,
+      "end": 3.39,
+      "pose": "S",
+      "speech_region_index": 2,
+      "sentence_index": -1,
+      "source_phone": "S",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 8,
+      "word": "branches",
+      "start": 3.72,
+      "end": 3.77,
+      "pose": "B",
+      "speech_region_index": 2,
+      "sentence_index": -1,
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 9,
+      "word": "barking",
+      "start": 4.53,
+      "end": 4.57,
+      "pose": "B",
+      "speech_region_index": 3,
+      "sentence_index": -1,
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 10,
+      "word": "dogs",
+      "start": 4.89,
+      "end": 4.94,
+      "pose": "D",
+      "speech_region_index": 3,
+      "sentence_index": -1,
+      "source_phone": "D",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 11,
+      "word": "and",
+      "start": 5.57,
+      "end": 5.64,
+      "pose": "AE1",
+      "speech_region_index": 4,
+      "sentence_index": -1,
+      "source_phone": "AE1",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 12,
+      "word": "a",
+      "start": 5.71,
+      "end": 5.75,
+      "pose": "AH0",
+      "speech_region_index": 4,
+      "sentence_index": -1,
+      "source_phone": "AH0",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 13,
+      "word": "distant",
+      "start": 5.75,
+      "end": 5.86,
+      "pose": "D",
+      "speech_region_index": 4,
+      "sentence_index": -1,
+      "source_phone": "D",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 14,
+      "word": "alarm",
+      "start": 6.18,
+      "end": 6.22,
+      "pose": "AH0",
+      "speech_region_index": 4,
+      "sentence_index": -1,
+      "source_phone": "AH0",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    }
+  ],
+  "mfa_words": [
+    {
+      "word_index": 0,
+      "word": "we",
+      "mfa_word": "we",
+      "start": 0.35,
+      "end": 0.48,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "heard",
+      "mfa_word": "heard",
+      "start": 0.48,
+      "end": 0.73,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 2,
+      "word": "thunder",
+      "mfa_word": "thunder",
+      "start": 0.73,
+      "end": 1.32,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 3,
+      "word": "heavy",
+      "mfa_word": "heavy",
+      "start": 1.41,
+      "end": 1.72,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 4,
+      "word": "rain",
+      "mfa_word": "rain",
+      "start": 1.72,
+      "end": 2.15,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 5,
+      "word": "rushing",
+      "mfa_word": "rushing",
+      "start": 2.29,
+      "end": 2.64,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 6,
+      "word": "water",
+      "mfa_word": "water",
+      "start": 2.64,
+      "end": 3.05,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 1
+    },
+    {
+      "word_index": 7,
+      "word": "snapping",
+      "mfa_word": "snapping",
+      "start": 3.25,
+      "end": 3.72,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 2
+    },
+    {
+      "word_index": 8,
+      "word": "branches",
+      "mfa_word": "branches",
+      "start": 3.72,
+      "end": 4.27,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 2
+    },
+    {
+      "word_index": 9,
+      "word": "barking",
+      "mfa_word": "barking",
+      "start": 4.53,
+      "end": 4.89,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 3
+    },
+    {
+      "word_index": 10,
+      "word": "dogs",
+      "mfa_word": "dogs",
+      "start": 4.89,
+      "end": 5.38,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        ","
+      ],
+      "boundary_mark_after": ",",
+      "speech_region_index": 3
+    },
+    {
+      "word_index": 11,
+      "word": "and",
+      "mfa_word": "and",
+      "start": 5.57,
+      "end": 5.71,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 4
+    },
+    {
+      "word_index": 12,
+      "word": "a",
+      "mfa_word": "a",
+      "start": 5.71,
+      "end": 5.75,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 4
+    },
+    {
+      "word_index": 13,
+      "word": "distant",
+      "mfa_word": "distant",
+      "start": 5.75,
+      "end": 6.18,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 4
+    },
+    {
+      "word_index": 14,
+      "word": "alarm",
+      "mfa_word": "alarm",
+      "start": 6.18,
+      "end": 6.64,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        "."
+      ],
+      "boundary_mark_after": ".",
+      "speech_region_index": 4
+    }
+  ],
+  "mfa_phones": [
+    {
+      "index_in_word": 0,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 0.35,
+      "end": 0.41,
+      "word_index": 0,
+      "word": "we"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "IY1",
+      "phone_base": "IY",
+      "start": 0.41,
+      "end": 0.48,
+      "word_index": 0,
+      "word": "we"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "HH",
+      "phone_base": "HH",
+      "start": 0.48,
+      "end": 0.57,
+      "word_index": 1,
+      "word": "heard"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "ER1",
+      "phone_base": "ER",
+      "start": 0.57,
+      "end": 0.66,
+      "word_index": 1,
+      "word": "heard"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 0.66,
+      "end": 0.73,
+      "word_index": 1,
+      "word": "heard"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "TH",
+      "phone_base": "TH",
+      "start": 0.73,
+      "end": 0.88,
+      "word_index": 2,
+      "word": "thunder"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AH1",
+      "phone_base": "AH",
+      "start": 0.88,
+      "end": 0.95,
+      "word_index": 2,
+      "word": "thunder"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 0.95,
+      "end": 1.05,
+      "word_index": 2,
+      "word": "thunder"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 1.05,
+      "end": 1.1,
+      "word_index": 2,
+      "word": "thunder"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "ER0",
+      "phone_base": "ER",
+      "start": 1.1,
+      "end": 1.32,
+      "word_index": 2,
+      "word": "thunder"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "HH",
+      "phone_base": "HH",
+      "start": 1.41,
+      "end": 1.53,
+      "word_index": 3,
+      "word": "heavy"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "EH1",
+      "phone_base": "EH",
+      "start": 1.53,
+      "end": 1.57,
+      "word_index": 3,
+      "word": "heavy"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "V",
+      "phone_base": "V",
+      "start": 1.57,
+      "end": 1.63,
+      "word_index": 3,
+      "word": "heavy"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "IY0",
+      "phone_base": "IY",
+      "start": 1.63,
+      "end": 1.72,
+      "word_index": 3,
+      "word": "heavy"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "R",
+      "phone_base": "R",
+      "start": 1.72,
+      "end": 1.82,
+      "word_index": 4,
+      "word": "rain"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "EY1",
+      "phone_base": "EY",
+      "start": 1.82,
+      "end": 2.02,
+      "word_index": 4,
+      "word": "rain"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 2.02,
+      "end": 2.15,
+      "word_index": 4,
+      "word": "rain"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "R",
+      "phone_base": "R",
+      "start": 2.29,
+      "end": 2.38,
+      "word_index": 5,
+      "word": "rushing"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AH1",
+      "phone_base": "AH",
+      "start": 2.38,
+      "end": 2.43,
+      "word_index": 5,
+      "word": "rushing"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "SH",
+      "phone_base": "SH",
+      "start": 2.43,
+      "end": 2.54,
+      "word_index": 5,
+      "word": "rushing"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "IH0",
+      "phone_base": "IH",
+      "start": 2.54,
+      "end": 2.57,
+      "word_index": 5,
+      "word": "rushing"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "NG",
+      "phone_base": "NG",
+      "start": 2.57,
+      "end": 2.64,
+      "word_index": 5,
+      "word": "rushing"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 2.64,
+      "end": 2.72,
+      "word_index": 6,
+      "word": "water"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AA1",
+      "phone_base": "AA",
+      "start": 2.72,
+      "end": 2.84,
+      "word_index": 6,
+      "word": "water"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 2.84,
+      "end": 2.88,
+      "word_index": 6,
+      "word": "water"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "ER0",
+      "phone_base": "ER",
+      "start": 2.88,
+      "end": 3.05,
+      "word_index": 6,
+      "word": "water"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 3.25,
+      "end": 3.39,
+      "word_index": 7,
+      "word": "snapping"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 3.39,
+      "end": 3.44,
+      "word_index": 7,
+      "word": "snapping"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "AE1",
+      "phone_base": "AE",
+      "start": 3.44,
+      "end": 3.52,
+      "word_index": 7,
+      "word": "snapping"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "P",
+      "phone_base": "P",
+      "start": 3.52,
+      "end": 3.6,
+      "word_index": 7,
+      "word": "snapping"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "IH0",
+      "phone_base": "IH",
+      "start": 3.6,
+      "end": 3.64,
+      "word_index": 7,
+      "word": "snapping"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "NG",
+      "phone_base": "NG",
+      "start": 3.64,
+      "end": 3.72,
+      "word_index": 7,
+      "word": "snapping"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "B",
+      "phone_base": "B",
+      "start": 3.72,
+      "end": 3.77,
+      "word_index": 8,
+      "word": "branches"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "R",
+      "phone_base": "R",
+      "start": 3.77,
+      "end": 3.83,
+      "word_index": 8,
+      "word": "branches"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "AE1",
+      "phone_base": "AE",
+      "start": 3.83,
+      "end": 3.93,
+      "word_index": 8,
+      "word": "branches"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 3.93,
+      "end": 3.97,
+      "word_index": 8,
+      "word": "branches"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "CH",
+      "phone_base": "CH",
+      "start": 3.97,
+      "end": 4.06,
+      "word_index": 8,
+      "word": "branches"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "IH0",
+      "phone_base": "IH",
+      "start": 4.06,
+      "end": 4.15,
+      "word_index": 8,
+      "word": "branches"
+    },
+    {
+      "index_in_word": 6,
+      "phone": "Z",
+      "phone_base": "Z",
+      "start": 4.15,
+      "end": 4.27,
+      "word_index": 8,
+      "word": "branches"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "B",
+      "phone_base": "B",
+      "start": 4.53,
+      "end": 4.57,
+      "word_index": 9,
+      "word": "barking"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AA1",
+      "phone_base": "AA",
+      "start": 4.57,
+      "end": 4.61,
+      "word_index": 9,
+      "word": "barking"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "R",
+      "phone_base": "R",
+      "start": 4.61,
+      "end": 4.69,
+      "word_index": 9,
+      "word": "barking"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "K",
+      "phone_base": "K",
+      "start": 4.69,
+      "end": 4.76,
+      "word_index": 9,
+      "word": "barking"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "IH0",
+      "phone_base": "IH",
+      "start": 4.76,
+      "end": 4.79,
+      "word_index": 9,
+      "word": "barking"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "NG",
+      "phone_base": "NG",
+      "start": 4.79,
+      "end": 4.89,
+      "word_index": 9,
+      "word": "barking"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 4.89,
+      "end": 4.94,
+      "word_index": 10,
+      "word": "dogs"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AA1",
+      "phone_base": "AA",
+      "start": 4.94,
+      "end": 5.2,
+      "word_index": 10,
+      "word": "dogs"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "G",
+      "phone_base": "G",
+      "start": 5.2,
+      "end": 5.29,
+      "word_index": 10,
+      "word": "dogs"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "Z",
+      "phone_base": "Z",
+      "start": 5.29,
+      "end": 5.38,
+      "word_index": 10,
+      "word": "dogs"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "AE1",
+      "phone_base": "AE",
+      "start": 5.57,
+      "end": 5.64,
+      "word_index": 11,
+      "word": "and"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 5.64,
+      "end": 5.68,
+      "word_index": 11,
+      "word": "and"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 5.68,
+      "end": 5.71,
+      "word_index": 11,
+      "word": "and"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 5.71,
+      "end": 5.75,
+      "word_index": 12,
+      "word": "a"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 5.75,
+      "end": 5.86,
+      "word_index": 13,
+      "word": "distant"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "IH1",
+      "phone_base": "IH",
+      "start": 5.86,
+      "end": 5.92,
+      "word_index": 13,
+      "word": "distant"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 5.92,
+      "end": 6.0,
+      "word_index": 13,
+      "word": "distant"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 6.0,
+      "end": 6.06,
+      "word_index": 13,
+      "word": "distant"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 6.06,
+      "end": 6.1,
+      "word_index": 13,
+      "word": "distant"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 6.1,
+      "end": 6.14,
+      "word_index": 13,
+      "word": "distant"
+    },
+    {
+      "index_in_word": 6,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 6.14,
+      "end": 6.18,
+      "word_index": 13,
+      "word": "distant"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 6.18,
+      "end": 6.22,
+      "word_index": 14,
+      "word": "alarm"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "L",
+      "phone_base": "L",
+      "start": 6.22,
+      "end": 6.31,
+      "word_index": 14,
+      "word": "alarm"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "AA1",
+      "phone_base": "AA",
+      "start": 6.31,
+      "end": 6.44,
+      "word_index": 14,
+      "word": "alarm"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "R",
+      "phone_base": "R",
+      "start": 6.44,
+      "end": 6.53,
+      "word_index": 14,
+      "word": "alarm"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "M",
+      "phone_base": "M",
+      "start": 6.53,
+      "end": 6.64,
+      "word_index": 14,
+      "word": "alarm"
+    }
+  ],
+  "mfa_non_silence_phone_intervals": [
+    {
+      "phone": "W",
+      "start": 0.35,
+      "end": 0.41
+    },
+    {
+      "phone": "IY1",
+      "start": 0.41,
+      "end": 0.48
+    },
+    {
+      "phone": "HH",
+      "start": 0.48,
+      "end": 0.57
+    },
+    {
+      "phone": "ER1",
+      "start": 0.57,
+      "end": 0.66
+    },
+    {
+      "phone": "D",
+      "start": 0.66,
+      "end": 0.73
+    },
+    {
+      "phone": "TH",
+      "start": 0.73,
+      "end": 0.88
+    },
+    {
+      "phone": "AH1",
+      "start": 0.88,
+      "end": 0.95
+    },
+    {
+      "phone": "N",
+      "start": 0.95,
+      "end": 1.05
+    },
+    {
+      "phone": "D",
+      "start": 1.05,
+      "end": 1.1
+    },
+    {
+      "phone": "ER0",
+      "start": 1.1,
+      "end": 1.32
+    },
+    {
+      "phone": "HH",
+      "start": 1.41,
+      "end": 1.53
+    },
+    {
+      "phone": "EH1",
+      "start": 1.53,
+      "end": 1.57
+    },
+    {
+      "phone": "V",
+      "start": 1.57,
+      "end": 1.63
+    },
+    {
+      "phone": "IY0",
+      "start": 1.63,
+      "end": 1.72
+    },
+    {
+      "phone": "R",
+      "start": 1.72,
+      "end": 1.82
+    },
+    {
+      "phone": "EY1",
+      "start": 1.82,
+      "end": 2.02
+    },
+    {
+      "phone": "N",
+      "start": 2.02,
+      "end": 2.15
+    },
+    {
+      "phone": "R",
+      "start": 2.29,
+      "end": 2.38
+    },
+    {
+      "phone": "AH1",
+      "start": 2.38,
+      "end": 2.43
+    },
+    {
+      "phone": "SH",
+      "start": 2.43,
+      "end": 2.54
+    },
+    {
+      "phone": "IH0",
+      "start": 2.54,
+      "end": 2.57
+    },
+    {
+      "phone": "NG",
+      "start": 2.57,
+      "end": 2.64
+    },
+    {
+      "phone": "W",
+      "start": 2.64,
+      "end": 2.72
+    },
+    {
+      "phone": "AA1",
+      "start": 2.72,
+      "end": 2.84
+    },
+    {
+      "phone": "T",
+      "start": 2.84,
+      "end": 2.88
+    },
+    {
+      "phone": "ER0",
+      "start": 2.88,
+      "end": 3.05
+    },
+    {
+      "phone": "S",
+      "start": 3.25,
+      "end": 3.39
+    },
+    {
+      "phone": "N",
+      "start": 3.39,
+      "end": 3.44
+    },
+    {
+      "phone": "AE1",
+      "start": 3.44,
+      "end": 3.52
+    },
+    {
+      "phone": "P",
+      "start": 3.52,
+      "end": 3.6
+    },
+    {
+      "phone": "IH0",
+      "start": 3.6,
+      "end": 3.64
+    },
+    {
+      "phone": "NG",
+      "start": 3.64,
+      "end": 3.72
+    },
+    {
+      "phone": "B",
+      "start": 3.72,
+      "end": 3.77
+    },
+    {
+      "phone": "R",
+      "start": 3.77,
+      "end": 3.83
+    },
+    {
+      "phone": "AE1",
+      "start": 3.83,
+      "end": 3.93
+    },
+    {
+      "phone": "N",
+      "start": 3.93,
+      "end": 3.97
+    },
+    {
+      "phone": "CH",
+      "start": 3.97,
+      "end": 4.06
+    },
+    {
+      "phone": "IH0",
+      "start": 4.06,
+      "end": 4.15
+    },
+    {
+      "phone": "Z",
+      "start": 4.15,
+      "end": 4.27
+    },
+    {
+      "phone": "B",
+      "start": 4.53,
+      "end": 4.57
+    },
+    {
+      "phone": "AA1",
+      "start": 4.57,
+      "end": 4.61
+    },
+    {
+      "phone": "R",
+      "start": 4.61,
+      "end": 4.69
+    },
+    {
+      "phone": "K",
+      "start": 4.69,
+      "end": 4.76
+    },
+    {
+      "phone": "IH0",
+      "start": 4.76,
+      "end": 4.79
+    },
+    {
+      "phone": "NG",
+      "start": 4.79,
+      "end": 4.89
+    },
+    {
+      "phone": "D",
+      "start": 4.89,
+      "end": 4.94
+    },
+    {
+      "phone": "AA1",
+      "start": 4.94,
+      "end": 5.2
+    },
+    {
+      "phone": "G",
+      "start": 5.2,
+      "end": 5.29
+    },
+    {
+      "phone": "Z",
+      "start": 5.29,
+      "end": 5.38
+    },
+    {
+      "phone": "AE1",
+      "start": 5.57,
+      "end": 5.64
+    },
+    {
+      "phone": "N",
+      "start": 5.64,
+      "end": 5.68
+    },
+    {
+      "phone": "D",
+      "start": 5.68,
+      "end": 5.71
+    },
+    {
+      "phone": "AH0",
+      "start": 5.71,
+      "end": 5.75
+    },
+    {
+      "phone": "D",
+      "start": 5.75,
+      "end": 5.86
+    },
+    {
+      "phone": "IH1",
+      "start": 5.86,
+      "end": 5.92
+    },
+    {
+      "phone": "S",
+      "start": 5.92,
+      "end": 6.0
+    },
+    {
+      "phone": "T",
+      "start": 6.0,
+      "end": 6.06
+    },
+    {
+      "phone": "AH0",
+      "start": 6.06,
+      "end": 6.1
+    },
+    {
+      "phone": "N",
+      "start": 6.1,
+      "end": 6.14
+    },
+    {
+      "phone": "T",
+      "start": 6.14,
+      "end": 6.18
+    },
+    {
+      "phone": "AH0",
+      "start": 6.18,
+      "end": 6.22
+    },
+    {
+      "phone": "L",
+      "start": 6.22,
+      "end": 6.31
+    },
+    {
+      "phone": "AA1",
+      "start": 6.31,
+      "end": 6.44
+    },
+    {
+      "phone": "R",
+      "start": 6.44,
+      "end": 6.53
+    },
+    {
+      "phone": "M",
+      "start": 6.53,
+      "end": 6.64
+    }
+  ],
+  "wave_silence_spans": [
+    {
+      "start": 0.0,
+      "end": 0.38,
+      "duration_seconds": 0.38
+    },
+    {
+      "start": 0.74,
+      "end": 0.88,
+      "duration_seconds": 0.14
+    },
+    {
+      "start": 1.2,
+      "end": 1.5,
+      "duration_seconds": 0.30000000000000004
+    },
+    {
+      "start": 2.0,
+      "end": 2.32,
+      "duration_seconds": 0.31999999999999984
+    },
+    {
+      "start": 2.96,
+      "end": 3.28,
+      "duration_seconds": 0.31999999999999984
+    },
+    {
+      "start": 4.24,
+      "end": 4.56,
+      "duration_seconds": 0.3199999999999994
+    },
+    {
+      "start": 5.36,
+      "end": 5.6,
+      "duration_seconds": 0.23999999999999932
+    },
+    {
+      "start": 6.44,
+      "end": 6.696875,
+      "duration_seconds": 0.25687499999999996
+    }
+  ],
+  "planned_visemes": [
+    {
+      "index": 0,
+      "pose": "12_Ww-Oo-",
+      "word": "we",
+      "word_index": 0,
+      "sentence_index": -1,
+      "text_center_norm": 0.011628,
+      "strength": 0.88,
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "generator": "cmu_w"
+    },
+    {
+      "index": 1,
+      "pose": "03_Ee",
+      "word": "we",
+      "word_index": 0,
+      "sentence_index": -1,
+      "text_center_norm": 0.034884,
+      "strength": 1.0,
+      "source_phone": "IY",
+      "source_phone_index": 1,
+      "generator": "cmu_front_vowel"
+    },
+    {
+      "index": 2,
+      "pose": "08_Ah",
+      "word": "heard",
+      "word_index": 1,
+      "sentence_index": -1,
+      "text_center_norm": 0.054264,
+      "strength": 0.0,
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "generator": "cmu_hh_timing_waypoint"
+    },
+    {
+      "index": 3,
+      "pose": "10_Or",
+      "word": "heard",
+      "word_index": 1,
+      "sentence_index": -1,
+      "text_center_norm": 0.069767,
+      "strength": 1.0,
+      "source_phone": "ER",
+      "source_phone_index": 1,
+      "generator": "cmu_rhotic_vowel"
+    },
+    {
+      "index": 4,
+      "pose": "01_TDS-Ah-",
+      "word": "heard",
+      "word_index": 1,
+      "sentence_index": -1,
+      "text_center_norm": 0.085271,
+      "strength": 0.4,
+      "source_phone": "D",
+      "source_phone_index": 2,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 5,
+      "pose": "24_Tongue_Th",
+      "word": "thunder",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.1,
+      "strength": 0.62,
+      "source_phone": "TH",
+      "source_phone_index": 0,
+      "generator": "cmu_dental_tongue"
+    },
+    {
+      "index": 6,
+      "pose": "18_Uh",
+      "word": "thunder",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.113953,
+      "strength": 1.0,
+      "source_phone": "AH",
+      "source_phone_index": 1,
+      "generator": "cmu_central_vowel"
+    },
+    {
+      "index": 7,
+      "pose": "23_Tongue_LNTDS",
+      "word": "thunder",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.127907,
+      "strength": 0.46,
+      "source_phone": "N",
+      "source_phone_index": 2,
+      "generator": "cmu_lingual"
+    },
+    {
+      "index": 8,
+      "pose": "01_TDS-Ah-",
+      "word": "thunder",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.14186,
+      "strength": 0.4,
+      "source_phone": "D",
+      "source_phone_index": 3,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 9,
+      "pose": "10_Or",
+      "word": "thunder",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.155814,
+      "strength": 1.0,
+      "source_phone": "ER",
+      "source_phone_index": 4,
+      "generator": "cmu_rhotic_vowel"
+    },
+    {
+      "index": 10,
+      "pose": "08_Ah",
+      "word": "heavy",
+      "word_index": 3,
+      "sentence_index": -1,
+      "text_center_norm": 0.171512,
+      "strength": 0.0,
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "generator": "cmu_hh_timing_waypoint"
+    },
+    {
+      "index": 11,
+      "pose": "06_Eh",
+      "word": "heavy",
+      "word_index": 3,
+      "sentence_index": -1,
+      "text_center_norm": 0.188953,
+      "strength": 1.0,
+      "source_phone": "EH",
+      "source_phone_index": 1,
+      "generator": "cmu_eh_vowel"
+    },
+    {
+      "index": 12,
+      "pose": "20_FV",
+      "word": "heavy",
+      "word_index": 3,
+      "sentence_index": -1,
+      "text_center_norm": 0.206395,
+      "strength": 0.96,
+      "source_phone": "V",
+      "source_phone_index": 2,
+      "generator": "cmu_fv"
+    },
+    {
+      "index": 13,
+      "pose": "03_Ee",
+      "word": "heavy",
+      "word_index": 3,
+      "sentence_index": -1,
+      "text_center_norm": 0.223837,
+      "strength": 1.0,
+      "source_phone": "IY",
+      "source_phone_index": 3,
+      "generator": "cmu_front_vowel"
+    },
+    {
+      "index": 14,
+      "pose": "17_Rr",
+      "word": "rain",
+      "word_index": 4,
+      "sentence_index": -1,
+      "text_center_norm": 0.24031,
+      "strength": 0.78,
+      "source_phone": "R",
+      "source_phone_index": 0,
+      "generator": "cmu_rhotic"
+    },
+    {
+      "index": 15,
+      "pose": "06_Eh",
+      "word": "rain",
+      "word_index": 4,
+      "sentence_index": -1,
+      "text_center_norm": 0.255814,
+      "strength": 1.0,
+      "source_phone": "EY",
+      "source_phone_index": 1,
+      "generator": "cmu_eh_vowel"
+    },
+    {
+      "index": 16,
+      "pose": "23_Tongue_LNTDS",
+      "word": "rain",
+      "word_index": 4,
+      "sentence_index": -1,
+      "text_center_norm": 0.271318,
+      "strength": 0.46,
+      "source_phone": "N",
+      "source_phone_index": 2,
+      "generator": "cmu_lingual"
+    },
+    {
+      "index": 17,
+      "pose": "17_Rr",
+      "word": "rushing",
+      "word_index": 5,
+      "sentence_index": -1,
+      "text_center_norm": 0.286047,
+      "strength": 0.78,
+      "source_phone": "R",
+      "source_phone_index": 0,
+      "generator": "cmu_rhotic"
+    },
+    {
+      "index": 18,
+      "pose": "18_Uh",
+      "word": "rushing",
+      "word_index": 5,
+      "sentence_index": -1,
+      "text_center_norm": 0.3,
+      "strength": 1.0,
+      "source_phone": "AH",
+      "source_phone_index": 1,
+      "generator": "cmu_central_vowel"
+    },
+    {
+      "index": 19,
+      "pose": "14_ChJjSh",
+      "word": "rushing",
+      "word_index": 5,
+      "sentence_index": -1,
+      "text_center_norm": 0.313953,
+      "strength": 0.42,
+      "source_phone": "SH",
+      "source_phone_index": 2,
+      "generator": "cmu_affricate_sibilant"
+    },
+    {
+      "index": 20,
+      "pose": "04_Ih",
+      "word": "rushing",
+      "word_index": 5,
+      "sentence_index": -1,
+      "text_center_norm": 0.327907,
+      "strength": 1.0,
+      "source_phone": "IH",
+      "source_phone_index": 3,
+      "generator": "cmu_ih_vowel"
+    },
+    {
+      "index": 21,
+      "pose": "12_Ww-Oo-",
+      "word": "water",
+      "word_index": 6,
+      "sentence_index": -1,
+      "text_center_norm": 0.357558,
+      "strength": 0.88,
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "generator": "cmu_w"
+    },
+    {
+      "index": 22,
+      "pose": "09_Oh",
+      "word": "water",
+      "word_index": 6,
+      "sentence_index": -1,
+      "text_center_norm": 0.375,
+      "strength": 1.0,
+      "source_phone": "AO",
+      "source_phone_index": 1,
+      "generator": "cmu_oh_vowel"
+    },
+    {
+      "index": 23,
+      "pose": "01_TDS-Ah-",
+      "word": "water",
+      "word_index": 6,
+      "sentence_index": -1,
+      "text_center_norm": 0.392442,
+      "strength": 0.4,
+      "source_phone": "T",
+      "source_phone_index": 2,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 24,
+      "pose": "10_Or",
+      "word": "water",
+      "word_index": 6,
+      "sentence_index": -1,
+      "text_center_norm": 0.409884,
+      "strength": 1.0,
+      "source_phone": "ER",
+      "source_phone_index": 3,
+      "generator": "cmu_rhotic_vowel"
+    },
+    {
+      "index": 25,
+      "pose": "21_FV-Ee-",
+      "word": "snapping",
+      "word_index": 7,
+      "sentence_index": -1,
+      "text_center_norm": 0.426357,
+      "strength": 0.42,
+      "source_phone": "S",
+      "source_phone_index": 0,
+      "generator": "cmu_sibilant_teeth_wide"
+    },
+    {
+      "index": 26,
+      "pose": "23_Tongue_LNTDS",
+      "word": "snapping",
+      "word_index": 7,
+      "sentence_index": -1,
+      "text_center_norm": 0.44186,
+      "strength": 0.46,
+      "source_phone": "N",
+      "source_phone_index": 1,
+      "generator": "cmu_lingual"
+    },
+    {
+      "index": 27,
+      "pose": "08_Ah",
+      "word": "snapping",
+      "word_index": 7,
+      "sentence_index": -1,
+      "text_center_norm": 0.457364,
+      "strength": 1.0,
+      "source_phone": "AE",
+      "source_phone_index": 2,
+      "generator": "cmu_ah_vowel"
+    },
+    {
+      "index": 28,
+      "pose": "22_MBP",
+      "word": "snapping",
+      "word_index": 7,
+      "sentence_index": -1,
+      "text_center_norm": 0.472868,
+      "strength": 1.0,
+      "source_phone": "P",
+      "source_phone_index": 3,
+      "generator": "cmu_bilabial"
+    },
+    {
+      "index": 29,
+      "pose": "04_Ih",
+      "word": "snapping",
+      "word_index": 7,
+      "sentence_index": -1,
+      "text_center_norm": 0.488372,
+      "strength": 1.0,
+      "source_phone": "IH",
+      "source_phone_index": 4,
+      "generator": "cmu_ih_vowel"
+    },
+    {
+      "index": 30,
+      "pose": "22_MBP",
+      "word": "branches",
+      "word_index": 8,
+      "sentence_index": -1,
+      "text_center_norm": 0.518272,
+      "strength": 1.0,
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "generator": "cmu_bilabial"
+    },
+    {
+      "index": 31,
+      "pose": "17_Rr",
+      "word": "branches",
+      "word_index": 8,
+      "sentence_index": -1,
+      "text_center_norm": 0.531561,
+      "strength": 0.78,
+      "source_phone": "R",
+      "source_phone_index": 1,
+      "generator": "cmu_rhotic"
+    },
+    {
+      "index": 32,
+      "pose": "08_Ah",
+      "word": "branches",
+      "word_index": 8,
+      "sentence_index": -1,
+      "text_center_norm": 0.544851,
+      "strength": 1.0,
+      "source_phone": "AE",
+      "source_phone_index": 2,
+      "generator": "cmu_ah_vowel"
+    },
+    {
+      "index": 33,
+      "pose": "23_Tongue_LNTDS",
+      "word": "branches",
+      "word_index": 8,
+      "sentence_index": -1,
+      "text_center_norm": 0.55814,
+      "strength": 0.46,
+      "source_phone": "N",
+      "source_phone_index": 3,
+      "generator": "cmu_lingual"
+    },
+    {
+      "index": 34,
+      "pose": "14_ChJjSh",
+      "word": "branches",
+      "word_index": 8,
+      "sentence_index": -1,
+      "text_center_norm": 0.571429,
+      "strength": 0.42,
+      "source_phone": "CH",
+      "source_phone_index": 4,
+      "generator": "cmu_affricate_sibilant"
+    },
+    {
+      "index": 35,
+      "pose": "18_Uh",
+      "word": "branches",
+      "word_index": 8,
+      "sentence_index": -1,
+      "text_center_norm": 0.584718,
+      "strength": 1.0,
+      "source_phone": "AH",
+      "source_phone_index": 5,
+      "generator": "cmu_central_vowel"
+    },
+    {
+      "index": 36,
+      "pose": "21_FV-Ee-",
+      "word": "branches",
+      "word_index": 8,
+      "sentence_index": -1,
+      "text_center_norm": 0.598007,
+      "strength": 0.42,
+      "source_phone": "Z",
+      "source_phone_index": 6,
+      "generator": "cmu_sibilant_teeth_wide"
+    },
+    {
+      "index": 37,
+      "pose": "22_MBP",
+      "word": "barking",
+      "word_index": 9,
+      "sentence_index": -1,
+      "text_center_norm": 0.612403,
+      "strength": 1.0,
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "generator": "cmu_bilabial"
+    },
+    {
+      "index": 38,
+      "pose": "07_Aa",
+      "word": "barking",
+      "word_index": 9,
+      "sentence_index": -1,
+      "text_center_norm": 0.627907,
+      "strength": 1.0,
+      "source_phone": "AA",
+      "source_phone_index": 1,
+      "generator": "cmu_open_vowel"
+    },
+    {
+      "index": 39,
+      "pose": "17_Rr",
+      "word": "barking",
+      "word_index": 9,
+      "sentence_index": -1,
+      "text_center_norm": 0.643411,
+      "strength": 0.78,
+      "source_phone": "R",
+      "source_phone_index": 2,
+      "generator": "cmu_rhotic"
+    },
+    {
+      "index": 40,
+      "pose": "13_KGY_TDS",
+      "word": "barking",
+      "word_index": 9,
+      "sentence_index": -1,
+      "text_center_norm": 0.658915,
+      "strength": 0.34,
+      "source_phone": "K",
+      "source_phone_index": 3,
+      "generator": "cmu_velar_stop"
+    },
+    {
+      "index": 41,
+      "pose": "04_Ih",
+      "word": "barking",
+      "word_index": 9,
+      "sentence_index": -1,
+      "text_center_norm": 0.674419,
+      "strength": 1.0,
+      "source_phone": "IH",
+      "source_phone_index": 4,
+      "generator": "cmu_ih_vowel"
+    },
+    {
+      "index": 42,
+      "pose": "01_TDS-Ah-",
+      "word": "dogs",
+      "word_index": 10,
+      "sentence_index": -1,
+      "text_center_norm": 0.703488,
+      "strength": 0.4,
+      "source_phone": "D",
+      "source_phone_index": 0,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 43,
+      "pose": "07_Aa",
+      "word": "dogs",
+      "word_index": 10,
+      "sentence_index": -1,
+      "text_center_norm": 0.715116,
+      "strength": 1.0,
+      "source_phone": "AA",
+      "source_phone_index": 1,
+      "generator": "cmu_open_vowel"
+    },
+    {
+      "index": 44,
+      "pose": "13_KGY_TDS",
+      "word": "dogs",
+      "word_index": 10,
+      "sentence_index": -1,
+      "text_center_norm": 0.726744,
+      "strength": 0.34,
+      "source_phone": "G",
+      "source_phone_index": 2,
+      "generator": "cmu_velar_stop"
+    },
+    {
+      "index": 45,
+      "pose": "21_FV-Ee-",
+      "word": "dogs",
+      "word_index": 10,
+      "sentence_index": -1,
+      "text_center_norm": 0.738372,
+      "strength": 0.42,
+      "source_phone": "Z",
+      "source_phone_index": 3,
+      "generator": "cmu_sibilant_teeth_wide"
+    },
+    {
+      "index": 46,
+      "pose": "08_Ah",
+      "word": "and",
+      "word_index": 11,
+      "sentence_index": -1,
+      "text_center_norm": 0.751938,
+      "strength": 1.0,
+      "source_phone": "AE",
+      "source_phone_index": 0,
+      "generator": "cmu_ah_vowel"
+    },
+    {
+      "index": 47,
+      "pose": "23_Tongue_LNTDS",
+      "word": "and",
+      "word_index": 11,
+      "sentence_index": -1,
+      "text_center_norm": 0.767442,
+      "strength": 0.46,
+      "source_phone": "N",
+      "source_phone_index": 1,
+      "generator": "cmu_lingual"
+    },
+    {
+      "index": 48,
+      "pose": "01_TDS-Ah-",
+      "word": "and",
+      "word_index": 11,
+      "sentence_index": -1,
+      "text_center_norm": 0.782946,
+      "strength": 0.4,
+      "source_phone": "D",
+      "source_phone_index": 2,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 49,
+      "pose": "18_Uh",
+      "word": "a",
+      "word_index": 12,
+      "sentence_index": -1,
+      "text_center_norm": 0.813953,
+      "strength": 1.0,
+      "source_phone": "AH",
+      "source_phone_index": 0,
+      "generator": "cmu_central_vowel"
+    },
+    {
+      "index": 50,
+      "pose": "01_TDS-Ah-",
+      "word": "distant",
+      "word_index": 13,
+      "sentence_index": -1,
+      "text_center_norm": 0.843854,
+      "strength": 0.4,
+      "source_phone": "D",
+      "source_phone_index": 0,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 51,
+      "pose": "04_Ih",
+      "word": "distant",
+      "word_index": 13,
+      "sentence_index": -1,
+      "text_center_norm": 0.857143,
+      "strength": 1.0,
+      "source_phone": "IH",
+      "source_phone_index": 1,
+      "generator": "cmu_ih_vowel"
+    },
+    {
+      "index": 52,
+      "pose": "21_FV-Ee-",
+      "word": "distant",
+      "word_index": 13,
+      "sentence_index": -1,
+      "text_center_norm": 0.870432,
+      "strength": 0.42,
+      "source_phone": "S",
+      "source_phone_index": 2,
+      "generator": "cmu_sibilant_teeth_wide"
+    },
+    {
+      "index": 53,
+      "pose": "01_TDS-Ah-",
+      "word": "distant",
+      "word_index": 13,
+      "sentence_index": -1,
+      "text_center_norm": 0.883721,
+      "strength": 0.4,
+      "source_phone": "T",
+      "source_phone_index": 3,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 54,
+      "pose": "18_Uh",
+      "word": "distant",
+      "word_index": 13,
+      "sentence_index": -1,
+      "text_center_norm": 0.89701,
+      "strength": 1.0,
+      "source_phone": "AH",
+      "source_phone_index": 4,
+      "generator": "cmu_central_vowel"
+    },
+    {
+      "index": 55,
+      "pose": "23_Tongue_LNTDS",
+      "word": "distant",
+      "word_index": 13,
+      "sentence_index": -1,
+      "text_center_norm": 0.910299,
+      "strength": 0.46,
+      "source_phone": "N",
+      "source_phone_index": 5,
+      "generator": "cmu_lingual"
+    },
+    {
+      "index": 56,
+      "pose": "01_TDS-Ah-",
+      "word": "distant",
+      "word_index": 13,
+      "sentence_index": -1,
+      "text_center_norm": 0.923588,
+      "strength": 0.4,
+      "source_phone": "T",
+      "source_phone_index": 6,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 57,
+      "pose": "18_Uh",
+      "word": "alarm",
+      "word_index": 14,
+      "sentence_index": -1,
+      "text_center_norm": 0.937209,
+      "strength": 1.0,
+      "source_phone": "AH",
+      "source_phone_index": 0,
+      "generator": "cmu_central_vowel"
+    },
+    {
+      "index": 58,
+      "pose": "23_Tongue_LNTDS",
+      "word": "alarm",
+      "word_index": 14,
+      "sentence_index": -1,
+      "text_center_norm": 0.951163,
+      "strength": 0.46,
+      "source_phone": "L",
+      "source_phone_index": 1,
+      "generator": "cmu_lingual"
+    },
+    {
+      "index": 59,
+      "pose": "07_Aa",
+      "word": "alarm",
+      "word_index": 14,
+      "sentence_index": -1,
+      "text_center_norm": 0.965116,
+      "strength": 1.0,
+      "source_phone": "AA",
+      "source_phone_index": 2,
+      "generator": "cmu_open_vowel"
+    },
+    {
+      "index": 60,
+      "pose": "17_Rr",
+      "word": "alarm",
+      "word_index": 14,
+      "sentence_index": -1,
+      "text_center_norm": 0.97907,
+      "strength": 0.78,
+      "source_phone": "R",
+      "source_phone_index": 3,
+      "generator": "cmu_rhotic"
+    },
+    {
+      "index": 61,
+      "pose": "22_MBP",
+      "word": "alarm",
+      "word_index": 14,
+      "sentence_index": -1,
+      "text_center_norm": 0.992791,
+      "strength": 1.0,
+      "source_phone": "M",
+      "source_phone_index": 4,
+      "generator": "cmu_bilabial"
+    }
+  ],
+  "visemes": [
+    {
+      "index": 0,
+      "id": "W",
+      "pose": "W",
+      "phone": "W",
+      "start": 0.35,
+      "center": 0.38,
+      "end": 0.41,
+      "word": "we",
+      "mfa_word": "we",
+      "word_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 1,
+      "id": "IY1",
+      "pose": "IY1",
+      "phone": "IY1",
+      "start": 0.41,
+      "center": 0.44499999999999995,
+      "end": 0.48,
+      "word": "we",
+      "mfa_word": "we",
+      "word_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IY1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 2,
+      "id": "HH",
+      "pose": "HH",
+      "phone": "HH",
+      "start": 0.48,
+      "center": 0.5249999999999999,
+      "end": 0.57,
+      "word": "heard",
+      "mfa_word": "heard",
+      "word_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 3,
+      "id": "ER1",
+      "pose": "ER1",
+      "phone": "ER1",
+      "start": 0.57,
+      "center": 0.615,
+      "end": 0.66,
+      "word": "heard",
+      "mfa_word": "heard",
+      "word_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "ER1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 4,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 0.66,
+      "center": 0.6950000000000001,
+      "end": 0.73,
+      "word": "heard",
+      "mfa_word": "heard",
+      "word_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "D",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 5,
+      "id": "TH",
+      "pose": "TH",
+      "phone": "TH",
+      "start": 0.73,
+      "center": 0.8049999999999999,
+      "end": 0.88,
+      "word": "thunder",
+      "mfa_word": "thunder",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "TH",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 6,
+      "id": "AH1",
+      "pose": "AH1",
+      "phone": "AH1",
+      "start": 0.88,
+      "center": 0.915,
+      "end": 0.95,
+      "word": "thunder",
+      "mfa_word": "thunder",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 7,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 0.95,
+      "center": 1.0,
+      "end": 1.05,
+      "word": "thunder",
+      "mfa_word": "thunder",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 8,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 1.05,
+      "center": 1.0750000000000002,
+      "end": 1.1,
+      "word": "thunder",
+      "mfa_word": "thunder",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "D",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 9,
+      "id": "ER0",
+      "pose": "ER0",
+      "phone": "ER0",
+      "start": 1.1,
+      "center": 1.21,
+      "end": 1.32,
+      "word": "thunder",
+      "mfa_word": "thunder",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "ER0",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 10,
+      "id": "HH",
+      "pose": "HH",
+      "phone": "HH",
+      "start": 1.41,
+      "center": 1.47,
+      "end": 1.53,
+      "word": "heavy",
+      "mfa_word": "heavy",
+      "word_index": 3,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 11,
+      "id": "EH1",
+      "pose": "EH1",
+      "phone": "EH1",
+      "start": 1.53,
+      "center": 1.55,
+      "end": 1.57,
+      "word": "heavy",
+      "mfa_word": "heavy",
+      "word_index": 3,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EH1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 12,
+      "id": "V",
+      "pose": "V",
+      "phone": "V",
+      "start": 1.57,
+      "center": 1.6,
+      "end": 1.63,
+      "word": "heavy",
+      "mfa_word": "heavy",
+      "word_index": 3,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "V",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 13,
+      "id": "IY0",
+      "pose": "IY0",
+      "phone": "IY0",
+      "start": 1.63,
+      "center": 1.6749999999999998,
+      "end": 1.72,
+      "word": "heavy",
+      "mfa_word": "heavy",
+      "word_index": 3,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IY0",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 14,
+      "id": "R",
+      "pose": "R",
+      "phone": "R",
+      "start": 1.72,
+      "center": 1.77,
+      "end": 1.82,
+      "word": "rain",
+      "mfa_word": "rain",
+      "word_index": 4,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "R",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 15,
+      "id": "EY1",
+      "pose": "EY1",
+      "phone": "EY1",
+      "start": 1.82,
+      "center": 1.92,
+      "end": 2.02,
+      "word": "rain",
+      "mfa_word": "rain",
+      "word_index": 4,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "EY1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 16,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 2.02,
+      "center": 2.085,
+      "end": 2.15,
+      "word": "rain",
+      "mfa_word": "rain",
+      "word_index": 4,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 17,
+      "id": "R",
+      "pose": "R",
+      "phone": "R",
+      "start": 2.29,
+      "center": 2.335,
+      "end": 2.38,
+      "word": "rushing",
+      "mfa_word": "rushing",
+      "word_index": 5,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "R",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 18,
+      "id": "AH1",
+      "pose": "AH1",
+      "phone": "AH1",
+      "start": 2.38,
+      "center": 2.4050000000000002,
+      "end": 2.43,
+      "word": "rushing",
+      "mfa_word": "rushing",
+      "word_index": 5,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 19,
+      "id": "SH",
+      "pose": "SH",
+      "phone": "SH",
+      "start": 2.43,
+      "center": 2.4850000000000003,
+      "end": 2.54,
+      "word": "rushing",
+      "mfa_word": "rushing",
+      "word_index": 5,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "SH",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 20,
+      "id": "IH0",
+      "pose": "IH0",
+      "phone": "IH0",
+      "start": 2.54,
+      "center": 2.5549999999999997,
+      "end": 2.57,
+      "word": "rushing",
+      "mfa_word": "rushing",
+      "word_index": 5,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IH0",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 21,
+      "id": "NG",
+      "pose": "NG",
+      "phone": "NG",
+      "start": 2.57,
+      "center": 2.605,
+      "end": 2.64,
+      "word": "rushing",
+      "mfa_word": "rushing",
+      "word_index": 5,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "NG",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 22,
+      "id": "W",
+      "pose": "W",
+      "phone": "W",
+      "start": 2.64,
+      "center": 2.68,
+      "end": 2.72,
+      "word": "water",
+      "mfa_word": "water",
+      "word_index": 6,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 23,
+      "id": "AA1",
+      "pose": "AA1",
+      "phone": "AA1",
+      "start": 2.72,
+      "center": 2.7800000000000002,
+      "end": 2.84,
+      "word": "water",
+      "mfa_word": "water",
+      "word_index": 6,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AA1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 24,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 2.84,
+      "center": 2.86,
+      "end": 2.88,
+      "word": "water",
+      "mfa_word": "water",
+      "word_index": 6,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 25,
+      "id": "ER0",
+      "pose": "ER0",
+      "phone": "ER0",
+      "start": 2.88,
+      "center": 2.965,
+      "end": 3.05,
+      "word": "water",
+      "mfa_word": "water",
+      "word_index": 6,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "ER0",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 1
+    },
+    {
+      "index": 26,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 3.25,
+      "center": 3.3200000000000003,
+      "end": 3.39,
+      "word": "snapping",
+      "mfa_word": "snapping",
+      "word_index": 7,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 27,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 3.39,
+      "center": 3.415,
+      "end": 3.44,
+      "word": "snapping",
+      "mfa_word": "snapping",
+      "word_index": 7,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 28,
+      "id": "AE1",
+      "pose": "AE1",
+      "phone": "AE1",
+      "start": 3.44,
+      "center": 3.48,
+      "end": 3.52,
+      "word": "snapping",
+      "mfa_word": "snapping",
+      "word_index": 7,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AE1",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 29,
+      "id": "P",
+      "pose": "P",
+      "phone": "P",
+      "start": 3.52,
+      "center": 3.56,
+      "end": 3.6,
+      "word": "snapping",
+      "mfa_word": "snapping",
+      "word_index": 7,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "P",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 30,
+      "id": "IH0",
+      "pose": "IH0",
+      "phone": "IH0",
+      "start": 3.6,
+      "center": 3.62,
+      "end": 3.64,
+      "word": "snapping",
+      "mfa_word": "snapping",
+      "word_index": 7,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IH0",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 31,
+      "id": "NG",
+      "pose": "NG",
+      "phone": "NG",
+      "start": 3.64,
+      "center": 3.68,
+      "end": 3.72,
+      "word": "snapping",
+      "mfa_word": "snapping",
+      "word_index": 7,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "NG",
+      "source_phone_index": 5,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 32,
+      "id": "B",
+      "pose": "B",
+      "phone": "B",
+      "start": 3.72,
+      "center": 3.745,
+      "end": 3.77,
+      "word": "branches",
+      "mfa_word": "branches",
+      "word_index": 8,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 33,
+      "id": "R",
+      "pose": "R",
+      "phone": "R",
+      "start": 3.77,
+      "center": 3.8,
+      "end": 3.83,
+      "word": "branches",
+      "mfa_word": "branches",
+      "word_index": 8,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "R",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 34,
+      "id": "AE1",
+      "pose": "AE1",
+      "phone": "AE1",
+      "start": 3.83,
+      "center": 3.88,
+      "end": 3.93,
+      "word": "branches",
+      "mfa_word": "branches",
+      "word_index": 8,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AE1",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 35,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 3.93,
+      "center": 3.95,
+      "end": 3.97,
+      "word": "branches",
+      "mfa_word": "branches",
+      "word_index": 8,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 36,
+      "id": "CH",
+      "pose": "CH",
+      "phone": "CH",
+      "start": 3.97,
+      "center": 4.015,
+      "end": 4.06,
+      "word": "branches",
+      "mfa_word": "branches",
+      "word_index": 8,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "CH",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 37,
+      "id": "IH0",
+      "pose": "IH0",
+      "phone": "IH0",
+      "start": 4.06,
+      "center": 4.105,
+      "end": 4.15,
+      "word": "branches",
+      "mfa_word": "branches",
+      "word_index": 8,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IH0",
+      "source_phone_index": 5,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 38,
+      "id": "Z",
+      "pose": "Z",
+      "phone": "Z",
+      "start": 4.15,
+      "center": 4.21,
+      "end": 4.27,
+      "word": "branches",
+      "mfa_word": "branches",
+      "word_index": 8,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "Z",
+      "source_phone_index": 6,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 2
+    },
+    {
+      "index": 39,
+      "id": "B",
+      "pose": "B",
+      "phone": "B",
+      "start": 4.53,
+      "center": 4.550000000000001,
+      "end": 4.57,
+      "word": "barking",
+      "mfa_word": "barking",
+      "word_index": 9,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 3
+    },
+    {
+      "index": 40,
+      "id": "AA1",
+      "pose": "AA1",
+      "phone": "AA1",
+      "start": 4.57,
+      "center": 4.59,
+      "end": 4.61,
+      "word": "barking",
+      "mfa_word": "barking",
+      "word_index": 9,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AA1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 3
+    },
+    {
+      "index": 41,
+      "id": "R",
+      "pose": "R",
+      "phone": "R",
+      "start": 4.61,
+      "center": 4.65,
+      "end": 4.69,
+      "word": "barking",
+      "mfa_word": "barking",
+      "word_index": 9,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "R",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 3
+    },
+    {
+      "index": 42,
+      "id": "K",
+      "pose": "K",
+      "phone": "K",
+      "start": 4.69,
+      "center": 4.725,
+      "end": 4.76,
+      "word": "barking",
+      "mfa_word": "barking",
+      "word_index": 9,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "K",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 3
+    },
+    {
+      "index": 43,
+      "id": "IH0",
+      "pose": "IH0",
+      "phone": "IH0",
+      "start": 4.76,
+      "center": 4.775,
+      "end": 4.79,
+      "word": "barking",
+      "mfa_word": "barking",
+      "word_index": 9,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IH0",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 3
+    },
+    {
+      "index": 44,
+      "id": "NG",
+      "pose": "NG",
+      "phone": "NG",
+      "start": 4.79,
+      "center": 4.84,
+      "end": 4.89,
+      "word": "barking",
+      "mfa_word": "barking",
+      "word_index": 9,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "NG",
+      "source_phone_index": 5,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 3
+    },
+    {
+      "index": 45,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 4.89,
+      "center": 4.915,
+      "end": 4.94,
+      "word": "dogs",
+      "mfa_word": "dogs",
+      "word_index": 10,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "D",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 3
+    },
+    {
+      "index": 46,
+      "id": "AA1",
+      "pose": "AA1",
+      "phone": "AA1",
+      "start": 4.94,
+      "center": 5.07,
+      "end": 5.2,
+      "word": "dogs",
+      "mfa_word": "dogs",
+      "word_index": 10,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AA1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 3
+    },
+    {
+      "index": 47,
+      "id": "G",
+      "pose": "G",
+      "phone": "G",
+      "start": 5.2,
+      "center": 5.245,
+      "end": 5.29,
+      "word": "dogs",
+      "mfa_word": "dogs",
+      "word_index": 10,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "G",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 3
+    },
+    {
+      "index": 48,
+      "id": "Z",
+      "pose": "Z",
+      "phone": "Z",
+      "start": 5.29,
+      "center": 5.335,
+      "end": 5.38,
+      "word": "dogs",
+      "mfa_word": "dogs",
+      "word_index": 10,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "Z",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 3
+    },
+    {
+      "index": 49,
+      "id": "AE1",
+      "pose": "AE1",
+      "phone": "AE1",
+      "start": 5.57,
+      "center": 5.605,
+      "end": 5.64,
+      "word": "and",
+      "mfa_word": "and",
+      "word_index": 11,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AE1",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 50,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 5.64,
+      "center": 5.66,
+      "end": 5.68,
+      "word": "and",
+      "mfa_word": "and",
+      "word_index": 11,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 51,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 5.68,
+      "center": 5.695,
+      "end": 5.71,
+      "word": "and",
+      "mfa_word": "and",
+      "word_index": 11,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "D",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 52,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 5.71,
+      "center": 5.73,
+      "end": 5.75,
+      "word": "a",
+      "mfa_word": "a",
+      "word_index": 12,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 53,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 5.75,
+      "center": 5.805,
+      "end": 5.86,
+      "word": "distant",
+      "mfa_word": "distant",
+      "word_index": 13,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "D",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 54,
+      "id": "IH1",
+      "pose": "IH1",
+      "phone": "IH1",
+      "start": 5.86,
+      "center": 5.890000000000001,
+      "end": 5.92,
+      "word": "distant",
+      "mfa_word": "distant",
+      "word_index": 13,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IH1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 55,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 5.92,
+      "center": 5.96,
+      "end": 6.0,
+      "word": "distant",
+      "mfa_word": "distant",
+      "word_index": 13,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 56,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 6.0,
+      "center": 6.029999999999999,
+      "end": 6.06,
+      "word": "distant",
+      "mfa_word": "distant",
+      "word_index": 13,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 57,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 6.06,
+      "center": 6.08,
+      "end": 6.1,
+      "word": "distant",
+      "mfa_word": "distant",
+      "word_index": 13,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 58,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 6.1,
+      "center": 6.119999999999999,
+      "end": 6.14,
+      "word": "distant",
+      "mfa_word": "distant",
+      "word_index": 13,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 5,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 59,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 6.14,
+      "center": 6.16,
+      "end": 6.18,
+      "word": "distant",
+      "mfa_word": "distant",
+      "word_index": 13,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 6,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 60,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 6.18,
+      "center": 6.199999999999999,
+      "end": 6.22,
+      "word": "alarm",
+      "mfa_word": "alarm",
+      "word_index": 14,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 61,
+      "id": "L",
+      "pose": "L",
+      "phone": "L",
+      "start": 6.22,
+      "center": 6.265,
+      "end": 6.31,
+      "word": "alarm",
+      "mfa_word": "alarm",
+      "word_index": 14,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "L",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 62,
+      "id": "AA1",
+      "pose": "AA1",
+      "phone": "AA1",
+      "start": 6.31,
+      "center": 6.375,
+      "end": 6.44,
+      "word": "alarm",
+      "mfa_word": "alarm",
+      "word_index": 14,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AA1",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 63,
+      "id": "R",
+      "pose": "R",
+      "phone": "R",
+      "start": 6.44,
+      "center": 6.485,
+      "end": 6.53,
+      "word": "alarm",
+      "mfa_word": "alarm",
+      "word_index": 14,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "R",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    },
+    {
+      "index": 64,
+      "id": "M",
+      "pose": "M",
+      "phone": "M",
+      "start": 6.53,
+      "center": 6.585,
+      "end": 6.64,
+      "word": "alarm",
+      "mfa_word": "alarm",
+      "word_index": 14,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "M",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 4
+    }
+  ],
+  "flags": [
+    {
+      "kind": "speech_regions_split_on_pause_boundaries",
+      "region_count": 5,
+      "gap_threshold_seconds": 0.12,
+      "largest_split_gap_seconds": 0.26,
+      "note": "Speech regions were split using MFA word timing plus punctuation/acoustic pause evidence."
+    }
+  ],
+  "notes": [],
+  "summary": {
+    "word_count": 15,
+    "speech_region_count": 5,
+    "pause_boundary_count": 14,
+    "pause_region_break_count": 4,
+    "word_head_count": 15,
+    "viseme_count": 65,
+    "flag_count": 1,
+    "flags_by_kind": {
+      "speech_regions_split_on_pause_boundaries": 1
+    },
+    "commit_reasons": {
+      "mfa_phone_interval": 65
+    },
+    "alignment_reasons": {
+      "mfa_textgrid_phone": 65
+    },
+    "mapped_to_observed_speech_count": 65
+  }
+}

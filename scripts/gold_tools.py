@@ -539,8 +539,8 @@ def run_mfa_align(cases: list[str], output_root: pathlib.Path, num_jobs: int) ->
 
 
 def case_stems() -> list[str]:
-    transcripts_dir = ROOT / "inputs" / "transcripts"
-    return sorted(path.stem for path in transcripts_dir.glob("*.txt"))
+    with (ROOT / "inputs" / "corpus.csv").open(newline="", encoding="utf-8") as handle:
+        return sorted(row["case_id"] for row in csv.DictReader(handle))
 
 
 def read_text(path: pathlib.Path) -> str:
@@ -562,7 +562,9 @@ def read_csv_rows(path: pathlib.Path) -> list[dict[str, str]]:
 
 def write_json(path: pathlib.Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n"
+    )
 
 
 def write_text(path: pathlib.Path, text: str) -> None:

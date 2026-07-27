@@ -1,0 +1,21 @@
+case: factory_v1_sentences_003__priestley2_1_7b
+transcript: The first attempt failed. We replaced the loose cable, restarted the machine, and tried again.
+audio: 7.097s @ 24000 Hz
+speech regions: 3
+pause boundaries: 14
+pause-driven region breaks: 2
+word heads: 15
+dense visemes: 62
+draft flags: 1
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading

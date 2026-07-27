@@ -1,0 +1,21 @@
+case: factory_v1_long_001__priestley_1_7b
+transcript: On Saturday morning, Elena carried a folding chair to the beach, found a quiet place above the tide line, and watched fishing boats move slowly across the pale horizon.
+audio: 10.057s @ 24000 Hz
+speech regions: 4
+pause boundaries: 28
+pause-driven region breaks: 3
+word heads: 29
+dense visemes: 107
+draft flags: 1
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading

@@ -68,11 +68,17 @@ if defined LIPLAB_WINDOWS_SDK_VERSION (
 
 set "BUILD_DIR=build-ninja"
 set "CMAKE_GENERATOR_ARG=-G Ninja"
+set "NEURAL_MODEL=offgrid_dropin\Private\Lipsync\Models\OffgridAINeuralStreamerV3.bin"
+
+if not exist "!NEURAL_MODEL!" (
+    echo Required neural checkpoint is missing: !NEURAL_MODEL!
+    exit /b 1
+)
 
 if exist "!BUILD_DIR!\CMakeCache.txt" del /q "!BUILD_DIR!\CMakeCache.txt"
 
 echo [phase] configure
-"%CMAKE_EXE%" -S . -B "!BUILD_DIR!" !CMAKE_GENERATOR_ARG! !CMAKE_SDK_ARG! -DCMAKE_BUILD_TYPE=Release
+"%CMAKE_EXE%" -S . -B "!BUILD_DIR!" !CMAKE_GENERATOR_ARG! !CMAKE_SDK_ARG! -DCMAKE_BUILD_TYPE=Release -DLIPLAB_ENABLE_NEURAL_RUNTIME=ON
 if errorlevel 1 exit /b 1
 
 echo [phase] build
@@ -83,19 +89,27 @@ echo [phase] validate_gold
 python scripts\check_gold.py --include-drafts
 if errorlevel 1 exit /b 1
 
+echo [phase] validate_speech_recipe
+python scripts\build_corpus_speech_recipe.py --check
+if errorlevel 1 exit /b 1
+python scripts\build_neural_corpus_recipe.py --check
+if errorlevel 1 exit /b 1
+python scripts\build_corpus_manifest.py --check
+if errorlevel 1 exit /b 1
+python scripts\build_timing_dataset_split.py --check
+if errorlevel 1 exit /b 1
+
 echo [phase] run_corpus
 set "LIPLAB_PREROLL_MS=350"
 if not "%~1"=="" set "LIPLAB_PREROLL_MS=%~1"
-set "LIPLAB_EVIDENCE_POSTROLL_MS=1500"
-if not "%~2"=="" set "LIPLAB_EVIDENCE_POSTROLL_MS=%~2"
-echo Using preroll !LIPLAB_PREROLL_MS! ms, evidence postroll !LIPLAB_EVIDENCE_POSTROLL_MS! ms
+echo Using preroll !LIPLAB_PREROLL_MS! ms
 
 if exist "!BUILD_DIR!\liplab_runner.exe" (
-    "!BUILD_DIR!\liplab_runner.exe" . --preroll-ms !LIPLAB_PREROLL_MS! --evidence-postroll-ms !LIPLAB_EVIDENCE_POSTROLL_MS!
+    "!BUILD_DIR!\liplab_runner.exe" . --preroll-ms !LIPLAB_PREROLL_MS! --neural-checkpoint "!NEURAL_MODEL!"
 ) else if exist build\Release\liplab_runner.exe (
-    build\Release\liplab_runner.exe . --preroll-ms !LIPLAB_PREROLL_MS! --evidence-postroll-ms !LIPLAB_EVIDENCE_POSTROLL_MS!
+    build\Release\liplab_runner.exe . --preroll-ms !LIPLAB_PREROLL_MS! --neural-checkpoint "!NEURAL_MODEL!"
 ) else if exist build\liplab_runner.exe (
-    build\liplab_runner.exe . --preroll-ms !LIPLAB_PREROLL_MS! --evidence-postroll-ms !LIPLAB_EVIDENCE_POSTROLL_MS!
+    build\liplab_runner.exe . --preroll-ms !LIPLAB_PREROLL_MS! --neural-checkpoint "!NEURAL_MODEL!"
 ) else (
     echo liplab_runner.exe not found under !BUILD_DIR!, build\Release, or build\
     exit /b 1
@@ -105,7 +119,6 @@ if errorlevel 1 exit /b 1
 echo [phase] summarize
 python scripts\summarize.py
 if errorlevel 1 exit /b 1
-
 echo [phase] check_grades
 python scripts\check_grades.py
 if errorlevel 1 exit /b 1

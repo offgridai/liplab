@@ -26,6 +26,7 @@ using TCHAR = char;
 #define TEXT(x) x
 #define OFFGRIDAI_API
 #define UTF8_TO_TCHAR(x) x
+#define TCHAR_TO_UTF8(x) x
 
 constexpr int32 INDEX_NONE = -1;
 constexpr float PI = 3.14159265358979323846f;

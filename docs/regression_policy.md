@@ -1,37 +1,39 @@
-# Regression Policy
+# Regression policy
 
-Corpus acceptance follows the product priorities directly:
+Corpus acceptance follows current product behavior and includes every approved
+reference case. Missing events receive explicit penalties in comprehensive
+timing statistics; they are never removed from the mean or median.
 
-1. Region starts: the first visible event must belong to the correct MFA speech
-   region and land within 100 ms of its class-aware visual target.
-2. Pauses: visible animation should be absent between MFA speech regions.
-3. Word starts: performed animation onset should land within 100 ms of MFA word
-   onset, and its first visible gesture should land within 100 ms of the target
-   selected by phone class: vowel nucleus center, or the relevant visible
-   consonant onset/closure landmark.
-4. Word-region assignment: every planned event for a word must be committed,
-   all events must belong to one runtime speech region, and that complete
-   region must map to the word's MFA region. Split words always fail.
+The priority scores are:
 
-The first three are reported as `region_start`, `pause`,
-`word_animation_onset`, and `class_aware_visual_anchor`. Mean absolute errors
-show the size of timing misses without replacing the 100 ms success rates.
-`strict_three_level_word_assignment.success_rate` catches a wrong region even
-when an event happens to be close to the correct timestamp.
+1. `region_start`: the first visible event belongs to the correct MFA speech
+   region and begins within 100 ms of its reference.
+2. `pause`: performed animation remains neutral between MFA speech regions.
+3. `word_animation_onset`: a word's first performed animation begins within
+   100 ms of its MFA word onset.
+4. `word_duration`: the actual above-threshold animation span of every word
+   agrees with its complete MFA spoken duration within the larger of 80 ms or
+   25%. Missing words remain zero-duration failures.
+5. `strict_three_level_word_assignment`: all planned events for a word are
+   committed, remain in one neural region, and map to the word's MFA region.
 
-Event completion and monotonic order are non-negotiable guardrails. Exact and
-nearby nucleus metrics remain useful diagnostics for the syllable estimator,
-but are not universal visual scores because consonant-led gestures intentionally
-target an earlier landmark. Older speech, boundary-pair, detector, and cursor
-measurements remain in per-case reports for diagnosis, not as parallel
-definitions of success.
+Comprehensive mean and median errors expose both aggregate outliers and typical
+behavior. Region matching is monotonic and overlap-aware so a missed pause does
+not shift all later comparisons.
 
-`scripts/summarize.py` writes the scorecard to
-`outputs/runs/latest/alignment_summary.json` and the review tables to
-`alignment_cases.csv` and `alignment_words.csv`. `scripts/check_grades.py`
-compares that scorecard with `docs/grade_baseline.json` using the small allowed
-deltas in `docs/grade_thresholds.json`.
+Event completion and monotonic order are non-negotiable guardrails. Delivery
+metrics separately catch missing/late events, empty speech regions, compressed
+sentences, and word or sentence loss. Word-duration reports include comprehensive
+mean, median, p90, p95, signed bias, duration ratios, compression, and stretching.
+Within-word duration scoring separately compares
+each visible run's share of its word against MFA and reports run error,
+internal-boundary error, and word-level total variation.
+
+`scripts/summarize.py` writes `outputs/runs/latest/alignment_summary.json` plus
+case, word, and boundary review tables. `scripts/check_grades.py` compares that
+scorecard with `docs/grade_baseline.json` and `docs/grade_thresholds.json`.
 
 When approved gold is deliberately changed or expanded, refresh the baseline.
 When runtime quality improves, accept the new baseline rather than loosening a
-threshold.
+threshold. Metrics from deleted detectors, candidate estimators, diagnostic
+cursors, or offline controllers must not be restored as parallel score paths.

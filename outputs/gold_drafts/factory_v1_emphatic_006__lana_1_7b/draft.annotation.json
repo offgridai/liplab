@@ -1,0 +1,1298 @@
+{
+  "schema_version": 1,
+  "case_id": "factory_v1_emphatic_006__lana_1_7b",
+  "created_utc": "2026-07-26T06:26:53.737311+00:00",
+  "generator": {
+    "kind": "liplab_gold_mfa_phase1",
+    "buffer_ms": 600000,
+    "chunk_ms": 600000,
+    "mfa_num_jobs": 4,
+    "speech_merge_gap_ms": 120,
+    "source_run_dir": "outputs/offline_gold/latest/factory_v1_emphatic_006__lana_1_7b",
+    "mfa_align_dir": "outputs/mfa_align/latest"
+  },
+  "approval": {
+    "status": "approved_gold",
+    "reviewed": true,
+    "reviewer": "auto_mfa_phone_export",
+    "reviewed_utc": "2026-07-26T06:26:53.737365+00:00"
+  },
+  "review_layers": {
+    "speech_regions": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "word_heads": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "dense_visemes": {
+      "status": "reviewed_dense",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    }
+  },
+  "transcript": "What an astonishing view!",
+  "audio": {
+    "path": "inputs/wav/factory_v1_emphatic_006__lana_1_7b.wav",
+    "sample_rate_hz": 24000,
+    "channels": 1,
+    "frame_count": 49365,
+    "duration_sec": 2.056875
+  },
+  "speech_regions": [
+    {
+      "index": 0,
+      "start": 0.42,
+      "end": 1.95,
+      "word_start_index": 0,
+      "word_end_index": 3,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    }
+  ],
+  "pause_boundaries": [
+    {
+      "word_index": 0,
+      "word": "what",
+      "next_word_index": 1,
+      "next_word": "an",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 1,
+      "word": "an",
+      "next_word_index": 2,
+      "next_word": "astonishing",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 2,
+      "word": "astonishing",
+      "next_word_index": 3,
+      "next_word": "view",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    }
+  ],
+  "gold_words": [
+    {
+      "word_index": 0,
+      "word": "what",
+      "mfa_word": "what",
+      "start": 0.42,
+      "end": 0.65,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "an",
+      "mfa_word": "an",
+      "start": 0.65,
+      "end": 0.76,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 2,
+      "word": "astonishing",
+      "mfa_word": "astonishing",
+      "start": 0.76,
+      "end": 1.49,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 3,
+      "word": "view",
+      "mfa_word": "view",
+      "start": 1.49,
+      "end": 1.95,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        "!"
+      ],
+      "boundary_mark_after": "!",
+      "speech_region_index": 0
+    }
+  ],
+  "word_heads": [
+    {
+      "word_index": 0,
+      "word": "what",
+      "start": 0.42,
+      "end": 0.45,
+      "pose": "HH",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 1,
+      "word": "an",
+      "start": 0.65,
+      "end": 0.7,
+      "pose": "AE1",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "AE1",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 2,
+      "word": "astonishing",
+      "start": 0.76,
+      "end": 0.82,
+      "pose": "AH0",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "AH0",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 3,
+      "word": "view",
+      "start": 1.49,
+      "end": 1.55,
+      "pose": "V",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "V",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    }
+  ],
+  "mfa_words": [
+    {
+      "word_index": 0,
+      "word": "what",
+      "mfa_word": "what",
+      "start": 0.42,
+      "end": 0.65,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "an",
+      "mfa_word": "an",
+      "start": 0.65,
+      "end": 0.76,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 2,
+      "word": "astonishing",
+      "mfa_word": "astonishing",
+      "start": 0.76,
+      "end": 1.49,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 3,
+      "word": "view",
+      "mfa_word": "view",
+      "start": 1.49,
+      "end": 1.95,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        "!"
+      ],
+      "boundary_mark_after": "!",
+      "speech_region_index": 0
+    }
+  ],
+  "mfa_phones": [
+    {
+      "index_in_word": 0,
+      "phone": "HH",
+      "phone_base": "HH",
+      "start": 0.42,
+      "end": 0.45,
+      "word_index": 0,
+      "word": "what"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 0.45,
+      "end": 0.54,
+      "word_index": 0,
+      "word": "what"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "AH1",
+      "phone_base": "AH",
+      "start": 0.54,
+      "end": 0.61,
+      "word_index": 0,
+      "word": "what"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 0.61,
+      "end": 0.65,
+      "word_index": 0,
+      "word": "what"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "AE1",
+      "phone_base": "AE",
+      "start": 0.65,
+      "end": 0.7,
+      "word_index": 1,
+      "word": "an"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 0.7,
+      "end": 0.76,
+      "word_index": 1,
+      "word": "an"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 0.76,
+      "end": 0.82,
+      "word_index": 2,
+      "word": "astonishing"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "S",
+      "phone_base": "S",
+      "start": 0.82,
+      "end": 0.95,
+      "word_index": 2,
+      "word": "astonishing"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 0.95,
+      "end": 1.02,
+      "word_index": 2,
+      "word": "astonishing"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "AA1",
+      "phone_base": "AA",
+      "start": 1.02,
+      "end": 1.12,
+      "word_index": 2,
+      "word": "astonishing"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 1.12,
+      "end": 1.17,
+      "word_index": 2,
+      "word": "astonishing"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "IH0",
+      "phone_base": "IH",
+      "start": 1.17,
+      "end": 1.23,
+      "word_index": 2,
+      "word": "astonishing"
+    },
+    {
+      "index_in_word": 6,
+      "phone": "SH",
+      "phone_base": "SH",
+      "start": 1.23,
+      "end": 1.35,
+      "word_index": 2,
+      "word": "astonishing"
+    },
+    {
+      "index_in_word": 7,
+      "phone": "IH0",
+      "phone_base": "IH",
+      "start": 1.35,
+      "end": 1.39,
+      "word_index": 2,
+      "word": "astonishing"
+    },
+    {
+      "index_in_word": 8,
+      "phone": "NG",
+      "phone_base": "NG",
+      "start": 1.39,
+      "end": 1.49,
+      "word_index": 2,
+      "word": "astonishing"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "V",
+      "phone_base": "V",
+      "start": 1.49,
+      "end": 1.55,
+      "word_index": 3,
+      "word": "view"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "Y",
+      "phone_base": "Y",
+      "start": 1.55,
+      "end": 1.73,
+      "word_index": 3,
+      "word": "view"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "UW1",
+      "phone_base": "UW",
+      "start": 1.73,
+      "end": 1.95,
+      "word_index": 3,
+      "word": "view"
+    }
+  ],
+  "mfa_non_silence_phone_intervals": [
+    {
+      "phone": "HH",
+      "start": 0.42,
+      "end": 0.45
+    },
+    {
+      "phone": "W",
+      "start": 0.45,
+      "end": 0.54
+    },
+    {
+      "phone": "AH1",
+      "start": 0.54,
+      "end": 0.61
+    },
+    {
+      "phone": "T",
+      "start": 0.61,
+      "end": 0.65
+    },
+    {
+      "phone": "AE1",
+      "start": 0.65,
+      "end": 0.7
+    },
+    {
+      "phone": "N",
+      "start": 0.7,
+      "end": 0.76
+    },
+    {
+      "phone": "AH0",
+      "start": 0.76,
+      "end": 0.82
+    },
+    {
+      "phone": "S",
+      "start": 0.82,
+      "end": 0.95
+    },
+    {
+      "phone": "T",
+      "start": 0.95,
+      "end": 1.02
+    },
+    {
+      "phone": "AA1",
+      "start": 1.02,
+      "end": 1.12
+    },
+    {
+      "phone": "N",
+      "start": 1.12,
+      "end": 1.17
+    },
+    {
+      "phone": "IH0",
+      "start": 1.17,
+      "end": 1.23
+    },
+    {
+      "phone": "SH",
+      "start": 1.23,
+      "end": 1.35
+    },
+    {
+      "phone": "IH0",
+      "start": 1.35,
+      "end": 1.39
+    },
+    {
+      "phone": "NG",
+      "start": 1.39,
+      "end": 1.49
+    },
+    {
+      "phone": "V",
+      "start": 1.49,
+      "end": 1.55
+    },
+    {
+      "phone": "Y",
+      "start": 1.55,
+      "end": 1.73
+    },
+    {
+      "phone": "UW1",
+      "start": 1.73,
+      "end": 1.95
+    }
+  ],
+  "wave_silence_spans": [
+    {
+      "start": 0.0,
+      "end": 0.44,
+      "duration_seconds": 0.44
+    },
+    {
+      "start": 1.86,
+      "end": 2.056875,
+      "duration_seconds": 0.1968749999999997
+    }
+  ],
+  "planned_visemes": [
+    {
+      "index": 0,
+      "pose": "08_Ah",
+      "word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "text_center_norm": 0.02375,
+      "strength": 0.0,
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "generator": "cmu_hh_timing_waypoint"
+    },
+    {
+      "index": 1,
+      "pose": "12_Ww-Oo-",
+      "word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "text_center_norm": 0.0625,
+      "strength": 0.88,
+      "source_phone": "W",
+      "source_phone_index": 1,
+      "generator": "cmu_w"
+    },
+    {
+      "index": 2,
+      "pose": "18_Uh",
+      "word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "text_center_norm": 0.104167,
+      "strength": 1.0,
+      "source_phone": "AH",
+      "source_phone_index": 2,
+      "generator": "cmu_central_vowel"
+    },
+    {
+      "index": 3,
+      "pose": "01_TDS-Ah-",
+      "word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "text_center_norm": 0.145833,
+      "strength": 0.4,
+      "source_phone": "T",
+      "source_phone_index": 3,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 4,
+      "pose": "08_Ah",
+      "word": "an",
+      "word_index": 1,
+      "sentence_index": -1,
+      "text_center_norm": 0.208333,
+      "strength": 1.0,
+      "source_phone": "AE",
+      "source_phone_index": 0,
+      "generator": "cmu_ah_vowel"
+    },
+    {
+      "index": 5,
+      "pose": "23_Tongue_LNTDS",
+      "word": "an",
+      "word_index": 1,
+      "sentence_index": -1,
+      "text_center_norm": 0.291667,
+      "strength": 0.46,
+      "source_phone": "N",
+      "source_phone_index": 1,
+      "generator": "cmu_lingual"
+    },
+    {
+      "index": 6,
+      "pose": "18_Uh",
+      "word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.361111,
+      "strength": 1.0,
+      "source_phone": "AH",
+      "source_phone_index": 0,
+      "generator": "cmu_central_vowel"
+    },
+    {
+      "index": 7,
+      "pose": "21_FV-Ee-",
+      "word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.416667,
+      "strength": 0.42,
+      "source_phone": "S",
+      "source_phone_index": 1,
+      "generator": "cmu_sibilant_teeth_wide"
+    },
+    {
+      "index": 8,
+      "pose": "01_TDS-Ah-",
+      "word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.472222,
+      "strength": 0.4,
+      "source_phone": "T",
+      "source_phone_index": 2,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 9,
+      "pose": "07_Aa",
+      "word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.527778,
+      "strength": 1.0,
+      "source_phone": "AA",
+      "source_phone_index": 3,
+      "generator": "cmu_open_vowel"
+    },
+    {
+      "index": 10,
+      "pose": "23_Tongue_LNTDS",
+      "word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.583333,
+      "strength": 0.46,
+      "source_phone": "N",
+      "source_phone_index": 4,
+      "generator": "cmu_lingual"
+    },
+    {
+      "index": 11,
+      "pose": "04_Ih",
+      "word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.638889,
+      "strength": 1.0,
+      "source_phone": "IH",
+      "source_phone_index": 5,
+      "generator": "cmu_ih_vowel"
+    },
+    {
+      "index": 12,
+      "pose": "14_ChJjSh",
+      "word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.694444,
+      "strength": 0.42,
+      "source_phone": "SH",
+      "source_phone_index": 6,
+      "generator": "cmu_affricate_sibilant"
+    },
+    {
+      "index": 13,
+      "pose": "04_Ih",
+      "word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.75,
+      "strength": 1.0,
+      "source_phone": "IH",
+      "source_phone_index": 7,
+      "generator": "cmu_ih_vowel"
+    },
+    {
+      "index": 14,
+      "pose": "20_FV",
+      "word": "view",
+      "word_index": 3,
+      "sentence_index": -1,
+      "text_center_norm": 0.861111,
+      "strength": 0.96,
+      "source_phone": "V",
+      "source_phone_index": 0,
+      "generator": "cmu_fv"
+    },
+    {
+      "index": 15,
+      "pose": "02_TDS_KGY-Ee-",
+      "word": "view",
+      "word_index": 3,
+      "sentence_index": -1,
+      "text_center_norm": 0.916667,
+      "strength": 0.4,
+      "source_phone": "Y",
+      "source_phone_index": 1,
+      "generator": "cmu_palatal_glide"
+    },
+    {
+      "index": 16,
+      "pose": "11_Oo",
+      "word": "view",
+      "word_index": 3,
+      "sentence_index": -1,
+      "text_center_norm": 0.972222,
+      "strength": 1.0,
+      "source_phone": "UW",
+      "source_phone_index": 2,
+      "generator": "cmu_oo_vowel"
+    }
+  ],
+  "visemes": [
+    {
+      "index": 0,
+      "id": "HH",
+      "pose": "HH",
+      "phone": "HH",
+      "start": 0.42,
+      "center": 0.435,
+      "end": 0.45,
+      "word": "what",
+      "mfa_word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 1,
+      "id": "W",
+      "pose": "W",
+      "phone": "W",
+      "start": 0.45,
+      "center": 0.495,
+      "end": 0.54,
+      "word": "what",
+      "mfa_word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "W",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 2,
+      "id": "AH1",
+      "pose": "AH1",
+      "phone": "AH1",
+      "start": 0.54,
+      "center": 0.575,
+      "end": 0.61,
+      "word": "what",
+      "mfa_word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH1",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 3,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 0.61,
+      "center": 0.63,
+      "end": 0.65,
+      "word": "what",
+      "mfa_word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 4,
+      "id": "AE1",
+      "pose": "AE1",
+      "phone": "AE1",
+      "start": 0.65,
+      "center": 0.675,
+      "end": 0.7,
+      "word": "an",
+      "mfa_word": "an",
+      "word_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AE1",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 5,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 0.7,
+      "center": 0.73,
+      "end": 0.76,
+      "word": "an",
+      "mfa_word": "an",
+      "word_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 6,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 0.76,
+      "center": 0.79,
+      "end": 0.82,
+      "word": "astonishing",
+      "mfa_word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 7,
+      "id": "S",
+      "pose": "S",
+      "phone": "S",
+      "start": 0.82,
+      "center": 0.885,
+      "end": 0.95,
+      "word": "astonishing",
+      "mfa_word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "S",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 8,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 0.95,
+      "center": 0.985,
+      "end": 1.02,
+      "word": "astonishing",
+      "mfa_word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 9,
+      "id": "AA1",
+      "pose": "AA1",
+      "phone": "AA1",
+      "start": 1.02,
+      "center": 1.07,
+      "end": 1.12,
+      "word": "astonishing",
+      "mfa_word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AA1",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 10,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 1.12,
+      "center": 1.145,
+      "end": 1.17,
+      "word": "astonishing",
+      "mfa_word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 11,
+      "id": "IH0",
+      "pose": "IH0",
+      "phone": "IH0",
+      "start": 1.17,
+      "center": 1.2,
+      "end": 1.23,
+      "word": "astonishing",
+      "mfa_word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IH0",
+      "source_phone_index": 5,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 12,
+      "id": "SH",
+      "pose": "SH",
+      "phone": "SH",
+      "start": 1.23,
+      "center": 1.29,
+      "end": 1.35,
+      "word": "astonishing",
+      "mfa_word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "SH",
+      "source_phone_index": 6,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 13,
+      "id": "IH0",
+      "pose": "IH0",
+      "phone": "IH0",
+      "start": 1.35,
+      "center": 1.37,
+      "end": 1.39,
+      "word": "astonishing",
+      "mfa_word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IH0",
+      "source_phone_index": 7,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 14,
+      "id": "NG",
+      "pose": "NG",
+      "phone": "NG",
+      "start": 1.39,
+      "center": 1.44,
+      "end": 1.49,
+      "word": "astonishing",
+      "mfa_word": "astonishing",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "NG",
+      "source_phone_index": 8,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 15,
+      "id": "V",
+      "pose": "V",
+      "phone": "V",
+      "start": 1.49,
+      "center": 1.52,
+      "end": 1.55,
+      "word": "view",
+      "mfa_word": "view",
+      "word_index": 3,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "V",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 16,
+      "id": "Y",
+      "pose": "Y",
+      "phone": "Y",
+      "start": 1.55,
+      "center": 1.6400000000000001,
+      "end": 1.73,
+      "word": "view",
+      "mfa_word": "view",
+      "word_index": 3,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "Y",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 17,
+      "id": "UW1",
+      "pose": "UW1",
+      "phone": "UW1",
+      "start": 1.73,
+      "center": 1.8399999999999999,
+      "end": 1.95,
+      "word": "view",
+      "mfa_word": "view",
+      "word_index": 3,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "UW1",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    }
+  ],
+  "flags": [],
+  "notes": [],
+  "summary": {
+    "word_count": 4,
+    "speech_region_count": 1,
+    "pause_boundary_count": 3,
+    "pause_region_break_count": 0,
+    "word_head_count": 4,
+    "viseme_count": 18,
+    "flag_count": 0,
+    "flags_by_kind": {},
+    "commit_reasons": {
+      "mfa_phone_interval": 18
+    },
+    "alignment_reasons": {
+      "mfa_textgrid_phone": 18
+    },
+    "mapped_to_observed_speech_count": 18
+  }
+}

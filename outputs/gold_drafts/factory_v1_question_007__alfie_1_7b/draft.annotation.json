@@ -1,0 +1,2211 @@
+{
+  "schema_version": 1,
+  "case_id": "factory_v1_question_007__alfie_1_7b",
+  "created_utc": "2026-07-26T06:26:59.342600+00:00",
+  "generator": {
+    "kind": "liplab_gold_mfa_phase1",
+    "buffer_ms": 600000,
+    "chunk_ms": 600000,
+    "mfa_num_jobs": 4,
+    "speech_merge_gap_ms": 120,
+    "source_run_dir": "outputs/offline_gold/latest/factory_v1_question_007__alfie_1_7b",
+    "mfa_align_dir": "outputs/mfa_align/latest"
+  },
+  "approval": {
+    "status": "approved_gold",
+    "reviewed": true,
+    "reviewer": "auto_mfa_phone_export",
+    "reviewed_utc": "2026-07-26T06:26:59.342657+00:00"
+  },
+  "review_layers": {
+    "speech_regions": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "word_heads": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "dense_visemes": {
+      "status": "reviewed_dense",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    }
+  },
+  "transcript": "What would happen if we opened both windows?",
+  "audio": {
+    "path": "inputs/wav/factory_v1_question_007__alfie_1_7b.wav",
+    "sample_rate_hz": 24000,
+    "channels": 1,
+    "frame_count": 76245,
+    "duration_sec": 3.176875
+  },
+  "speech_regions": [
+    {
+      "index": 0,
+      "start": 0.89,
+      "end": 3.15,
+      "word_start_index": 0,
+      "word_end_index": 7,
+      "sentence_start_index": -1,
+      "sentence_end_index": -1,
+      "source": "mfa_word_aligned_pause_regions",
+      "merge_gap_seconds": 0.12,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      }
+    }
+  ],
+  "pause_boundaries": [
+    {
+      "word_index": 0,
+      "word": "what",
+      "next_word_index": 1,
+      "next_word": "would",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 1,
+      "word": "would",
+      "next_word_index": 2,
+      "next_word": "happen",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 2,
+      "word": "happen",
+      "next_word_index": 3,
+      "next_word": "if",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 3,
+      "word": "if",
+      "next_word_index": 4,
+      "next_word": "we",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 4,
+      "word": "we",
+      "next_word_index": 5,
+      "next_word": "opened",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 5,
+      "word": "opened",
+      "next_word_index": 6,
+      "next_word": "both",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    },
+    {
+      "word_index": 6,
+      "word": "both",
+      "next_word_index": 7,
+      "next_word": "windows",
+      "mark": "",
+      "mark_sequence": "",
+      "pause_class": "none",
+      "split_applied": false,
+      "split_reason": "none",
+      "direct_word_gap_seconds": 0.0,
+      "phone_gap_seconds": 0.0,
+      "wave_silence_seconds": 0.0,
+      "acoustic_gap_seconds": 0.0,
+      "speech_region_index_before": 0,
+      "speech_region_index_after": 0
+    }
+  ],
+  "gold_words": [
+    {
+      "word_index": 0,
+      "word": "what",
+      "mfa_word": "what",
+      "start": 0.89,
+      "end": 1.09,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "would",
+      "mfa_word": "would",
+      "start": 1.09,
+      "end": 1.2,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 2,
+      "word": "happen",
+      "mfa_word": "happen",
+      "start": 1.2,
+      "end": 1.55,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 3,
+      "word": "if",
+      "mfa_word": "if",
+      "start": 1.55,
+      "end": 1.69,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 4,
+      "word": "we",
+      "mfa_word": "we",
+      "start": 1.69,
+      "end": 1.84,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 5,
+      "word": "opened",
+      "mfa_word": "opened",
+      "start": 1.84,
+      "end": 2.22,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 6,
+      "word": "both",
+      "mfa_word": "both",
+      "start": 2.22,
+      "end": 2.5,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 7,
+      "word": "windows",
+      "mfa_word": "windows",
+      "start": 2.5,
+      "end": 3.15,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        "?"
+      ],
+      "boundary_mark_after": "?",
+      "speech_region_index": 0
+    }
+  ],
+  "word_heads": [
+    {
+      "word_index": 0,
+      "word": "what",
+      "start": 0.89,
+      "end": 0.93,
+      "pose": "HH",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 1,
+      "word": "would",
+      "start": 1.09,
+      "end": 1.13,
+      "pose": "W",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 2,
+      "word": "happen",
+      "start": 1.2,
+      "end": 1.27,
+      "pose": "HH",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 3,
+      "word": "if",
+      "start": 1.55,
+      "end": 1.61,
+      "pose": "IH1",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "IH1",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 4,
+      "word": "we",
+      "start": 1.69,
+      "end": 1.74,
+      "pose": "W",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 5,
+      "word": "opened",
+      "start": 1.84,
+      "end": 1.94,
+      "pose": "OW1",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "OW1",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 6,
+      "word": "both",
+      "start": 2.22,
+      "end": 2.26,
+      "pose": "B",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    },
+    {
+      "word_index": 7,
+      "word": "windows",
+      "start": 2.5,
+      "end": 2.61,
+      "pose": "W",
+      "speech_region_index": 0,
+      "sentence_index": -1,
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "alignment_reason": "mfa_textgrid_phone",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      }
+    }
+  ],
+  "mfa_words": [
+    {
+      "word_index": 0,
+      "word": "what",
+      "mfa_word": "what",
+      "start": 0.89,
+      "end": 1.09,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 1,
+      "word": "would",
+      "mfa_word": "would",
+      "start": 1.09,
+      "end": 1.2,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 2,
+      "word": "happen",
+      "mfa_word": "happen",
+      "start": 1.2,
+      "end": 1.55,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 3,
+      "word": "if",
+      "mfa_word": "if",
+      "start": 1.55,
+      "end": 1.69,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 4,
+      "word": "we",
+      "mfa_word": "we",
+      "start": 1.69,
+      "end": 1.84,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 5,
+      "word": "opened",
+      "mfa_word": "opened",
+      "start": 1.84,
+      "end": 2.22,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 6,
+      "word": "both",
+      "mfa_word": "both",
+      "start": 2.22,
+      "end": 2.5,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [],
+      "boundary_mark_after": "",
+      "speech_region_index": 0
+    },
+    {
+      "word_index": 7,
+      "word": "windows",
+      "mfa_word": "windows",
+      "start": 2.5,
+      "end": 3.15,
+      "sentence_index": -1,
+      "source": "mfa_word_interval",
+      "approval": {
+        "status": "draft_auto",
+        "reviewed": false
+      },
+      "boundary_marks_after": [
+        "?"
+      ],
+      "boundary_mark_after": "?",
+      "speech_region_index": 0
+    }
+  ],
+  "mfa_phones": [
+    {
+      "index_in_word": 0,
+      "phone": "HH",
+      "phone_base": "HH",
+      "start": 0.89,
+      "end": 0.93,
+      "word_index": 0,
+      "word": "what"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 0.93,
+      "end": 0.99,
+      "word_index": 0,
+      "word": "what"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "AH1",
+      "phone_base": "AH",
+      "start": 0.99,
+      "end": 1.04,
+      "word_index": 0,
+      "word": "what"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "T",
+      "phone_base": "T",
+      "start": 1.04,
+      "end": 1.09,
+      "word_index": 0,
+      "word": "what"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 1.09,
+      "end": 1.13,
+      "word_index": 1,
+      "word": "would"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "UH1",
+      "phone_base": "UH",
+      "start": 1.13,
+      "end": 1.17,
+      "word_index": 1,
+      "word": "would"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 1.17,
+      "end": 1.2,
+      "word_index": 1,
+      "word": "would"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "HH",
+      "phone_base": "HH",
+      "start": 1.2,
+      "end": 1.27,
+      "word_index": 2,
+      "word": "happen"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "AE1",
+      "phone_base": "AE",
+      "start": 1.27,
+      "end": 1.39,
+      "word_index": 2,
+      "word": "happen"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "P",
+      "phone_base": "P",
+      "start": 1.39,
+      "end": 1.46,
+      "word_index": 2,
+      "word": "happen"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 1.46,
+      "end": 1.51,
+      "word_index": 2,
+      "word": "happen"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 1.51,
+      "end": 1.55,
+      "word_index": 2,
+      "word": "happen"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "IH1",
+      "phone_base": "IH",
+      "start": 1.55,
+      "end": 1.61,
+      "word_index": 3,
+      "word": "if"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "F",
+      "phone_base": "F",
+      "start": 1.61,
+      "end": 1.69,
+      "word_index": 3,
+      "word": "if"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 1.69,
+      "end": 1.74,
+      "word_index": 4,
+      "word": "we"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "IY1",
+      "phone_base": "IY",
+      "start": 1.74,
+      "end": 1.84,
+      "word_index": 4,
+      "word": "we"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "OW1",
+      "phone_base": "OW",
+      "start": 1.84,
+      "end": 1.94,
+      "word_index": 5,
+      "word": "opened"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "P",
+      "phone_base": "P",
+      "start": 1.94,
+      "end": 2.01,
+      "word_index": 5,
+      "word": "opened"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "AH0",
+      "phone_base": "AH",
+      "start": 2.01,
+      "end": 2.06,
+      "word_index": 5,
+      "word": "opened"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 2.06,
+      "end": 2.12,
+      "word_index": 5,
+      "word": "opened"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 2.12,
+      "end": 2.22,
+      "word_index": 5,
+      "word": "opened"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "B",
+      "phone_base": "B",
+      "start": 2.22,
+      "end": 2.26,
+      "word_index": 6,
+      "word": "both"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "OW1",
+      "phone_base": "OW",
+      "start": 2.26,
+      "end": 2.4,
+      "word_index": 6,
+      "word": "both"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "TH",
+      "phone_base": "TH",
+      "start": 2.4,
+      "end": 2.5,
+      "word_index": 6,
+      "word": "both"
+    },
+    {
+      "index_in_word": 0,
+      "phone": "W",
+      "phone_base": "W",
+      "start": 2.5,
+      "end": 2.61,
+      "word_index": 7,
+      "word": "windows"
+    },
+    {
+      "index_in_word": 1,
+      "phone": "IH1",
+      "phone_base": "IH",
+      "start": 2.61,
+      "end": 2.67,
+      "word_index": 7,
+      "word": "windows"
+    },
+    {
+      "index_in_word": 2,
+      "phone": "N",
+      "phone_base": "N",
+      "start": 2.67,
+      "end": 2.74,
+      "word_index": 7,
+      "word": "windows"
+    },
+    {
+      "index_in_word": 3,
+      "phone": "D",
+      "phone_base": "D",
+      "start": 2.74,
+      "end": 2.8,
+      "word_index": 7,
+      "word": "windows"
+    },
+    {
+      "index_in_word": 4,
+      "phone": "OW0",
+      "phone_base": "OW",
+      "start": 2.8,
+      "end": 2.98,
+      "word_index": 7,
+      "word": "windows"
+    },
+    {
+      "index_in_word": 5,
+      "phone": "Z",
+      "phone_base": "Z",
+      "start": 2.98,
+      "end": 3.15,
+      "word_index": 7,
+      "word": "windows"
+    }
+  ],
+  "mfa_non_silence_phone_intervals": [
+    {
+      "phone": "HH",
+      "start": 0.89,
+      "end": 0.93
+    },
+    {
+      "phone": "W",
+      "start": 0.93,
+      "end": 0.99
+    },
+    {
+      "phone": "AH1",
+      "start": 0.99,
+      "end": 1.04
+    },
+    {
+      "phone": "T",
+      "start": 1.04,
+      "end": 1.09
+    },
+    {
+      "phone": "W",
+      "start": 1.09,
+      "end": 1.13
+    },
+    {
+      "phone": "UH1",
+      "start": 1.13,
+      "end": 1.17
+    },
+    {
+      "phone": "D",
+      "start": 1.17,
+      "end": 1.2
+    },
+    {
+      "phone": "HH",
+      "start": 1.2,
+      "end": 1.27
+    },
+    {
+      "phone": "AE1",
+      "start": 1.27,
+      "end": 1.39
+    },
+    {
+      "phone": "P",
+      "start": 1.39,
+      "end": 1.46
+    },
+    {
+      "phone": "AH0",
+      "start": 1.46,
+      "end": 1.51
+    },
+    {
+      "phone": "N",
+      "start": 1.51,
+      "end": 1.55
+    },
+    {
+      "phone": "IH1",
+      "start": 1.55,
+      "end": 1.61
+    },
+    {
+      "phone": "F",
+      "start": 1.61,
+      "end": 1.69
+    },
+    {
+      "phone": "W",
+      "start": 1.69,
+      "end": 1.74
+    },
+    {
+      "phone": "IY1",
+      "start": 1.74,
+      "end": 1.84
+    },
+    {
+      "phone": "OW1",
+      "start": 1.84,
+      "end": 1.94
+    },
+    {
+      "phone": "P",
+      "start": 1.94,
+      "end": 2.01
+    },
+    {
+      "phone": "AH0",
+      "start": 2.01,
+      "end": 2.06
+    },
+    {
+      "phone": "N",
+      "start": 2.06,
+      "end": 2.12
+    },
+    {
+      "phone": "D",
+      "start": 2.12,
+      "end": 2.22
+    },
+    {
+      "phone": "B",
+      "start": 2.22,
+      "end": 2.26
+    },
+    {
+      "phone": "OW1",
+      "start": 2.26,
+      "end": 2.4
+    },
+    {
+      "phone": "TH",
+      "start": 2.4,
+      "end": 2.5
+    },
+    {
+      "phone": "W",
+      "start": 2.5,
+      "end": 2.61
+    },
+    {
+      "phone": "IH1",
+      "start": 2.61,
+      "end": 2.67
+    },
+    {
+      "phone": "N",
+      "start": 2.67,
+      "end": 2.74
+    },
+    {
+      "phone": "D",
+      "start": 2.74,
+      "end": 2.8
+    },
+    {
+      "phone": "OW0",
+      "start": 2.8,
+      "end": 2.98
+    },
+    {
+      "phone": "Z",
+      "start": 2.98,
+      "end": 3.15
+    }
+  ],
+  "wave_silence_spans": [
+    {
+      "start": 0.0,
+      "end": 0.94,
+      "duration_seconds": 0.94
+    },
+    {
+      "start": 2.42,
+      "end": 2.54,
+      "duration_seconds": 0.1200000000000001
+    },
+    {
+      "start": 2.84,
+      "end": 3.176875,
+      "duration_seconds": 0.33687500000000004
+    }
+  ],
+  "planned_visemes": [
+    {
+      "index": 0,
+      "pose": "08_Ah",
+      "word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "text_center_norm": 0.01425,
+      "strength": 0.0,
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "generator": "cmu_hh_timing_waypoint"
+    },
+    {
+      "index": 1,
+      "pose": "12_Ww-Oo-",
+      "word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "text_center_norm": 0.0375,
+      "strength": 0.88,
+      "source_phone": "W",
+      "source_phone_index": 1,
+      "generator": "cmu_w"
+    },
+    {
+      "index": 2,
+      "pose": "18_Uh",
+      "word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "text_center_norm": 0.0625,
+      "strength": 1.0,
+      "source_phone": "AH",
+      "source_phone_index": 2,
+      "generator": "cmu_central_vowel"
+    },
+    {
+      "index": 3,
+      "pose": "01_TDS-Ah-",
+      "word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "text_center_norm": 0.0875,
+      "strength": 0.4,
+      "source_phone": "T",
+      "source_phone_index": 3,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 4,
+      "pose": "12_Ww-Oo-",
+      "word": "would",
+      "word_index": 1,
+      "sentence_index": -1,
+      "text_center_norm": 0.116667,
+      "strength": 0.88,
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "generator": "cmu_w"
+    },
+    {
+      "index": 5,
+      "pose": "18_Uh",
+      "word": "would",
+      "word_index": 1,
+      "sentence_index": -1,
+      "text_center_norm": 0.15,
+      "strength": 1.0,
+      "source_phone": "UH",
+      "source_phone_index": 1,
+      "generator": "cmu_uh_vowel"
+    },
+    {
+      "index": 6,
+      "pose": "01_TDS-Ah-",
+      "word": "would",
+      "word_index": 1,
+      "sentence_index": -1,
+      "text_center_norm": 0.183333,
+      "strength": 0.4,
+      "source_phone": "D",
+      "source_phone_index": 2,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 7,
+      "pose": "08_Ah",
+      "word": "happen",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.215,
+      "strength": 0.0,
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "generator": "cmu_hh_timing_waypoint"
+    },
+    {
+      "index": 8,
+      "pose": "08_Ah",
+      "word": "happen",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.245,
+      "strength": 1.0,
+      "source_phone": "AE",
+      "source_phone_index": 1,
+      "generator": "cmu_ah_vowel"
+    },
+    {
+      "index": 9,
+      "pose": "22_MBP",
+      "word": "happen",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.275,
+      "strength": 1.0,
+      "source_phone": "P",
+      "source_phone_index": 2,
+      "generator": "cmu_bilabial"
+    },
+    {
+      "index": 10,
+      "pose": "18_Uh",
+      "word": "happen",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.305,
+      "strength": 1.0,
+      "source_phone": "AH",
+      "source_phone_index": 3,
+      "generator": "cmu_central_vowel"
+    },
+    {
+      "index": 11,
+      "pose": "23_Tongue_LNTDS",
+      "word": "happen",
+      "word_index": 2,
+      "sentence_index": -1,
+      "text_center_norm": 0.335,
+      "strength": 0.46,
+      "source_phone": "N",
+      "source_phone_index": 4,
+      "generator": "cmu_lingual"
+    },
+    {
+      "index": 12,
+      "pose": "04_Ih",
+      "word": "if",
+      "word_index": 3,
+      "sentence_index": -1,
+      "text_center_norm": 0.375,
+      "strength": 1.0,
+      "source_phone": "IH",
+      "source_phone_index": 0,
+      "generator": "cmu_ih_vowel"
+    },
+    {
+      "index": 13,
+      "pose": "20_FV",
+      "word": "if",
+      "word_index": 3,
+      "sentence_index": -1,
+      "text_center_norm": 0.425,
+      "strength": 0.96,
+      "source_phone": "F",
+      "source_phone_index": 1,
+      "generator": "cmu_fv"
+    },
+    {
+      "index": 14,
+      "pose": "12_Ww-Oo-",
+      "word": "we",
+      "word_index": 4,
+      "sentence_index": -1,
+      "text_center_norm": 0.475,
+      "strength": 0.88,
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "generator": "cmu_w"
+    },
+    {
+      "index": 15,
+      "pose": "03_Ee",
+      "word": "we",
+      "word_index": 4,
+      "sentence_index": -1,
+      "text_center_norm": 0.525,
+      "strength": 1.0,
+      "source_phone": "IY",
+      "source_phone_index": 1,
+      "generator": "cmu_front_vowel"
+    },
+    {
+      "index": 16,
+      "pose": "09_Oh",
+      "word": "opened",
+      "word_index": 5,
+      "sentence_index": -1,
+      "text_center_norm": 0.565,
+      "strength": 1.0,
+      "source_phone": "OW",
+      "source_phone_index": 0,
+      "generator": "cmu_oh_vowel"
+    },
+    {
+      "index": 17,
+      "pose": "22_MBP",
+      "word": "opened",
+      "word_index": 5,
+      "sentence_index": -1,
+      "text_center_norm": 0.595,
+      "strength": 1.0,
+      "source_phone": "P",
+      "source_phone_index": 1,
+      "generator": "cmu_bilabial"
+    },
+    {
+      "index": 18,
+      "pose": "18_Uh",
+      "word": "opened",
+      "word_index": 5,
+      "sentence_index": -1,
+      "text_center_norm": 0.625,
+      "strength": 1.0,
+      "source_phone": "AH",
+      "source_phone_index": 2,
+      "generator": "cmu_central_vowel"
+    },
+    {
+      "index": 19,
+      "pose": "23_Tongue_LNTDS",
+      "word": "opened",
+      "word_index": 5,
+      "sentence_index": -1,
+      "text_center_norm": 0.655,
+      "strength": 0.46,
+      "source_phone": "N",
+      "source_phone_index": 3,
+      "generator": "cmu_lingual"
+    },
+    {
+      "index": 20,
+      "pose": "01_TDS-Ah-",
+      "word": "opened",
+      "word_index": 5,
+      "sentence_index": -1,
+      "text_center_norm": 0.685,
+      "strength": 0.4,
+      "source_phone": "D",
+      "source_phone_index": 4,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 21,
+      "pose": "22_MBP",
+      "word": "both",
+      "word_index": 6,
+      "sentence_index": -1,
+      "text_center_norm": 0.716667,
+      "strength": 1.0,
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "generator": "cmu_bilabial"
+    },
+    {
+      "index": 22,
+      "pose": "09_Oh",
+      "word": "both",
+      "word_index": 6,
+      "sentence_index": -1,
+      "text_center_norm": 0.75,
+      "strength": 1.0,
+      "source_phone": "OW",
+      "source_phone_index": 1,
+      "generator": "cmu_oh_vowel"
+    },
+    {
+      "index": 23,
+      "pose": "24_Tongue_Th",
+      "word": "both",
+      "word_index": 6,
+      "sentence_index": -1,
+      "text_center_norm": 0.783333,
+      "strength": 0.62,
+      "source_phone": "TH",
+      "source_phone_index": 2,
+      "generator": "cmu_dental_tongue"
+    },
+    {
+      "index": 24,
+      "pose": "12_Ww-Oo-",
+      "word": "windows",
+      "word_index": 7,
+      "sentence_index": -1,
+      "text_center_norm": 0.816667,
+      "strength": 0.88,
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "generator": "cmu_w"
+    },
+    {
+      "index": 25,
+      "pose": "04_Ih",
+      "word": "windows",
+      "word_index": 7,
+      "sentence_index": -1,
+      "text_center_norm": 0.85,
+      "strength": 1.0,
+      "source_phone": "IH",
+      "source_phone_index": 1,
+      "generator": "cmu_ih_vowel"
+    },
+    {
+      "index": 26,
+      "pose": "23_Tongue_LNTDS",
+      "word": "windows",
+      "word_index": 7,
+      "sentence_index": -1,
+      "text_center_norm": 0.883333,
+      "strength": 0.46,
+      "source_phone": "N",
+      "source_phone_index": 2,
+      "generator": "cmu_lingual"
+    },
+    {
+      "index": 27,
+      "pose": "01_TDS-Ah-",
+      "word": "windows",
+      "word_index": 7,
+      "sentence_index": -1,
+      "text_center_norm": 0.916667,
+      "strength": 0.4,
+      "source_phone": "D",
+      "source_phone_index": 3,
+      "generator": "cmu_alveolar_stop"
+    },
+    {
+      "index": 28,
+      "pose": "09_Oh",
+      "word": "windows",
+      "word_index": 7,
+      "sentence_index": -1,
+      "text_center_norm": 0.95,
+      "strength": 1.0,
+      "source_phone": "OW",
+      "source_phone_index": 4,
+      "generator": "cmu_oh_vowel"
+    },
+    {
+      "index": 29,
+      "pose": "21_FV-Ee-",
+      "word": "windows",
+      "word_index": 7,
+      "sentence_index": -1,
+      "text_center_norm": 0.983333,
+      "strength": 0.42,
+      "source_phone": "Z",
+      "source_phone_index": 5,
+      "generator": "cmu_sibilant_teeth_wide"
+    }
+  ],
+  "visemes": [
+    {
+      "index": 0,
+      "id": "HH",
+      "pose": "HH",
+      "phone": "HH",
+      "start": 0.89,
+      "center": 0.91,
+      "end": 0.93,
+      "word": "what",
+      "mfa_word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 1,
+      "id": "W",
+      "pose": "W",
+      "phone": "W",
+      "start": 0.93,
+      "center": 0.96,
+      "end": 0.99,
+      "word": "what",
+      "mfa_word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "W",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 2,
+      "id": "AH1",
+      "pose": "AH1",
+      "phone": "AH1",
+      "start": 0.99,
+      "center": 1.0150000000000001,
+      "end": 1.04,
+      "word": "what",
+      "mfa_word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH1",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 3,
+      "id": "T",
+      "pose": "T",
+      "phone": "T",
+      "start": 1.04,
+      "center": 1.065,
+      "end": 1.09,
+      "word": "what",
+      "mfa_word": "what",
+      "word_index": 0,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "T",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 4,
+      "id": "W",
+      "pose": "W",
+      "phone": "W",
+      "start": 1.09,
+      "center": 1.1099999999999999,
+      "end": 1.13,
+      "word": "would",
+      "mfa_word": "would",
+      "word_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 5,
+      "id": "UH1",
+      "pose": "UH1",
+      "phone": "UH1",
+      "start": 1.13,
+      "center": 1.15,
+      "end": 1.17,
+      "word": "would",
+      "mfa_word": "would",
+      "word_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "UH1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 6,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 1.17,
+      "center": 1.185,
+      "end": 1.2,
+      "word": "would",
+      "mfa_word": "would",
+      "word_index": 1,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "D",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 7,
+      "id": "HH",
+      "pose": "HH",
+      "phone": "HH",
+      "start": 1.2,
+      "center": 1.2349999999999999,
+      "end": 1.27,
+      "word": "happen",
+      "mfa_word": "happen",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "HH",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 8,
+      "id": "AE1",
+      "pose": "AE1",
+      "phone": "AE1",
+      "start": 1.27,
+      "center": 1.33,
+      "end": 1.39,
+      "word": "happen",
+      "mfa_word": "happen",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AE1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 9,
+      "id": "P",
+      "pose": "P",
+      "phone": "P",
+      "start": 1.39,
+      "center": 1.4249999999999998,
+      "end": 1.46,
+      "word": "happen",
+      "mfa_word": "happen",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "P",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 10,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 1.46,
+      "center": 1.4849999999999999,
+      "end": 1.51,
+      "word": "happen",
+      "mfa_word": "happen",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 11,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 1.51,
+      "center": 1.53,
+      "end": 1.55,
+      "word": "happen",
+      "mfa_word": "happen",
+      "word_index": 2,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 12,
+      "id": "IH1",
+      "pose": "IH1",
+      "phone": "IH1",
+      "start": 1.55,
+      "center": 1.58,
+      "end": 1.61,
+      "word": "if",
+      "mfa_word": "if",
+      "word_index": 3,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IH1",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 13,
+      "id": "F",
+      "pose": "F",
+      "phone": "F",
+      "start": 1.61,
+      "center": 1.65,
+      "end": 1.69,
+      "word": "if",
+      "mfa_word": "if",
+      "word_index": 3,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "F",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 14,
+      "id": "W",
+      "pose": "W",
+      "phone": "W",
+      "start": 1.69,
+      "center": 1.7149999999999999,
+      "end": 1.74,
+      "word": "we",
+      "mfa_word": "we",
+      "word_index": 4,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 15,
+      "id": "IY1",
+      "pose": "IY1",
+      "phone": "IY1",
+      "start": 1.74,
+      "center": 1.79,
+      "end": 1.84,
+      "word": "we",
+      "mfa_word": "we",
+      "word_index": 4,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IY1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 16,
+      "id": "OW1",
+      "pose": "OW1",
+      "phone": "OW1",
+      "start": 1.84,
+      "center": 1.8900000000000001,
+      "end": 1.94,
+      "word": "opened",
+      "mfa_word": "opened",
+      "word_index": 5,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "OW1",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 17,
+      "id": "P",
+      "pose": "P",
+      "phone": "P",
+      "start": 1.94,
+      "center": 1.9749999999999999,
+      "end": 2.01,
+      "word": "opened",
+      "mfa_word": "opened",
+      "word_index": 5,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "P",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 18,
+      "id": "AH0",
+      "pose": "AH0",
+      "phone": "AH0",
+      "start": 2.01,
+      "center": 2.035,
+      "end": 2.06,
+      "word": "opened",
+      "mfa_word": "opened",
+      "word_index": 5,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "AH0",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 19,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 2.06,
+      "center": 2.09,
+      "end": 2.12,
+      "word": "opened",
+      "mfa_word": "opened",
+      "word_index": 5,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 20,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 2.12,
+      "center": 2.17,
+      "end": 2.22,
+      "word": "opened",
+      "mfa_word": "opened",
+      "word_index": 5,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "D",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 21,
+      "id": "B",
+      "pose": "B",
+      "phone": "B",
+      "start": 2.22,
+      "center": 2.24,
+      "end": 2.26,
+      "word": "both",
+      "mfa_word": "both",
+      "word_index": 6,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "B",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 22,
+      "id": "OW1",
+      "pose": "OW1",
+      "phone": "OW1",
+      "start": 2.26,
+      "center": 2.33,
+      "end": 2.4,
+      "word": "both",
+      "mfa_word": "both",
+      "word_index": 6,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "OW1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 23,
+      "id": "TH",
+      "pose": "TH",
+      "phone": "TH",
+      "start": 2.4,
+      "center": 2.45,
+      "end": 2.5,
+      "word": "both",
+      "mfa_word": "both",
+      "word_index": 6,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "TH",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 24,
+      "id": "W",
+      "pose": "W",
+      "phone": "W",
+      "start": 2.5,
+      "center": 2.5549999999999997,
+      "end": 2.61,
+      "word": "windows",
+      "mfa_word": "windows",
+      "word_index": 7,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "W",
+      "source_phone_index": 0,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 25,
+      "id": "IH1",
+      "pose": "IH1",
+      "phone": "IH1",
+      "start": 2.61,
+      "center": 2.6399999999999997,
+      "end": 2.67,
+      "word": "windows",
+      "mfa_word": "windows",
+      "word_index": 7,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "IH1",
+      "source_phone_index": 1,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 26,
+      "id": "N",
+      "pose": "N",
+      "phone": "N",
+      "start": 2.67,
+      "center": 2.705,
+      "end": 2.74,
+      "word": "windows",
+      "mfa_word": "windows",
+      "word_index": 7,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "N",
+      "source_phone_index": 2,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 27,
+      "id": "D",
+      "pose": "D",
+      "phone": "D",
+      "start": 2.74,
+      "center": 2.77,
+      "end": 2.8,
+      "word": "windows",
+      "mfa_word": "windows",
+      "word_index": 7,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "D",
+      "source_phone_index": 3,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 28,
+      "id": "OW0",
+      "pose": "OW0",
+      "phone": "OW0",
+      "start": 2.8,
+      "center": 2.8899999999999997,
+      "end": 2.98,
+      "word": "windows",
+      "mfa_word": "windows",
+      "word_index": 7,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "OW0",
+      "source_phone_index": 4,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    },
+    {
+      "index": 29,
+      "id": "Z",
+      "pose": "Z",
+      "phone": "Z",
+      "start": 2.98,
+      "center": 3.065,
+      "end": 3.15,
+      "word": "windows",
+      "mfa_word": "windows",
+      "word_index": 7,
+      "sentence_index": -1,
+      "strength": 1.0,
+      "commit_reason": "mfa_phone_interval",
+      "alignment_reason": "mfa_textgrid_phone",
+      "source_phone": "Z",
+      "source_phone_index": 5,
+      "source_phone_class": "cmu_arpa",
+      "mapped_to_observed_speech": true,
+      "approval": {
+        "status": "approved_gold",
+        "reviewed": true
+      },
+      "notes": [],
+      "flags": [],
+      "speech_region_index": 0
+    }
+  ],
+  "flags": [],
+  "notes": [],
+  "summary": {
+    "word_count": 8,
+    "speech_region_count": 1,
+    "pause_boundary_count": 7,
+    "pause_region_break_count": 0,
+    "word_head_count": 8,
+    "viseme_count": 30,
+    "flag_count": 0,
+    "flags_by_kind": {},
+    "commit_reasons": {
+      "mfa_phone_interval": 30
+    },
+    "alignment_reasons": {
+      "mfa_textgrid_phone": 30
+    },
+    "mapped_to_observed_speech_count": 30
+  }
+}

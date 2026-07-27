@@ -12,8 +12,7 @@ Output:
   <liplab_root>/inputs/transcripts/<case_id>.txt
   <liplab_root>/inputs/wav/<case_id>.wav
 
-Optional:
-  <liplab_root>/inputs/index.csv
+The unified <liplab_root>/inputs/corpus.csv manifest is rebuilt after import.
 
 Usage:
   python export_offgrid_logs_to_liplab.py "C:\path\to\Saved\Logs\OffgridAI\LipsyncDebug" "C:\git\liplab"
@@ -28,6 +27,7 @@ import argparse
 import csv
 import re
 import shutil
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -161,18 +161,19 @@ def export_cases(cases: list[ExportCase], liplab_root: Path, overwrite: bool) ->
     transcript_dir.mkdir(parents=True, exist_ok=True)
     wav_dir.mkdir(parents=True, exist_ok=True)
 
-    index_path = liplab_root / "inputs" / "index.csv"
-    index_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path = liplab_root / "inputs" / "corpus.csv"
+    existing_sources: set[str] = set()
+    if manifest_path.exists():
+        with manifest_path.open(newline="", encoding="utf-8") as handle:
+            existing_sources = {
+                str(Path(row["source_uri"]).resolve()).lower()
+                for row in csv.DictReader(handle)
+                if row.get("source_uri")
+            }
 
-    rows: list[dict[str, str]] = []
-    if index_path.exists():
-        with index_path.open(newline="", encoding="utf-8") as f:
-            rows.extend(csv.DictReader(f))
-    existing_sources = {str(Path(row["source_dir"]).resolve()).lower() for row in rows}
-
+    imported: list[ExportCase] = []
     for case in cases:
-        source_key = str(case.source_dir.resolve()).lower()
-        if source_key in existing_sources:
+        if str(case.source_dir.resolve()).lower() in existing_sources:
             continue
         if not overwrite and (case.transcript_out.exists() or case.wav_out.exists()):
             print(f"SKIP existing: {case.case_id}", file=sys.stderr)
@@ -181,29 +182,32 @@ def export_cases(cases: list[ExportCase], liplab_root: Path, overwrite: bool) ->
         case.transcript_out.write_text(case.transcript + "\n", encoding="utf-8")
         shutil.copy2(case.wav_path, case.wav_out)
 
-        rows.append(
-            {
-                "case_id": case.case_id,
-                "transcript": str(case.transcript_out.relative_to(liplab_root)),
-                "wav": str(case.wav_out.relative_to(liplab_root)),
-                "source_dir": str(case.source_dir),
-                "text": case.transcript,
-            }
-        )
-        existing_sources.add(source_key)
+        imported.append(case)
 
-    with index_path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(
-            f,
-            fieldnames=["case_id", "transcript", "wav", "source_dir", "text"],
+    if imported:
+        scripts = liplab_root / "scripts"
+        subprocess.run(
+            [sys.executable, str(scripts / "build_corpus_speech_recipe.py")],
+            check=True,
         )
-        writer.writeheader()
-        writer.writerows(rows)
+        manifest_command = [
+            sys.executable,
+            str(scripts / "build_corpus_manifest.py"),
+        ]
+        for case in imported:
+            manifest_command.extend(
+                ["--recorded-source", f"{case.case_id}={case.source_dir.resolve()}"]
+            )
+        subprocess.run(manifest_command, check=True)
+        subprocess.run(
+            [sys.executable, str(scripts / "build_timing_dataset_split.py")],
+            check=True,
+        )
 
-    print(f"Exported {len(rows)} case(s)")
+    print(f"Imported {len(imported)} new case(s)")
     print(f"Transcripts: {transcript_dir}")
     print(f"WAVs:        {wav_dir}")
-    print(f"Index:       {index_path}")
+    print(f"Manifest:    {liplab_root / 'inputs' / 'corpus.csv'}")
 
 
 def main() -> int:

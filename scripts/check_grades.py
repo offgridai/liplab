@@ -41,15 +41,16 @@ checks = [
         "max",
         "max_word_onset_mae_ms_increase",
     ),
+    ("word_duration.success_rate", "min", "max_word_duration_success_drop"),
     (
-        "class_aware_visual_anchor.success_rate",
-        "min",
-        "max_visual_anchor_success_drop",
+        "word_duration.mean_abs_error_ms",
+        "max",
+        "max_word_duration_mean_mae_ms_increase",
     ),
     (
-        "class_aware_visual_anchor.mean_abs_error_ms",
+        "word_duration.median_abs_error_ms",
         "max",
-        "max_visual_anchor_mae_ms_increase",
+        "max_word_duration_median_mae_ms_increase",
     ),
     ("strict_region_segmentation.exact_boundary_rate", "min", "max_strict_region_drop"),
     (
@@ -79,6 +80,108 @@ if order_violations > int(thresholds["max_order_violations"]):
         f"limit={thresholds['max_order_violations']}"
     )
     failed = True
+
+word_duration_coverage = float(value(summary, "word_duration.coverage_rate"))
+if word_duration_coverage < float(thresholds["min_word_duration_coverage_rate"]):
+    print(
+        "FAIL word_duration.coverage_rate: "
+        f"actual={word_duration_coverage:.6f} "
+        f"limit={thresholds['min_word_duration_coverage_rate']:.6f}"
+    )
+    failed = True
+severely_compressed_words = int(value(summary, "word_duration.severely_compressed_words"))
+if severely_compressed_words > int(thresholds["max_severely_compressed_words"]):
+    print(
+        "FAIL word_duration.severely_compressed_words: "
+        f"actual={severely_compressed_words} "
+        f"limit={thresholds['max_severely_compressed_words']}"
+    )
+    failed = True
+
+delivery_checks = [
+    (
+        "runtime_delivery.event_delivery_rate",
+        "min_runtime_event_delivery_rate",
+        "min",
+    ),
+    (
+        "runtime_delivery.word_delivery_rate",
+        "min_runtime_word_delivery_rate",
+        "min",
+    ),
+    (
+        "runtime_delivery.speech_region_delivery_rate",
+        "min_runtime_speech_region_delivery_rate",
+        "min",
+    ),
+    (
+        "runtime_delivery.sentence_delivery_rate",
+        "min_runtime_sentence_delivery_rate",
+        "min",
+    ),
+    (
+        "runtime_delivery.late_after_window_events",
+        "max_late_after_window_events",
+        "max",
+    ),
+    (
+        "runtime_delivery.empty_speech_regions",
+        "max_empty_speech_regions",
+        "max",
+    ),
+    (
+        "runtime_delivery.missing_sentences",
+        "max_missing_sentences",
+        "max",
+    ),
+    (
+        "runtime_delivery.compressed_sentences",
+        "max_compressed_sentences",
+        "max",
+    ),
+]
+for metric, threshold_name, direction in delivery_checks:
+    actual = float(value(summary, metric))
+    limit = float(thresholds[threshold_name])
+    ok = actual >= limit if direction == "min" else actual <= limit
+    if not ok:
+        print(f"FAIL {metric}: actual={actual:.6f} limit={limit:.6f}")
+        failed = True
+
+proportion_checks = [
+    (
+        "viseme_proportion.word_coverage_rate",
+        "min_viseme_proportion_word_coverage_rate",
+        "min",
+    ),
+    (
+        "viseme_proportion.run_share_abs_error_median",
+        "max_viseme_run_share_abs_error_median",
+        "max",
+    ),
+    (
+        "viseme_proportion.boundary_position_abs_error_median",
+        "max_viseme_boundary_position_abs_error_median",
+        "max",
+    ),
+    (
+        "viseme_proportion.word_total_variation_median",
+        "max_viseme_word_total_variation_median",
+        "max",
+    ),
+    (
+        "viseme_proportion.zero_runtime_words",
+        "max_viseme_zero_runtime_words",
+        "max",
+    ),
+]
+for metric, threshold_name, direction in proportion_checks:
+    actual = float(value(summary, metric))
+    limit = float(thresholds[threshold_name])
+    ok = actual >= limit if direction == "min" else actual <= limit
+    if not ok:
+        print(f"FAIL {metric}: actual={actual:.6f} limit={limit:.6f}")
+        failed = True
 
 if failed:
     print("See alignment_cases.csv and alignment_words.csv for the failing cases.")

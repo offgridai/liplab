@@ -1,80 +1,74 @@
-# liplab
+# LipLab
 
-Standalone corpus harness for the OffgridAI streaming lipsync core.
+LipLab is the standalone corpus, training, and regression harness for OffgridAI's
+neural streaming lipsync runtime. `offgrid_dropin` is the authoritative shared
+C++ implementation; the harness streams real PCM through that implementation
+and grades the performed animation against MFA references.
 
-`offgrid_dropin` is the authoritative implementation shared with Unreal. The
-harness streams WAV data through that code and grades its performed animation
-against MFA-backed references; it does not contain another scheduler.
+## Current runtime
 
-## Active design
+There is one runtime path:
 
-The runtime has one path:
+1. The transcript planner converts text into an ordered CMU phone/viseme lattice.
+2. The audio feature extractor converts streamed PCM into 18 causal features at
+   10 ms cadence.
+3. The small native CUDA model predicts transcript-token alignment and neural
+   speech occupancy.
+4. A fixed-lag monotonic decoder commits viseme identity, placement, duration,
+   speech regions, pauses, word starts, and syllable alignment.
+5. The performer turns committed events into continuous pose weights.
 
-1. The transcript becomes ordered CMU phones, syllables, visemes, and relative
-   intra-word durations.
-2. Streamed PCM becomes causal speech regions and acoustic feature frames.
-3. The evidence surface detects syllabic pulses and class-specific articulatory
-   landmarks.
-4. The candidate estimator offers nearby ordered transcript syllables for each
-   stable pulse.
-5. The scheduler commits complete transcript-derived word packets. Vowel-led
-   words peak at the accepted nucleus; visible consonant-led words use the
-   matching audio onset/closure landmark, while preserving transcript identity.
-6. The performer samples committed events into pose weights, gated by detected
-   speech regions, with continuous coarticulation and a syllabic jaw carrier.
+Transcript-derived identity and order are authoritative. Audio and the neural
+model determine timing, but cannot invent or reorder visemes. There is no
+deterministic timing fallback: failed neural initialization produces neutral
+animation for that utterance.
 
-Transcript identity and order are authoritative. Audio owns timing but cannot
-choose a viseme. Punctuation may disambiguate a boundary-final syllable, but it
-cannot create or time a pause. There are no alternate controllers, TTS timing
-hints, predicted word schedules, or revisions to committed history.
-
-See [lipsync.md](lipsync.md) for the runtime design and
-[docs/offgrid_transplant_contract.md](docs/offgrid_transplant_contract.md) for
-the Unreal host boundary.
+The deployable runtime uses the CUDA Runtime only. LibTorch and MFA are offline
+training dependencies and are never part of the Offgrid runtime. See
+[lipsync.md](lipsync.md) and [docs/neural_runtime.md](docs/neural_runtime.md).
 
 ## Layout
 
 ```text
-offgrid_dropin/        Authoritative shared C++ lipsync code
+offgrid_dropin/        Authoritative C++/CUDA runtime shared with OffgridAI
 standalone_ue_shim/    Minimal Unreal compatibility layer for CMake
-harness/               Streaming corpus runner and diagnostic exporters
-scripts/               Gold generation, grading, and regression checks
-inputs/transcripts/    Corpus transcripts
-inputs/wav/            Matching PCM16 WAV files
-inputs/gold/           Approved MFA-backed references
-docs/                  Current contracts, baselines, and calibration data
-outputs/runs/latest/   Generated run artifacts
+harness/               Corpus runner, dataset exporter, and CUDA trainer
+scripts/               Corpus, training, grading, and integration utilities
+inputs/corpus.csv      Authoritative recorded + Data Factory case inventory
+inputs/transcripts/    Canonical transcripts for every manifest case
+inputs/wav/            Canonical audio for every manifest case
+inputs/gold/           Approved MFA packages referenced by the manifest
+inputs/speech_library/ Reproducible generation recipes, not a second corpus
+docs/                  Current architecture, policy, and calibration data
+outputs/runs/latest/   Generated diagnostics and comprehensive scorecard
 ```
 
 ## Verify
 
-On Windows:
+On Windows, run the required end-to-end check:
 
 ```bat
 scripts\verify.bat
 ```
 
-This builds the shared code, validates all approved gold packages, streams the
-entire corpus with the default 350 ms playback preroll, exports diagnostics
-using 1500 ms of evidence history, summarizes the priority metrics, and
-enforces the active-controller baseline. The live scheduler uses its own
-bounded 250 ms evidence-history window.
-
-Manual execution after a build:
+It builds the native runtime, validates gold and corpus recipes, streams all 750
+cases through the packaged neural checkpoint, regenerates the scorecard, and
+enforces regression thresholds. Manual grading after a run is:
 
 ```bat
-python scripts\run_all.py
 python scripts\summarize.py
 python scripts\check_grades.py
 ```
 
-The runner accepts `--preroll-ms`, `--evidence-postroll-ms`, `--chunk-ms`,
-`--tick-ms`, `--case`, and `--full-diagnostics`. `--evidence-postroll-ms`
-controls diagnostic evidence export and grading, not live scheduler history.
+Useful runner options are `--preroll-ms`, `--chunk-ms`, `--tick-ms`, `--case`,
+`--fast-batch`, `--full-diagnostics`, `--export-monotonic-dataset`, and
+`--neural-checkpoint`. Diagnostic exports describe the same runtime path; there
+is no offline prediction-CSV controller.
 
-## Gold corpus
+## Training and data
 
-MFA is offline-only and is never linked into the runtime.
+MFA supplies offline phone, word, speech-region, pause, and vowel timing labels.
+It is not linked into inference. Gold maintenance uses:
 
 ```bat
 python scripts\draft_gold.py --mfa-num-jobs 4
@@ -82,32 +76,37 @@ python scripts\check_gold.py --include-drafts
 python scripts\export_gold.py
 ```
 
-Approved packages contain phone, word, speech-region, pause-boundary, and review
-metadata. See [docs/gold_dataset_plan.md](docs/gold_dataset_plan.md).
+The reproducible Qwen data factory is documented in
+[docs/speech_library_generator.md](docs/speech_library_generator.md). Neural
+training and packaging use:
 
-There are two deliberately separate Offgrid-log workflows:
+```bat
+scripts\run_neural_streamer_training.bat C:\aitoolkit\libtorch-2.13.0-cu130
+scripts\build_neural_runtime.bat
+```
 
-- `inputs/export_offgrid_logs_to_liplab.py` adds WAV/transcript pairs to the
-  permanent numbered corpus.
-- `scripts/export_offgrid_logs_for_mfa.py` creates a temporary MFA corpus and
-  index for `scripts/analyze_offgrid_logs.py`; it does not mutate the checked-in
-  corpus.
+The first command exports the sequence dataset, trains, packages, replays the
+native checkpoint, and grades that exact package. The second proves that the
+deployable binary contains RTX 4090 machine code and has no LibTorch dependency.
 
-The offline synthetic data factory is also separate from the checked-in corpus:
-`scripts/generate_speech_library.py` creates reproducible Qwen WAVs, provenance
-manifests, and MFA TextGrids under `outputs/speech_library/`. See
-[`docs/speech_library_generator.md`](docs/speech_library_generator.md).
+Both recorded and generated cases live in the same canonical asset directories
+and are enumerated by `inputs/corpus.csv`. Generation recipes describe how an
+asset was made or can be recreated; they are not separate training corpora.
+`scripts/build_corpus_manifest.py --check` rejects unlisted or missing assets.
 
-## Priority scorecard
+## Scorecard
 
-`outputs/runs/latest/alignment_summary.json` reports:
+`outputs/runs/latest/alignment_summary.json` is comprehensive: missing reference
+events receive explicit penalties rather than disappearing from timing means.
+It reports both mean and median for boundary and timing errors, plus:
 
-- speech-region start and pause cleanliness,
-- performed word-animation onset,
-- class-aware visual-anchor alignment (nucleus for vowels, visible consonant
-  landmark for consonant-led words),
-- complete word-to-region assignment,
-- completion, split-word, and ordering guardrails.
+- speech-region start/end and pause cleanliness;
+- performed word-animation onset and speech-region placement;
+- performed word duration versus the complete MFA word interval;
+- complete word-to-region ownership;
+- delivery completion, missing words, sentence completion, and ordering;
+- within-word viseme duration proportions, run boundaries, and word-level total
+  variation distance.
 
-`alignment_cases.csv` and `alignment_words.csv` identify the corresponding
-failures. Per-case diagnostics are regenerated on every run.
+Acceptance policy and thresholds are in
+[docs/regression_policy.md](docs/regression_policy.md).

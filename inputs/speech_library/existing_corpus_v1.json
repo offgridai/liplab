@@ -1,0 +1,2485 @@
+{
+  "schema_version": 1,
+  "recipe_id": "existing_corpus_v1",
+  "description": "One reproducible Qwen utterance for every checked-in liplab corpus transcript.",
+  "assignment": {
+    "algorithm": "sha256 namespace + case id",
+    "namespace": "liplab-existing-corpus-v1",
+    "seed_range": [
+      1,
+      2147483646
+    ],
+    "voice_selection": "digest modulo ordered voices list"
+  },
+  "voices": [
+    {
+      "id": "alfie",
+      "json": "reference/alfie_0.6b_f16.json"
+    },
+    {
+      "id": "lana",
+      "json": "reference/lana_0.6b_f16.json"
+    },
+    {
+      "id": "priestley",
+      "json": "reference/priestley_0.6b_f16.json"
+    },
+    {
+      "id": "priestley2",
+      "json": "reference/priestley2_0.6b_f16.json"
+    }
+  ],
+  "case_count": 350,
+  "cases": [
+    {
+      "id": "case_0001_20260629_093726_076_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000000_00",
+      "source_transcript": "inputs/transcripts/case_0001_20260629_093726_076_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 274787043,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0002_20260629_093744_269_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000001_00",
+      "source_transcript": "inputs/transcripts/case_0002_20260629_093744_269_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 913569036,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0003_20260629_093754_099_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000002_00",
+      "source_transcript": "inputs/transcripts/case_0003_20260629_093754_099_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie. Which one sounds good?",
+      "seed": 2015864515,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0004_20260629_093801_432_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000003_00",
+      "source_transcript": "inputs/transcripts/case_0004_20260629_093801_432_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000003_00.txt",
+      "text": "I enjoy the veggie one myself. Light and fresh.",
+      "seed": 146041084,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0005_20260629_093809_845_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000004_00",
+      "source_transcript": "inputs/transcripts/case_0005_20260629_093809_845_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000004_00.txt",
+      "text": "Red, orange, yellow, green, blue, indigo, violet. Though we don't have rain here in the bodega.",
+      "seed": 630914209,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0006_20260629_093822_552_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000005_00",
+      "source_transcript": "inputs/transcripts/case_0006_20260629_093822_552_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000005_00.txt",
+      "text": "A, B, C, D, E. Though we're more about sandwiches around here.",
+      "seed": 1671647505,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0007_20260629_093832_958_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000006_00",
+      "source_transcript": "inputs/transcripts/case_0007_20260629_093832_958_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000006_00.txt",
+      "text": "Did you know Argentina has the largest penguin colony in the world?",
+      "seed": 783204763,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0008_20260629_093851_414_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000007_00",
+      "source_transcript": "inputs/transcripts/case_0008_20260629_093851_414_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000007_00.txt",
+      "text": "Afghanistan has the biggest landlocked body of water in the world, Lake Zarghoona.",
+      "seed": 1641915112,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0009_20260629_093901_441_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000008_00",
+      "source_transcript": "inputs/transcripts/case_0009_20260629_093901_441_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000008_00.txt",
+      "text": "Albania is home to the oldest olive tree in the world, said to be over 4,000 years old.",
+      "seed": 1624983762,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0010_20260629_093912_121_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000009_00",
+      "source_transcript": "inputs/transcripts/case_0010_20260629_093912_121_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000009_00.txt",
+      "text": "Andorra is the only country in the world where the most common surname, Martinez, is also the name of a town.",
+      "seed": 2011517218,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0011_20260629_093922_616_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000010_00",
+      "source_transcript": "inputs/transcripts/case_0011_20260629_093922_616_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000010_00.txt",
+      "text": "Antigua has some of the most beautiful beaches in the Caribbean.",
+      "seed": 521079213,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0012_20260629_093929_211_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000011_00",
+      "source_transcript": "inputs/transcripts/case_0012_20260629_093929_211_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000011_00.txt",
+      "text": "Indeed, and did you know it's also the birthplace of tango?",
+      "seed": 1096098226,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0013_20260629_093937_130_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000012_00",
+      "source_transcript": "inputs/transcripts/case_0013_20260629_093937_130_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000012_00.txt",
+      "text": "Armenia is the first country in the world to adopt Christianity as its official religion.",
+      "seed": 1103906128,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0014_20260629_093947_935_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000013_00",
+      "source_transcript": "inputs/transcripts/case_0014_20260629_093947_935_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000013_00.txt",
+      "text": "Australia has the longest coastline of any country in the world.",
+      "seed": 1001316242,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0015_20260629_093954_282_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000014_00",
+      "source_transcript": "inputs/transcripts/case_0015_20260629_093954_282_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000014_00.txt",
+      "text": "Austria is where you'll find the famous Salzburg, home of Mozart.",
+      "seed": 272532610,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0016_20260629_094001_338_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000015_00",
+      "source_transcript": "inputs/transcripts/case_0016_20260629_094001_338_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000015_00.txt",
+      "text": "Azerbaijan has the world's first mud volcano.",
+      "seed": 1724186326,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0017_20260629_094007_645_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000016_00",
+      "source_transcript": "inputs/transcripts/case_0017_20260629_094007_645_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000016_00.txt",
+      "text": "The Bahamas are known for their crystal clear waters and pink sand beaches.",
+      "seed": 1064582016,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0018_20260629_094015_208_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000017_00",
+      "source_transcript": "inputs/transcripts/case_0018_20260629_094015_208_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000017_00.txt",
+      "text": "Bahrain is known for its mix of modern and traditional culture.",
+      "seed": 1888722253,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0019_20260629_094021_972_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000018_00",
+      "source_transcript": "inputs/transcripts/case_0019_20260629_094021_972_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000018_00.txt",
+      "text": "Bangladesh has the largest river delta in the world.",
+      "seed": 942011153,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0020_20260629_094125_260_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000019_00",
+      "source_transcript": "inputs/transcripts/case_0020_20260629_094125_260_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000019_00.txt",
+      "text": "Barbados is famous for its beaches and hospitality.",
+      "seed": 90831137,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0021_20260629_094131_827_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000020_00",
+      "source_transcript": "inputs/transcripts/case_0021_20260629_094131_827_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000020_00.txt",
+      "text": "Belarus is known for its historic cities and forests.",
+      "seed": 589978982,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0022_20260629_094140_141_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000021_00",
+      "source_transcript": "inputs/transcripts/case_0022_20260629_094140_141_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000021_00.txt",
+      "text": "I'm not sure what you mean by bailies. Can you clarify?",
+      "seed": 464187999,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0023_20260629_094147_704_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000022_00",
+      "source_transcript": "inputs/transcripts/case_0023_20260629_094147_704_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000022_00.txt",
+      "text": "Maybe you meant beijing? It's known for the great wall!",
+      "seed": 708330459,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0024_20260629_094154_366_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000023_00",
+      "source_transcript": "inputs/transcripts/case_0024_20260629_094154_366_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000023_00.txt",
+      "text": "Maybe you meant buddhism? It's a religion with millions of followers worldwide.",
+      "seed": 2101354192,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0025_20260629_094202_889_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000024_00",
+      "source_transcript": "inputs/transcripts/case_0025_20260629_094202_889_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000024_00.txt",
+      "text": "Bolivia is where you'll find the world's highest lake!",
+      "seed": 1257377171,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0026_20260629_094209_257_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000025_00",
+      "source_transcript": "inputs/transcripts/case_0026_20260629_094209_257_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000025_00.txt",
+      "text": "Bosnia has beautiful mountains and rivers.",
+      "seed": 2141942841,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0027_20260629_094215_159_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000026_00",
+      "source_transcript": "inputs/transcripts/case_0027_20260629_094215_159_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000026_00.txt",
+      "text": "Maybe you meant Switzerland? It's famous for watches and mountains!",
+      "seed": 246790502,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0028_20260629_094223_519_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000027_00",
+      "source_transcript": "inputs/transcripts/case_0028_20260629_094223_519_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000027_00.txt",
+      "text": "Rio has amazing beaches and Carnival!",
+      "seed": 1091170507,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0029_20260629_094229_854_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000028_00",
+      "source_transcript": "inputs/transcripts/case_0029_20260629_094229_854_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000028_00.txt",
+      "text": "Brunei has beautiful mosques and oil wealth. Need anything else?",
+      "seed": 505698663,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0030_20260629_094238_259_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000029_00",
+      "source_transcript": "inputs/transcripts/case_0030_20260629_094238_259_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000029_00.txt",
+      "text": "Bulgaria has the Rila Monastery and beautiful Black Sea beaches. Need anything else?",
+      "seed": 1793566668,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0031_20260629_094249_917_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000030_00",
+      "source_transcript": "inputs/transcripts/case_0031_20260629_094249_917_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000030_00.txt",
+      "text": "I've heard Burkina Faso has lovely markets. Got any plans?",
+      "seed": 1061050084,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0032_20260629_094257_512_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000031_00",
+      "source_transcript": "inputs/transcripts/case_0032_20260629_094257_512_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000031_00.txt",
+      "text": "Burundi has stunning lakes and gorillas. Need anything else?",
+      "seed": 392043475,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0033_20260629_094306_254_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000032_00",
+      "source_transcript": "inputs/transcripts/case_0033_20260629_094306_254_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000032_00.txt",
+      "text": "Cobu Verde has beautiful beaches and turtles. Need anything else?",
+      "seed": 845643237,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0034_20260629_094313_493_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000033_00",
+      "source_transcript": "inputs/transcripts/case_0034_20260629_094313_493_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000033_00.txt",
+      "text": "Cambodia has Angkor Wat and delicious cuisine. Need anything else?",
+      "seed": 762265547,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0035_20260629_094323_803_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000034_00",
+      "source_transcript": "inputs/transcripts/case_0035_20260629_094323_803_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000034_00.txt",
+      "text": "Cameroon has Mount Cameroon, the highest peak and tropical rainforests. Need anything else?",
+      "seed": 1586087432,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0036_20260629_094333_229_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000035_00",
+      "source_transcript": "inputs/transcripts/case_0036_20260629_094333_229_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000035_00.txt",
+      "text": "The maple syrup, the lakes, and the northern lights! Need anything else?",
+      "seed": 574011258,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0037_20260629_094346_950_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000036_00",
+      "source_transcript": "inputs/transcripts/case_0037_20260629_094346_950_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000036_00.txt",
+      "text": "Chad has vast deserts and interesting wildlife. Need anything else?",
+      "seed": 726424630,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0038_20260629_094354_893_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000037_00",
+      "source_transcript": "inputs/transcripts/case_0038_20260629_094354_893_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000037_00.txt",
+      "text": "I'm sorry, I didn't catch that. Can I help you with something else?",
+      "seed": 42046640,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0039_20260629_094402_705_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000038_00",
+      "source_transcript": "inputs/transcripts/case_0039_20260629_094402_705_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000038_00.txt",
+      "text": "Did you know, China has the most UNESCO World Heritage sites? Need anything else?",
+      "seed": 556882597,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0040_20260629_094412_254_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000039_00",
+      "source_transcript": "inputs/transcripts/case_0040_20260629_094412_254_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000039_00.txt",
+      "text": "Colombia has Cartagena with beautiful beaches and vibrant culture!",
+      "seed": 1761473264,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0041_20260629_094420_280_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000040_00",
+      "source_transcript": "inputs/transcripts/case_0041_20260629_094420_280_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000040_00.txt",
+      "text": "The Congo has the second-largest rainforest in the world!",
+      "seed": 1088517553,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0042_20260629_094428_367_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000041_00",
+      "source_transcript": "inputs/transcripts/case_0042_20260629_094428_367_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000041_00.txt",
+      "text": "Costa Rica has plenty of national parks and cute sloths!",
+      "seed": 477945865,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0043_20260629_094436_018_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000042_00",
+      "source_transcript": "inputs/transcripts/case_0043_20260629_094436_018_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000042_00.txt",
+      "text": "Ivory Coast is known for its cocoa and coffee!",
+      "seed": 204190335,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0044_20260629_094441_616_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000043_00",
+      "source_transcript": "inputs/transcripts/case_0044_20260629_094441_616_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000043_00.txt",
+      "text": "Croatia has stunning coastlines and historic cities!",
+      "seed": 1298754519,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0045_20260629_094447_931_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000044_00",
+      "source_transcript": "inputs/transcripts/case_0045_20260629_094447_931_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000044_00.txt",
+      "text": "Cuba has amazing music and old classic cars!",
+      "seed": 743765598,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0046_20260629_094455_545_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000045_00",
+      "source_transcript": "inputs/transcripts/case_0046_20260629_094455_545_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000045_00.txt",
+      "text": "Cyprus has beautiful beaches and rich history!",
+      "seed": 384353090,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0047_20260629_094501_429_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000046_00",
+      "source_transcript": "inputs/transcripts/case_0047_20260629_094501_429_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000046_00.txt",
+      "text": "Spelled that wrong, didn't you? Try again, or maybe a sandwich?",
+      "seed": 1295352512,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0048_20260629_094511_055_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000047_00",
+      "source_transcript": "inputs/transcripts/case_0048_20260629_094511_055_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000047_00.txt",
+      "text": "Congo has diverse wildlife and lush landscapes! Want a sandwich instead?",
+      "seed": 366406837,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0049_20260629_094519_661_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000048_00",
+      "source_transcript": "inputs/transcripts/case_0049_20260629_094519_661_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000048_00.txt",
+      "text": "Denmark has cute little towns and delicious pastries!",
+      "seed": 2098833417,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0050_20260629_094531_787_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000049_00",
+      "source_transcript": "inputs/transcripts/case_0050_20260629_094531_787_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000049_00.txt",
+      "text": "Djibouti has beautiful coastal views and unique culture! Want to try some chips?",
+      "seed": 260020766,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0051_20260629_094539_708_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000050_00",
+      "source_transcript": "inputs/transcripts/case_0051_20260629_094539_708_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000050_00.txt",
+      "text": "Dominica has stunning waterfalls and tropical rainforests! Want a break from geography?",
+      "seed": 1842978741,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0052_20260629_094550_667_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000051_00",
+      "source_transcript": "inputs/transcripts/case_0052_20260629_094550_667_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000051_00.txt",
+      "text": "Dominican Republic has beautiful beaches and rich history! Want to try a sandwich?",
+      "seed": 860259793,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0053_20260629_103547_528_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000052_00",
+      "source_transcript": "inputs/transcripts/case_0053_20260629_103547_528_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000052_00.txt",
+      "text": "Ecuador has stunning Andes mountains and vibrant culture! Want to try some chips?",
+      "seed": 1955491992,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0054_20260629_103559_158_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000053_00",
+      "source_transcript": "inputs/transcripts/case_0054_20260629_103559_158_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000053_00.txt",
+      "text": "Eritrea has beautiful coastal areas and historic sites! Want to try a sandwich?",
+      "seed": 1960587407,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0055_20260629_103609_480_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000054_00",
+      "source_transcript": "inputs/transcripts/case_0055_20260629_103609_480_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000054_00.txt",
+      "text": "Estonia has beautiful nature and a rich history! Want to try a sandwich?",
+      "seed": 1506936677,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0056_20260629_103618_921_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000055_00",
+      "source_transcript": "inputs/transcripts/case_0056_20260629_103618_921_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000055_00.txt",
+      "text": "Eswatini has royal palaces and lush landscapes! Want to try some chips?",
+      "seed": 178190211,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0057_20260629_103630_720_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000056_00",
+      "source_transcript": "inputs/transcripts/case_0057_20260629_103630_720_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000056_00.txt",
+      "text": "Ethiopia has ancient ruins and delicious coffee! Want to try some chips?",
+      "seed": 1061140200,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0058_20260629_103639_456_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000057_00",
+      "source_transcript": "inputs/transcripts/case_0058_20260629_103639_456_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000057_00.txt",
+      "text": "I prefer a strong espresso! What about you?",
+      "seed": 545470019,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0059_20260629_103647_174_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000058_00",
+      "source_transcript": "inputs/transcripts/case_0059_20260629_103647_174_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000058_00.txt",
+      "text": "Did you know Fiji has the largest frigatebird in the world? Quite the flyer!",
+      "seed": 856747338,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0060_20260629_103657_814_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000059_00",
+      "source_transcript": "inputs/transcripts/case_0060_20260629_103657_814_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000059_00.txt",
+      "text": "Finland has the northern lights and lots of lakes! Want to try a sandwich?",
+      "seed": 1456292205,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0061_20260629_103704_918_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000060_00",
+      "source_transcript": "inputs/transcripts/case_0061_20260629_103704_918_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000060_00.txt",
+      "text": "Finland's lots of lakes come from its glacial history. Ice carved them out!",
+      "seed": 477535513,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0062_20260629_103713_061_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000061_00",
+      "source_transcript": "inputs/transcripts/case_0062_20260629_103713_061_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000061_00.txt",
+      "text": "Did you know France is home to the oldest known cave paintings?",
+      "seed": 1866532374,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0063_20260629_103720_271_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000062_00",
+      "source_transcript": "inputs/transcripts/case_0063_20260629_103720_271_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000062_00.txt",
+      "text": "Gabon has rainforests full of exotic plants and animals!",
+      "seed": 1386373026,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0064_20260629_103727_346_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000063_00",
+      "source_transcript": "inputs/transcripts/case_0064_20260629_103727_346_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000063_00.txt",
+      "text": "Gambia is known for its beaches and friendly people! Want a snack to go?",
+      "seed": 1831472937,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0065_20260629_103735_824_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000064_00",
+      "source_transcript": "inputs/transcripts/case_0065_20260629_103735_824_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000064_00.txt",
+      "text": "Georgia has ancient ruins and delicious wine! Want a chip?",
+      "seed": 799642367,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0066_20260629_103857_453_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000065_00",
+      "source_transcript": "inputs/transcripts/case_0066_20260629_103857_453_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000065_00.txt",
+      "text": "Germany made the first computer mouse! Want a sandwich?",
+      "seed": 1919338925,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0067_20260629_103906_082_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000066_00",
+      "source_transcript": "inputs/transcripts/case_0067_20260629_103906_082_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000066_00.txt",
+      "text": "Ghana is famous for cocoa and gold. Want a quick bite?",
+      "seed": 1623427548,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0068_20260629_103912_811_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000067_00",
+      "source_transcript": "inputs/transcripts/case_0068_20260629_103912_811_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000067_00.txt",
+      "text": "Greece has yummy gyros and beautiful islands! Want a chip to snack on?",
+      "seed": 1156696499,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0069_20260629_103920_849_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000068_00",
+      "source_transcript": "inputs/transcripts/case_0069_20260629_103920_849_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000068_00.txt",
+      "text": "Santorini, the sunset views are breathtaking!",
+      "seed": 1451260108,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0070_20260629_103928_848_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000069_00",
+      "source_transcript": "inputs/transcripts/case_0070_20260629_103928_848_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000069_00.txt",
+      "text": "Grenada has beautiful beaches and spicy cuisine! Want a sandwich to go with that?",
+      "seed": 1723605455,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0071_20260629_103939_498_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000070_00",
+      "source_transcript": "inputs/transcripts/case_0071_20260629_103939_498_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000070_00.txt",
+      "text": "Guatemala's guacamole is delicious! Want a sandwich with avocado?",
+      "seed": 876716982,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0072_20260629_103948_587_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000071_00",
+      "source_transcript": "inputs/transcripts/case_0072_20260629_103948_587_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000071_00.txt",
+      "text": "Guinea's pelele is tasty. Want a sandwich?",
+      "seed": 1070056112,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0073_20260629_103955_709_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000072_00",
+      "source_transcript": "inputs/transcripts/case_0073_20260629_103955_709_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000072_00.txt",
+      "text": "Ikiana sounds interesting! Want a chip to try something new?",
+      "seed": 1397471303,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0074_20260629_104002_655_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000073_00",
+      "source_transcript": "inputs/transcripts/case_0074_20260629_104002_655_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000073_00.txt",
+      "text": "Haiti's griot is hearty! Want a sandwich to pair with that?",
+      "seed": 1136908860,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0075_20260629_104011_926_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000074_00",
+      "source_transcript": "inputs/transcripts/case_0075_20260629_104011_926_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000074_00.txt",
+      "text": "What kind of sandwich do you fancy?",
+      "seed": 1517418563,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0077_20260629_104024_884_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000076_00",
+      "source_transcript": "inputs/transcripts/case_0077_20260629_104024_884_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000076_00.txt",
+      "text": "Iceland's smoked salmon is a treat. Want a sandwich with that?",
+      "seed": 770880301,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0078_20260629_104035_184_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000077_00",
+      "source_transcript": "inputs/transcripts/case_0078_20260629_104035_184_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000077_00.txt",
+      "text": "India's tandoori chicken is spicy and delicious. Want a sandwich?",
+      "seed": 1152084477,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0079_20260629_104042_251_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000078_00",
+      "source_transcript": "inputs/transcripts/case_0079_20260629_104042_251_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000078_00.txt",
+      "text": "Indonesia's satay is flavorful. Want a sandwich with peanut sauce?",
+      "seed": 1221093221,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0080_20260629_104049_772_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000079_00",
+      "source_transcript": "inputs/transcripts/case_0080_20260629_104049_772_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000079_00.txt",
+      "text": "Iran's kebab is flavorful. Want a sandwich?",
+      "seed": 1129318572,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0081_20260629_104056_615_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000080_00",
+      "source_transcript": "inputs/transcripts/case_0081_20260629_104056_615_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000080_00.txt",
+      "text": "Indonesia's satay is flavorful. Want a sandwich with peanut sauce?",
+      "seed": 873794812,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0082_20260629_104104_640_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000081_00",
+      "source_transcript": "inputs/transcripts/case_0082_20260629_104104_640_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000081_00.txt",
+      "text": "Iraq's kebbeh is hearty. Want a sandwich?",
+      "seed": 316573953,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0083_20260629_104152_081_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000083_00",
+      "source_transcript": "inputs/transcripts/case_0083_20260629_104152_081_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000083_00.txt",
+      "text": "Israel's hummus and falafel are delicious. Want a sandwich?",
+      "seed": 1614243909,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0084_20260629_104205_560_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000084_00",
+      "source_transcript": "inputs/transcripts/case_0084_20260629_104205_560_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000084_00.txt",
+      "text": "Maybe visit Tokyo Tower or hike in Mt. Fuji. Want a sandwich?",
+      "seed": 847776679,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0085_20260629_104213_497_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000085_00",
+      "source_transcript": "inputs/transcripts/case_0085_20260629_104213_497_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000085_00.txt",
+      "text": "Jamaica's jerk chicken sounds good. Want a sandwich?",
+      "seed": 1276746817,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0086_20260629_104220_891_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000086_00",
+      "source_transcript": "inputs/transcripts/case_0086_20260629_104220_891_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000086_00.txt",
+      "text": "Visit the canals in Venice or the Colosseum in Rome. Want a sandwich?",
+      "seed": 1706876496,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0087_20260629_104236_618_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000087_00",
+      "source_transcript": "inputs/transcripts/case_0087_20260629_104236_618_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000087_00.txt",
+      "text": "Visit Petra or soak in Dead Sea. Want a sandwich?",
+      "seed": 67470743,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0088_20260629_104243_189_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000088_00",
+      "source_transcript": "inputs/transcripts/case_0088_20260629_104243_189_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000088_00.txt",
+      "text": "Maybe try the horse riding in Almaty or visit the Kokshetau Observatory. Want a sandwich?",
+      "seed": 604923949,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0089_20260629_104253_186_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000089_00",
+      "source_transcript": "inputs/transcripts/case_0089_20260629_104253_186_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000089_00.txt",
+      "text": "Visit Maasai Mara or climb Mount Kenya. Want a sandwich?",
+      "seed": 1677103510,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0090_20260629_104310_368_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000090_00",
+      "source_transcript": "inputs/transcripts/case_0090_20260629_104310_368_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000090_00.txt",
+      "text": "Maybe try the horse riding in Almaty or visit the Kokshetau Observatory. Want a sandwich?",
+      "seed": 202060833,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0091_20260629_104326_164_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000091_00",
+      "source_transcript": "inputs/transcripts/case_0091_20260629_104326_164_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000091_00.txt",
+      "text": "Haven't heard of that one. Want a sandwich?",
+      "seed": 1316802915,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0093_20260629_104341_467_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000093_00",
+      "source_transcript": "inputs/transcripts/case_0093_20260629_104341_467_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000093_00.txt",
+      "text": "Check out the markets or the temples. Want a sandwich?",
+      "seed": 2076822449,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0094_20260629_104347_149_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000094_00",
+      "source_transcript": "inputs/transcripts/case_0094_20260629_104347_149_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000094_00.txt",
+      "text": "Riga's old town is beautiful. Want a sandwich?",
+      "seed": 1120655007,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0095_20260629_104354_201_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000095_00",
+      "source_transcript": "inputs/transcripts/case_0095_20260629_104354_201_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000095_00.txt",
+      "text": "Alright, no more sandwiches for you. Want some chips instead?",
+      "seed": 1755459588,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0096_20260629_104403_462_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000096_00",
+      "source_transcript": "inputs/transcripts/case_0096_20260629_104403_462_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000096_00.txt",
+      "text": "La Soto? Haven't heard of it. Maybe a small town or a band? Want some chips?",
+      "seed": 1442941659,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0097_20260629_104413_797_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000097_00",
+      "source_transcript": "inputs/transcripts/case_0097_20260629_104413_797_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000097_00.txt",
+      "text": "Liberia? Interesting. Known for rubber and coffee. Want some chips?",
+      "seed": 1385633883,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0098_20260629_104421_809_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000098_00",
+      "source_transcript": "inputs/transcripts/case_0098_20260629_104421_809_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000098_00.txt",
+      "text": "Libya? Desert and cities. Want some chips?",
+      "seed": 1795946267,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0099_20260629_104429_509_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000099_00",
+      "source_transcript": "inputs/transcripts/case_0099_20260629_104429_509_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000099_00.txt",
+      "text": "Madagascar? Ah, the island of lemurs and vanilla! Want some chips?",
+      "seed": 2016493513,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0100_20260629_104445_090_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000100_00",
+      "source_transcript": "inputs/transcripts/case_0100_20260629_104445_090_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000100_00.txt",
+      "text": "Malawi? Beautiful lakes and wildlife. Want some chips?",
+      "seed": 1029898368,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0101_20260629_104453_591_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000101_00",
+      "source_transcript": "inputs/transcripts/case_0101_20260629_104453_591_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000101_00.txt",
+      "text": "Chips are just two dollars. Want to try a sandwich instead?",
+      "seed": 1379458804,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0102_20260629_104502_054_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000102_00",
+      "source_transcript": "inputs/transcripts/case_0102_20260629_104502_054_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000102_00.txt",
+      "text": "Marshall Islands? Tiny islands, beautiful but remote. Want some chips?",
+      "seed": 709756397,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0103_20260629_104510_162_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000103_00",
+      "source_transcript": "inputs/transcripts/case_0103_20260629_104510_162_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000103_00.txt",
+      "text": "Mauritania? Desert and coast. Want some chips?",
+      "seed": 466912092,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0104_20260629_104517_381_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000104_00",
+      "source_transcript": "inputs/transcripts/case_0104_20260629_104517_381_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000104_00.txt",
+      "text": "Micronesia? Tiny islands, mostly unknown. Want some chips?",
+      "seed": 509189863,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0105_20260629_104735_128_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000105_00",
+      "source_transcript": "inputs/transcripts/case_0105_20260629_104735_128_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000105_00.txt",
+      "text": "Mongolia? Vast steppes and nomadic culture. Want some chips?",
+      "seed": 984147653,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0106_20260629_104751_112_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000106_00",
+      "source_transcript": "inputs/transcripts/case_0106_20260629_104751_112_Alfie_Line_D80D638B4BB58C458BEEA4B1CF6291D6_000106_00.txt",
+      "text": "Montenegro? Mountainous and coastal. Want some chips?",
+      "seed": 664459311,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0107_20260704_185728_613_Alfie_Line_8A2D9A5C4EFA084BB1AA34B971BD7F2D_000000_00",
+      "source_transcript": "inputs/transcripts/case_0107_20260704_185728_613_Alfie_Line_8A2D9A5C4EFA084BB1AA34B971BD7F2D_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 70520129,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0108_20260704_185734_954_Alfie_Line_8A2D9A5C4EFA084BB1AA34B971BD7F2D_000001_00",
+      "source_transcript": "inputs/transcripts/case_0108_20260704_185734_954_Alfie_Line_8A2D9A5C4EFA084BB1AA34B971BD7F2D_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 1844074979,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0109_20260704_185746_021_Alfie_Line_8A2D9A5C4EFA084BB1AA34B971BD7F2D_000002_00",
+      "source_transcript": "inputs/transcripts/case_0109_20260704_185746_021_Alfie_Line_8A2D9A5C4EFA084BB1AA34B971BD7F2D_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie. Which one sounds good?",
+      "seed": 67563768,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0110_20260704_185754_056_Alfie_Line_8A2D9A5C4EFA084BB1AA34B971BD7F2D_000003_00",
+      "source_transcript": "inputs/transcripts/case_0110_20260704_185754_056_Alfie_Line_8A2D9A5C4EFA084BB1AA34B971BD7F2D_000003_00.txt",
+      "text": "I enjoy the veggie one myself. Light and fresh.",
+      "seed": 675251052,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0111_20260704_185805_580_Alfie_Line_8A2D9A5C4EFA084BB1AA34B971BD7F2D_000004_00",
+      "source_transcript": "inputs/transcripts/case_0111_20260704_185805_580_Alfie_Line_8A2D9A5C4EFA084BB1AA34B971BD7F2D_000004_00.txt",
+      "text": "Red, orange, yellow, green, blue, indigo, violet. A merry mix of hues!",
+      "seed": 2051082529,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0112_20260711_150114_730_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000000_00",
+      "source_transcript": "inputs/transcripts/case_0112_20260711_150114_730_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 1419597189,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0113_20260711_150122_822_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000001_00",
+      "source_transcript": "inputs/transcripts/case_0113_20260711_150122_822_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 2052179053,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0114_20260711_150131_112_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000002_00",
+      "source_transcript": "inputs/transcripts/case_0114_20260711_150131_112_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie. Which one sounds good?",
+      "seed": 1960346594,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0115_20260711_150140_242_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000003_00",
+      "source_transcript": "inputs/transcripts/case_0115_20260711_150140_242_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000003_00.txt",
+      "text": "A favor? I'm not sure what you mean.",
+      "seed": 56473698,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0116_20260711_150146_874_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000004_00",
+      "source_transcript": "inputs/transcripts/case_0116_20260711_150146_874_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000004_00.txt",
+      "text": "I enjoy the turkey myself. Nice and simple.",
+      "seed": 957904728,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0117_20260711_150154_861_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000005_00",
+      "source_transcript": "inputs/transcripts/case_0117_20260711_150154_861_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000005_00.txt",
+      "text": "Turkey, lettuce, tomato, and mayo. Simple and satisfying.",
+      "seed": 1868625322,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0118_20260711_150204_811_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000006_00",
+      "source_transcript": "inputs/transcripts/case_0118_20260711_150204_811_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000006_00.txt",
+      "text": "Check the door, grab your bag, wave goodbye, step outside, and lock up.",
+      "seed": 1026303195,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0119_20260711_150214_959_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000007_00",
+      "source_transcript": "inputs/transcripts/case_0119_20260711_150214_959_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000007_00.txt",
+      "text": "Scratch your nose, hum a tune, count your steps, whisper a secret, and touch your lucky charm.",
+      "seed": 439026326,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0120_20260711_150225_468_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000008_00",
+      "source_transcript": "inputs/transcripts/case_0120_20260711_150225_468_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000008_00.txt",
+      "text": "Make sure your wallet's safe, lock the door, and give me a smile.",
+      "seed": 111271226,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0121_20260711_150235_687_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000009_00",
+      "source_transcript": "inputs/transcripts/case_0121_20260711_150235_687_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000009_00.txt",
+      "text": "I close early, restock, and plan next week's specials.",
+      "seed": 1649762767,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0122_20260711_150244_083_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000010_00",
+      "source_transcript": "inputs/transcripts/case_0122_20260711_150244_083_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000010_00.txt",
+      "text": "Toss old stuff, organize shelves, wipe down counters. Keeps things fresh and tidy.",
+      "seed": 965719562,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0123_20260711_150255_461_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000011_00",
+      "source_transcript": "inputs/transcripts/case_0123_20260711_150255_461_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000011_00.txt",
+      "text": "Stretch, hydrate, tidy desk, smile at someone, log off.",
+      "seed": 1042579020,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0124_20260711_150304_265_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000012_00",
+      "source_transcript": "inputs/transcripts/case_0124_20260711_150304_265_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000012_00.txt",
+      "text": "Check dates, rotate stock, clean shelves, restock chips, and hide the cookies.",
+      "seed": 451822630,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0125_20260711_150314_183_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000013_00",
+      "source_transcript": "inputs/transcripts/case_0125_20260711_150314_183_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000013_00.txt",
+      "text": "Flashlight, first aid kit, water bottles, non-perishable snacks, whistle.",
+      "seed": 2085972981,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0126_20260711_150326_316_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000014_00",
+      "source_transcript": "inputs/transcripts/case_0126_20260711_150326_316_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000014_00.txt",
+      "text": "Old towels, plastic containers, coffee grounds for the garden.",
+      "seed": 1867498221,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0127_20260711_150336_208_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000015_00",
+      "source_transcript": "inputs/transcripts/case_0127_20260711_150336_208_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000015_00.txt",
+      "text": "Toothbrush, change of clothes, phone charger.",
+      "seed": 1395378167,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0128_20260711_150345_967_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000016_00",
+      "source_transcript": "inputs/transcripts/case_0128_20260711_150345_967_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000016_00.txt",
+      "text": "Charcoal, mesquite, hickory, apple, cherry.",
+      "seed": 165114868,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0129_20260711_150354_930_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000017_00",
+      "source_transcript": "inputs/transcripts/case_0129_20260711_150354_930_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000017_00.txt",
+      "text": "Sorry, no secrets here. Just good ol' chips and cold cuts.",
+      "seed": 786692553,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0130_20260711_150404_166_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000018_00",
+      "source_transcript": "inputs/transcripts/case_0130_20260711_150404_166_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000018_00.txt",
+      "text": "Knife, cutting board, can opener, spatula, measuring cups.",
+      "seed": 1413737230,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0131_20260711_150414_038_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000019_00",
+      "source_transcript": "inputs/transcripts/case_0131_20260711_150414_038_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000019_00.txt",
+      "text": "Sandwiches, chips, maybe a hot dog. Simple stuff, but it hits the spot.",
+      "seed": 1987819037,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0132_20260711_150423_084_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000020_00",
+      "source_transcript": "inputs/transcripts/case_0132_20260711_150423_084_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000020_00.txt",
+      "text": "Grilling, baking, frying. Depends on the cut, really.",
+      "seed": 1390488098,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0133_20260711_150432_173_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000021_00",
+      "source_transcript": "inputs/transcripts/case_0133_20260711_150432_173_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000021_00.txt",
+      "text": "Chipotle and mango? Or how about truffle and raspberry? Strange, but tasty.",
+      "seed": 2139608002,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0134_20260711_150443_093_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000022_00",
+      "source_transcript": "inputs/transcripts/case_0134_20260711_150443_093_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000022_00.txt",
+      "text": "A margarita or a bloody mary? With chips, they're a match made in heaven.",
+      "seed": 960672842,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0135_20260711_150455_815_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000023_00",
+      "source_transcript": "inputs/transcripts/case_0135_20260711_150455_815_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000023_00.txt",
+      "text": "Add some heat or a dollop of mayo. Sometimes a simple fix works wonders.",
+      "seed": 1460516527,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0136_20260711_150505_489_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000024_00",
+      "source_transcript": "inputs/transcripts/case_0136_20260711_150505_489_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000024_00.txt",
+      "text": "Barbecue, lemon garlic, and honey mustard. Classic choices, but they work.",
+      "seed": 906821833,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0137_20260711_150524_890_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000025_00",
+      "source_transcript": "inputs/transcripts/case_0137_20260711_150524_890_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000025_00.txt",
+      "text": "Gotcha. How about \"The Last of Us,\" \"Red Dead Redemption 2,\" or \"Hades\"? Different vibes, all great",
+      "seed": 883588093,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0138_20260711_150545_135_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000026_00",
+      "source_transcript": "inputs/transcripts/case_0138_20260711_150545_135_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000026_00.txt",
+      "text": "The chosen one, the villain with a heart, and the unlikely friendship. Classics, you know.",
+      "seed": 840071983,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0139_20260711_150556_006_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000027_00",
+      "source_transcript": "inputs/transcripts/case_0139_20260711_150556_006_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000027_00.txt",
+      "text": "Coral and algae, or bees and flowers. Both need each other to thrive.",
+      "seed": 1311135542,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0141_20260711_150615_074_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000029_00",
+      "source_transcript": "inputs/transcripts/case_0141_20260711_150615_074_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000029_00.txt",
+      "text": "Gnome, quixotic, flummox. Words that trip up even the best spellers.",
+      "seed": 1297265081,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0142_20260711_150629_279_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000030_00",
+      "source_transcript": "inputs/transcripts/case_0142_20260711_150629_279_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000030_00.txt",
+      "text": "Antarctica, the Mariana Trench, and the desert at noon. No thanks.",
+      "seed": 958021017,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0143_20260711_150637_469_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000031_00",
+      "source_transcript": "inputs/transcripts/case_0143_20260711_150637_469_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000031_00.txt",
+      "text": "Magic tricks, pranks, and misdirection. Keeps things interesting.",
+      "seed": 548105367,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0145_20260711_150656_786_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000033_00",
+      "source_transcript": "inputs/transcripts/case_0145_20260711_150656_786_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000033_00.txt",
+      "text": "Inventions? Light bulb, wheel, internet. Can't live without 'em.",
+      "seed": 1709192422,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0146_20260711_150706_500_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000034_00",
+      "source_transcript": "inputs/transcripts/case_0146_20260711_150706_500_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000034_00.txt",
+      "text": "Time travel, parallel universes, and alien invasions. Classics, all.",
+      "seed": 1366070918,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0147_20260711_150717_443_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000035_00",
+      "source_transcript": "inputs/transcripts/case_0147_20260711_150717_443_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000035_00.txt",
+      "text": "Lions, penguins, and sloths. Such diverse creatures.",
+      "seed": 528920275,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0148_20260711_150727_044_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000036_00",
+      "source_transcript": "inputs/transcripts/case_0148_20260711_150727_044_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000036_00.txt",
+      "text": "Seconds, minutes, hours, days. And then there's the light-year.",
+      "seed": 208020955,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0149_20260711_150735_667_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000037_00",
+      "source_transcript": "inputs/transcripts/case_0149_20260711_150735_667_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000037_00.txt",
+      "text": "How about the coast of Maine? Beautiful and peaceful, not as crowded as some places.",
+      "seed": 1338704549,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0150_20260711_150746_523_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000038_00",
+      "source_transcript": "inputs/transcripts/case_0150_20260711_150746_523_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000038_00.txt",
+      "text": "Queuing politely, saying please and thank you, keeping your voice down in public. Basics we often take for granted.",
+      "seed": 672135850,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0151_20260711_150756_506_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000039_00",
+      "source_transcript": "inputs/transcripts/case_0151_20260711_150756_506_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000039_00.txt",
+      "text": "Try \"The Night Circus\" or \"Educated.\" Both are fantastic.",
+      "seed": 1749628423,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0152_20260711_150808_667_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000040_00",
+      "source_transcript": "inputs/transcripts/case_0152_20260711_150808_667_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000040_00.txt",
+      "text": "Diamonds, rubies, sapphires, emeralds. Each has its own shine.",
+      "seed": 43666720,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0153_20260711_150818_296_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000041_00",
+      "source_transcript": "inputs/transcripts/case_0153_20260711_150818_296_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000041_00.txt",
+      "text": "Like \"Moonlight\" or \"Parasite\"? Silent recommendations can be the best.",
+      "seed": 2086821946,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0154_20260711_150827_087_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000042_00",
+      "source_transcript": "inputs/transcripts/case_0154_20260711_150827_087_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000042_00.txt",
+      "text": "The Day of the Dead in Mexico or the Firewalk Festival in New Orleans. Each has its own flair.",
+      "seed": 1654257334,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0155_20260711_150837_044_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000043_00",
+      "source_transcript": "inputs/transcripts/case_0155_20260711_150837_044_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000043_00.txt",
+      "text": "Try \"The Signal\" or \"The Vanishing.\" Great for a good listen.",
+      "seed": 1463004228,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0156_20260711_150852_730_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000044_00",
+      "source_transcript": "inputs/transcripts/case_0156_20260711_150852_730_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000044_00.txt",
+      "text": "Better stick to the veggies in the garden. Safe bets all around.",
+      "seed": 2131595877,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0157_20260711_150900_675_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000045_00",
+      "source_transcript": "inputs/transcripts/case_0157_20260711_150900_675_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000045_00.txt",
+      "text": "Roses, ferns, orchids, cacti. So many to choose from!",
+      "seed": 26784738,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0158_20260711_150909_813_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000046_00",
+      "source_transcript": "inputs/transcripts/case_0158_20260711_150909_813_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000046_00.txt",
+      "text": "Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune. Basic solar system tour.",
+      "seed": 1019179676,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0159_20260711_150929_897_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000047_00",
+      "source_transcript": "inputs/transcripts/case_0159_20260711_150929_897_Alfie_Line_ADBFA7D947B19367167E629907BA596B_000047_00.txt",
+      "text": "Ancient Egypt, Renaissance, Wild West, Space Age. Each with its own story.",
+      "seed": 1978942126,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0160_20260711_183930_597_Alfie_Line_CD90FEA44E3BE297F1D47B92221D1814_000000_00",
+      "source_transcript": "inputs/transcripts/case_0160_20260711_183930_597_Alfie_Line_CD90FEA44E3BE297F1D47B92221D1814_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 1883022453,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0161_20260711_183936_620_Alfie_Line_CD90FEA44E3BE297F1D47B92221D1814_000001_00",
+      "source_transcript": "inputs/transcripts/case_0161_20260711_183936_620_Alfie_Line_CD90FEA44E3BE297F1D47B92221D1814_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 286203040,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0162_20260711_183947_066_Alfie_Line_CD90FEA44E3BE297F1D47B92221D1814_000002_00",
+      "source_transcript": "inputs/transcripts/case_0162_20260711_183947_066_Alfie_Line_CD90FEA44E3BE297F1D47B92221D1814_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie. Which one sounds good?",
+      "seed": 468712818,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0163_20260711_184001_624_Alfie_Line_CD90FEA44E3BE297F1D47B92221D1814_000003_00",
+      "source_transcript": "inputs/transcripts/case_0163_20260711_184001_624_Alfie_Line_CD90FEA44E3BE297F1D47B92221D1814_000003_00.txt",
+      "text": "Ham, lettuce, tomato, and mayo on rye.",
+      "seed": 481587368,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0164_20260711_184010_634_Alfie_Line_CD90FEA44E3BE297F1D47B92221D1814_000004_00",
+      "source_transcript": "inputs/transcripts/case_0164_20260711_184010_634_Alfie_Line_CD90FEA44E3BE297F1D47B92221D1814_000004_00.txt",
+      "text": "I'm partial to the turkey myself. Light and satisfying.",
+      "seed": 1700239105,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0165_20260711_200310_195_Alfie_Line_7F52F43C4A04B8EE8208D199E089CC86_000000_00",
+      "source_transcript": "inputs/transcripts/case_0165_20260711_200310_195_Alfie_Line_7F52F43C4A04B8EE8208D199E089CC86_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 1736658170,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0166_20260711_200317_273_Alfie_Line_7F52F43C4A04B8EE8208D199E089CC86_000001_00",
+      "source_transcript": "inputs/transcripts/case_0166_20260711_200317_273_Alfie_Line_7F52F43C4A04B8EE8208D199E089CC86_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 205271555,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0167_20260711_200325_274_Alfie_Line_7F52F43C4A04B8EE8208D199E089CC86_000002_00",
+      "source_transcript": "inputs/transcripts/case_0167_20260711_200325_274_Alfie_Line_7F52F43C4A04B8EE8208D199E089CC86_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie. Which one sounds good?",
+      "seed": 2144022484,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0168_20260711_200333_596_Alfie_Line_7F52F43C4A04B8EE8208D199E089CC86_000003_00",
+      "source_transcript": "inputs/transcripts/case_0168_20260711_200333_596_Alfie_Line_7F52F43C4A04B8EE8208D199E089CC86_000003_00.txt",
+      "text": "I like the veggie one myself. Light and fresh.",
+      "seed": 1770196028,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0169_20260711_200341_646_Alfie_Line_7F52F43C4A04B8EE8208D199E089CC86_000004_00",
+      "source_transcript": "inputs/transcripts/case_0169_20260711_200341_646_Alfie_Line_7F52F43C4A04B8EE8208D199E089CC86_000004_00.txt",
+      "text": "Let's see, it's lettuce, tomato, cucumber, and avocado on whole wheat. Yum!",
+      "seed": 1307242385,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0170_20260711_200405_647_Alfie_Line_7F52F43C4A04B8EE8208D199E089CC86_000005_00",
+      "source_transcript": "inputs/transcripts/case_0170_20260711_200405_647_Alfie_Line_7F52F43C4A04B8EE8208D199E089CC86_000005_00.txt",
+      "text": "Red, orange, yellow, green, blue, indigo, violet. Got a favorite?",
+      "seed": 374897546,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0171_20260711_201227_723_Alfie_Line_C041624E4E03A6E5A47D9A962979AAA3_000001_00",
+      "source_transcript": "inputs/transcripts/case_0171_20260711_201227_723_Alfie_Line_C041624E4E03A6E5A47D9A962979AAA3_000001_00.txt",
+      "text": "Red, orange, yellow, green, blue, indigo, violet. Need anything else?",
+      "seed": 966645337,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0172_20260711_201243_965_Alfie_Line_C041624E4E03A6E5A47D9A962979AAA3_000002_00",
+      "source_transcript": "inputs/transcripts/case_0172_20260711_201243_965_Alfie_Line_C041624E4E03A6E5A47D9A962979AAA3_000002_00.txt",
+      "text": "Ham, lettuce, tomato, and mayo on bread. Want me to make one for you?",
+      "seed": 621661334,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0173_20260711_202914_920_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000000_00",
+      "source_transcript": "inputs/transcripts/case_0173_20260711_202914_920_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 1444450134,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0174_20260711_202921_141_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000001_00",
+      "source_transcript": "inputs/transcripts/case_0174_20260711_202921_141_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000001_00.txt",
+      "text": "Red, orange, yellow, green, blue, indigo, violet. Need anything else?",
+      "seed": 342683437,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0175_20260711_202931_751_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000002_00",
+      "source_transcript": "inputs/transcripts/case_0175_20260711_202931_751_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000002_00.txt",
+      "text": "Ham, lettuce, tomato, mayo. Want me to make one up for you?",
+      "seed": 1561742437,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0176_20260711_202943_447_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000003_00",
+      "source_transcript": "inputs/transcripts/case_0176_20260711_202943_447_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000003_00.txt",
+      "text": "Doing alright, thanks for asking. How about you?",
+      "seed": 628269021,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0177_20260711_202953_296_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000004_00",
+      "source_transcript": "inputs/transcripts/case_0177_20260711_202953_296_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000004_00.txt",
+      "text": "Glad to hear it! Want a sandwich to celebrate?",
+      "seed": 928410623,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0178_20260711_203001_077_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000005_00",
+      "source_transcript": "inputs/transcripts/case_0178_20260711_203001_077_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000005_00.txt",
+      "text": "Muffins are good! We don't have them, but I can order some in if you want.",
+      "seed": 523550839,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0179_20260711_203013_368_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000006_00",
+      "source_transcript": "inputs/transcripts/case_0179_20260711_203013_368_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000006_00.txt",
+      "text": "We don't have muffins, but I can order some in if you want.",
+      "seed": 1442268960,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0180_20260711_203024_093_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000007_00",
+      "source_transcript": "inputs/transcripts/case_0180_20260711_203024_093_Alfie_Line_0EA1ACCB46270E0B006D48AC50411315_000007_00.txt",
+      "text": "Strawberry's my favorite, but they're all yummy.",
+      "seed": 821650900,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0181_20260711_203846_514_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000000_00",
+      "source_transcript": "inputs/transcripts/case_0181_20260711_203846_514_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 564449666,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0182_20260711_203853_010_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000001_00",
+      "source_transcript": "inputs/transcripts/case_0182_20260711_203853_010_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two.",
+      "seed": 175019045,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0183_20260711_203900_091_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000002_00",
+      "source_transcript": "inputs/transcripts/case_0183_20260711_203900_091_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie. What's your favorite?",
+      "seed": 241843964,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0184_20260711_203910_677_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000003_00",
+      "source_transcript": "inputs/transcripts/case_0184_20260711_203910_677_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000003_00.txt",
+      "text": "How about the turkey? It's always a crowd pleaser.",
+      "seed": 1736306184,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0185_20260711_203918_695_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000004_00",
+      "source_transcript": "inputs/transcripts/case_0185_20260711_203918_695_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000004_00.txt",
+      "text": "Turkey, lettuce, tomato, and mayo on our house bread.",
+      "seed": 1236869493,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0186_20260711_204046_328_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000005_00",
+      "source_transcript": "inputs/transcripts/case_0186_20260711_204046_328_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000005_00.txt",
+      "text": "Just sandwiches and chips, I'm afraid. Need anything else?",
+      "seed": 1642163006,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0187_20260711_204111_778_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000006_00",
+      "source_transcript": "inputs/transcripts/case_0187_20260711_204111_778_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000006_00.txt",
+      "text": "In my neighborhood, they need more votes than I have fingers.",
+      "seed": 53515787,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0188_20260711_204143_085_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000007_00",
+      "source_transcript": "inputs/transcripts/case_0188_20260711_204143_085_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000007_00.txt",
+      "text": "Frogs tend to live near water, toads prefer drier spots. But they're both good jumpers!",
+      "seed": 1800014119,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0189_20260711_204157_371_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000008_00",
+      "source_transcript": "inputs/transcripts/case_0189_20260711_204157_371_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000008_00.txt",
+      "text": "That's a unique name for a unique pet! What did you name him?",
+      "seed": 817481507,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0190_20260711_204204_806_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000009_00",
+      "source_transcript": "inputs/transcripts/case_0190_20260711_204204_806_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000009_00.txt",
+      "text": "Maybe something fitting, like Jumperson. Fits his leapin' nature!",
+      "seed": 915125630,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0191_20260711_204231_702_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000010_00",
+      "source_transcript": "inputs/transcripts/case_0191_20260711_204231_702_Alfie_Line_ED86958547010552D4A6B19D24AE265B_000010_00.txt",
+      "text": "Donkeys are usually smaller, with a more dun-colored coat and a striped tail. Zebras are larger, with wider stripes.",
+      "seed": 40558853,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0192_20260711_205510_695_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000000_00",
+      "source_transcript": "inputs/transcripts/case_0192_20260711_205510_695_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 1714733378,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0193_20260711_205517_316_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000001_00",
+      "source_transcript": "inputs/transcripts/case_0193_20260711_205517_316_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two.",
+      "seed": 315520626,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0194_20260711_205525_205_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000002_00",
+      "source_transcript": "inputs/transcripts/case_0194_20260711_205525_205_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000002_00.txt",
+      "text": "We've got kettle cooked ones and some seasoned ones. Which do you like?",
+      "seed": 599786000,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0195_20260711_205532_619_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000003_00",
+      "source_transcript": "inputs/transcripts/case_0195_20260711_205532_619_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000003_00.txt",
+      "text": "We've got turkey, ham, and veggie sandwiches. Which sounds good to you?",
+      "seed": 334362321,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0196_20260711_205542_252_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000004_00",
+      "source_transcript": "inputs/transcripts/case_0196_20260711_205542_252_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000004_00.txt",
+      "text": "The turkey sandwich is always a winner. Nice and satisfying.",
+      "seed": 1501521124,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0197_20260711_205553_681_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000005_00",
+      "source_transcript": "inputs/transcripts/case_0197_20260711_205553_681_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000005_00.txt",
+      "text": "Turkey, lettuce, tomato, and mayo. Yum!",
+      "seed": 378264033,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0198_20260711_205603_842_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000006_00",
+      "source_transcript": "inputs/transcripts/case_0198_20260711_205603_842_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000006_00.txt",
+      "text": "Ham, lettuce, tomato, and mayo. Tastes great with a side of chips.",
+      "seed": 368041112,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0199_20260711_205614_023_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000007_00",
+      "source_transcript": "inputs/transcripts/case_0199_20260711_205614_023_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000007_00.txt",
+      "text": "Lettuce, tomato, onion, and a special veggie spread. Fresh and crunchy.",
+      "seed": 933093883,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0200_20260711_205625_250_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000008_00",
+      "source_transcript": "inputs/transcripts/case_0200_20260711_205625_250_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000008_00.txt",
+      "text": "Sushi? Haven't tried it, but it sounds fancy.",
+      "seed": 1409007495,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0201_20260711_205634_603_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000009_00",
+      "source_transcript": "inputs/transcripts/case_0201_20260711_205634_603_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000009_00.txt",
+      "text": "Rough fish, huh? Must be quite the experience.",
+      "seed": 1770551140,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0202_20260711_205643_816_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000010_00",
+      "source_transcript": "inputs/transcripts/case_0202_20260711_205643_816_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000010_00.txt",
+      "text": "Sounds... Adventurous. Not my cup of tea, though.",
+      "seed": 103205579,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0203_20260711_205701_022_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000011_00",
+      "source_transcript": "inputs/transcripts/case_0203_20260711_205701_022_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000011_00.txt",
+      "text": "I hear you. Maybe one day I'll give it a try.",
+      "seed": 1507974873,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0204_20260711_205711_170_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000012_00",
+      "source_transcript": "inputs/transcripts/case_0204_20260711_205711_170_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000012_00.txt",
+      "text": "Rotten tofu? Really? Must be quite the acquired taste.",
+      "seed": 1202522320,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0205_20260711_205727_094_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000013_00",
+      "source_transcript": "inputs/transcripts/case_0205_20260711_205727_094_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000013_00.txt",
+      "text": "Fermented soybean, interesting. I'll have to be brave and try it someday.",
+      "seed": 2114771809,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0206_20260711_205737_217_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000014_00",
+      "source_transcript": "inputs/transcripts/case_0206_20260711_205737_217_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000014_00.txt",
+      "text": "Ew, that doesn't sound pleasant. Thanks for the heads up.",
+      "seed": 158598587,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0207_20260711_205750_047_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000015_00",
+      "source_transcript": "inputs/transcripts/case_0207_20260711_205750_047_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000015_00.txt",
+      "text": "Ice cream? Oh, definitely. Nothing like a good scoop on a hot day.",
+      "seed": 1268187963,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0208_20260711_205759_897_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000016_00",
+      "source_transcript": "inputs/transcripts/case_0208_20260711_205759_897_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000016_00.txt",
+      "text": "Vanilla, always vanilla. Simple and satisfying.",
+      "seed": 122570997,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0209_20260711_205809_695_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000017_00",
+      "source_transcript": "inputs/transcripts/case_0209_20260711_205809_695_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000017_00.txt",
+      "text": "Vanilla's the way to go. Want a scoop sometime?",
+      "seed": 1987549310,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0210_20260711_205817_084_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000018_00",
+      "source_transcript": "inputs/transcripts/case_0210_20260711_205817_084_Alfie_Line_47313BE0436FAD8D6D6E34BA55CF575E_000018_00.txt",
+      "text": "Of course! Vanilla's always on hand. Want to try some?",
+      "seed": 951317790,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0211_20260711_210741_674_Alfie_Line_8226F4BF48FA69D68FBB95BFF8217B43_000000_00",
+      "source_transcript": "inputs/transcripts/case_0211_20260711_210741_674_Alfie_Line_8226F4BF48FA69D68FBB95BFF8217B43_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 328739150,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0212_20260711_210748_424_Alfie_Line_8226F4BF48FA69D68FBB95BFF8217B43_000001_00",
+      "source_transcript": "inputs/transcripts/case_0212_20260711_210748_424_Alfie_Line_8226F4BF48FA69D68FBB95BFF8217B43_000001_00.txt",
+      "text": "I'm Alfie, nice to meet you.",
+      "seed": 1269802356,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0213_20260711_210753_845_Alfie_Line_8226F4BF48FA69D68FBB95BFF8217B43_000002_00",
+      "source_transcript": "inputs/transcripts/case_0213_20260711_210753_845_Alfie_Line_8226F4BF48FA69D68FBB95BFF8217B43_000002_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 1215273991,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0214_20260711_210802_601_Alfie_Line_8226F4BF48FA69D68FBB95BFF8217B43_000003_00",
+      "source_transcript": "inputs/transcripts/case_0214_20260711_210802_601_Alfie_Line_8226F4BF48FA69D68FBB95BFF8217B43_000003_00.txt",
+      "text": "We've got turkey, ham, and veggie. What's your favorite?",
+      "seed": 388315361,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0219_20260711_210812_324_Alfie_Line_8226F4BF48FA69D68FBB95BFF8217B43_000004_00",
+      "source_transcript": "inputs/transcripts/case_0219_20260711_210812_324_Alfie_Line_8226F4BF48FA69D68FBB95BFF8217B43_000004_00.txt",
+      "text": "Rain doesn't come in colors, just water. But I can give you a sandwich any color you like—brown maybe?",
+      "seed": 342093094,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0220_20260711_214926_216_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000000_00",
+      "source_transcript": "inputs/transcripts/case_0220_20260711_214926_216_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 363562427,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0221_20260711_214932_419_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000001_00",
+      "source_transcript": "inputs/transcripts/case_0221_20260711_214932_419_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000001_00.txt",
+      "text": "I'm Alfie, the bodega clerk. Nice to meet you, Matthew.",
+      "seed": 403364265,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0222_20260711_214941_394_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000002_00",
+      "source_transcript": "inputs/transcripts/case_0222_20260711_214941_394_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000002_00.txt",
+      "text": "We've got sandwiches and chips. How can I help you?",
+      "seed": 431624185,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0223_20260711_214948_575_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000003_00",
+      "source_transcript": "inputs/transcripts/case_0223_20260711_214948_575_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000003_00.txt",
+      "text": "We've got turkey, ham, and veggie. What's your favorite?",
+      "seed": 156369982,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0224_20260711_214955_919_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000004_00",
+      "source_transcript": "inputs/transcripts/case_0224_20260711_214955_919_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000004_00.txt",
+      "text": "How about the turkey? It's always a crowd pleaser.",
+      "seed": 1969302819,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0225_20260711_215004_314_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000005_00",
+      "source_transcript": "inputs/transcripts/case_0225_20260711_215004_314_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000005_00.txt",
+      "text": "Oh, sorry. My friend Lana works here too.",
+      "seed": 283970603,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0226_20260711_215014_406_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000006_00",
+      "source_transcript": "inputs/transcripts/case_0226_20260711_215014_406_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000006_00.txt",
+      "text": "I think you meant to say \"I do like her to shave my boyfriend.\" Lana's a good friend.",
+      "seed": 650524175,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0227_20260711_215025_511_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000007_00",
+      "source_transcript": "inputs/transcripts/case_0227_20260711_215025_511_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000007_00.txt",
+      "text": "Not that I know of. She's pretty busy with work and all.",
+      "seed": 1741253882,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0228_20260711_215032_821_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000008_00",
+      "source_transcript": "inputs/transcripts/case_0228_20260711_215032_821_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000008_00.txt",
+      "text": "Sure thing. She's behind the counter most times.",
+      "seed": 1176697977,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0229_20260711_215039_315_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000009_00",
+      "source_transcript": "inputs/transcripts/case_0229_20260711_215039_315_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000009_00.txt",
+      "text": "She's always busy, but if she takes a break, she might join you.",
+      "seed": 1777067969,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0230_20260711_215049_219_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000010_00",
+      "source_transcript": "inputs/transcripts/case_0230_20260711_215049_219_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000010_00.txt",
+      "text": "Maybe something sweet? Like a box of chocolates or a fancy sandwich.",
+      "seed": 121096396,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0231_20260711_215058_778_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000011_00",
+      "source_transcript": "inputs/transcripts/case_0231_20260711_215058_778_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000011_00.txt",
+      "text": "A nice comedy or a classic maybe? She'd enjoy that.",
+      "seed": 1487795634,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0232_20260711_215110_876_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000012_00",
+      "source_transcript": "inputs/transcripts/case_0232_20260711_215110_876_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000012_00.txt",
+      "text": "I like a good board game night or a hike in the park. What about you?",
+      "seed": 1247870124,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0233_20260711_215122_779_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000013_00",
+      "source_transcript": "inputs/transcripts/case_0233_20260711_215122_779_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000013_00.txt",
+      "text": "Cool! Maybe she'd like a set for a conversation starter.",
+      "seed": 1538544066,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0234_20260711_215130_637_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000014_00",
+      "source_transcript": "inputs/transcripts/case_0234_20260711_215130_637_Alfie_Line_62F5ED564A2F138046A3E3BC028E50E1_000014_00.txt",
+      "text": "I see. Maybe then a thoughtful poem or a unique trinket could catch her eye.",
+      "seed": 70724102,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0235_20260712_054824_321_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000000_00",
+      "source_transcript": "inputs/transcripts/case_0235_20260712_054824_321_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 1027153611,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0236_20260712_054830_376_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000001_00",
+      "source_transcript": "inputs/transcripts/case_0236_20260712_054830_376_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000001_00.txt",
+      "text": "Just some sandwiches and chips. Whatcha in the mood for?",
+      "seed": 1899473771,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0237_20260712_054840_366_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000002_00",
+      "source_transcript": "inputs/transcripts/case_0237_20260712_054840_366_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie. Which one sounds good?",
+      "seed": 1657638845,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0238_20260712_054848_535_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000003_00",
+      "source_transcript": "inputs/transcripts/case_0238_20260712_054848_535_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000003_00.txt",
+      "text": "I keep it simple. You?",
+      "seed": 1255295544,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0239_20260712_054856_539_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000004_00",
+      "source_transcript": "inputs/transcripts/case_0239_20260712_054856_539_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000004_00.txt",
+      "text": "Great choice. Coming right up!",
+      "seed": 485827073,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0240_20260712_054903_698_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000005_00",
+      "source_transcript": "inputs/transcripts/case_0240_20260712_054903_698_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000005_00.txt",
+      "text": "We keep it basic. Ham, lettuce, tomato, mayo. Yum!",
+      "seed": 1336973170,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0241_20260712_054914_706_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000006_00",
+      "source_transcript": "inputs/transcripts/case_0241_20260712_054914_706_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000006_00.txt",
+      "text": "Ham, lettuce, tomato—no frills, just good. Enjoy!",
+      "seed": 77075163,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0242_20260712_054923_633_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000007_00",
+      "source_transcript": "inputs/transcripts/case_0242_20260712_054923_633_Alfie_Line_350D845F4A93D7EA962950925C6CA41C_000007_00.txt",
+      "text": "Red, orange, yellow, green, blue, indigo, violet. Though we stick to ham, lettuce, and tomato here. Enjoy",
+      "seed": 136348286,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0243_20260712_060909_067_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000000_00",
+      "source_transcript": "inputs/transcripts/case_0243_20260712_060909_067_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 1561116319,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0244_20260712_060916_188_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000001_00",
+      "source_transcript": "inputs/transcripts/case_0244_20260712_060916_188_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 116134628,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0245_20260712_060925_927_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000002_00",
+      "source_transcript": "inputs/transcripts/case_0245_20260712_060925_927_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie sandwiches. Which one sounds good?",
+      "seed": 518277812,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0246_20260712_060938_376_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000003_00",
+      "source_transcript": "inputs/transcripts/case_0246_20260712_060938_376_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000003_00.txt",
+      "text": "How about the turkey? It's always a crowd pleaser.",
+      "seed": 244165866,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0247_20260712_060946_373_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000004_00",
+      "source_transcript": "inputs/transcripts/case_0247_20260712_060946_373_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000004_00.txt",
+      "text": "Turkey, lettuce, tomato, and mayo. Yum!",
+      "seed": 1885979531,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0248_20260712_060957_978_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000005_00",
+      "source_transcript": "inputs/transcripts/case_0248_20260712_060957_978_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000005_00.txt",
+      "text": "Red, orange, yellow, green, blue, indigo, violet. Want me to make you a rainbow sandwich?",
+      "seed": 624848054,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0249_20260712_061010_792_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000006_00",
+      "source_transcript": "inputs/transcripts/case_0249_20260712_061010_792_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000006_00.txt",
+      "text": "Why did the tomato turn red? Because it saw the salad dressing!",
+      "seed": 840627729,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0250_20260712_061019_472_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000007_00",
+      "source_transcript": "inputs/transcripts/case_0250_20260712_061019_472_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000007_00.txt",
+      "text": "Why did the pencil go to the doctor? Because it was feeling sharp!",
+      "seed": 259652915,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0251_20260712_061031_639_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000008_00",
+      "source_transcript": "inputs/transcripts/case_0251_20260712_061031_639_Alfie_Line_C5376AD94FAC73C2D2AF9E8794ABAEF7_000008_00.txt",
+      "text": "Four birds? Crow, raven, eagle, and owl maybe? Or are you thinking of something else?",
+      "seed": 1798580290,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0252_20260712_070103_996_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000000_00",
+      "source_transcript": "inputs/transcripts/case_0252_20260712_070103_996_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 379290677,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0253_20260712_070111_593_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000001_00",
+      "source_transcript": "inputs/transcripts/case_0253_20260712_070111_593_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 789813113,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0254_20260712_070120_708_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000002_00",
+      "source_transcript": "inputs/transcripts/case_0254_20260712_070120_708_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie. What's your favorite?",
+      "seed": 1029410770,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0255_20260712_070128_923_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000003_00",
+      "source_transcript": "inputs/transcripts/case_0255_20260712_070128_923_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000003_00.txt",
+      "text": "How about the turkey? It's always a crowd-pleaser.",
+      "seed": 734723975,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0256_20260712_070139_097_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000004_00",
+      "source_transcript": "inputs/transcripts/case_0256_20260712_070139_097_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000004_00.txt",
+      "text": "Turkey, lettuce, tomato, and mayo. Yum!",
+      "seed": 1928919344,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0257_20260712_070148_898_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000005_00",
+      "source_transcript": "inputs/transcripts/case_0257_20260712_070148_898_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000005_00.txt",
+      "text": "Red, orange, yellow, green, blue, indigo, violet. Coloring the world!",
+      "seed": 655016261,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0258_20260712_070208_413_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000006_00",
+      "source_transcript": "inputs/transcripts/case_0258_20260712_070208_413_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000006_00.txt",
+      "text": "Once upon a time, a lost puppy found a sandwich. It was happy and full. From then on, the sandwich was known as the",
+      "seed": 451884598,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0259_20260712_070224_054_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000007_00",
+      "source_transcript": "inputs/transcripts/case_0259_20260712_070224_054_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000007_00.txt",
+      "text": "Just had a rough customer. How about you? Anything good today?",
+      "seed": 654998815,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0260_20260712_070237_129_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000008_00",
+      "source_transcript": "inputs/transcripts/case_0260_20260712_070237_129_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000008_00.txt",
+      "text": "Ever notice how the chips get the best of us? Best snack, worst teeth.",
+      "seed": 977842857,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0261_20260712_070253_143_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000009_00",
+      "source_transcript": "inputs/transcripts/case_0261_20260712_070253_143_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000009_00.txt",
+      "text": "Trying to keep the bodega afloat. Every little bit helps.",
+      "seed": 1889706366,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0262_20260712_070301_450_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000010_00",
+      "source_transcript": "inputs/transcripts/case_0262_20260712_070301_450_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000010_00.txt",
+      "text": "Thanks, Red. Means a lot.",
+      "seed": 1663207311,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0263_20260712_070308_214_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000011_00",
+      "source_transcript": "inputs/transcripts/case_0263_20260712_070308_214_Alfie_Line_B15225234ABA655328D6AD85EDC09235_000011_00.txt",
+      "text": "Red, huh? Fits you. Here, have a chip on the house.",
+      "seed": 1776872476,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0264_20260712_162929_613_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000000_00",
+      "source_transcript": "inputs/transcripts/case_0264_20260712_162929_613_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 759085675,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0265_20260712_162935_785_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000001_00",
+      "source_transcript": "inputs/transcripts/case_0265_20260712_162935_785_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 187734834,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0266_20260712_162943_613_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000002_00",
+      "source_transcript": "inputs/transcripts/case_0266_20260712_162943_613_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie. Which one sounds good?",
+      "seed": 1965123298,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0267_20260712_163038_816_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000003_00",
+      "source_transcript": "inputs/transcripts/case_0267_20260712_163038_816_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000003_00.txt",
+      "text": "I like the veggie one myself. Light and fresh.",
+      "seed": 223804558,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0268_20260712_163116_170_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000004_00",
+      "source_transcript": "inputs/transcripts/case_0268_20260712_163116_170_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000004_00.txt",
+      "text": "Lettuce, tomato, cucumber, and a special sauce. Yum!",
+      "seed": 1236788779,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0269_20260712_163127_321_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000005_00",
+      "source_transcript": "inputs/transcripts/case_0269_20260712_163127_321_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000005_00.txt",
+      "text": "Ham, mayo, lettuce, and cheese. Classic combo.",
+      "seed": 87705693,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0270_20260712_163138_146_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000006_00",
+      "source_transcript": "inputs/transcripts/case_0270_20260712_163138_146_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000006_00.txt",
+      "text": "I dream of it, but this bodega is my home.",
+      "seed": 1662222208,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0271_20260712_163205_014_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000007_00",
+      "source_transcript": "inputs/transcripts/case_0271_20260712_163205_014_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000007_00.txt",
+      "text": "That's a kind offer, but I'm happy here. Thanks!",
+      "seed": 1309209436,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0272_20260712_163217_014_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000008_00",
+      "source_transcript": "inputs/transcripts/case_0272_20260712_163217_014_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000008_00.txt",
+      "text": "Red, orange, yellow, green, blue, indigo, violet. Sing it with me!",
+      "seed": 1097661131,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0273_20260712_163227_762_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000009_00",
+      "source_transcript": "inputs/transcripts/case_0273_20260712_163227_762_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000009_00.txt",
+      "text": "Try this: Roy G. Biv. Like the guy in a boat.",
+      "seed": 1548761868,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0274_20260712_163256_386_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000010_00",
+      "source_transcript": "inputs/transcripts/case_0274_20260712_163256_386_Alfie_Line_F998A86D406B46A7465D8D985ADC752C_000010_00.txt",
+      "text": "Like a pirate ship, but for remembering colors.",
+      "seed": 1695003482,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0275_20260712_171504_124_Alfie_Line_29F9E25C436875A043517F820043570B_000000_00",
+      "source_transcript": "inputs/transcripts/case_0275_20260712_171504_124_Alfie_Line_29F9E25C436875A043517F820043570B_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 2064496934,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0276_20260712_171510_873_Alfie_Line_29F9E25C436875A043517F820043570B_000001_00",
+      "source_transcript": "inputs/transcripts/case_0276_20260712_171510_873_Alfie_Line_29F9E25C436875A043517F820043570B_000001_00.txt",
+      "text": "We've got sandwiches and chips. How can I help you?",
+      "seed": 288722898,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0277_20260712_171522_011_Alfie_Line_29F9E25C436875A043517F820043570B_000002_00",
+      "source_transcript": "inputs/transcripts/case_0277_20260712_171522_011_Alfie_Line_29F9E25C436875A043517F820043570B_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie sandwiches today.",
+      "seed": 2127495740,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0278_20260712_171612_703_Alfie_Line_29F9E25C436875A043517F820043570B_000003_00",
+      "source_transcript": "inputs/transcripts/case_0278_20260712_171612_703_Alfie_Line_29F9E25C436875A043517F820043570B_000003_00.txt",
+      "text": "Just chips and sandwiches. That everything?",
+      "seed": 1060387851,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0279_20260712_171638_135_Alfie_Line_29F9E25C436875A043517F820043570B_000004_00",
+      "source_transcript": "inputs/transcripts/case_0279_20260712_171638_135_Alfie_Line_29F9E25C436875A043517F820043570B_000004_00.txt",
+      "text": "No challenge, just options. What would you like?",
+      "seed": 246528610,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0280_20260712_171646_727_Alfie_Line_29F9E25C436875A043517F820043570B_000005_00",
+      "source_transcript": "inputs/transcripts/case_0280_20260712_171646_727_Alfie_Line_29F9E25C436875A043517F820043570B_000005_00.txt",
+      "text": "We've got kettle-cooked and seasoned. Which do you fancy?",
+      "seed": 1869112786,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0281_20260712_171655_445_Alfie_Line_29F9E25C436875A043517F820043570B_000006_00",
+      "source_transcript": "inputs/transcripts/case_0281_20260712_171655_445_Alfie_Line_29F9E25C436875A043517F820043570B_000006_00.txt",
+      "text": "Kettle-cooked are always a hit. Want to try them?",
+      "seed": 1307224750,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0282_20260712_171703_310_Alfie_Line_29F9E25C436875A043517F820043570B_000007_00",
+      "source_transcript": "inputs/transcripts/case_0282_20260712_171703_310_Alfie_Line_29F9E25C436875A043517F820043570B_000007_00.txt",
+      "text": "Kettle-cooked are two dollars. Want a bag?",
+      "seed": 1094675576,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0283_20260712_171710_664_Alfie_Line_29F9E25C436875A043517F820043570B_000008_00",
+      "source_transcript": "inputs/transcripts/case_0283_20260712_171710_664_Alfie_Line_29F9E25C436875A043517F820043570B_000008_00.txt",
+      "text": "Sure thing. Just the chips then.",
+      "seed": 48689378,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0284_20260712_171716_214_Alfie_Line_29F9E25C436875A043517F820043570B_000009_00",
+      "source_transcript": "inputs/transcripts/case_0284_20260712_171716_214_Alfie_Line_29F9E25C436875A043517F820043570B_000009_00.txt",
+      "text": "Just potatoes, oil, and salt. Simple and tasty.",
+      "seed": 388264230,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0285_20260712_171743_152_Alfie_Line_29F9E25C436875A043517F820043570B_000010_00",
+      "source_transcript": "inputs/transcripts/case_0285_20260712_171743_152_Alfie_Line_29F9E25C436875A043517F820043570B_000010_00.txt",
+      "text": "I go for the turkey and cheese. Classic and satisfying.",
+      "seed": 736552918,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0286_20260712_171751_378_Alfie_Line_29F9E25C436875A043517F820043570B_000011_00",
+      "source_transcript": "inputs/transcripts/case_0286_20260712_171751_378_Alfie_Line_29F9E25C436875A043517F820043570B_000011_00.txt",
+      "text": "Turkey, Swiss, and mayo. Classic combo.",
+      "seed": 4041980,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0287_20260712_171818_892_Alfie_Line_29F9E25C436875A043517F820043570B_000012_00",
+      "source_transcript": "inputs/transcripts/case_0287_20260712_171818_892_Alfie_Line_29F9E25C436875A043517F820043570B_000012_00.txt",
+      "text": "Not much, just the usual. How about you? Anything fun lately?",
+      "seed": 467563144,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0288_20260712_171826_212_Alfie_Line_29F9E25C436875A043517F820043570B_000013_00",
+      "source_transcript": "inputs/transcripts/case_0288_20260712_171826_212_Alfie_Line_29F9E25C436875A043517F820043570B_000013_00.txt",
+      "text": "Well, we all need a bit of routine now and then. Want to try something new?",
+      "seed": 715245902,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0289_20260712_171835_540_Alfie_Line_29F9E25C436875A043517F820043570B_000014_00",
+      "source_transcript": "inputs/transcripts/case_0289_20260712_171835_540_Alfie_Line_29F9E25C436875A043517F820043570B_000014_00.txt",
+      "text": "How about the roast beef? Served with au jus and provolone. New this week.",
+      "seed": 1443264531,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0290_20260712_174956_421_Alfie_Line_B36560424BE92E88D6079388E4D2B661_000000_00",
+      "source_transcript": "inputs/transcripts/case_0290_20260712_174956_421_Alfie_Line_B36560424BE92E88D6079388E4D2B661_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 1431942309,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0291_20260712_214416_193_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000000_00",
+      "source_transcript": "inputs/transcripts/case_0291_20260712_214416_193_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 1051362585,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0292_20260712_214422_351_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000001_00",
+      "source_transcript": "inputs/transcripts/case_0292_20260712_214422_351_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000001_00.txt",
+      "text": "A sandwich or some chips, maybe?",
+      "seed": 968447068,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0293_20260712_214431_775_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000002_00",
+      "source_transcript": "inputs/transcripts/case_0293_20260712_214431_775_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000002_00.txt",
+      "text": "Our sandwiches are five dollars, chips two. Need anything else?",
+      "seed": 597937954,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0294_20260712_214444_849_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000003_00",
+      "source_transcript": "inputs/transcripts/case_0294_20260712_214444_849_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000003_00.txt",
+      "text": "We've got turkey, ham, and veggie sandwiches. Which one sounds good?",
+      "seed": 1512299317,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0295_20260712_214453_500_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000004_00",
+      "source_transcript": "inputs/transcripts/case_0295_20260712_214453_500_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000004_00.txt",
+      "text": "We don't do favors, but if you're nice about it, I might consider it. What do you have in mind?",
+      "seed": 300649241,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0296_20260712_214512_355_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000005_00",
+      "source_transcript": "inputs/transcripts/case_0296_20260712_214512_355_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000005_00.txt",
+      "text": "I'm partial to the turkey myself. Rich and satisfying.",
+      "seed": 832113835,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0297_20260712_214523_258_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000006_00",
+      "source_transcript": "inputs/transcripts/case_0297_20260712_214523_258_Alfie_Line_6C5F7377423C1E4C5090BD833BB55393_000006_00.txt",
+      "text": "Red, orange, yellow, green, blue, indigo, violet. Need anything else?",
+      "seed": 1391004032,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0298_20260712_221517_774_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000000_00",
+      "source_transcript": "inputs/transcripts/case_0298_20260712_221517_774_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 214850779,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0299_20260712_221523_780_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000001_00",
+      "source_transcript": "inputs/transcripts/case_0299_20260712_221523_780_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000001_00.txt",
+      "text": "I'm sorry, could you repeat that?",
+      "seed": 1726364804,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0300_20260712_221529_496_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000002_00",
+      "source_transcript": "inputs/transcripts/case_0300_20260712_221529_496_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000002_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 519418249,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0301_20260712_221540_388_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000003_00",
+      "source_transcript": "inputs/transcripts/case_0301_20260712_221540_388_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000003_00.txt",
+      "text": "We've got the turkey, the roast beef, and the veggie special. Which one sounds good?",
+      "seed": 732644467,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0302_20260712_221550_202_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000004_00",
+      "source_transcript": "inputs/transcripts/case_0302_20260712_221550_202_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000004_00.txt",
+      "text": "The roast beef is always a hit. Yum!",
+      "seed": 211334792,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0303_20260712_221600_986_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000005_00",
+      "source_transcript": "inputs/transcripts/case_0303_20260712_221600_986_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000005_00.txt",
+      "text": "It's ham, turkey, Swiss cheese, and lettuce on rye. Close enough to roast beef, right?",
+      "seed": 2061322228,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0304_20260712_221623_380_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000006_00",
+      "source_transcript": "inputs/transcripts/case_0304_20260712_221623_380_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000006_00.txt",
+      "text": "It's a house specialty. The turkey's pretty good too, if you ask me.",
+      "seed": 1925254646,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0305_20260712_221634_476_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000007_00",
+      "source_transcript": "inputs/transcripts/case_0305_20260712_221634_476_Alfie_Line_D5C91DD94BEFCA523D58A8A85F6C21C4_000007_00.txt",
+      "text": "Red, orange, yellow, green, blue, indigo, violet. Though I think you might be daydreaming.",
+      "seed": 504747792,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0306_20260713_122839_024_Alfie_Line_80998E274D47AA4FA8BFF699CDAC1816_000000_00",
+      "source_transcript": "inputs/transcripts/case_0306_20260713_122839_024_Alfie_Line_80998E274D47AA4FA8BFF699CDAC1816_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 256282887,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0307_20260713_142103_908_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000000_00",
+      "source_transcript": "inputs/transcripts/case_0307_20260713_142103_908_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 526085736,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0308_20260713_142111_546_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000001_00",
+      "source_transcript": "inputs/transcripts/case_0308_20260713_142111_546_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 959440291,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0309_20260713_142120_252_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000002_00",
+      "source_transcript": "inputs/transcripts/case_0309_20260713_142120_252_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie. Which one sounds good?",
+      "seed": 960613414,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0310_20260713_142132_831_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000003_00",
+      "source_transcript": "inputs/transcripts/case_0310_20260713_142132_831_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000003_00.txt",
+      "text": "How about the turkey? It's always a crowd-pleaser.",
+      "seed": 1335449918,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0311_20260713_142141_084_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000004_00",
+      "source_transcript": "inputs/transcripts/case_0311_20260713_142141_084_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000004_00.txt",
+      "text": "Turkey, lettuce, tomato, and mayo. Yum!",
+      "seed": 1787790050,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0312_20260713_142152_397_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000005_00",
+      "source_transcript": "inputs/transcripts/case_0312_20260713_142152_397_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000005_00.txt",
+      "text": "Ham is delicious too. Just ham, cheese, and mayo.",
+      "seed": 458213611,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0313_20260713_142203_658_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000006_00",
+      "source_transcript": "inputs/transcripts/case_0313_20260713_142203_658_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000006_00.txt",
+      "text": "Both are great. Depends on your mood.",
+      "seed": 595684147,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0314_20260713_142217_647_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000007_00",
+      "source_transcript": "inputs/transcripts/case_0314_20260713_142217_647_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000007_00.txt",
+      "text": "Did you know turkey sandwiches were popularized in the 1920s?",
+      "seed": 1376459110,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0315_20260713_142226_924_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000008_00",
+      "source_transcript": "inputs/transcripts/case_0315_20260713_142226_924_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000008_00.txt",
+      "text": "From a history of sandwiches book. Fun, right?",
+      "seed": 920907165,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0316_20260713_142234_938_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000009_00",
+      "source_transcript": "inputs/transcripts/case_0316_20260713_142234_938_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000009_00.txt",
+      "text": "Maybe try a chip with it? Crunchy and satisfying.",
+      "seed": 466367765,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0317_20260713_142247_721_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000010_00",
+      "source_transcript": "inputs/transcripts/case_0317_20260713_142247_721_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000010_00.txt",
+      "text": "Most sandwich bread is made with bleached flour. Not so exciting, huh?",
+      "seed": 1780578995,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0318_20260713_142337_253_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000011_00",
+      "source_transcript": "inputs/transcripts/case_0318_20260713_142337_253_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000011_00.txt",
+      "text": "The average person eats 181 sandwiches a year. Quite a bite!",
+      "seed": 949677169,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0319_20260713_142358_218_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000012_00",
+      "source_transcript": "inputs/transcripts/case_0319_20260713_142358_218_Alfie_Line_C83FA3F4462C96658F16EE81928BD66B_000012_00.txt",
+      "text": "Brown, blonde, red, black, platinum. What's your favorite?",
+      "seed": 1563171714,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0320_20260714_072744_028_Alfie_Line_B3F7A11045F485E9D389F2A3EE658E3C_000000_00",
+      "source_transcript": "inputs/transcripts/case_0320_20260714_072744_028_Alfie_Line_B3F7A11045F485E9D389F2A3EE658E3C_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 861026258,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0321_20260714_072750_924_Alfie_Line_B3F7A11045F485E9D389F2A3EE658E3C_000001_00",
+      "source_transcript": "inputs/transcripts/case_0321_20260714_072750_924_Alfie_Line_B3F7A11045F485E9D389F2A3EE658E3C_000001_00.txt",
+      "text": "I'm Alfie, the bodega clerk. How can I help you?",
+      "seed": 331997988,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0322_20260714_072758_587_Alfie_Line_B3F7A11045F485E9D389F2A3EE658E3C_000002_00",
+      "source_transcript": "inputs/transcripts/case_0322_20260714_072758_587_Alfie_Line_B3F7A11045F485E9D389F2A3EE658E3C_000002_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 1946677966,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0323_20260714_072807_986_Alfie_Line_B3F7A11045F485E9D389F2A3EE658E3C_000003_00",
+      "source_transcript": "inputs/transcripts/case_0323_20260714_072807_986_Alfie_Line_B3F7A11045F485E9D389F2A3EE658E3C_000003_00.txt",
+      "text": "We've got turkey, ham, and veggie sandwiches. What's your favorite?",
+      "seed": 1520168257,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0324_20260714_072818_566_Alfie_Line_B3F7A11045F485E9D389F2A3EE658E3C_000004_00",
+      "source_transcript": "inputs/transcripts/case_0324_20260714_072818_566_Alfie_Line_B3F7A11045F485E9D389F2A3EE658E3C_000004_00.txt",
+      "text": "I go for the turkey myself. It's always fresh.",
+      "seed": 628539977,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0325_20260714_072825_852_Alfie_Line_B3F7A11045F485E9D389F2A3EE658E3C_000005_00",
+      "source_transcript": "inputs/transcripts/case_0325_20260714_072825_852_Alfie_Line_B3F7A11045F485E9D389F2A3EE658E3C_000005_00.txt",
+      "text": "Turkey, lettuce, tomato, and mayo. Simple and tasty.",
+      "seed": 1790596840,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0326_20260714_080355_850_Alfie_Line_931CF48A47B165B15B93BD9436034595_000000_00",
+      "source_transcript": "inputs/transcripts/case_0326_20260714_080355_850_Alfie_Line_931CF48A47B165B15B93BD9436034595_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 594198907,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0327_20260714_080401_793_Alfie_Line_931CF48A47B165B15B93BD9436034595_000001_00",
+      "source_transcript": "inputs/transcripts/case_0327_20260714_080401_793_Alfie_Line_931CF48A47B165B15B93BD9436034595_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 407258283,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0328_20260714_080409_764_Alfie_Line_931CF48A47B165B15B93BD9436034595_000002_00",
+      "source_transcript": "inputs/transcripts/case_0328_20260714_080409_764_Alfie_Line_931CF48A47B165B15B93BD9436034595_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie. Which one sounds good?",
+      "seed": 1130642527,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0329_20260714_080419_461_Alfie_Line_931CF48A47B165B15B93BD9436034595_000003_00",
+      "source_transcript": "inputs/transcripts/case_0329_20260714_080419_461_Alfie_Line_931CF48A47B165B15B93BD9436034595_000003_00.txt",
+      "text": "Turkey's sliced ham, swiss cheese, lettuce, and tomato on rye. Ham's just ham, swiss, lettuce, and",
+      "seed": 2042140441,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0330_20260714_091247_475_Alfie_Line_D90175F14D3589200F17FD9BB90A6675_000000_00",
+      "source_transcript": "inputs/transcripts/case_0330_20260714_091247_475_Alfie_Line_D90175F14D3589200F17FD9BB90A6675_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 820451743,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0331_20260714_091255_246_Alfie_Line_D90175F14D3589200F17FD9BB90A6675_000001_00",
+      "source_transcript": "inputs/transcripts/case_0331_20260714_091255_246_Alfie_Line_D90175F14D3589200F17FD9BB90A6675_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 620966264,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0332_20260714_091302_693_Alfie_Line_D90175F14D3589200F17FD9BB90A6675_000002_00",
+      "source_transcript": "inputs/transcripts/case_0332_20260714_091302_693_Alfie_Line_D90175F14D3589200F17FD9BB90A6675_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie. Which one sounds good?",
+      "seed": 1537785222,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0333_20260714_091315_526_Alfie_Line_D90175F14D3589200F17FD9BB90A6675_000003_00",
+      "source_transcript": "inputs/transcripts/case_0333_20260714_091315_526_Alfie_Line_D90175F14D3589200F17FD9BB90A6675_000003_00.txt",
+      "text": "The turkey is always a winner. Nice and juicy.",
+      "seed": 1158463678,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0334_20260714_091324_302_Alfie_Line_D90175F14D3589200F17FD9BB90A6675_000004_00",
+      "source_transcript": "inputs/transcripts/case_0334_20260714_091324_302_Alfie_Line_D90175F14D3589200F17FD9BB90A6675_000004_00.txt",
+      "text": "Turkey, lettuce, tomato, and mayo. Yum!",
+      "seed": 442832416,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0335_20260714_091333_898_Alfie_Line_D90175F14D3589200F17FD9BB90A6675_000005_00",
+      "source_transcript": "inputs/transcripts/case_0335_20260714_091333_898_Alfie_Line_D90175F14D3589200F17FD9BB90A6675_000005_00.txt",
+      "text": "Ham, lettuce, tomato, and mayo. Comes with the works.",
+      "seed": 676689996,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0336_20260714_091342_339_Alfie_Line_D90175F14D3589200F17FD9BB90A6675_000006_00",
+      "source_transcript": "inputs/transcripts/case_0336_20260714_091342_339_Alfie_Line_D90175F14D3589200F17FD9BB90A6675_000006_00.txt",
+      "text": "Red, orange, yellow, green, blue, indigo, violet. Need anything else?",
+      "seed": 347149159,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0337_20260714_095318_511_Alfie_Line_305DA42442B9478F49A6CFA1E8299229_000000_00",
+      "source_transcript": "inputs/transcripts/case_0337_20260714_095318_511_Alfie_Line_305DA42442B9478F49A6CFA1E8299229_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 1451314117,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0338_20260714_104152_294_Alfie_Line_8AC0680C493F0216896A248C6843E044_000000_00",
+      "source_transcript": "inputs/transcripts/case_0338_20260714_104152_294_Alfie_Line_8AC0680C493F0216896A248C6843E044_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 913756703,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0339_20260714_104158_548_Alfie_Line_8AC0680C493F0216896A248C6843E044_000001_00",
+      "source_transcript": "inputs/transcripts/case_0339_20260714_104158_548_Alfie_Line_8AC0680C493F0216896A248C6843E044_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 2008577081,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0340_20260714_104206_934_Alfie_Line_8AC0680C493F0216896A248C6843E044_000002_00",
+      "source_transcript": "inputs/transcripts/case_0340_20260714_104206_934_Alfie_Line_8AC0680C493F0216896A248C6843E044_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie. What's your favorite?",
+      "seed": 33000344,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0341_20260714_104215_357_Alfie_Line_8AC0680C493F0216896A248C6843E044_000003_00",
+      "source_transcript": "inputs/transcripts/case_0341_20260714_104215_357_Alfie_Line_8AC0680C493F0216896A248C6843E044_000003_00.txt",
+      "text": "Veggie has lettuce, tomato, and a mix of veggies. Yum!",
+      "seed": 573202669,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0342_20260714_104225_264_Alfie_Line_8AC0680C493F0216896A248C6843E044_000004_00",
+      "source_transcript": "inputs/transcripts/case_0342_20260714_104225_264_Alfie_Line_8AC0680C493F0216896A248C6843E044_000004_00.txt",
+      "text": "I'm partial to the turkey myself. But the veggie is always a hit.",
+      "seed": 1855251967,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0343_20260714_104234_922_Alfie_Line_8AC0680C493F0216896A248C6843E044_000005_00",
+      "source_transcript": "inputs/transcripts/case_0343_20260714_104234_922_Alfie_Line_8AC0680C493F0216896A248C6843E044_000005_00.txt",
+      "text": "Turkey, lettuce, tomato, and swiss cheese. Classic combo.",
+      "seed": 1941652611,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0344_20260714_104248_855_Alfie_Line_8AC0680C493F0216896A248C6843E044_000006_00",
+      "source_transcript": "inputs/transcripts/case_0344_20260714_104248_855_Alfie_Line_8AC0680C493F0216896A248C6843E044_000006_00.txt",
+      "text": "Red, orange, yellow, green, blue, indigo, violet. Sing it with me!",
+      "seed": 1129771173,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0345_20260714_110624_754_Alfie_Line_403D8DFA434042DC007DCC88F9C31C82_000000_00",
+      "source_transcript": "inputs/transcripts/case_0345_20260714_110624_754_Alfie_Line_403D8DFA434042DC007DCC88F9C31C82_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 1384892836,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0346_20260714_110632_236_Alfie_Line_403D8DFA434042DC007DCC88F9C31C82_000001_00",
+      "source_transcript": "inputs/transcripts/case_0346_20260714_110632_236_Alfie_Line_403D8DFA434042DC007DCC88F9C31C82_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two.",
+      "seed": 1085730190,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0347_20260714_110640_313_Alfie_Line_403D8DFA434042DC007DCC88F9C31C82_000002_00",
+      "source_transcript": "inputs/transcripts/case_0347_20260714_110640_313_Alfie_Line_403D8DFA434042DC007DCC88F9C31C82_000002_00.txt",
+      "text": "They're made from bread and filled with tasty stuff, like meat or veggies. Want to try one?",
+      "seed": 1548892974,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0348_20260714_110655_073_Alfie_Line_403D8DFA434042DC007DCC88F9C31C82_000003_00",
+      "source_transcript": "inputs/transcripts/case_0348_20260714_110655_073_Alfie_Line_403D8DFA434042DC007DCC88F9C31C82_000003_00.txt",
+      "text": "We've got turkey, ham, and veggie sandwiches. Which one sounds good?",
+      "seed": 1054263339,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0349_20260714_114133_038_Alfie_Line_D00DCFD94142C470500D9B821BAD18FB_000000_00",
+      "source_transcript": "inputs/transcripts/case_0349_20260714_114133_038_Alfie_Line_D00DCFD94142C470500D9B821BAD18FB_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 1161016440,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0350_20260714_114139_401_Alfie_Line_D00DCFD94142C470500D9B821BAD18FB_000001_00",
+      "source_transcript": "inputs/transcripts/case_0350_20260714_114139_401_Alfie_Line_D00DCFD94142C470500D9B821BAD18FB_000001_00.txt",
+      "text": "Got a sandwich or maybe a bag of chips?",
+      "seed": 1355960633,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0351_20260714_114149_364_Alfie_Line_D00DCFD94142C470500D9B821BAD18FB_000002_00",
+      "source_transcript": "inputs/transcripts/case_0351_20260714_114149_364_Alfie_Line_D00DCFD94142C470500D9B821BAD18FB_000002_00.txt",
+      "text": "We've got turkey, ham, and veggie. Which one's your favorite?",
+      "seed": 978296953,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0352_20260714_114204_817_Alfie_Line_D00DCFD94142C470500D9B821BAD18FB_000003_00",
+      "source_transcript": "inputs/transcripts/case_0352_20260714_114204_817_Alfie_Line_D00DCFD94142C470500D9B821BAD18FB_000003_00.txt",
+      "text": "Ham, mayo, lettuce, and tomato. Yum!",
+      "seed": 925113892,
+      "voice_id": "alfie"
+    },
+    {
+      "id": "case_0353_20260718_080826_820_Alfie_Line_31BC10FA43E1ECA25C10D48BAA8F4FA0_000000_00",
+      "source_transcript": "inputs/transcripts/case_0353_20260718_080826_820_Alfie_Line_31BC10FA43E1ECA25C10D48BAA8F4FA0_000000_00.txt",
+      "text": "Hello there, what can I get for you today?",
+      "seed": 1561273644,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0354_20260718_080833_010_Alfie_Line_31BC10FA43E1ECA25C10D48BAA8F4FA0_000001_00",
+      "source_transcript": "inputs/transcripts/case_0354_20260718_080833_010_Alfie_Line_31BC10FA43E1ECA25C10D48BAA8F4FA0_000001_00.txt",
+      "text": "We've got sandwiches for five dollars and chips for two. What'll it be?",
+      "seed": 546349724,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0355_20260718_080841_210_Alfie_Line_31BC10FA43E1ECA25C10D48BAA8F4FA0_000002_00",
+      "source_transcript": "inputs/transcripts/case_0355_20260718_080841_210_Alfie_Line_31BC10FA43E1ECA25C10D48BAA8F4FA0_000002_00.txt",
+      "text": "We've got a few flavors of both. Sandwiches are turkey, ham, or veggie. Chips are regular or spicy.",
+      "seed": 427219029,
+      "voice_id": "lana"
+    },
+    {
+      "id": "case_0356_20260718_080853_168_Alfie_Line_31BC10FA43E1ECA25C10D48BAA8F4FA0_000003_00",
+      "source_transcript": "inputs/transcripts/case_0356_20260718_080853_168_Alfie_Line_31BC10FA43E1ECA25C10D48BAA8F4FA0_000003_00.txt",
+      "text": "The chips? They're just a touch of heat, you know, for those who like a little kick.",
+      "seed": 752956975,
+      "voice_id": "priestley"
+    },
+    {
+      "id": "case_0357_20260718_080915_943_Alfie_Line_31BC10FA43E1ECA25C10D48BAA8F4FA0_000004_00",
+      "source_transcript": "inputs/transcripts/case_0357_20260718_080915_943_Alfie_Line_31BC10FA43E1ECA25C10D48BAA8F4FA0_000004_00.txt",
+      "text": "We've got turkey, ham, and veggie sandwiches. Which one's calling to you?",
+      "seed": 856027788,
+      "voice_id": "priestley2"
+    },
+    {
+      "id": "case_0358_20260718_080928_146_Alfie_Line_31BC10FA43E1ECA25C10D48BAA8F4FA0_000005_00",
+      "source_transcript": "inputs/transcripts/case_0358_20260718_080928_146_Alfie_Line_31BC10FA43E1ECA25C10D48BAA8F4FA0_000005_00.txt",
+      "text": "Ham, lettuce, tomato, and mayo. Simple and satisfying.",
+      "seed": 1639777325,
+      "voice_id": "alfie"
+    }
+  ]
+}

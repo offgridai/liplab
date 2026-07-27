@@ -29,37 +29,11 @@ static bool SameContinuousSpeechGroup(const FOffgridAICommittedVisemeEvent* A, c
     // inside the same region may still keep a mouth state alive, but nothing
     // may bridge into an acoustically anchored punctuation resume.
     const float CenterGap = B->FinalRenderCenterSeconds - A->FinalRenderCenterSeconds;
-    if (CenterGap > 0.420f)
+    if (CenterGap > 0.180f)
     {
         return false;
     }
     return true;
-}
-
-static bool IsPerceptuallyImportant(const FOffgridAICommittedVisemeEvent& Event)
-{
-    const FString Phone = Event.SourcePhoneBase.ToUpper();
-
-    // Unknown-word fallbacks remain visible. The filter only removes CMU
-    // phones whose articulation is predominantly hidden inside the mouth.
-    if (Phone.IsEmpty() || Phone == TEXT("UNK")) return true;
-
-    // Vowel aperture, spreading, and rounding are visible speech cues.
-    if (Phone == TEXT("AA") || Phone == TEXT("AE") || Phone == TEXT("AH")
-        || Phone == TEXT("AO") || Phone == TEXT("AW") || Phone == TEXT("AY")
-        || Phone == TEXT("EH") || Phone == TEXT("ER") || Phone == TEXT("EY")
-        || Phone == TEXT("IH") || Phone == TEXT("IY") || Phone == TEXT("OW")
-        || Phone == TEXT("OY") || Phone == TEXT("UH") || Phone == TEXT("UW"))
-        return true;
-
-    // Retain consonant classes with reliable external lip, tooth, tongue-tip,
-    // or lip-rounding contrasts. Voicing distinctions share one visual pose.
-    return Phone == TEXT("P") || Phone == TEXT("B") || Phone == TEXT("M")
-        || Phone == TEXT("F") || Phone == TEXT("V")
-        || Phone == TEXT("TH") || Phone == TEXT("DH")
-        || Phone == TEXT("W") || Phone == TEXT("R") || Phone == TEXT("L")
-        || Phone == TEXT("SH") || Phone == TEXT("ZH")
-        || Phone == TEXT("CH") || Phone == TEXT("JH");
 }
 
 static const FOffgridAICommittedVisemeEvent* FindPreviousRenderedEvent(
@@ -69,8 +43,7 @@ static const FOffgridAICommittedVisemeEvent* FindPreviousRenderedEvent(
     for (int32 I = EventIndex - 1; I >= 0; --I)
     {
         const FOffgridAICommittedVisemeEvent& Candidate = Track.Events[I];
-        if (Candidate.bIsRenderable && !Candidate.bCanceledByWordHandoff
-            && IsPerceptuallyImportant(Candidate))
+        if (Candidate.bIsRenderable && !Candidate.bCanceledByWordHandoff)
             return &Candidate;
     }
     return nullptr;
@@ -83,8 +56,7 @@ static const FOffgridAICommittedVisemeEvent* FindNextRenderedEvent(
     for (int32 I = EventIndex + 1; I < Track.Events.Num(); ++I)
     {
         const FOffgridAICommittedVisemeEvent& Candidate = Track.Events[I];
-        if (Candidate.bIsRenderable && !Candidate.bCanceledByWordHandoff
-            && IsPerceptuallyImportant(Candidate))
+        if (Candidate.bIsRenderable && !Candidate.bCanceledByWordHandoff)
             return &Candidate;
     }
     return nullptr;
@@ -116,40 +88,31 @@ static float EventWeightAt(
         return Shape * FMath::Clamp(E.Strength, 0.0f, 1.0f);
     }
 
-    // Normal speech gestures form a continuous minimum-jerk path from one
-    // committed center to the next. Long spans are bounded so a pose does not
-    // anticipate across an acoustically meaningful lull.
-    // Articulation normally anticipates the acoustic nucleus. Give the first
-    // visible movement enough lead to meet (or slightly precede) consonant
-    // onset while retaining the nucleus as the immutable timing center.
-    float AttackStart = Center - 0.130f;
-    float ReleaseEnd = Center + 0.120f;
+    // Every committed pose gets a visible minimum envelope, including the
+    // consonants that the old performer pruned. Prefer the neural token's
+    // measured extent and add only a small presentation margin; precise
+    // alignment should produce articulation, not a broad hold that bridges a
+    // real pause.
+    float AttackStart = FMath::Min(E.RenderStartSeconds - 0.015f, Center - 0.045f);
+    float ReleaseEnd = FMath::Max(E.RenderEndSeconds + 0.015f, Center + 0.045f);
 
-    // Treat committed visemes as states over a continuous speech region, not as
-    // isolated impulses. The runtime commits a monotonic text-prior viseme prefix;
-    // the performer should therefore keep a mouth state alive until the next
-    // same-region state takes over. This fixes perceptual dead zones without
-    // moving the committed event centers or adding a scheduler.
+    // Adjacent gestures overlap around their midpoint. They do not occupy the
+    // entire center-to-center interval: that former behavior made a modest
+    // inference gap look like continuous speech and hid pause/resume errors.
     if (SameContinuousSpeechGroup(Prev, &E) && FMath::IsFinite(Prev->FinalRenderCenterSeconds))
     {
         const float PrevCenter = Prev->FinalRenderCenterSeconds;
         if (Center > PrevCenter)
-        {
-            const float Lead = FMath::Clamp(
-                Center - PrevCenter, 0.075f, 0.210f);
-            AttackStart = Center - Lead;
-        }
+            AttackStart = FMath::Min(
+                AttackStart, 0.5f * (PrevCenter + Center) - 0.020f);
     }
 
     if (SameContinuousSpeechGroup(&E, Next) && Next && FMath::IsFinite(Next->FinalRenderCenterSeconds))
     {
         const float NextCenter = Next->FinalRenderCenterSeconds;
         if (NextCenter > Center)
-        {
-            const float Tail = FMath::Clamp(
-                NextCenter - Center, 0.090f, 0.210f);
-            ReleaseEnd = Center + Tail;
-        }
+            ReleaseEnd = FMath::Max(
+                ReleaseEnd, 0.5f * (Center + NextCenter) + 0.020f);
     }
 
     // The speech detector owns animation gating. Neighbor blending may fill
@@ -158,22 +121,32 @@ static float EventWeightAt(
     AttackStart = FMath::Max(AttackStart, RegionStartSeconds);
     ReleaseEnd = FMath::Min(ReleaseEnd, RegionEndSeconds);
 
-    float Shape = 0.0f;
     if (PlaybackSeconds < AttackStart || PlaybackSeconds > ReleaseEnd)
     {
         return 0.0f;
     }
-    if (PlaybackSeconds < Center)
+
+    // RenderStart/RenderEnd are the neural state's duration estimate. Fading
+    // across each entire half-envelope discarded roughly one third of that
+    // estimate below the visible threshold, making correctly scheduled words
+    // look rushed. Restrict easing to short presentation edges and sustain the
+    // state through the neural interior. Centers, ordering, and pause clamps
+    // remain unchanged.
+    constexpr float PresentationEdgeSec = 0.045f;
+    const float AttackEnd = FMath::Min(Center, AttackStart + PresentationEdgeSec);
+    const float ReleaseStart = FMath::Max(Center, ReleaseEnd - PresentationEdgeSec);
+    float Shape = 1.0f;
+    if (PlaybackSeconds < AttackEnd)
     {
         Shape = MinimumJerk01(
             (PlaybackSeconds - AttackStart)
-            / FMath::Max(Center - AttackStart, 0.001f));
+            / FMath::Max(AttackEnd - AttackStart, 0.001f));
     }
-    else
+    else if (PlaybackSeconds > ReleaseStart)
     {
         Shape = 1.0f - MinimumJerk01(
-            (PlaybackSeconds - Center)
-            / FMath::Max(ReleaseEnd - Center, 0.001f));
+            (PlaybackSeconds - ReleaseStart)
+            / FMath::Max(ReleaseEnd - ReleaseStart, 0.001f));
     }
     return Shape * FMath::Clamp(E.Strength, 0.0f, 1.0f);
 }
@@ -292,7 +265,6 @@ TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const 
     {
         const FOffgridAICommittedVisemeEvent& E = Track.Events[I];
         if (!E.bIsRenderable || E.bCanceledByWordHandoff) continue;
-        if (!IsPerceptuallyImportant(E)) continue;
         if (!FMath::IsFinite(E.FinalRenderCenterSeconds)) continue;
         const FOffgridAICommittedVisemeEvent* Prev = FindPreviousRenderedEvent(Track, I);
         const FOffgridAICommittedVisemeEvent* Next = FindNextRenderedEvent(Track, I);
