@@ -115,19 +115,31 @@ The current 750-case neural replay scores 0.9468 exact viseme match with 17.62 m
 matched-center mean and 26.25 ms all-reference mean, zero deterministic fallback,
 and zero ordering violations. Validation, unseen-text, and held-out-speaker match
 rates are 0.9290, 0.9555, and 0.9370. Overlap-aware speech-region recall/precision
-are 0.9711/0.9744; comprehensive start and end means are 76.8/68.4 ms with 10/10
+are 0.9861/0.9579; comprehensive start and end means are 58.6/56.8 ms with 10/10
 ms medians. Word-onset comprehensive mean is 60.7 ms. Syllable coverage is
-0.9324. The region head also clears the former refined detector's 0.9506/0.9689
-recall/precision and 118.4/107.5 ms comprehensive boundary means.
+0.9324. Relative to the former refined detector's 0.9506/0.9689 recall/precision
+and 118.4/107.5 ms comprehensive boundary means, the neural head has materially
+better recall and timing means while trading some precision.
 These are research scores, not evidence that live Offgrid inference is integrated
 yet.
 
 Region segmentation comes directly from the neural occupancy head with 20 ms
-speech confirmation and 140 ms silence confirmation. The older 120 ms
-silence-token shortcut has been removed. Region-boundary flags remain training
+speech confirmation and 120 ms silence confirmation. This is a decoder
+confirmation window over neural occupancy, not the removed silence-token
+shortcut. Region-boundary flags remain training
 labels only and are deliberately absent from runtime token features. The next
 accuracy work should recover the remaining 0.63-point aggregate viseme tradeoff,
 especially on the validation split, without weakening the new region head.
+
+The corpus contains 80 explicit comma-delimited list recordings: 40 short and
+40 long. With the 120 ms confirmation window, their comprehensive speech-region
+recall/precision are 0.9785/0.9545, and start/end means are 60.7/90.8 ms with
+10/10 ms medians. The 140 ms baseline scored 0.9391/0.9813 recall/precision and
+118.7/113.4 ms means on the same slice. Core list scheduling was already strong
+and is unchanged: viseme match is 0.9733, word-onset coverage is 1.0, and
+syllable recall is 0.9587. An attempted list-oversampling curriculum was
+rejected because it reduced long-list and unseen-text generalization; list
+punctuation remains absent from runtime inputs.
 
 Neural syllable grading compares the complete chronological neural-vowel stream
 against the complete chronological MFA-vowel stream with a maximum-cardinality,

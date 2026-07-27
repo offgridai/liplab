@@ -737,7 +737,7 @@ static std::vector<NeuralSpeechRegion> decode_speech_regions(
 {
     constexpr float kSpeechThreshold = 0.45f;
     constexpr int kMinimumSpeechFrames = 2;
-    constexpr int kMinimumPauseFrames = 14;
+    constexpr int kMinimumPauseFrames = 12;
     const torch::Tensor probability = torch::sigmoid(region_logits).to(torch::kCPU);
     const auto speech = probability.accessor<float, 1>();
     const auto times = frame_times.accessor<float, 1>();
@@ -974,7 +974,7 @@ int main(int argc, char** argv)
             << "  \"region_head\": {\n"
             << "    \"speech_threshold\": 0.45,\n"
             << "    \"minimum_speech_ms\": 20,\n"
-            << "    \"minimum_pause_ms\": 140,\n"
+            << "    \"minimum_pause_ms\": 120,\n"
             << "    \"causal_context_ms\": 100,\n"
             << "    \"occupancy_gate_scale\": 2.0\n"
             << "  },\n"
