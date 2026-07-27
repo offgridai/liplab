@@ -82,6 +82,8 @@ def main() -> int:
     words_out: list[dict] = []
     boundaries_out: list[dict] = []
     word_duration_ratios: list[float] = []
+    word_duration_abs_errors_ms: list[float] = []
+    word_duration_signed_errors_ms: list[float] = []
     sentence_duration_ratios: list[float] = []
     viseme_run_share_errors: list[float] = []
     viseme_boundary_errors: list[float] = []
@@ -100,6 +102,14 @@ def main() -> int:
         delivery = load_json(delivery_path) if delivery_path.exists() else {}
         word_duration_ratios.extend(
             float(value) for value in delivery.get("word_duration_ratios", [])
+        )
+        word_duration_abs_errors_ms.extend(
+            float(value)
+            for value in delivery.get("word_duration_abs_errors_ms", [])
+        )
+        word_duration_signed_errors_ms.extend(
+            float(value)
+            for value in delivery.get("word_duration_signed_errors_ms", [])
         )
         sentence_duration_ratios.extend(
             float(value) for value in delivery.get("sentence_duration_ratios", [])
@@ -632,7 +642,17 @@ def main() -> int:
             ),
             "delivery_expected_words": int(delivery.get("expected_words", 0)),
             "delivery_missing_words": int(delivery.get("missing_words", 0)),
+            "measured_word_durations": int(
+                delivery.get("measured_word_durations", 0)
+            ),
+            "successful_word_durations": int(
+                delivery.get("successful_word_durations", 0)
+            ),
             "compressed_words": int(delivery.get("compressed_words", 0)),
+            "severely_compressed_words": int(
+                delivery.get("severely_compressed_words", 0)
+            ),
+            "stretched_words": int(delivery.get("stretched_words", 0)),
             "word_duration_ratio_mean": float(
                 delivery.get("word_duration_ratio_mean", 0.0)
             ),
@@ -730,6 +750,8 @@ def main() -> int:
     delivered_events = totals("delivered_events")
     delivery_expected_words = totals("delivery_expected_words")
     delivery_missing_words = totals("delivery_missing_words")
+    measured_word_durations = totals("measured_word_durations")
+    successful_word_durations = totals("successful_word_durations")
     delivery_expected_regions = totals("delivery_expected_speech_regions")
     empty_speech_regions = totals("empty_speech_regions")
     delivery_expected_sentences = totals("delivery_expected_sentences")
@@ -834,6 +856,51 @@ def main() -> int:
                 animation_onset_error_total, animation_onset_matched, 0.0
             ),
             "tolerance_ms": START_TOLERANCE_MS,
+        },
+        "word_duration": {
+            "expected": delivery_expected_words,
+            "measured": measured_word_durations,
+            "coverage_rate": ratio(
+                measured_word_durations, delivery_expected_words
+            ),
+            "successful": successful_word_durations,
+            "success_rate": ratio(
+                successful_word_durations, delivery_expected_words
+            ),
+            "tolerance_rule": "max(80 ms, 25% of MFA word duration)",
+            "missing_words": delivery_missing_words,
+            "compressed_words": totals("compressed_words"),
+            "severely_compressed_words": totals("severely_compressed_words"),
+            "stretched_words": totals("stretched_words"),
+            "mean_abs_error_ms": (
+                statistics.fmean(word_duration_abs_errors_ms)
+                if word_duration_abs_errors_ms else 0.0
+            ),
+            "median_abs_error_ms": (
+                statistics.median(word_duration_abs_errors_ms)
+                if word_duration_abs_errors_ms else 0.0
+            ),
+            "p90_abs_error_ms": percentile(word_duration_abs_errors_ms, 0.90),
+            "p95_abs_error_ms": percentile(word_duration_abs_errors_ms, 0.95),
+            "max_abs_error_ms": max(word_duration_abs_errors_ms, default=0.0),
+            "mean_signed_error_ms": (
+                statistics.fmean(word_duration_signed_errors_ms)
+                if word_duration_signed_errors_ms else 0.0
+            ),
+            "median_signed_error_ms": (
+                statistics.median(word_duration_signed_errors_ms)
+                if word_duration_signed_errors_ms else 0.0
+            ),
+            "mean_ratio": (
+                statistics.fmean(word_duration_ratios)
+                if word_duration_ratios else 0.0
+            ),
+            "median_ratio": (
+                statistics.median(word_duration_ratios)
+                if word_duration_ratios else 0.0
+            ),
+            "p10_ratio": percentile(word_duration_ratios, 0.10),
+            "p90_ratio": percentile(word_duration_ratios, 0.90),
         },
         "word_region_assignment": {
             "expected": assignment_expected,
@@ -1107,6 +1174,15 @@ def main() -> int:
         f"P1 word animation onset: "
         f"{summary['word_animation_onset']['success_rate']:.3f} "
         f"({summary['word_animation_onset']['mean_abs_error_ms']:.1f} ms MAE)"
+    )
+    word_duration = summary["word_duration"]
+    print(
+        "Word animation duration: "
+        f"success={word_duration['success_rate']:.3f} "
+        f"mean={word_duration['mean_abs_error_ms']:.1f}ms "
+        f"median={word_duration['median_abs_error_ms']:.1f}ms "
+        f"compressed={word_duration['compressed_words']} "
+        f"stretched={word_duration['stretched_words']}"
     )
     print(f"Word-region assignment: {summary['word_region_assignment']['success_rate']:.3f}")
     confusion = summary["word_region_confusion"]

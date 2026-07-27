@@ -11,7 +11,10 @@ The priority scores are:
 2. `pause`: performed animation remains neutral between MFA speech regions.
 3. `word_animation_onset`: a word's first performed animation begins within
    100 ms of its MFA word onset.
-4. `strict_three_level_word_assignment`: all planned events for a word are
+4. `word_duration`: the actual above-threshold animation span of every word
+   agrees with its complete MFA spoken duration within the larger of 80 ms or
+   25%. Missing words remain zero-duration failures.
+5. `strict_three_level_word_assignment`: all planned events for a word are
    committed, remain in one neural region, and map to the word's MFA region.
 
 Comprehensive mean and median errors expose both aggregate outliers and typical
@@ -20,7 +23,9 @@ not shift all later comparisons.
 
 Event completion and monotonic order are non-negotiable guardrails. Delivery
 metrics separately catch missing/late events, empty speech regions, compressed
-sentences, and word or sentence loss. Within-word duration scoring compares
+sentences, and word or sentence loss. Word-duration reports include comprehensive
+mean, median, p90, p95, signed bias, duration ratios, compression, and stretching.
+Within-word duration scoring separately compares
 each visible run's share of its word against MFA and reports run error,
 internal-boundary error, and word-level total variation.
 

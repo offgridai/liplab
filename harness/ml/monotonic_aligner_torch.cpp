@@ -187,7 +187,7 @@ static SequenceCase read_case(const fs::path& case_dir, const std::string& split
 
 static std::vector<SequenceCase> read_dataset(const fs::path& root)
 {
-    const auto splits = read_splits(root / "inputs/speech_library/timing_split_v1.json");
+    const auto splits = read_splits(root / "inputs/timing_split_v1.json");
     const fs::path run_root = root / "outputs/runs/latest";
     std::vector<SequenceCase> result;
     for (const auto& [case_id, split] : splits) {
@@ -298,6 +298,8 @@ static CaseTensors tensors(const SequenceCase& sequence)
         if (selected.IsSilence > 0.5f) curriculum_weight = 8.0f;
         if (selected.IsWordStart > 0.5f) weight = std::max(weight, 4.0f);
         if (selected.IsWordStart > 0.5f) curriculum_weight = std::max(curriculum_weight, 6.0f);
+        if (selected.IsWordEnd > 0.5f) weight = std::max(weight, 4.0f);
+        if (selected.IsWordEnd > 0.5f) curriculum_weight = std::max(curriculum_weight, 6.0f);
         if (selected.IsRegionStart > 0.5f || selected.IsRegionEnd > 0.5f)
             weight = std::max(weight, 7.0f);
         if (selected.IsRegionStart > 0.5f || selected.IsRegionEnd > 0.5f)
@@ -330,6 +332,10 @@ static CaseTensors tensors(const SequenceCase& sequence)
             curriculum_boundary_weight = std::max(curriculum_boundary_weight, 6.0f);
         }
         if (after.IsWordStart > 0.5f) {
+            boundary_weight = std::max(boundary_weight, 8.0f);
+            curriculum_boundary_weight = std::max(curriculum_boundary_weight, 10.0f);
+        }
+        if (before.IsWordEnd > 0.5f) {
             boundary_weight = std::max(boundary_weight, 8.0f);
             curriculum_boundary_weight = std::max(curriculum_boundary_weight, 10.0f);
         }

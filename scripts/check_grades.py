@@ -41,6 +41,17 @@ checks = [
         "max",
         "max_word_onset_mae_ms_increase",
     ),
+    ("word_duration.success_rate", "min", "max_word_duration_success_drop"),
+    (
+        "word_duration.mean_abs_error_ms",
+        "max",
+        "max_word_duration_mean_mae_ms_increase",
+    ),
+    (
+        "word_duration.median_abs_error_ms",
+        "max",
+        "max_word_duration_median_mae_ms_increase",
+    ),
     ("strict_region_segmentation.exact_boundary_rate", "min", "max_strict_region_drop"),
     (
         "strict_three_level_word_assignment.success_rate",
@@ -67,6 +78,23 @@ if order_violations > int(thresholds["max_order_violations"]):
     print(
         f"FAIL guardrails.order_violations: actual={order_violations} "
         f"limit={thresholds['max_order_violations']}"
+    )
+    failed = True
+
+word_duration_coverage = float(value(summary, "word_duration.coverage_rate"))
+if word_duration_coverage < float(thresholds["min_word_duration_coverage_rate"]):
+    print(
+        "FAIL word_duration.coverage_rate: "
+        f"actual={word_duration_coverage:.6f} "
+        f"limit={thresholds['min_word_duration_coverage_rate']:.6f}"
+    )
+    failed = True
+severely_compressed_words = int(value(summary, "word_duration.severely_compressed_words"))
+if severely_compressed_words > int(thresholds["max_severely_compressed_words"]):
+    print(
+        "FAIL word_duration.severely_compressed_words: "
+        f"actual={severely_compressed_words} "
+        f"limit={thresholds['max_severely_compressed_words']}"
     )
     failed = True
 

@@ -34,6 +34,12 @@ advances through transcript phones and determines placements and learned
 within-word proportions. Fixed lag provides future acoustic context without
 revising already committed history.
 
+The first and last token states delimit each word. Their training targets extend
+to the complete MFA word interval, while internal token transitions retain phone
+and syllable supervision. The performer sustains each neural state through its
+predicted interval with short presentation edges, so a well-timed schedule is
+not visually shortened by long fades.
+
 `FOffgridAILipsyncRuntimeSession` is the only runtime controller. It rejects a
 missing or invalid checkpoint and produces no track rather than invoking an
 alternate scheduler. `FOffgridAIVisemePerformer` samples the resulting track;

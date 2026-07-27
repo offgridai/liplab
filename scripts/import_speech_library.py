@@ -2,6 +2,8 @@ import argparse
 import json
 import pathlib
 import shutil
+import subprocess
+import sys
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -49,6 +51,15 @@ def main() -> int:
                 raise SystemExit(f"canonical transcript differs for {case_id}")
         else:
             shutil.copy2(source_transcript, destination_transcript)
+
+    subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "build_corpus_manifest.py")],
+        check=True,
+    )
+    subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "build_timing_dataset_split.py")],
+        check=True,
+    )
 
     print(f"Imported {len(cases)} speech library cases into the canonical corpus.")
     return 0

@@ -94,6 +94,8 @@ python scripts\build_corpus_speech_recipe.py --check
 if errorlevel 1 exit /b 1
 python scripts\build_neural_corpus_recipe.py --check
 if errorlevel 1 exit /b 1
+python scripts\build_corpus_manifest.py --check
+if errorlevel 1 exit /b 1
 python scripts\build_timing_dataset_split.py --check
 if errorlevel 1 exit /b 1
 

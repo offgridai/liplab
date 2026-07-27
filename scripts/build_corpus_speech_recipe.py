@@ -56,7 +56,7 @@ def build_payload() -> dict[str, object]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Build the deterministic data-factory recipe for the existing corpus."
+        description="Build the deterministic Data Factory recreation recipe for recorded cases."
     )
     parser.add_argument("--output", type=pathlib.Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--check", action="store_true")

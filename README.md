@@ -34,7 +34,11 @@ offgrid_dropin/        Authoritative C++/CUDA runtime shared with OffgridAI
 standalone_ue_shim/    Minimal Unreal compatibility layer for CMake
 harness/               Corpus runner, dataset exporter, and CUDA trainer
 scripts/               Corpus, training, grading, and integration utilities
-inputs/                Transcripts, WAV corpus, recipes, and approved gold
+inputs/corpus.csv      Authoritative recorded + Data Factory case inventory
+inputs/transcripts/    Canonical transcripts for every manifest case
+inputs/wav/            Canonical audio for every manifest case
+inputs/gold/           Approved MFA packages referenced by the manifest
+inputs/speech_library/ Reproducible generation recipes, not a second corpus
 docs/                  Current architecture, policy, and calibration data
 outputs/runs/latest/   Generated diagnostics and comprehensive scorecard
 ```
@@ -85,6 +89,11 @@ The first command exports the sequence dataset, trains, packages, replays the
 native checkpoint, and grades that exact package. The second proves that the
 deployable binary contains RTX 4090 machine code and has no LibTorch dependency.
 
+Both recorded and generated cases live in the same canonical asset directories
+and are enumerated by `inputs/corpus.csv`. Generation recipes describe how an
+asset was made or can be recreated; they are not separate training corpora.
+`scripts/build_corpus_manifest.py --check` rejects unlisted or missing assets.
+
 ## Scorecard
 
 `outputs/runs/latest/alignment_summary.json` is comprehensive: missing reference
@@ -93,6 +102,7 @@ It reports both mean and median for boundary and timing errors, plus:
 
 - speech-region start/end and pause cleanliness;
 - performed word-animation onset and speech-region placement;
+- performed word duration versus the complete MFA word interval;
 - complete word-to-region ownership;
 - delivery completion, missing words, sentence completion, and ordering;
 - within-word viseme duration proportions, run boundaries, and word-level total

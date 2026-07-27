@@ -305,6 +305,49 @@ static std::string read_text(const fs::path& path)
     return text;
 }
 
+static std::vector<fs::path> read_corpus_transcript_paths(const fs::path& root)
+{
+    const fs::path manifest_path = root / "inputs" / "corpus.csv";
+    std::ifstream file(manifest_path);
+    if (!file)
+    {
+        throw std::runtime_error("unified corpus manifest not found: " + manifest_path.string());
+    }
+
+    std::string line;
+    if (!std::getline(file, line))
+    {
+        throw std::runtime_error("unified corpus manifest is empty: " + manifest_path.string());
+    }
+    const std::vector<std::string> header = parse_csv_cells(line);
+    const int case_id_col = header_index(header, "case_id");
+    const int transcript_col = header_index(header, "transcript");
+    if (case_id_col < 0 || transcript_col < 0)
+    {
+        throw std::runtime_error("unified corpus manifest has an invalid header");
+    }
+
+    std::vector<fs::path> paths;
+    while (std::getline(file, line))
+    {
+        if (line.empty()) continue;
+        const std::vector<std::string> cells = parse_csv_cells(line);
+        const std::string case_id = csv_cell(cells, case_id_col);
+        const std::string relative_path = csv_cell(cells, transcript_col);
+        if (case_id.empty() || relative_path.empty())
+        {
+            throw std::runtime_error("unified corpus manifest contains an incomplete row");
+        }
+        const fs::path transcript_path = root / fs::path(relative_path);
+        if (!fs::exists(transcript_path) || transcript_path.stem().string() != case_id)
+        {
+            throw std::runtime_error("invalid corpus transcript row: " + case_id);
+        }
+        paths.push_back(transcript_path);
+    }
+    return paths;
+}
+
 static void write_text(const fs::path& path, const std::string& text)
 {
     fs::create_directories(path.parent_path());
@@ -1459,6 +1502,16 @@ static std::string monotonic_tokens_csv(
         targets[index].IsWordStart = first_in_word;
         targets[index].IsWordEnd = last_in_word;
         const GoldWordTiming* word = gold_word(word_index);
+        if (word)
+        {
+            double target_start = targets[index].Center - 0.5 * targets[index].Duration;
+            double target_end = targets[index].Center + 0.5 * targets[index].Duration;
+            if (first_in_word) target_start = word->start;
+            if (last_in_word) target_end = word->end;
+            target_end = std::max(target_end, target_start + 0.010);
+            targets[index].Center = 0.5 * (target_start + target_end);
+            targets[index].Duration = target_end - target_start;
+        }
         const GoldWordTiming* previous = first_in_word && index > 0
             ? gold_word(targets[index - 1].WordIndex) : nullptr;
         const GoldWordTiming* next = last_in_word && index + 1 < targets.size()
@@ -2454,6 +2507,8 @@ static std::string runtime_delivery_grade_json(
     {
         double peak = 0.0;
         int visible_samples = 0;
+        double first_visible_sec = std::numeric_limits<double>::infinity();
+        double last_visible_sec = -std::numeric_limits<double>::infinity();
     };
     std::map<int, Delivery> delivery;
     double end_seconds = std::max(0.0, static_cast<double>(track.SpeechEndSeconds));
@@ -2476,6 +2531,8 @@ static std::string runtime_delivery_grade_json(
             Delivery& row = delivery[sample.EventIndex];
             row.peak = std::max(row.peak, static_cast<double>(sample.SubmittedWeight));
             ++row.visible_samples;
+            row.first_visible_sec = std::min(row.first_visible_sec, seconds);
+            row.last_visible_sec = std::max(row.last_visible_sec, seconds);
         }
     }
 
@@ -2526,13 +2583,21 @@ static std::string runtime_delivery_grade_json(
     int expected_words = 0;
     int missing_words = 0;
     int compressed_words = 0;
+    int severely_compressed_words = 0;
+    int stretched_words = 0;
+    int measured_word_durations = 0;
+    int successful_word_durations = 0;
     std::vector<double> word_duration_ratios;
+    std::vector<double> word_duration_abs_errors_ms;
+    std::vector<double> word_duration_signed_errors_ms;
     std::ostringstream word_csv;
     word_csv
         << "word_index,word,sentence_index,speech_region_index,gold_start_sec,gold_end_sec,"
         << "gold_duration_ms,planned_events,committed_events,delivered_events,"
         << "runtime_start_sec,runtime_end_sec,runtime_duration_ms,duration_ratio,"
-        << "missing,compressed,first_event_index,last_event_index,"
+        << "duration_abs_error_ms,duration_signed_error_ms,duration_tolerance_ms,"
+        << "duration_within_tolerance,missing,compressed,severely_compressed,stretched,"
+        << "first_event_index,last_event_index,"
         << "previous_word_gap_ms,next_word_gap_ms\n";
     for (const auto& gold : gold_words)
     {
@@ -2549,8 +2614,12 @@ static std::string runtime_delivery_grade_json(
         {
             for (const auto* event : found->second)
             {
-                runtime_start = std::min(runtime_start, static_cast<double>(event->RenderStartSeconds));
-                runtime_end = std::max(runtime_end, static_cast<double>(event->RenderEndSeconds));
+                const auto delivered = delivery.find(event->EventIndex);
+                if (was_delivered(*event) && delivered != delivery.end())
+                {
+                    runtime_start = std::min(runtime_start, delivered->second.first_visible_sec);
+                    runtime_end = std::max(runtime_end, delivered->second.last_visible_sec);
+                }
                 if (first_event_index < 0 || event->EventIndex < first_event_index)
                     first_event_index = event->EventIndex;
                 if (last_event_index < 0 || event->EventIndex > last_event_index)
@@ -2565,16 +2634,34 @@ static std::string runtime_delivery_grade_json(
         const double duration_ratio = gold_duration > 0.0
             ? runtime_duration / gold_duration
             : 0.0;
+        const double duration_signed_error_ms = (runtime_duration - gold_duration) * 1000.0;
+        const double duration_abs_error_ms = std::abs(duration_signed_error_ms);
+        const double duration_tolerance_ms = std::max(80.0, gold_duration * 250.0);
+        const bool duration_within_tolerance =
+            has_runtime && duration_abs_error_ms <= duration_tolerance_ms;
         const int committed_count = found != committed_by_word.end()
             ? static_cast<int>(found->second.size())
             : 0;
-        const bool compressed = committed_count >= 2
-            && gold_duration >= 0.120
+        const bool compressed = gold_duration > 0.0
+            && runtime_duration + 0.050 < gold_duration
+            && duration_ratio < 0.75;
+        const bool severely_compressed = gold_duration > 0.0
             && runtime_duration + 0.080 < gold_duration
-            && runtime_duration < 0.45 * gold_duration;
-        if (committed_count >= 2 && gold_duration >= 0.120)
-            word_duration_ratios.push_back(runtime_duration / gold_duration);
+            && duration_ratio < 0.50;
+        const bool stretched = gold_duration > 0.0
+            && runtime_duration > gold_duration + 0.050
+            && duration_ratio > 1.25;
+        if (has_runtime) ++measured_word_durations;
+        if (duration_within_tolerance) ++successful_word_durations;
+        if (gold_duration > 0.0)
+        {
+            word_duration_ratios.push_back(duration_ratio);
+            word_duration_abs_errors_ms.push_back(duration_abs_error_ms);
+            word_duration_signed_errors_ms.push_back(duration_signed_error_ms);
+        }
         if (compressed) ++compressed_words;
+        if (severely_compressed) ++severely_compressed_words;
+        if (stretched) ++stretched_words;
 
         double previous_gap_ms = 0.0;
         double next_gap_ms = 0.0;
@@ -2601,7 +2688,10 @@ static std::string runtime_delivery_grade_json(
             << ',' << (has_runtime ? runtime_start : -1.0)
             << ',' << (has_runtime ? runtime_end : -1.0)
             << ',' << runtime_duration * 1000.0 << ',' << duration_ratio
+            << ',' << duration_abs_error_ms << ',' << duration_signed_error_ms
+            << ',' << duration_tolerance_ms << ',' << (duration_within_tolerance ? 1 : 0)
             << ',' << (missing ? 1 : 0) << ',' << (compressed ? 1 : 0)
+            << ',' << (severely_compressed ? 1 : 0) << ',' << (stretched ? 1 : 0)
             << ',' << first_event_index << ',' << last_event_index
             << ',' << previous_gap_ms << ',' << next_gap_ms << '\n';
     }
@@ -2693,7 +2783,15 @@ static std::string runtime_delivery_grade_json(
         << "  \"expected_words\": " << expected_words << ",\n"
         << "  \"missing_words\": " << missing_words << ",\n"
         << "  \"word_delivery_rate\": " << rate(expected_words - missing_words, expected_words) << ",\n"
+        << "  \"measured_word_durations\": " << measured_word_durations << ",\n"
+        << "  \"successful_word_durations\": " << successful_word_durations << ",\n"
+        << "  \"word_duration_success_rate\": " << rate(successful_word_durations, expected_words) << ",\n"
         << "  \"compressed_words\": " << compressed_words << ",\n"
+        << "  \"severely_compressed_words\": " << severely_compressed_words << ",\n"
+        << "  \"stretched_words\": " << stretched_words << ",\n"
+        << "  \"word_duration_abs_error_mean_ms\": " << mean_ms(word_duration_abs_errors_ms) << ",\n"
+        << "  \"word_duration_abs_error_median_ms\": " << percentile_ms(word_duration_abs_errors_ms, 0.5) << ",\n"
+        << "  \"word_duration_signed_error_mean_ms\": " << mean_ms(word_duration_signed_errors_ms) << ",\n"
         << "  \"word_duration_ratio_mean\": " << mean_ms(word_duration_ratios) << ",\n"
         << "  \"word_duration_ratio_median\": " << percentile_ms(word_duration_ratios, 0.5) << ",\n"
         << "  \"word_duration_ratios\": [";
@@ -2701,6 +2799,20 @@ static std::string runtime_delivery_grade_json(
     {
         if (index > 0) out << ',';
         out << word_duration_ratios[index];
+    }
+    out << "],\n"
+        << "  \"word_duration_abs_errors_ms\": [";
+    for (size_t index = 0; index < word_duration_abs_errors_ms.size(); ++index)
+    {
+        if (index > 0) out << ',';
+        out << word_duration_abs_errors_ms[index];
+    }
+    out << "],\n"
+        << "  \"word_duration_signed_errors_ms\": [";
+    for (size_t index = 0; index < word_duration_signed_errors_ms.size(); ++index)
+    {
+        if (index > 0) out << ',';
+        out << word_duration_signed_errors_ms[index];
     }
     out << "],\n"
         << "  \"expected_speech_regions\": " << gold_speech.size() << ",\n"
@@ -3773,15 +3885,7 @@ int main(int argc, char** argv)
         fs::remove_all(out_root);
         fs::create_directories(out_root);
 
-        std::vector<fs::path> transcript_paths;
-        for (auto& entry : fs::directory_iterator(root / "inputs" / "transcripts"))
-        {
-            if (entry.is_regular_file() && entry.path().extension() == ".txt")
-            {
-                transcript_paths.push_back(entry.path());
-            }
-        }
-        std::sort(transcript_paths.begin(), transcript_paths.end());
+        std::vector<fs::path> transcript_paths = read_corpus_transcript_paths(root);
         if (!cli.case_filter.empty())
         {
             transcript_paths.erase(

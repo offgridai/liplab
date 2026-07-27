@@ -1,6 +1,6 @@
 # Synthetic speech library generator
 
-`scripts/generate_speech_library.py` is an offline data-factory prototype. It
+`scripts/generate_speech_library.py` is the offline Data Factory. It
 does not participate in runtime lipsync and does not expose TTS timing to the
 runtime scheduler.
 
@@ -60,7 +60,9 @@ provenance, and TextGrid hashes and interval counts.
 ## Existing corpus recipe
 
 `inputs/speech_library/existing_corpus_v1.json` assigns one deterministic seed
-and one voice to each of the 350 checked-in corpus transcripts. Assignments are
+and one voice to each of the 350 recorded corpus transcripts. This is a
+recreation recipe: its voice is not mistaken for the speaker in the existing
+recording. Assignments are
 pseudorandom but reproducible: they are derived from a named SHA-256 namespace
 and the original case ID. The recipe currently spreads cases across the Alfie,
 Lana, Priestley, and Priestley 2 reference JSONs.
@@ -102,3 +104,31 @@ transcripts, and stages the completed TextGrids under `outputs/mfa_align/latest`
 for the normal gold-draft/export workflow. Text-group hashing keeps all four
 voice renditions of one transcript in the same train, validation, or test
 partition.
+
+## Unified corpus
+
+There is no separate old corpus and Data Factory corpus at grading or training
+time. `inputs/corpus.csv` is the authoritative inventory for both:
+
+- `origin=recorded` identifies the 350 Offgrid recordings. Their
+  `existing_corpus_v1` seed/voice fields describe an optional recreation.
+- `origin=data_factory` identifies the 400 imported Qwen 1.7B utterances. Their
+  seed and voice describe the actual canonical WAV.
+
+Every row points to its transcript, WAV, and approved gold package and records
+the real `speaker_id` separately from the recipe voice. The runner, MFA/gold
+tools, and timing split consume this manifest. `inputs/timing_split_v1.json` is
+derived from it, so all renditions of one normalized transcript stay together
+and held-out-speaker logic uses the actual speaker.
+
+Rebuild or validate the inventory with:
+
+```bat
+python scripts\build_corpus_manifest.py
+python scripts\build_corpus_manifest.py --check
+python scripts\build_timing_dataset_split.py --check
+```
+
+The Offgrid-log and Data Factory importers rebuild the manifest and split after
+copying assets. The recipe files remain under `inputs/speech_library` because
+they are reproducibility inputs, not parallel corpus indexes.

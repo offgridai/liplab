@@ -5,7 +5,7 @@
 // Bump this whenever the authoritative shared lipsync behavior changes. The
 // value is emitted by every host's diagnostics so logs can be tied to the
 // exact transplant contract that produced them.
-#define OFFGRIDAI_LIPSYNC_IMPLEMENTATION_VERSION TEXT("2026.07.27-neural-runtime-cleanup-v25")
+#define OFFGRIDAI_LIPSYNC_IMPLEMENTATION_VERSION TEXT("2026.07.27-neural-word-duration-v26")
 
 // Version of the runtime diagnostic files written by host integrations.
 #define OFFGRIDAI_LIPSYNC_DIAGNOSTIC_SCHEMA_VERSION 10

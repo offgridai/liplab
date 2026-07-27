@@ -1,4 +1,5 @@
 import argparse
+import csv
 import hashlib
 import json
 import pathlib
@@ -6,13 +7,10 @@ import re
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-RECIPES = [
-    ROOT / "inputs" / "speech_library" / "existing_corpus_v1.json",
-    ROOT / "inputs" / "speech_library" / "neural_scheduler_corpus_v1.json",
-]
-DEFAULT_OUTPUT = ROOT / "inputs" / "speech_library" / "timing_split_v1.json"
+CORPUS_MANIFEST = ROOT / "inputs" / "corpus.csv"
+DEFAULT_OUTPUT = ROOT / "inputs" / "timing_split_v1.json"
 NAMESPACE = "liplab-timing-split-v1"
-HELD_OUT_VOICE = "lana"
+HELD_OUT_SPEAKER = "lana_1_7b"
 
 
 def normalized_text(value: str) -> str:
@@ -40,37 +38,40 @@ def build_payload() -> dict[str, object]:
         "text_test": 0,
         "speaker_holdout": 0,
     }
-    for recipe_path in RECIPES:
-        recipe = json.loads(recipe_path.read_text(encoding="utf-8"))
-        for case in recipe["cases"]:
-            split, group_hash = text_split(case["text"])
-            is_held_out_voice = str(case["voice_id"]).startswith(HELD_OUT_VOICE)
-            speaker_holdout = is_held_out_voice and split == "train"
-            effective_split = "speaker_holdout" if speaker_holdout else split
-            counts[effective_split] += 1
-            rows.append(
-                {
-                    "case_id": case["id"],
-                    "text_group_sha256": group_hash,
-                    "voice_id": case["voice_id"],
-                    "split": effective_split,
-                    "text_split": split,
-                    "speaker_holdout": speaker_holdout,
-                    "eligible_for_training": effective_split == "train",
-                }
-            )
+    with CORPUS_MANIFEST.open(newline="", encoding="utf-8") as handle:
+        cases = list(csv.DictReader(handle))
+    for case in cases:
+        text = (ROOT / case["transcript"]).read_text(encoding="utf-8-sig").strip()
+        split, group_hash = text_split(text)
+        speaker_id = str(case["speaker_id"])
+        speaker_holdout = speaker_id == HELD_OUT_SPEAKER and split == "train"
+        effective_split = "speaker_holdout" if speaker_holdout else split
+        counts[effective_split] += 1
+        rows.append(
+            {
+                "case_id": case["case_id"],
+                "text_group_sha256": group_hash,
+                "origin": case["origin"],
+                "speaker_id": speaker_id,
+                "voice_id": case["voice_id"],
+                "split": effective_split,
+                "text_split": split,
+                "speaker_holdout": speaker_holdout,
+                "eligible_for_training": effective_split == "train",
+            }
+        )
     return {
         "schema_version": 1,
         "split_id": "timing_split_v1",
-        "source_recipes": [path.relative_to(ROOT).as_posix() for path in RECIPES],
+        "source_manifest": CORPUS_MANIFEST.relative_to(ROOT).as_posix(),
         "assignment": {
             "namespace": NAMESPACE,
             "grouping": "normalized transcript text SHA-256",
             "text_buckets": {"train": 75, "validation": 10, "text_test": 15},
-            "held_out_voice": HELD_OUT_VOICE,
+            "held_out_speaker": HELD_OUT_SPEAKER,
             "policy": (
                 "Text groups never cross train/validation/text_test. Cases using the held-out "
-                "voice inside train text groups move to speaker_holdout."
+                "speaker inside train text groups move to speaker_holdout."
             ),
         },
         "counts": counts,
@@ -91,7 +92,8 @@ def main() -> int:
         print(f"Timing dataset split is current: {output}")
         return 0
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(rendered, encoding="utf-8")
+    with output.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(rendered)
     print(f"Wrote timing dataset split: {output}")
     return 0
 

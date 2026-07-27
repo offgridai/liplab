@@ -121,22 +121,32 @@ static float EventWeightAt(
     AttackStart = FMath::Max(AttackStart, RegionStartSeconds);
     ReleaseEnd = FMath::Min(ReleaseEnd, RegionEndSeconds);
 
-    float Shape = 0.0f;
     if (PlaybackSeconds < AttackStart || PlaybackSeconds > ReleaseEnd)
     {
         return 0.0f;
     }
-    if (PlaybackSeconds < Center)
+
+    // RenderStart/RenderEnd are the neural state's duration estimate. Fading
+    // across each entire half-envelope discarded roughly one third of that
+    // estimate below the visible threshold, making correctly scheduled words
+    // look rushed. Restrict easing to short presentation edges and sustain the
+    // state through the neural interior. Centers, ordering, and pause clamps
+    // remain unchanged.
+    constexpr float PresentationEdgeSec = 0.045f;
+    const float AttackEnd = FMath::Min(Center, AttackStart + PresentationEdgeSec);
+    const float ReleaseStart = FMath::Max(Center, ReleaseEnd - PresentationEdgeSec);
+    float Shape = 1.0f;
+    if (PlaybackSeconds < AttackEnd)
     {
         Shape = MinimumJerk01(
             (PlaybackSeconds - AttackStart)
-            / FMath::Max(Center - AttackStart, 0.001f));
+            / FMath::Max(AttackEnd - AttackStart, 0.001f));
     }
-    else
+    else if (PlaybackSeconds > ReleaseStart)
     {
         Shape = 1.0f - MinimumJerk01(
-            (PlaybackSeconds - Center)
-            / FMath::Max(ReleaseEnd - Center, 0.001f));
+            (PlaybackSeconds - ReleaseStart)
+            / FMath::Max(ReleaseEnd - ReleaseStart, 0.001f));
     }
     return Shape * FMath::Clamp(E.Strength, 0.0f, 1.0f);
 }
