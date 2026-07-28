@@ -15,6 +15,15 @@ struct RuntimeFootprint {
     std::uint64_t CheckpointFingerprint = 0;
 };
 
+struct RuntimeDeviceInfo {
+    std::string Name;
+    int DeviceIndex = -1;
+    int ComputeCapabilityMajor = 0;
+    int ComputeCapabilityMinor = 0;
+    int DriverVersion = 0;
+    int RuntimeVersion = 0;
+};
+
 class CudaRuntime {
 public:
     CudaRuntime();
@@ -43,6 +52,7 @@ public:
         float* region_logits = nullptr);
     const std::string& LastError() const;
     RuntimeFootprint Footprint() const;
+    RuntimeDeviceInfo DeviceInfo() const;
 
 private:
     struct Impl;

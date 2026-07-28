@@ -21,8 +21,9 @@ echo [phase] build_self_contained_binary
 "%CMAKE_EXE%" --build build-neural-runtime --target liplab_neural_runtime_smoke -j 2
 if errorlevel 1 exit /b 1
 
-echo [phase] audit_rtx_4090_image
-python scripts\check_cuda_architectures.py build-neural-runtime\liplab_neural_streamer_cuda.lib --required sm_89
+echo [phase] audit_rtx_20_through_50_images
+python scripts\check_cuda_architectures.py build-neural-runtime\liplab_neural_streamer_cuda.lib ^
+    --required sm_75 --required sm_86 --required sm_89 --required-if-supported sm_120
 if errorlevel 1 exit /b 1
 
 echo [phase] run_embedded_model_inference
@@ -33,6 +34,12 @@ echo [phase] reject_libtorch_linkage
 dumpbin /dependents build-neural-runtime\liplab_neural_runtime_smoke.exe | findstr /i "torch c10" >nul
 if not errorlevel 1 (
     echo Runtime binary unexpectedly depends on LibTorch.
+    exit /b 1
+)
+
+dumpbin /dependents build-neural-runtime\liplab_neural_runtime_smoke.exe | findstr /i "cudart" >nul
+if not errorlevel 1 (
+    echo Runtime binary unexpectedly depends on the dynamic CUDA Runtime.
     exit /b 1
 )
 

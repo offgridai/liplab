@@ -85,6 +85,11 @@ echo [phase] build
 "%CMAKE_EXE%" --build "!BUILD_DIR!"
 if errorlevel 1 exit /b 1
 
+echo [phase] audit_cuda_compatibility
+python scripts\check_cuda_architectures.py "!BUILD_DIR!\liplab_neural_streamer_cuda.lib" ^
+    --required sm_75 --required sm_86 --required sm_89 --required-if-supported sm_120
+if errorlevel 1 exit /b 1
+
 echo [phase] validate_gold
 python scripts\check_gold.py --include-drafts
 if errorlevel 1 exit /b 1

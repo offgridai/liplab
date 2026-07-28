@@ -206,27 +206,86 @@ struct CudaRuntime::Impl {
     int ContextFrameCount = 0;
     std::size_t CheckpointBytes = 0;
     std::uint64_t CheckpointFingerprint = 0;
+    RuntimeDeviceInfo Device;
     std::array<float, kCausalContextFrames * kAudioFeatureCount> Context{};
     std::string Error;
+    std::string InitializationError;
 
     Impl()
     {
+        cudaError_t error = cudaGetDevice(&Device.DeviceIndex);
+        if (error != cudaSuccess) {
+            InitializationError = cuda_error("select CUDA device", error);
+            Error = InitializationError;
+            return;
+        }
+        cudaDeviceProp properties{};
+        error = cudaGetDeviceProperties(&properties, Device.DeviceIndex);
+        if (error != cudaSuccess) {
+            InitializationError = cuda_error("inspect CUDA device", error);
+            Error = InitializationError;
+            return;
+        }
+        Device.Name = properties.name;
+        Device.ComputeCapabilityMajor = properties.major;
+        Device.ComputeCapabilityMinor = properties.minor;
+        if (properties.major < 7 || (properties.major == 7 && properties.minor < 5)) {
+            std::ostringstream message;
+            message << "CUDA device " << Device.DeviceIndex << " (" << Device.Name
+                << ") has compute capability " << properties.major << '.' << properties.minor
+                << "; LipLab requires compute capability 7.5 or newer";
+            InitializationError = message.str();
+            Error = InitializationError;
+            return;
+        }
+        error = cudaDriverGetVersion(&Device.DriverVersion);
+        if (error != cudaSuccess) {
+            InitializationError = cuda_error("read CUDA driver version", error);
+            Error = InitializationError;
+            return;
+        }
+        error = cudaRuntimeGetVersion(&Device.RuntimeVersion);
+        if (error != cudaSuccess) {
+            InitializationError = cuda_error("read CUDA runtime version", error);
+            Error = InitializationError;
+            return;
+        }
         int least_priority = 0;
         int greatest_priority = 0;
         if (cudaDeviceGetStreamPriorityRange(&least_priority, &greatest_priority) == cudaSuccess)
             StreamPriority = least_priority;
-        if (cudaStreamCreateWithPriority(&Stream, cudaStreamNonBlocking, StreamPriority) != cudaSuccess)
-            Stream = nullptr;
-        cudaMallocHost(&HostAudio,
-            (kCausalContextFrames + kRuntimeChunkFrames) * kAudioFeatureCount * sizeof(float));
-        cudaMallocHost(&HostScores,
-            kRuntimeChunkFrames * kForwardTokenWindow * sizeof(float));
-        cudaMallocHost(&HostRegionLogits, kRuntimeChunkFrames * sizeof(float));
-        cudaMalloc(&DeviceAudio,
-            (kCausalContextFrames + kRuntimeChunkFrames) * kAudioFeatureCount * sizeof(float));
-        cudaMalloc(&DeviceScores,
-            kRuntimeChunkFrames * kForwardTokenWindow * sizeof(float));
-        cudaMalloc(&DeviceRegionLogits, kRuntimeChunkFrames * sizeof(float));
+        error = cudaStreamCreateWithPriority(&Stream, cudaStreamNonBlocking, StreamPriority);
+        if (error != cudaSuccess) {
+            InitializationError = cuda_error("create CUDA stream", error);
+            Error = InitializationError;
+            return;
+        }
+#define LIPLAB_CUDA_INIT(operation, description) \
+        do { \
+            error = (operation); \
+            if (error != cudaSuccess) { \
+                InitializationError = cuda_error(description, error); \
+                Error = InitializationError; \
+                return; \
+            } \
+        } while (false)
+        LIPLAB_CUDA_INIT(cudaMallocHost(&HostAudio,
+            (kCausalContextFrames + kRuntimeChunkFrames) * kAudioFeatureCount * sizeof(float)),
+            "allocate pinned audio buffer");
+        LIPLAB_CUDA_INIT(cudaMallocHost(&HostScores,
+            kRuntimeChunkFrames * kForwardTokenWindow * sizeof(float)),
+            "allocate pinned score buffer");
+        LIPLAB_CUDA_INIT(cudaMallocHost(&HostRegionLogits,
+            kRuntimeChunkFrames * sizeof(float)), "allocate pinned region buffer");
+        LIPLAB_CUDA_INIT(cudaMalloc(&DeviceAudio,
+            (kCausalContextFrames + kRuntimeChunkFrames) * kAudioFeatureCount * sizeof(float)),
+            "allocate device audio buffer");
+        LIPLAB_CUDA_INIT(cudaMalloc(&DeviceScores,
+            kRuntimeChunkFrames * kForwardTokenWindow * sizeof(float)),
+            "allocate device score buffer");
+        LIPLAB_CUDA_INIT(cudaMalloc(&DeviceRegionLogits,
+            kRuntimeChunkFrames * sizeof(float)), "allocate device region buffer");
+#undef LIPLAB_CUDA_INIT
     }
 
     ~Impl()
@@ -311,6 +370,8 @@ bool CudaRuntime::LoadCheckpoint(const std::string& path)
 bool CudaRuntime::LoadCheckpoint(const void* data, std::size_t size)
 {
     State->Error.clear();
+    if (!State->InitializationError.empty())
+        return State->fail(State->InitializationError);
     if (!State->Stream || !State->HostAudio || !State->HostScores
         || !State->HostRegionLogits || !State->DeviceAudio || !State->DeviceScores
         || !State->DeviceRegionLogits)
@@ -521,5 +582,7 @@ RuntimeFootprint CudaRuntime::Footprint() const
     result.CheckpointFingerprint = State->CheckpointFingerprint;
     return result;
 }
+
+RuntimeDeviceInfo CudaRuntime::DeviceInfo() const { return State->Device; }
 
 }  // namespace offgridai::neural_streamer

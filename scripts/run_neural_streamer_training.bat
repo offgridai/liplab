@@ -31,7 +31,8 @@ echo [phase] build_cuda
 if errorlevel 1 exit /b 1
 
 echo [phase] audit_cuda_compatibility
-python scripts\check_cuda_architectures.py build-torch\liplab_neural_streamer_cuda.lib --required sm_89
+python scripts\check_cuda_architectures.py build-torch\liplab_neural_streamer_cuda.lib ^
+    --required sm_75 --required sm_86 --required sm_89 --required-if-supported sm_120
 if errorlevel 1 exit /b 1
 
 echo [phase] prove_libtorch_free_runtime
@@ -40,6 +41,11 @@ if errorlevel 1 exit /b 1
 dumpbin /dependents build-torch\liplab_neural_runtime_smoke.exe | findstr /i "\.dll" | findstr /i "torch c10" >nul
 if not errorlevel 1 (
     echo Standalone neural runtime unexpectedly depends on LibTorch.
+    exit /b 1
+)
+dumpbin /dependents build-torch\liplab_neural_runtime_smoke.exe | findstr /i "cudart" >nul
+if not errorlevel 1 (
+    echo Standalone neural runtime unexpectedly depends on the dynamic CUDA Runtime.
     exit /b 1
 )
 

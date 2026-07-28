@@ -37,13 +37,13 @@ if(LIPLAB_ENABLE_NEURAL_RUNTIME)
     enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED)
 
-    # Ship real machine code for Ada (RTX 4090, sm_89), rather than relying on
-    # a newer driver's PTX JIT. CUDA 12.8 added Blackwell sm_120 support, so
-    # toolkits new enough to build it produce one portable 4090/5090 fatbin.
+    # Ship native machine code from Turing through Ada rather than relying on
+    # a driver's PTX JIT. CUDA 12.8 added Blackwell sm_120 support, so newer
+    # toolkits produce one RTX 20/30/40/50-series fat binary.
     if(NOT DEFINED LIPLAB_CUDA_ARCHITECTURES)
-        set(LIPLAB_CUDA_ARCHITECTURES "89")
+        set(LIPLAB_CUDA_ARCHITECTURES "75;86;89")
         if(CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.8)
-            set(LIPLAB_CUDA_ARCHITECTURES "89;120")
+            list(APPEND LIPLAB_CUDA_ARCHITECTURES "120")
         endif()
     endif()
     add_library(liplab_neural_streamer_cuda STATIC
@@ -51,9 +51,10 @@ if(LIPLAB_ENABLE_NEURAL_RUNTIME)
     )
     target_include_directories(liplab_neural_streamer_cuda PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/offgrid_dropin/Public)
-    target_link_libraries(liplab_neural_streamer_cuda PUBLIC CUDA::cudart)
+    target_link_libraries(liplab_neural_streamer_cuda PUBLIC CUDA::cudart_static)
     set_property(TARGET liplab_neural_streamer_cuda PROPERTY CUDA_STANDARD 17)
     set_property(TARGET liplab_neural_streamer_cuda PROPERTY CUDA_STANDARD_REQUIRED ON)
+    set_property(TARGET liplab_neural_streamer_cuda PROPERTY CUDA_RUNTIME_LIBRARY Static)
     set_property(TARGET liplab_neural_streamer_cuda PROPERTY
         CUDA_ARCHITECTURES "${LIPLAB_CUDA_ARCHITECTURES}")
     message(STATUS "LipLab CUDA runtime architectures: ${LIPLAB_CUDA_ARCHITECTURES}")

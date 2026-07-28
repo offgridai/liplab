@@ -21,10 +21,21 @@ a file in development or embedded in an executable, DLL, Unreal pak, or resource
 Checkpoint or CUDA failure disables lipsync for that utterance; there is no
 non-neural fallback.
 
-The default CUDA fat binary contains native `sm_89` code for RTX 4090. CUDA 12.8
-or newer also adds `sm_120` for RTX 5090. `scripts/build_neural_runtime.bat`
-audits the archive for `sm_89`, embeds the accepted checkpoint, runs real GPU
-inference, and rejects a binary that imports LibTorch.
+The supported floor is compute capability 7.5 (Turing / RTX 20 series). The
+default CUDA fat binary contains native `sm_75`, `sm_86`, and `sm_89` code for
+RTX 20-, 30-, and 40-series GPUs. CUDA 12.8 or newer also adds native `sm_120`
+code for RTX 50 series. The runtime uses ordinary FP16 storage with FP32 math;
+it does not require Tensor Cores or an Ada-specific instruction path.
+
+`scripts/build_neural_runtime.bat` audits every architecture supported by the
+active toolkit, embeds the accepted checkpoint, runs real GPU inference, and
+rejects a binary that imports LibTorch or the dynamic CUDA Runtime. The smoke
+output identifies the selected GPU, compute capability, CUDA driver, and
+statically linked CUDA Runtime version. An unsupported pre-Turing device fails
+at initialization with its detected compute capability instead of a generic
+kernel error. Native-image compilation is validated automatically; release
+testing should still include real RTX 20- and 30-series hardware before claiming
+those GPUs as performance-qualified.
 
 ## Training and grading
 

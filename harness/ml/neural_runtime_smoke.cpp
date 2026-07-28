@@ -11,6 +11,17 @@
 #include <iostream>
 #include <vector>
 
+namespace {
+
+std::string cuda_version(int encoded)
+{
+    if (encoded <= 0) return "unknown";
+    return std::to_string(encoded / 1000) + "."
+        + std::to_string((encoded % 1000) / 10);
+}
+
+}  // namespace
+
 int main()
 {
     using namespace offgridai::neural_streamer;
@@ -101,10 +112,17 @@ int main()
         full_end - full_begin).count() / kFullLatticeCalls;
 
     const RuntimeFootprint footprint = runtime.Footprint();
+    const RuntimeDeviceInfo device = runtime.DeviceInfo();
     if (footprint.CheckpointBytes != offgridai::embedded_neural_streamer::ModelSize
         || footprint.CheckpointFingerprint == 0)
         return 11;
     std::cout << "standalone_cuda_runtime=ok"
+        << " gpu=\"" << device.Name << '"'
+        << " device=" << device.DeviceIndex
+        << " compute_capability=" << device.ComputeCapabilityMajor << '.'
+        << device.ComputeCapabilityMinor
+        << " cuda_driver=" << cuda_version(device.DriverVersion)
+        << " cuda_runtime=" << cuda_version(device.RuntimeVersion)
         << " model_bytes=" << footprint.CheckpointBytes
         << " weight_bytes=" << footprint.WeightBytes
         << " token_bytes=" << footprint.TokenBytes
