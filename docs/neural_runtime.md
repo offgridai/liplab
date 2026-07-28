@@ -83,9 +83,11 @@ neural events.
 
 The performer/FaceDriver boundary carries the complete detailed MetaHuman pose
 map returned by the committed track, including supporting consonant and tongue
-poses, plus `JawOpen`. `FOffgridAILipsyncPoseRuntimeState` smooths that dynamic
-map without reducing it to generic open/closed/wide/round/funnel/teeth channels.
-Hosts should submit the map produced by `BuildPoseWeightMapFromState` unchanged.
+poses. `FOffgridAILipsyncPoseRuntimeState` smooths that dynamic map without
+reducing it to generic open/closed/wide/round/funnel/teeth channels. Hosts should
+submit the map produced by `BuildPoseWeightMapFromState` unchanged. Jaw motion is
+owned entirely by the `CTRL_C_jaw` values authored in the viseme pose library;
+the lipsync runtime does not generate a separate jaw target or carrier.
 
 `CloseInputStream()` means that no more PCM will arrive. It is not an
 end-of-playback signal. LineCoach must continue `Update(CurrentPlaybackSec)`

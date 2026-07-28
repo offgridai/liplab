@@ -43,9 +43,6 @@ struct FOffgridAITextVisemeEvent
 
     // Final presentation peak for this transcript-derived pose.
     float Strength = 0.0f;
-    // Transcript-owned normalized mandibular aperture for vowel nuclei.
-    // Negative means this phone does not independently target the jaw.
-    float JawOpenTarget = -1.0f;
     FString SourceText;
     int32 WordIndex = INDEX_NONE;
 

@@ -518,7 +518,6 @@ void FOffgridAINeuralStreamingAligner::FinishToken(
     Event.EventIndex = EventIndex;
     Event.PoseID = Planned.PoseID;
     Event.Strength = Planned.Strength;
-    Event.JawOpenTarget = Planned.JawOpenTarget;
     Event.SourceWord = Planned.SourceText;
     Event.WordIndex = Planned.WordIndex;
     Event.SpeechRegionIndex = RegionForTime(CenterSec);
