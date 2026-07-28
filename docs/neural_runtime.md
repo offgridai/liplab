@@ -51,13 +51,14 @@ renditions of the same transcript together.
 The accepted 750-case checkpoint currently scores:
 
 - region-start success 0.9744, 18.0 ms mean absolute error;
-- pause cleanliness 0.9844;
+- pause cleanliness 0.9801;
 - word-animation-onset success 0.9357, 29.8 ms mean absolute error;
 - performed word-duration success 0.8654, 58.8 ms mean and 40.0 ms median
   absolute error, with a 0.967 median runtime/MFA duration ratio;
-- runtime event delivery 0.9918 and word delivery 0.9994;
-- within-word run-boundary median error 9.65 percentage points and word-level
-  duration total-variation median 19.81%.
+- runtime event delivery 0.9984 and word delivery 0.9994;
+- within-word run-share median error 8.36 percentage points, boundary-position
+  median error 9.84 percentage points, and word-level duration total-variation
+  median 20.00%.
 
 The generated JSON contains full counts, coverage, and mean/median/tail values.
 These figures are descriptive; `docs/grade_baseline.json` and
