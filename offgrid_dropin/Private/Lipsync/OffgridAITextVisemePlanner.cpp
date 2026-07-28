@@ -339,38 +339,6 @@ static bool IsVowelPhonemeBase(const FString& Base)
     return Vowels.Contains(Base);
 }
 
-static float JawOpenTargetForPhone(const FString& Phone)
-{
-    const FString Base = StripStressDigits(Phone);
-    if (!IsVowelPhonemeBase(Base)) return -1.0f;
-
-    // Normalized mandibular aperture follows vowel height. Lip spreading and
-    // rounding remain separate pose dimensions; this is only the slower jaw
-    // carrier beneath them.
-    float Aperture = 0.50f;
-    if (Base == TEXT("AA") || Base == TEXT("AW")) Aperture = 0.92f;
-    else if (Base == TEXT("AE")) Aperture = 0.84f;
-    else if (Base == TEXT("AO")) Aperture = 0.74f;
-    else if (Base == TEXT("AY")) Aperture = 0.72f;
-    else if (Base == TEXT("AH")) Aperture = 0.62f;
-    else if (Base == TEXT("EH")) Aperture = 0.58f;
-    else if (Base == TEXT("ER")) Aperture = 0.50f;
-    else if (Base == TEXT("EY")) Aperture = 0.48f;
-    else if (Base == TEXT("OY")) Aperture = 0.52f;
-    else if (Base == TEXT("OW")) Aperture = 0.46f;
-    else if (Base == TEXT("UH")) Aperture = 0.42f;
-    else if (Base == TEXT("IH")) Aperture = 0.38f;
-    else if (Base == TEXT("UW")) Aperture = 0.36f;
-    else if (Base == TEXT("IY")) Aperture = 0.32f;
-
-    // CMU stress is transcript-owned prosodic information. Unstressed vowels
-    // are reduced, while secondary stress retains most of the full gesture.
-    const float StressScale = Phone.EndsWith(TEXT("1"))
-        ? 1.0f
-        : (Phone.EndsWith(TEXT("2")) ? 0.90f : 0.78f);
-    return FMath::Clamp(Aperture * StressScale, 0.24f, 1.0f);
-}
-
 static int32 CountCmuSyllables(const TArray<FString>& Phones)
 {
     int32 Count = 0;
@@ -862,7 +830,6 @@ static void AddEvent(TArray<FOffgridAITextVisemeEvent>& Events, EOffgridAITextVi
     E.Viseme = V;
     E.PoseID = ResolvedPose;
     E.Strength = Strength;
-    E.JawOpenTarget = JawOpenTargetForPhone(SourcePhone);
     E.SourceText = Word;
     E.WordIndex = WordIndex;
     E.SpeechRegionIndex = SpeechRegionIndex;

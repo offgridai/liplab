@@ -1,115 +1,65 @@
 # LipLab
 
-LipLab is the standalone corpus, training, and regression harness for OffgridAI's
-neural streaming lipsync runtime. `offgrid_dropin` is the authoritative shared
-C++ implementation; the harness streams real PCM through that implementation
-and grades the performed animation against MFA references.
+LipLab is a standalone research harness for OffgridAI's streaming lipsync
+runtime. It builds the shared C++/CUDA implementation, runs a speech corpus, and
+compares the resulting animation with forced-alignment references.
 
-## Current runtime
+The runtime keeps transcript-derived viseme identity and order authoritative.
+Audio controls timing only; it cannot invent or reorder visemes.
 
-There is one runtime path:
+## Requirements
 
-1. The transcript planner converts text into an ordered CMU phone/viseme lattice.
-2. The audio feature extractor converts streamed PCM into 18 causal features at
-   10 ms cadence.
-3. The small native CUDA model predicts transcript-token alignment and neural
-   speech occupancy.
-4. A fixed-lag monotonic decoder commits viseme identity, placement, duration,
-   speech regions, pauses, word starts, and syllable alignment.
-5. The performer turns committed events into continuous weights for every
-   transcript-selected MetaHuman pose plus the independent jaw carrier. Display
-   smoothing preserves those detailed pose IDs rather than reducing them to a
-   fixed mouth-shape palette.
+- Windows 10 or 11
+- Visual Studio 2022 with C++ tools
+- CMake and Ninja (the Visual Studio copies are detected automatically)
+- Python 3
+- An NVIDIA GPU and CUDA toolkit compatible with the packaged model
 
-Transcript-derived identity and order are authoritative. Audio and the neural
-model determine timing, but cannot invent or reorder visemes. There is no
-deterministic timing fallback: failed neural initialization produces neutral
-animation for that utterance.
+LibTorch and Montreal Forced Aligner are needed only to train models or rebuild
+reference data. They are not runtime dependencies.
 
-The deployable runtime uses the CUDA Runtime only. LibTorch and MFA are offline
-training dependencies and are never part of the Offgrid runtime. See
-[lipsync.md](lipsync.md) and [docs/neural_runtime.md](docs/neural_runtime.md).
+## Build and verify
 
-## Layout
-
-```text
-offgrid_dropin/        Authoritative C++/CUDA runtime shared with OffgridAI
-standalone_ue_shim/    Minimal Unreal compatibility layer for CMake
-harness/               Corpus runner, dataset exporter, and CUDA trainer
-scripts/               Corpus, training, grading, and integration utilities
-inputs/corpus.csv      Authoritative recorded + Data Factory case inventory
-inputs/transcripts/    Canonical transcripts for every manifest case
-inputs/wav/            Canonical audio for every manifest case
-inputs/gold/           Approved MFA packages referenced by the manifest
-inputs/speech_library/ Reproducible generation recipes, not a second corpus
-docs/                  Current architecture, policy, and calibration data
-outputs/runs/latest/   Generated diagnostics and comprehensive scorecard
-```
-
-## Verify
-
-On Windows, run the required end-to-end check:
+Run the complete check from a Visual Studio command prompt or a normal command
+prompt:
 
 ```bat
 scripts\verify.bat
 ```
 
-It builds the native runtime, validates gold and corpus recipes, streams all 750
-cases through the packaged neural checkpoint, regenerates the scorecard, and
-enforces regression thresholds. Manual grading after a run is:
+This builds the runtime, validates the corpus and reference data, runs all 750
+cases, writes results to `outputs/runs/latest`, and checks them against the
+accepted baseline.
 
-```bat
-python scripts\summarize.py
-python scripts\check_grades.py
-```
+## Repository layout
 
-Useful runner options are `--preroll-ms`, `--chunk-ms`, `--tick-ms`, `--case`,
-`--fast-batch`, `--full-diagnostics`, `--export-monotonic-dataset`, and
-`--neural-checkpoint`. Diagnostic exports describe the same runtime path; there
-is no offline prediction-CSV controller.
+- `offgrid_dropin/`: authoritative runtime code shared with OffgridAI
+- `standalone_ue_shim/`: minimal Unreal-compatible types for standalone builds
+- `harness/`: corpus runner and offline training tools
+- `inputs/`: transcripts, audio, and approved timing references
+- `scripts/`: validation, grading, and data-maintenance commands
+- `docs/`: focused architecture, training, and regression notes
 
-## Training and data
+Start with [lipsync.md](lipsync.md) for the runtime design and
+[docs/regression_policy.md](docs/regression_policy.md) for scoring. Model
+training is described in [docs/neural_runtime.md](docs/neural_runtime.md).
 
-MFA supplies offline phone, word, speech-region, pause, and vowel timing labels.
-It is not linked into inference. Gold maintenance uses:
+## Data and model
 
-```bat
-python scripts\draft_gold.py --mfa-num-jobs 4
-python scripts\check_gold.py --include-drafts
-python scripts\export_gold.py
-```
+The checked-in corpus contains 350 recorded utterances and 400 synthetic
+utterances generated with Qwen voice-clone references. The packaged checkpoint
+was trained from this corpus. The Apache license grants copyright and patent
+permissions; it does not grant rights to a person's voice or likeness. Confirm
+speaker and voice-reference consent before redistributing these assets.
 
-The reproducible Qwen data factory is documented in
-[docs/speech_library_generator.md](docs/speech_library_generator.md). Neural
-training and packaging use:
+## Contributing
 
-```bat
-scripts\run_neural_streamer_training.bat C:\aitoolkit\libtorch-2.13.0-cu130
-scripts\build_neural_runtime.bat
-```
+Keep the runtime deterministic and preserve transcript ownership of viseme
+identity and order. Before submitting a change, run `scripts\verify.bat` and
+include any intentional baseline change in the same review.
 
-The first command exports the sequence dataset, trains, packages, replays the
-native checkpoint, and grades that exact package. The second proves that the
-deployable binary contains RTX 4090 machine code and has no LibTorch dependency.
+## License
 
-Both recorded and generated cases live in the same canonical asset directories
-and are enumerated by `inputs/corpus.csv`. Generation recipes describe how an
-asset was made or can be recreated; they are not separate training corpora.
-`scripts/build_corpus_manifest.py --check` rejects unlisted or missing assets.
-
-## Scorecard
-
-`outputs/runs/latest/alignment_summary.json` is comprehensive: missing reference
-events receive explicit penalties rather than disappearing from timing means.
-It reports both mean and median for boundary and timing errors, plus:
-
-- speech-region start/end and pause cleanliness;
-- performed word-animation onset and speech-region placement;
-- performed word duration versus the complete MFA word interval;
-- complete word-to-region ownership;
-- delivery completion, missing words, sentence completion, and ordering;
-- within-word viseme duration proportions, run boundaries, and word-level total
-  variation distance.
-
-Acceptance policy and thresholds are in
-[docs/regression_policy.md](docs/regression_policy.md).
+Except for the bundled CMU Pronouncing Dictionary, LipLab is licensed under the
+[Apache License 2.0](LICENSE). CMUdict retains its original permissive license;
+see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

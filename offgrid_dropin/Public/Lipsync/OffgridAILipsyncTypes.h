@@ -24,9 +24,6 @@ struct FOffgridAICommittedVisemeEvent
     // Downstream rendering may shape or duck it, but must not reinterpret it
     // with another phoneme- or pose-specific magnitude policy.
     float Strength = 0.0f;
-    // Vowel-height/stress target copied from the text plan. Consonants carry
-    // no independent jaw target and inherit the continuous syllabic carrier.
-    float JawOpenTarget = -1.0f;
     FString SourceWord;
     int32 WordIndex = INDEX_NONE;
     int32 SpeechRegionIndex = INDEX_NONE;
@@ -123,4 +120,5 @@ struct FOffgridAILipsyncPoseRuntimeState
     // collapsing articulation into a fixed set of mouth-shape channels.
     TArray<FName> PoseIDs;
     TMap<FName, float> PoseWeights;
+
 };

@@ -151,107 +151,6 @@ static float EventWeightAt(
     return Shape * FMath::Clamp(E.Strength, 0.0f, 1.0f);
 }
 
-static float JawOpenAt(
-    const FOffgridAICommittedVisemeTrack& Track,
-    float PlaybackSeconds)
-{
-    const FOffgridAICommittedVisemeTrack::FSpeechRegion* ActiveRegion = nullptr;
-    for (const auto& Region : Track.SpeechRegions)
-    {
-        const float End = Region.bEnded
-            ? Region.EndSeconds
-            : TNumericLimits<float>::Max();
-        if (PlaybackSeconds >= Region.StartSeconds - 0.001f
-            && PlaybackSeconds <= End + 0.001f)
-        {
-            ActiveRegion = &Region;
-            break;
-        }
-    }
-    if (!ActiveRegion) return 0.0f;
-
-    const FOffgridAICommittedVisemeEvent* Previous = nullptr;
-    const FOffgridAICommittedVisemeEvent* Next = nullptr;
-    for (const auto& Event : Track.Events)
-    {
-        if (Event.SpeechRegionIndex != ActiveRegion->SpeechRegionIndex
-            || Event.JawOpenTarget < 0.0f
-            || Event.bCanceledByWordHandoff
-            || !FMath::IsFinite(Event.FinalRenderCenterSeconds))
-            continue;
-        if (Event.FinalRenderCenterSeconds <= PlaybackSeconds)
-        {
-            Previous = &Event;
-        }
-        else
-        {
-            Next = &Event;
-            break;
-        }
-    }
-
-    constexpr float JawAttackSec = 0.180f;
-    // After the last nucleus the jaw begins closing through the syllable coda;
-    // it does not hold the vowel posture until the detected region ends.
-    constexpr float JawHoldSec = 0.000f;
-    constexpr float JawReleaseSec = 0.140f;
-    constexpr float ContinuousNucleusGapSec = 0.420f;
-
-    if (Previous && Next)
-    {
-        const float PreviousCenter = Previous->FinalRenderCenterSeconds;
-        const float NextCenter = Next->FinalRenderCenterSeconds;
-        const float Gap = NextCenter - PreviousCenter;
-        if (Gap <= ContinuousNucleusGapSec)
-        {
-            const float Phase = MinimumJerk01(
-                (PlaybackSeconds - PreviousCenter)
-                / FMath::Max(Gap, 0.001f));
-            return FMath::Lerp(
-                Previous->JawOpenTarget,
-                Next->JawOpenTarget,
-                Phase);
-        }
-
-        const float PreviousRelease = 1.0f - MinimumJerk01(
-            (PlaybackSeconds - (PreviousCenter + JawHoldSec))
-            / JawReleaseSec);
-        const float NextAttack = MinimumJerk01(
-            (PlaybackSeconds - (NextCenter - JawAttackSec))
-            / JawAttackSec);
-        return FMath::Max(
-            Previous->JawOpenTarget * PreviousRelease,
-            Next->JawOpenTarget * NextAttack);
-    }
-
-    if (Next)
-    {
-        const float AttackStart = FMath::Max(
-            ActiveRegion->StartSeconds,
-            Next->FinalRenderCenterSeconds - JawAttackSec);
-        return Next->JawOpenTarget * MinimumJerk01(
-            (PlaybackSeconds - AttackStart)
-            / FMath::Max(
-                Next->FinalRenderCenterSeconds - AttackStart,
-                0.001f));
-    }
-
-    if (Previous)
-    {
-        const float ReleaseStart = Previous->FinalRenderCenterSeconds
-            + JawHoldSec;
-        float ReleaseEnd = ReleaseStart + JawReleaseSec;
-        if (ActiveRegion->bEnded)
-        {
-            ReleaseEnd = FMath::Min(ReleaseEnd, ActiveRegion->EndSeconds);
-        }
-        return Previous->JawOpenTarget * (
-            1.0f - MinimumJerk01(
-                (PlaybackSeconds - ReleaseStart)
-                / FMath::Max(ReleaseEnd - ReleaseStart, 0.001f)));
-    }
-    return 0.0f;
-}
 }
 
 TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const FOffgridAICommittedVisemeTrack& Track, float PlaybackSeconds, bool bGateBeforeSpeechStart)
@@ -291,27 +190,6 @@ TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const 
         S.SubmittedWeight = FMath::Clamp(W, 0.0f, 1.0f);
         S.SourceStrength = E.Strength;
         Out.Add(S);
-    }
-    // Jaw aperture shapes speech that the committed renderer is already
-    // presenting; it must never manufacture activity across an otherwise
-    // clean pause. This also keeps pause ownership in the single scheduler.
-    float SpeechActivity = 0.0f;
-    for (const FOffgridAISubmittedVisemeSample& Sample : Out)
-    {
-        SpeechActivity = FMath::Max(SpeechActivity, Sample.SubmittedWeight);
-    }
-    const float JawOpen = FMath::Min(
-        JawOpenAt(Track, PlaybackSeconds),
-        SpeechActivity);
-    if (JawOpen > 0.012f)
-    {
-        FOffgridAISubmittedVisemeSample JawSample;
-        JawSample.PoseID = TEXT("JawOpen");
-        JawSample.SourceWord = TEXT("<syllabic-jaw-carrier>");
-        JawSample.PlaybackSeconds = PlaybackSeconds;
-        JawSample.SubmittedWeight = FMath::Clamp(JawOpen, 0.0f, 1.0f);
-        JawSample.SourceStrength = JawSample.SubmittedWeight;
-        Out.Add(JawSample);
     }
     // Neighboring gestures remain simultaneously available. The display
     // solver below supplies inertia, so coarticulation no longer depends on a
@@ -405,11 +283,6 @@ FOffgridAILipsyncPoseRuntimeState FOffgridAIVisemePerformer::StepDisplayedPose(
         {
             AttackMs = 18.0f;
             ReleaseMs = 46.0f;
-        }
-        else if (PoseID == FName(TEXT("JawOpen")))
-        {
-            AttackMs = 56.0f;
-            ReleaseMs = 78.0f;
         }
         else if (PoseID == FName(TEXT("12_Ww-Oo-"))
             || PoseID == FName(TEXT("20_FV"))
