@@ -38,6 +38,7 @@ constexpr int kFrameMilliseconds = 10;
 constexpr int kStreamingLagFrames = 30;
 constexpr int kForwardSumCadence = 16;
 constexpr float kInterpolatedPhoneWeight = 0.10f;
+constexpr float kWordIntervalLossWeight = 0.35f;
 
 struct TokenRow {
     int EventIndex = -1;
@@ -729,8 +730,7 @@ static std::vector<int> viterbi_path(const torch::Tensor& score_tensor,
             float stay = previous[token] + std::log1p(-advance_probability);
             const int maximum_dwell = std::clamp(
                 static_cast<int>(std::ceil(tokens[token].DurationPrior * 300.0f)),
-                6,
-                30);
+                6, 30);
             if (tokens[token].IsSilence <= 0.5f
                 && previous_dwell[token] >= maximum_dwell) {
                 stay = negative;
@@ -840,6 +840,129 @@ static torch::Tensor forward_sum_loss(const torch::Tensor& score_tensor,
     return -alpha.index({count - 1}) / static_cast<float>(frames);
 }
 
+static torch::Tensor word_interval_loss(
+    const torch::Tensor& score_tensor,
+    const torch::Tensor& target_tensor,
+    const std::vector<TokenRow>& tokens)
+{
+    const torch::Tensor probability = torch::softmax(score_tensor, 1);
+    std::vector<torch::Tensor> losses;
+    for (int first = 0; first < static_cast<int>(tokens.size()); ++first) {
+        if (tokens[static_cast<size_t>(first)].IsWordStart <= 0.5f) continue;
+        int last = first;
+        while (last + 1 < static_cast<int>(tokens.size())
+            && tokens[static_cast<size_t>(last)].IsWordEnd <= 0.5f)
+            ++last;
+        const torch::Tensor word_probability = probability.slice(1, first, last + 1)
+            .sum(1).clamp(1.0e-6f, 1.0f - 1.0e-6f);
+        const torch::Tensor positive_mask = (target_tensor >= first)
+            & (target_tensor <= last);
+        const torch::Tensor positive_weights = positive_mask.to(torch::kFloat32);
+        torch::Tensor loss = (-torch::log(word_probability) * positive_weights).sum()
+            / positive_weights.sum().clamp_min(1.0f);
+
+        // The silence tokens immediately surrounding a word are the direct
+        // acoustic alternatives at its entry and exit. Contrast against only
+        // those local states so long utterances do not swamp a short word with
+        // irrelevant distant negatives.
+        torch::Tensor negative_mask = torch::zeros_like(positive_mask);
+        if (first > 0)
+            negative_mask = negative_mask | (target_tensor == first - 1);
+        if (last + 1 < static_cast<int>(tokens.size()))
+            negative_mask = negative_mask | (target_tensor == last + 1);
+        const torch::Tensor negative_weights = negative_mask.to(torch::kFloat32);
+        loss = loss + 0.5f
+            * (-torch::log(1.0f - word_probability) * negative_weights).sum()
+            / negative_weights.sum().clamp_min(1.0f);
+        losses.push_back(loss);
+        first = last;
+    }
+    if (losses.empty()) return torch::zeros({}, score_tensor.options());
+    return torch::stack(losses).mean();
+}
+
+struct DecodedValidationMetrics {
+    int Words = 0;
+    int ZeroOverlapWords = 0;
+    double MeanOnsetAbsErrorMs = 0.0;
+    double MeanExitAbsErrorMs = 0.0;
+    double MeanCoverage = 0.0;
+    double SelectionScore = 0.0;
+};
+
+static DecodedValidationMetrics validation_decoded_metrics(
+    MonotonicNetwork& model,
+    const std::vector<SequenceCase>& dataset,
+    const torch::Device& device)
+{
+    torch::NoGradGuard no_grad;
+    model->eval();
+    DecodedValidationMetrics result;
+    double onset_total = 0.0;
+    double exit_total = 0.0;
+    double coverage_total = 0.0;
+    for (const SequenceCase& sequence : dataset) {
+        if (sequence.Split != "validation") continue;
+        CaseTensors row = tensors(sequence);
+        const auto output = model->forward(
+            row.Audio.to(device), row.Tokens.to(device));
+        const std::vector<int> path = viterbi_path(
+            output.first, output.second, sequence.Tokens, kStreamingLagFrames);
+        const torch::Tensor target_cpu = row.Target.to(torch::kCPU).contiguous();
+        const auto target = target_cpu.accessor<std::int64_t, 1>();
+        for (int first = 0; first < static_cast<int>(sequence.Tokens.size()); ++first) {
+            if (sequence.Tokens[static_cast<size_t>(first)].IsWordStart <= 0.5f)
+                continue;
+            int last = first;
+            while (last + 1 < static_cast<int>(sequence.Tokens.size())
+                && sequence.Tokens[static_cast<size_t>(last)].IsWordEnd <= 0.5f)
+                ++last;
+            int target_first = -1;
+            int target_last = -1;
+            int predicted_first = -1;
+            int predicted_last = -1;
+            for (int frame = 0; frame < static_cast<int>(path.size()); ++frame) {
+                const bool target_in_word = target[frame] >= first && target[frame] <= last;
+                const bool predicted_in_word = path[static_cast<size_t>(frame)] >= first
+                    && path[static_cast<size_t>(frame)] <= last;
+                if (target_in_word) {
+                    if (target_first < 0) target_first = frame;
+                    target_last = frame;
+                }
+                if (predicted_in_word) {
+                    if (predicted_first < 0) predicted_first = frame;
+                    predicted_last = frame;
+                }
+            }
+            if (target_first < 0 || predicted_first < 0) continue;
+            const int overlap = std::max(0,
+                std::min(target_last, predicted_last)
+                    - std::max(target_first, predicted_first) + 1);
+            const int target_frames = target_last - target_first + 1;
+            onset_total += std::abs(predicted_first - target_first)
+                * kFrameMilliseconds;
+            exit_total += std::abs(predicted_last - target_last)
+                * kFrameMilliseconds;
+            coverage_total += static_cast<double>(overlap) / target_frames;
+            result.ZeroOverlapWords += overlap == 0;
+            ++result.Words;
+            first = last;
+        }
+    }
+    if (result.Words > 0) {
+        result.MeanOnsetAbsErrorMs = onset_total / result.Words;
+        result.MeanExitAbsErrorMs = exit_total / result.Words;
+        result.MeanCoverage = coverage_total / result.Words;
+        const double zero_rate = static_cast<double>(result.ZeroOverlapWords)
+            / result.Words;
+        result.SelectionScore = result.MeanOnsetAbsErrorMs
+            + result.MeanExitAbsErrorMs
+            + 200.0 * (1.0 - result.MeanCoverage)
+            + 400.0 * zero_rate;
+    }
+    return result;
+}
+
 static double validation_loss(MonotonicNetwork& model, const std::vector<SequenceCase>& dataset,
     const torch::Device& device)
 {
@@ -861,8 +984,11 @@ static double validation_loss(MonotonicNetwork& model, const std::vector<Sequenc
             output.second, row.RegionTarget.to(device),
             torch::nn::functional::BinaryCrossEntropyWithLogitsFuncOptions()
                 .weight(region_weights).reduction(torch::kSum)) / region_weights.sum();
+        const torch::Tensor interval_loss = word_interval_loss(
+            scores, row.Target.to(device), sequence.Tokens);
         total += (((per_frame * weights).sum() / weights.sum())
-            + 0.45f * region_loss).item<double>();
+            + 0.45f * region_loss
+            + kWordIntervalLossWeight * interval_loss).item<double>();
         ++count;
     }
     return total / std::max(count, 1);
@@ -880,6 +1006,8 @@ int main(int argc, char** argv)
             && std::string(argv[3]) == "--acoustic-finetune";
         const bool identity_fine_tuning = fine_tuning && argc > 3
             && std::string(argv[3]) == "--identity-finetune";
+        const bool word_interval_fine_tuning = fine_tuning && argc > 3
+            && std::string(argv[3]) == "--word-interval-finetune";
         std::vector<SequenceCase> dataset = read_dataset(root);
 #ifdef _WIN32
         _putenv_s("CUBLAS_WORKSPACE_CONFIG", ":4096:8");
@@ -892,7 +1020,8 @@ int main(int argc, char** argv)
         MonotonicNetwork model;
         if (fine_tuning) {
             load_runtime_checkpoint(initial_checkpoint, model);
-            if (acoustic_fine_tuning || identity_fine_tuning) {
+            if (acoustic_fine_tuning || identity_fine_tuning
+                || word_interval_fine_tuning) {
                 for (torch::Tensor parameter : model->parameters())
                     parameter.set_requires_grad(false);
                 if (acoustic_fine_tuning) {
@@ -909,7 +1038,9 @@ int main(int argc, char** argv)
             }
             std::cout << (full_fine_tuning ? "Full fine-tuning from "
                 : acoustic_fine_tuning ? "Acoustic fine-tuning from "
-                : identity_fine_tuning ? "Identity fine-tuning from " : "Fine-tuning from ")
+                : identity_fine_tuning ? "Identity fine-tuning from "
+                : word_interval_fine_tuning ? "Word-interval fine-tuning from "
+                : "Fine-tuning from ")
                 << initial_checkpoint << '\n';
         } else {
             std::vector<torch::Tensor> training_audio;
@@ -922,7 +1053,8 @@ int main(int argc, char** argv)
         model->to(device);
         torch::optim::AdamW optimizer(model->parameters(),
             torch::optim::AdamWOptions(
-                (full_fine_tuning || acoustic_fine_tuning || identity_fine_tuning)
+                (full_fine_tuning || acoustic_fine_tuning || identity_fine_tuning
+                    || word_interval_fine_tuning)
                     ? 1.0e-4 : 0.001)
                 .weight_decay(fine_tuning ? 0.0 : 5.0e-4));
         std::vector<size_t> training_indices;
@@ -935,6 +1067,9 @@ int main(int argc, char** argv)
         fs::create_directories(candidate_directory);
         write_runtime_checkpoint(candidate_directory / "epoch_00.bin", model);
         double best_validation = validation_loss(model, dataset, device);
+        DecodedValidationMetrics best_decoded = validation_decoded_metrics(
+            model, dataset, device);
+        double best_selection_score = best_decoded.SelectionScore;
         int best_epoch = 0;
         int stale = 0;
         torch::save(model, checkpoint.string());
@@ -989,11 +1124,21 @@ int main(int argc, char** argv)
                 const bool apply_forward_sum =
                     (fnv1a(dataset[index].CaseId) + epoch) % kForwardSumCadence == 0;
                 torch::Tensor loss = frame_loss + 0.45f * region_loss;
+                loss = loss + kWordIntervalLossWeight * word_interval_loss(
+                    scores, row.Target.to(device), dataset[index].Tokens);
                 if (apply_forward_sum)
                     loss = loss + 0.25f * forward_sum_loss(scores, dataset[index].Tokens);
                 optimizer.zero_grad();
                 loss.backward();
-                if (acoustic_fine_tuning || identity_fine_tuning) {
+                if (word_interval_fine_tuning) {
+                    torch::Tensor gradient = model->TokenLinear1->weight.grad();
+                    // Adapt only continuous timing, silence, word-boundary,
+                    // and punctuation semantics. Phone and pose embeddings
+                    // remain bit-for-bit unchanged so interval repair cannot
+                    // trade away transcript-owned viseme identity.
+                    gradient.slice(1, 0,
+                        kPhoneBuckets + kPoseBuckets).zero_();
+                } else if (acoustic_fine_tuning || identity_fine_tuning) {
                     torch::Tensor gradient = model->TokenLinear1->weight.grad();
                     // Preserve timing, word-boundary, and punctuation behavior.
                     // Only phone/pose identity columns may adapt alongside the
@@ -1013,13 +1158,22 @@ int main(int argc, char** argv)
                 epoch_loss += loss.item<double>();
             }
             const double validation = validation_loss(model, dataset, device);
+            const DecodedValidationMetrics decoded = validation_decoded_metrics(
+                model, dataset, device);
             write_runtime_checkpoint(candidate_directory /
                 ("epoch_" + (epoch < 10 ? std::string("0") : std::string())
                     + std::to_string(epoch) + ".bin"), model);
             std::cout << "epoch=" << epoch << " train_ce=" << epoch_loss / epoch_indices.size()
-                << " validation_ce=" << validation << '\n';
-            if (validation + 1.0e-4 < best_validation) {
+                << " validation_loss=" << validation
+                << " decoded_score=" << decoded.SelectionScore
+                << " decoded_onset_ms=" << decoded.MeanOnsetAbsErrorMs
+                << " decoded_exit_ms=" << decoded.MeanExitAbsErrorMs
+                << " decoded_coverage=" << decoded.MeanCoverage
+                << " decoded_zero_overlap=" << decoded.ZeroOverlapWords << '\n';
+            if (decoded.SelectionScore + 1.0e-4 < best_selection_score) {
                 best_validation = validation;
+                best_decoded = decoded;
+                best_selection_score = decoded.SelectionScore;
                 best_epoch = epoch;
                 stale = 0;
                 torch::save(model, checkpoint.string());
@@ -1039,6 +1193,7 @@ int main(int argc, char** argv)
             : full_fine_tuning ? "full"
             : acoustic_fine_tuning ? "acoustic"
             : identity_fine_tuning ? "identity"
+            : word_interval_fine_tuning ? "word_interval"
             : "new_token_features";
         std::ofstream out(report);
         out << std::fixed << std::setprecision(6)
@@ -1054,6 +1209,19 @@ int main(int argc, char** argv)
             << kInterpolatedPhoneWeight << ",\n"
             << "  \"selected_epoch\": " << best_epoch << ",\n"
             << "  \"validation_cross_entropy\": " << best_validation << ",\n"
+            << "  \"validation_decoded_selection_score\": "
+            << best_selection_score << ",\n"
+            << "  \"validation_decoded_word_count\": " << best_decoded.Words << ",\n"
+            << "  \"validation_decoded_zero_overlap_words\": "
+            << best_decoded.ZeroOverlapWords << ",\n"
+            << "  \"validation_decoded_onset_mae_ms\": "
+            << best_decoded.MeanOnsetAbsErrorMs << ",\n"
+            << "  \"validation_decoded_exit_mae_ms\": "
+            << best_decoded.MeanExitAbsErrorMs << ",\n"
+            << "  \"validation_decoded_spoken_coverage\": "
+            << best_decoded.MeanCoverage << ",\n"
+            << "  \"word_interval_loss_weight\": "
+            << kWordIntervalLossWeight << ",\n"
             << "  \"forward_sum_weight\": 0.25,\n"
             << "  \"forward_sum_cadence\": " << kForwardSumCadence << ",\n"
             << "  \"streaming_lag_ms\": " << kStreamingLagFrames * kFrameMilliseconds << ",\n"
@@ -1087,7 +1255,9 @@ int main(int argc, char** argv)
             << "    \"resident_token_bytes\": " << runtime.Footprint.TokenBytes << ",\n"
             << "    \"stream_priority\": " << runtime.Footprint.StreamPriority << "\n"
             << "  }\n}\n";
-        std::cout << "Selected epoch " << best_epoch << " validation CE " << best_validation << '\n';
+        std::cout << "Selected epoch " << best_epoch
+            << " decoded score " << best_selection_score
+            << " validation loss " << best_validation << '\n';
         std::cout << "CUDA runtime p95 " << runtime.P95Microseconds << " us, weights "
             << runtime.Footprint.WeightBytes << " bytes, max logit error "
             << runtime.MaxLogitError << '\n';

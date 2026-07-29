@@ -2596,11 +2596,22 @@ static std::string runtime_delivery_grade_json(
     std::vector<double> word_duration_ratios;
     std::vector<double> word_duration_abs_errors_ms;
     std::vector<double> word_duration_signed_errors_ms;
+    std::vector<double> word_onset_abs_errors_ms;
+    std::vector<double> word_onset_signed_errors_ms;
+    std::vector<double> word_exit_abs_errors_ms;
+    std::vector<double> word_exit_signed_errors_ms;
+    std::vector<double> word_interval_coverages;
+    std::vector<double> word_interval_precisions;
+    std::vector<double> word_interval_ious;
+    int zero_overlap_words = 0;
+    int low_coverage_words = 0;
     std::ostringstream word_csv;
     word_csv
         << "word_index,word,sentence_index,speech_region_index,gold_start_sec,gold_end_sec,"
         << "gold_duration_ms,planned_events,committed_events,delivered_events,"
         << "runtime_start_sec,runtime_end_sec,runtime_duration_ms,duration_ratio,"
+        << "onset_signed_error_ms,onset_abs_error_ms,exit_signed_error_ms,exit_abs_error_ms,"
+        << "overlap_ms,spoken_interval_coverage,animation_interval_precision,interval_iou,"
         << "duration_abs_error_ms,duration_signed_error_ms,duration_tolerance_ms,"
         << "duration_within_tolerance,missing,compressed,severely_compressed,stretched,"
         << "first_event_index,last_event_index,"
@@ -2642,6 +2653,23 @@ static std::string runtime_delivery_grade_json(
             : 0.0;
         const double duration_signed_error_ms = (runtime_duration - gold_duration) * 1000.0;
         const double duration_abs_error_ms = std::abs(duration_signed_error_ms);
+        const double onset_signed_error_ms = has_runtime
+            ? (runtime_start - gold.start) * 1000.0 : 0.0;
+        const double exit_signed_error_ms = has_runtime
+            ? (runtime_end - gold.end) * 1000.0 : 0.0;
+        const double onset_abs_error_ms = std::abs(onset_signed_error_ms);
+        const double exit_abs_error_ms = std::abs(exit_signed_error_ms);
+        const double overlap = has_runtime
+            ? std::max(0.0, std::min(runtime_end, gold.end)
+                - std::max(runtime_start, gold.start))
+            : 0.0;
+        const double spoken_interval_coverage = gold_duration > 0.0
+            ? overlap / gold_duration : 0.0;
+        const double animation_interval_precision = runtime_duration > 0.0
+            ? overlap / runtime_duration : 0.0;
+        const double interval_union = gold_duration + runtime_duration - overlap;
+        const double interval_iou = interval_union > 0.0
+            ? overlap / interval_union : 0.0;
         const double duration_tolerance_ms = std::max(80.0, gold_duration * 250.0);
         const bool duration_within_tolerance =
             has_runtime && duration_abs_error_ms <= duration_tolerance_ms;
@@ -2658,6 +2686,18 @@ static std::string runtime_delivery_grade_json(
             && runtime_duration > gold_duration + 0.050
             && duration_ratio > 1.25;
         if (has_runtime) ++measured_word_durations;
+        if (has_runtime)
+        {
+            word_onset_abs_errors_ms.push_back(onset_abs_error_ms);
+            word_onset_signed_errors_ms.push_back(onset_signed_error_ms);
+            word_exit_abs_errors_ms.push_back(exit_abs_error_ms);
+            word_exit_signed_errors_ms.push_back(exit_signed_error_ms);
+        }
+        word_interval_coverages.push_back(spoken_interval_coverage);
+        word_interval_precisions.push_back(animation_interval_precision);
+        word_interval_ious.push_back(interval_iou);
+        if (overlap <= 0.0005) ++zero_overlap_words;
+        if (spoken_interval_coverage < 0.50) ++low_coverage_words;
         if (duration_within_tolerance) ++successful_word_durations;
         if (gold_duration > 0.0)
         {
@@ -2694,6 +2734,10 @@ static std::string runtime_delivery_grade_json(
             << ',' << (has_runtime ? runtime_start : -1.0)
             << ',' << (has_runtime ? runtime_end : -1.0)
             << ',' << runtime_duration * 1000.0 << ',' << duration_ratio
+            << ',' << onset_signed_error_ms << ',' << onset_abs_error_ms
+            << ',' << exit_signed_error_ms << ',' << exit_abs_error_ms
+            << ',' << overlap * 1000.0 << ',' << spoken_interval_coverage
+            << ',' << animation_interval_precision << ',' << interval_iou
             << ',' << duration_abs_error_ms << ',' << duration_signed_error_ms
             << ',' << duration_tolerance_ms << ',' << (duration_within_tolerance ? 1 : 0)
             << ',' << (missing ? 1 : 0) << ',' << (compressed ? 1 : 0)
@@ -2800,6 +2844,57 @@ static std::string runtime_delivery_grade_json(
         << "  \"word_duration_signed_error_mean_ms\": " << mean_ms(word_duration_signed_errors_ms) << ",\n"
         << "  \"word_duration_ratio_mean\": " << mean_ms(word_duration_ratios) << ",\n"
         << "  \"word_duration_ratio_median\": " << percentile_ms(word_duration_ratios, 0.5) << ",\n"
+        << "  \"zero_overlap_words\": " << zero_overlap_words << ",\n"
+        << "  \"low_coverage_words\": " << low_coverage_words << ",\n"
+        << "  \"word_onset_abs_errors_ms\": [";
+    for (size_t index = 0; index < word_onset_abs_errors_ms.size(); ++index)
+    {
+        if (index > 0) out << ',';
+        out << word_onset_abs_errors_ms[index];
+    }
+    out << "],\n"
+        << "  \"word_onset_signed_errors_ms\": [";
+    for (size_t index = 0; index < word_onset_signed_errors_ms.size(); ++index)
+    {
+        if (index > 0) out << ',';
+        out << word_onset_signed_errors_ms[index];
+    }
+    out << "],\n"
+        << "  \"word_exit_abs_errors_ms\": [";
+    for (size_t index = 0; index < word_exit_abs_errors_ms.size(); ++index)
+    {
+        if (index > 0) out << ',';
+        out << word_exit_abs_errors_ms[index];
+    }
+    out << "],\n"
+        << "  \"word_exit_signed_errors_ms\": [";
+    for (size_t index = 0; index < word_exit_signed_errors_ms.size(); ++index)
+    {
+        if (index > 0) out << ',';
+        out << word_exit_signed_errors_ms[index];
+    }
+    out << "],\n"
+        << "  \"word_interval_coverages\": [";
+    for (size_t index = 0; index < word_interval_coverages.size(); ++index)
+    {
+        if (index > 0) out << ',';
+        out << word_interval_coverages[index];
+    }
+    out << "],\n"
+        << "  \"word_interval_precisions\": [";
+    for (size_t index = 0; index < word_interval_precisions.size(); ++index)
+    {
+        if (index > 0) out << ',';
+        out << word_interval_precisions[index];
+    }
+    out << "],\n"
+        << "  \"word_interval_ious\": [";
+    for (size_t index = 0; index < word_interval_ious.size(); ++index)
+    {
+        if (index > 0) out << ',';
+        out << word_interval_ious[index];
+    }
+    out << "],\n"
         << "  \"word_duration_ratios\": [";
     for (size_t index = 0; index < word_duration_ratios.size(); ++index)
     {
@@ -2842,6 +2937,243 @@ static std::string runtime_delivery_grade_json(
         << rate(expected_sentences - missing_sentences, expected_sentences) << "\n"
         << "}\n";
     return out.str();
+}
+
+struct PhoneticPresentationReport
+{
+    std::string Csv;
+    std::string Json;
+};
+
+static PhoneticPresentationReport phonetic_presentation_report(
+    const FOffgridAIAlignedVisemeTrack& track,
+    const std::vector<HandmadeLabel>& gold_visible)
+{
+    constexpr double SampleSeconds = 0.010;
+    constexpr double VisibleWeight = 0.40;
+    constexpr double SaturatedWeight = 0.90;
+    const auto is_vowel = [](const std::string& phone) {
+        static const std::vector<std::string> vowels = {
+            "AA", "AE", "AH", "AO", "AW", "AY", "EH", "ER",
+            "EY", "IH", "IY", "OW", "OY", "UH", "UW"};
+        return std::find(vowels.begin(), vowels.end(), phone) != vowels.end();
+    };
+    const auto is_bilabial = [](const std::string& phone) {
+        return phone == "M" || phone == "B" || phone == "P";
+    };
+
+    std::map<int, const FOffgridAIAlignedVisemeEvent*> events;
+    for (const auto& event : track.Events)
+    {
+        if (!event.bIsRenderable || event.bCanceledByWordHandoff) continue;
+        events[event.EventIndex] = &event;
+    }
+    struct Peak
+    {
+        double Weight = 0.0;
+        double Seconds = 0.0;
+    };
+    std::map<int, Peak> peaks;
+    double track_end = std::max(0.0, static_cast<double>(track.SpeechEndSeconds));
+    for (const auto& event : track.Events)
+        track_end = std::max(track_end, static_cast<double>(event.RenderEndSeconds));
+    for (double seconds = 0.0; seconds <= track_end + 0.0001; seconds += SampleSeconds)
+    {
+        const auto samples = FOffgridAIVisemePerformer::Sample(
+            track, static_cast<float>(seconds), true);
+        for (const auto& sample : samples)
+        {
+            const auto event = events.find(sample.EventIndex);
+            if (event == events.end()
+                || seconds + 0.0005 < event->second->CommitPlaybackSeconds)
+                continue;
+            Peak& peak = peaks[sample.EventIndex];
+            if (sample.SubmittedWeight > peak.Weight)
+            {
+                peak.Weight = sample.SubmittedWeight;
+                peak.Seconds = seconds;
+            }
+        }
+    }
+
+    int vowel_labels = 0;
+    int supported_vowels = 0;
+    int vowel_frames = 0;
+    int vowel_target_dominant_frames = 0;
+    int vowel_same_word_dominant_frames = 0;
+    int vowel_foreign_word_dominant_frames = 0;
+    int low_dominance_vowels = 0;
+    int foreign_intrusion_vowels = 0;
+    int bilabial_labels = 0;
+    int supported_bilabials = 0;
+    int bilabial_frames = 0;
+    int bilabial_target_dominant_frames = 0;
+    int late_bilabial_peaks = 0;
+    std::vector<double> bilabial_peak_errors_ms;
+    int oh_frames = 0;
+    int oh_saturated_frames = 0;
+    int other_vowel_frames = 0;
+    int other_vowel_saturated_frames = 0;
+
+    std::ostringstream csv;
+    csv << "word_index,word,phone,pose,gold_start_sec,gold_end_sec,target_event_index,"
+           "target_peak_weight,target_peak_sec,target_peak_error_ms,total_frames,"
+           "target_visible_frames,target_saturated_frames,target_dominant_frames,"
+           "same_word_dominant_frames,foreign_word_dominant_frames,"
+           "target_visible_rate,target_saturation_rate,target_dominance_rate,"
+           "same_word_dominance_rate,foreign_word_dominance_rate,is_vowel,is_bilabial\n";
+    csv << std::fixed << std::setprecision(6);
+
+    for (const HandmadeLabel& label : gold_visible)
+    {
+        const bool vowel = is_vowel(label.source_phone_base);
+        const bool bilabial = is_bilabial(label.source_phone_base);
+        if (!vowel && !bilabial) continue;
+        if (vowel) ++vowel_labels;
+        if (bilabial) ++bilabial_labels;
+        const auto target = std::find_if(track.Events.begin(), track.Events.end(),
+            [&](const FOffgridAIAlignedVisemeEvent& event) {
+                return event.bIsRenderable && !event.bCanceledByWordHandoff
+                    && event.WordIndex == label.word_index
+                    && event.SourcePhoneIndex == label.source_phone_global_index
+                    && to_std(event.PoseID) == label.pose;
+            });
+        if (target == track.Events.end()) continue;
+        if (vowel) ++supported_vowels;
+        if (bilabial) ++supported_bilabials;
+
+        int total_frames = 0;
+        int target_visible_frames = 0;
+        int target_saturated_frames = 0;
+        int target_dominant_frames = 0;
+        int same_word_dominant_frames = 0;
+        int foreign_word_dominant_frames = 0;
+        for (double seconds = label.start + 0.5 * SampleSeconds;
+             seconds < label.end; seconds += SampleSeconds)
+        {
+            ++total_frames;
+            double target_weight = 0.0;
+            double dominant_weight = 0.0;
+            const FOffgridAIAlignedVisemeEvent* dominant = nullptr;
+            const auto samples = FOffgridAIVisemePerformer::Sample(
+                track, static_cast<float>(seconds), true);
+            for (const auto& sample : samples)
+            {
+                const auto event = events.find(sample.EventIndex);
+                if (event == events.end()
+                    || seconds + 0.0005 < event->second->CommitPlaybackSeconds)
+                    continue;
+                if (sample.EventIndex == target->EventIndex)
+                    target_weight = std::max(
+                        target_weight, static_cast<double>(sample.SubmittedWeight));
+                if (sample.SubmittedWeight > dominant_weight)
+                {
+                    dominant_weight = sample.SubmittedWeight;
+                    dominant = event->second;
+                }
+            }
+            target_visible_frames += target_weight >= VisibleWeight;
+            target_saturated_frames += target_weight >= SaturatedWeight;
+            if (dominant && dominant_weight >= 0.20)
+            {
+                target_dominant_frames += dominant->EventIndex == target->EventIndex;
+                same_word_dominant_frames += dominant->WordIndex == label.word_index;
+                foreign_word_dominant_frames += dominant->WordIndex != label.word_index;
+            }
+        }
+        const auto frame_rate = [&](int frames) {
+            return total_frames > 0
+                ? static_cast<double>(frames) / total_frames : 0.0;
+        };
+        const Peak peak = peaks[target->EventIndex];
+        const double gold_center = 0.5 * (label.start + label.end);
+        const double peak_error_ms = (peak.Seconds - gold_center) * 1000.0;
+        if (vowel)
+        {
+            vowel_frames += total_frames;
+            vowel_target_dominant_frames += target_dominant_frames;
+            vowel_same_word_dominant_frames += same_word_dominant_frames;
+            vowel_foreign_word_dominant_frames += foreign_word_dominant_frames;
+            low_dominance_vowels += frame_rate(target_dominant_frames) < 0.50;
+            foreign_intrusion_vowels += frame_rate(foreign_word_dominant_frames) > 0.25;
+            if (label.source_phone_base == "OW")
+            {
+                oh_frames += total_frames;
+                oh_saturated_frames += target_saturated_frames;
+            }
+            else
+            {
+                other_vowel_frames += total_frames;
+                other_vowel_saturated_frames += target_saturated_frames;
+            }
+        }
+        if (bilabial)
+        {
+            bilabial_frames += total_frames;
+            bilabial_target_dominant_frames += target_dominant_frames;
+            bilabial_peak_errors_ms.push_back(std::abs(peak_error_ms));
+            late_bilabial_peaks += peak_error_ms > 20.0;
+        }
+        csv << label.word_index << ',' << csv_value(label.word) << ','
+            << label.source_phone_base << ',' << label.pose << ','
+            << label.start << ',' << label.end << ',' << target->EventIndex << ','
+            << peak.Weight << ',' << peak.Seconds << ',' << peak_error_ms << ','
+            << total_frames << ',' << target_visible_frames << ','
+            << target_saturated_frames << ',' << target_dominant_frames << ','
+            << same_word_dominant_frames << ',' << foreign_word_dominant_frames << ','
+            << frame_rate(target_visible_frames) << ','
+            << frame_rate(target_saturated_frames) << ','
+            << frame_rate(target_dominant_frames) << ','
+            << frame_rate(same_word_dominant_frames) << ','
+            << frame_rate(foreign_word_dominant_frames) << ','
+            << (vowel ? 1 : 0) << ',' << (bilabial ? 1 : 0) << '\n';
+    }
+
+    const auto rate = [](int numerator, int denominator) {
+        return denominator > 0
+            ? static_cast<double>(numerator) / denominator : 1.0;
+    };
+    std::ostringstream json;
+    json << std::fixed << std::setprecision(6)
+        << "{\n"
+        << "  \"vowel_labels\": " << vowel_labels << ",\n"
+        << "  \"supported_vowels\": " << supported_vowels << ",\n"
+        << "  \"vowel_frames\": " << vowel_frames << ",\n"
+        << "  \"vowel_target_dominant_frames\": " << vowel_target_dominant_frames << ",\n"
+        << "  \"vowel_same_word_dominant_frames\": " << vowel_same_word_dominant_frames << ",\n"
+        << "  \"vowel_foreign_word_dominant_frames\": " << vowel_foreign_word_dominant_frames << ",\n"
+        << "  \"vowel_target_dominance_rate\": "
+        << rate(vowel_target_dominant_frames, vowel_frames) << ",\n"
+        << "  \"vowel_same_word_dominance_rate\": "
+        << rate(vowel_same_word_dominant_frames, vowel_frames) << ",\n"
+        << "  \"vowel_foreign_word_dominance_rate\": "
+        << rate(vowel_foreign_word_dominant_frames, vowel_frames) << ",\n"
+        << "  \"low_dominance_vowels\": " << low_dominance_vowels << ",\n"
+        << "  \"foreign_intrusion_vowels\": " << foreign_intrusion_vowels << ",\n"
+        << "  \"bilabial_labels\": " << bilabial_labels << ",\n"
+        << "  \"supported_bilabials\": " << supported_bilabials << ",\n"
+        << "  \"bilabial_frames\": " << bilabial_frames << ",\n"
+        << "  \"bilabial_target_dominant_frames\": "
+        << bilabial_target_dominant_frames << ",\n"
+        << "  \"bilabial_target_dominance_rate\": "
+        << rate(bilabial_target_dominant_frames, bilabial_frames) << ",\n"
+        << "  \"late_bilabial_peaks\": " << late_bilabial_peaks << ",\n"
+        << "  \"bilabial_peak_abs_errors_ms\": [";
+    for (size_t index = 0; index < bilabial_peak_errors_ms.size(); ++index)
+    {
+        if (index > 0) json << ',';
+        json << bilabial_peak_errors_ms[index];
+    }
+    json << "],\n"
+        << "  \"oh_frames\": " << oh_frames << ",\n"
+        << "  \"oh_saturated_frames\": " << oh_saturated_frames << ",\n"
+        << "  \"oh_saturation_rate\": " << rate(oh_saturated_frames, oh_frames) << ",\n"
+        << "  \"other_vowel_frames\": " << other_vowel_frames << ",\n"
+        << "  \"other_vowel_saturated_frames\": " << other_vowel_saturated_frames << ",\n"
+        << "  \"other_vowel_saturation_rate\": "
+        << rate(other_vowel_saturated_frames, other_vowel_frames) << "\n"
+        << "}\n";
+    return {csv.str(), json.str()};
 }
 
 static std::string viseme_proportion_grade_json(
@@ -4141,6 +4473,14 @@ int main(int argc, char** argv)
                 write_text(
                     case_dir / "runtime_word_delivery.csv",
                     runtime_word_delivery_csv);
+                const auto phonetic_presentation = phonetic_presentation_report(
+                    committed, handmade);
+                write_text(
+                    case_dir / "phonetic_presentation.csv",
+                    phonetic_presentation.Csv);
+                write_text(
+                    case_dir / "phonetic_presentation_grade.json",
+                    phonetic_presentation.Json);
                 std::string viseme_proportion_runs_csv;
                 write_text(case_dir / "viseme_proportion_grade.json",
                     viseme_proportion_grade_json(

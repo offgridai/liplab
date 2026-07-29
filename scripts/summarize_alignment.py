@@ -84,6 +84,14 @@ def main() -> int:
     word_duration_ratios: list[float] = []
     word_duration_abs_errors_ms: list[float] = []
     word_duration_signed_errors_ms: list[float] = []
+    word_interval_coverages: list[float] = []
+    word_interval_precisions: list[float] = []
+    word_interval_ious: list[float] = []
+    word_interval_onset_abs_errors_ms: list[float] = []
+    word_interval_onset_signed_errors_ms: list[float] = []
+    word_interval_exit_abs_errors_ms: list[float] = []
+    word_interval_exit_signed_errors_ms: list[float] = []
+    bilabial_peak_abs_errors_ms: list[float] = []
     sentence_duration_ratios: list[float] = []
     viseme_run_share_errors: list[float] = []
     viseme_boundary_errors: list[float] = []
@@ -114,6 +122,33 @@ def main() -> int:
         word_duration_signed_errors_ms.extend(
             float(value)
             for value in delivery.get("word_duration_signed_errors_ms", [])
+        )
+        word_interval_coverages.extend(
+            float(value) for value in delivery.get("word_interval_coverages", [])
+        )
+        word_interval_precisions.extend(
+            float(value) for value in delivery.get("word_interval_precisions", [])
+        )
+        word_interval_ious.extend(
+            float(value) for value in delivery.get("word_interval_ious", [])
+        )
+        word_interval_onset_abs_errors_ms.extend(
+            float(value) for value in delivery.get("word_onset_abs_errors_ms", [])
+        )
+        word_interval_onset_signed_errors_ms.extend(
+            float(value) for value in delivery.get("word_onset_signed_errors_ms", [])
+        )
+        word_interval_exit_abs_errors_ms.extend(
+            float(value) for value in delivery.get("word_exit_abs_errors_ms", [])
+        )
+        word_interval_exit_signed_errors_ms.extend(
+            float(value) for value in delivery.get("word_exit_signed_errors_ms", [])
+        )
+        phonetic_path = focus_path.parent / "phonetic_presentation_grade.json"
+        phonetic = load_json(phonetic_path) if phonetic_path.exists() else {}
+        bilabial_peak_abs_errors_ms.extend(
+            float(value)
+            for value in phonetic.get("bilabial_peak_abs_errors_ms", [])
         )
         sentence_duration_ratios.extend(
             float(value) for value in delivery.get("sentence_duration_ratios", [])
@@ -158,6 +193,10 @@ def main() -> int:
         detected_speech = load_csv(focus_path.parent / "speech_regions.csv")
         committed_rows = load_csv(focus_path.parent / "committed.csv")
         word_onset_rows = load_csv(focus_path.parent / "word_onset_diagnostics.csv")
+        runtime_word_rows = {
+            int(row["word_index"]): row
+            for row in load_csv(focus_path.parent / "runtime_word_delivery.csv")
+        }
         ownership_words = {
             int(word["word_index"]): word for word in ownership.get("words", [])
         }
@@ -285,6 +324,7 @@ def main() -> int:
                 )
         for word_index, owner in ownership_words.items():
             head = word_heads.get(word_index)
+            interval = runtime_word_rows.get(word_index, {})
             strict_owner = bool(owner.get("runtime_mfa_strict_correct", False))
             head_owner = bool(owner.get("runtime_mfa_first_event_correct", strict_owner))
             planned = int(owner.get("planned_event_count", 0))
@@ -386,6 +426,21 @@ def main() -> int:
                     and signed_error_ms < -START_TOLERANCE_MS
                 ),
                 "start_success": start_success,
+                "runtime_start_sec": interval.get("runtime_start_sec", ""),
+                "runtime_end_sec": interval.get("runtime_end_sec", ""),
+                "onset_signed_error_ms": interval.get(
+                    "onset_signed_error_ms", ""
+                ),
+                "exit_signed_error_ms": interval.get(
+                    "exit_signed_error_ms", ""
+                ),
+                "spoken_interval_coverage": interval.get(
+                    "spoken_interval_coverage", ""
+                ),
+                "animation_interval_precision": interval.get(
+                    "animation_interval_precision", ""
+                ),
+                "interval_iou": interval.get("interval_iou", ""),
             })
 
         region_word_overrun_count = 0
@@ -690,6 +745,8 @@ def main() -> int:
                 delivery.get("severely_compressed_words", 0)
             ),
             "stretched_words": int(delivery.get("stretched_words", 0)),
+            "zero_overlap_words": int(delivery.get("zero_overlap_words", 0)),
+            "low_coverage_words": int(delivery.get("low_coverage_words", 0)),
             "word_duration_ratio_mean": float(
                 delivery.get("word_duration_ratio_mean", 0.0)
             ),
@@ -731,6 +788,39 @@ def main() -> int:
             ),
             "viseme_proportion_severe_words": int(
                 proportion.get("severe_words", 0)
+            ),
+            "phonetic_vowel_frames": int(phonetic.get("vowel_frames", 0)),
+            "phonetic_vowel_target_dominant_frames": int(
+                phonetic.get("vowel_target_dominant_frames", 0)
+            ),
+            "phonetic_vowel_same_word_dominant_frames": int(
+                phonetic.get("vowel_same_word_dominant_frames", 0)
+            ),
+            "phonetic_vowel_foreign_word_dominant_frames": int(
+                phonetic.get("vowel_foreign_word_dominant_frames", 0)
+            ),
+            "phonetic_low_dominance_vowels": int(
+                phonetic.get("low_dominance_vowels", 0)
+            ),
+            "phonetic_foreign_intrusion_vowels": int(
+                phonetic.get("foreign_intrusion_vowels", 0)
+            ),
+            "phonetic_bilabial_frames": int(phonetic.get("bilabial_frames", 0)),
+            "phonetic_bilabial_target_dominant_frames": int(
+                phonetic.get("bilabial_target_dominant_frames", 0)
+            ),
+            "phonetic_late_bilabial_peaks": int(
+                phonetic.get("late_bilabial_peaks", 0)
+            ),
+            "phonetic_oh_frames": int(phonetic.get("oh_frames", 0)),
+            "phonetic_oh_saturated_frames": int(
+                phonetic.get("oh_saturated_frames", 0)
+            ),
+            "phonetic_other_vowel_frames": int(
+                phonetic.get("other_vowel_frames", 0)
+            ),
+            "phonetic_other_vowel_saturated_frames": int(
+                phonetic.get("other_vowel_saturated_frames", 0)
             ),
             "order_violations": int(grade.get("order_violations", 0)),
             "region_boundary_count": len(case_boundaries),
@@ -902,6 +992,63 @@ def main() -> int:
                 animation_onset_error_total, animation_onset_matched, 0.0
             ),
             "tolerance_ms": START_TOLERANCE_MS,
+        },
+        "word_interval_alignment": {
+            "expected": delivery_expected_words,
+            "measured": len(word_interval_onset_abs_errors_ms),
+            "zero_overlap_words": totals("zero_overlap_words"),
+            "low_coverage_words": totals("low_coverage_words"),
+            "spoken_coverage_mean": (
+                statistics.fmean(word_interval_coverages)
+                if word_interval_coverages else 0.0
+            ),
+            "spoken_coverage_median": (
+                statistics.median(word_interval_coverages)
+                if word_interval_coverages else 0.0
+            ),
+            "spoken_coverage_p10": percentile(word_interval_coverages, 0.10),
+            "animation_precision_mean": (
+                statistics.fmean(word_interval_precisions)
+                if word_interval_precisions else 0.0
+            ),
+            "interval_iou_mean": (
+                statistics.fmean(word_interval_ious)
+                if word_interval_ious else 0.0
+            ),
+            "interval_iou_median": (
+                statistics.median(word_interval_ious)
+                if word_interval_ious else 0.0
+            ),
+            "onset_mean_abs_error_ms": (
+                statistics.fmean(word_interval_onset_abs_errors_ms)
+                if word_interval_onset_abs_errors_ms else 0.0
+            ),
+            "onset_p95_abs_error_ms": percentile(
+                word_interval_onset_abs_errors_ms, 0.95
+            ),
+            "onset_max_abs_error_ms": max(
+                word_interval_onset_abs_errors_ms, default=0.0
+            ),
+            "onsets_over_200ms": sum(
+                error > 200.0 for error in word_interval_onset_abs_errors_ms
+            ),
+            "maximum_early_onset_ms": max(
+                (-error for error in word_interval_onset_signed_errors_ms),
+                default=0.0,
+            ),
+            "maximum_late_onset_ms": max(
+                word_interval_onset_signed_errors_ms, default=0.0
+            ),
+            "exit_mean_abs_error_ms": (
+                statistics.fmean(word_interval_exit_abs_errors_ms)
+                if word_interval_exit_abs_errors_ms else 0.0
+            ),
+            "exit_p95_abs_error_ms": percentile(
+                word_interval_exit_abs_errors_ms, 0.95
+            ),
+            "exit_max_abs_error_ms": max(
+                word_interval_exit_abs_errors_ms, default=0.0
+            ),
         },
         "decoded_viseme_alignment": {
             "reference": decoded_viseme_reference,
@@ -1137,6 +1284,49 @@ def main() -> int:
             "robust_boundary_events": presentation_visible_boundary_events,
             "robust_boundary_event_rate": ratio(
                 presentation_visible_boundary_events, presentation_boundary_events
+            ),
+        },
+        "phonetic_presentation": {
+            "vowel_frames": totals("phonetic_vowel_frames"),
+            "vowel_target_dominance_rate": ratio(
+                totals("phonetic_vowel_target_dominant_frames"),
+                totals("phonetic_vowel_frames"),
+            ),
+            "vowel_same_word_dominance_rate": ratio(
+                totals("phonetic_vowel_same_word_dominant_frames"),
+                totals("phonetic_vowel_frames"),
+            ),
+            "vowel_foreign_word_dominance_rate": ratio(
+                totals("phonetic_vowel_foreign_word_dominant_frames"),
+                totals("phonetic_vowel_frames"),
+                0.0,
+            ),
+            "low_dominance_vowels": totals("phonetic_low_dominance_vowels"),
+            "foreign_intrusion_vowels": totals(
+                "phonetic_foreign_intrusion_vowels"
+            ),
+            "bilabial_frames": totals("phonetic_bilabial_frames"),
+            "bilabial_target_dominance_rate": ratio(
+                totals("phonetic_bilabial_target_dominant_frames"),
+                totals("phonetic_bilabial_frames"),
+            ),
+            "bilabial_peak_mean_abs_error_ms": (
+                statistics.fmean(bilabial_peak_abs_errors_ms)
+                if bilabial_peak_abs_errors_ms else 0.0
+            ),
+            "bilabial_peak_p95_abs_error_ms": percentile(
+                bilabial_peak_abs_errors_ms, 0.95
+            ),
+            "late_bilabial_peaks": totals("phonetic_late_bilabial_peaks"),
+            "oh_saturation_rate": ratio(
+                totals("phonetic_oh_saturated_frames"),
+                totals("phonetic_oh_frames"),
+                0.0,
+            ),
+            "other_vowel_saturation_rate": ratio(
+                totals("phonetic_other_vowel_saturated_frames"),
+                totals("phonetic_other_vowel_frames"),
+                0.0,
             ),
         },
         "strict_region_segmentation": {
