@@ -1,305 +1,305 @@
 {
-  "cases": 837,
-  "start_tolerance_ms": 100.0,
-  "region_start": {
-    "expected": 1976,
-    "successful": 1903,
-    "success_rate": 0.9630566801619433,
-    "mean_abs_error_ms": 26.513159412955464
-  },
-  "strict_region_nucleus_alignment": {
-    "expected": 1978,
-    "matched": 1930,
-    "successful": 826,
-    "success_rate": 0.41759352881698686,
-    "tolerance_ms": 50.0,
-    "mean_abs_error_ms": 79.18394041450777
-  },
-  "pause": {
-    "duration_ms": 411160,
-    "leakage_ms": 8489,
-    "clean_rate": 0.9793535363362195
-  },
-  "word_animation_onset": {
-    "expected": 9491,
-    "matched": 9491,
-    "successful": 8786,
-    "success_rate": 0.9257191023074491,
-    "mean_abs_error_ms": 33.57601295484077,
-    "tolerance_ms": 100.0
-  },
-  "word_interval_alignment": {
-    "expected": 9547,
-    "measured": 9542,
-    "zero_overlap_words": 396,
-    "low_coverage_words": 843,
-    "spoken_coverage_mean": 0.7856881772284486,
-    "spoken_coverage_median": 0.843137,
-    "spoken_coverage_p10": 0.549608,
-    "animation_precision_mean": 0.7975093440871478,
-    "interval_iou_mean": 0.6767810835864669,
-    "interval_iou_median": 0.733333,
-    "onset_mean_abs_error_ms": 60.47998323202683,
-    "onset_p95_abs_error_ms": 180.0,
-    "onset_max_abs_error_ms": 1740.0,
-    "onsets_over_200ms": 375,
-    "maximum_early_onset_ms": 1020.0,
-    "maximum_late_onset_ms": 1740.0,
-    "exit_mean_abs_error_ms": 56.575337979459235,
-    "exit_p95_abs_error_ms": 160.0,
-    "exit_max_abs_error_ms": 1750.0
-  },
+  "cases": 841,
   "decoded_viseme_alignment": {
-    "reference": 24408,
-    "matched": 23624,
+    "extra": 1563,
+    "identity_precision": 0.9382603886869963,
+    "identity_recall": 0.9680482536577414,
+    "matched": 23753,
+    "mean_abs_center_error_ms": 19.14421862501579,
     "missing": 784,
-    "extra": 1559,
-    "identity_recall": 0.9678793838085874,
-    "identity_precision": 0.9380931580828337,
-    "mean_abs_center_error_ms": 19.152455003386386
-  },
-  "word_duration": {
-    "expected": 9547,
-    "measured": 9542,
-    "coverage_rate": 0.9994762752697183,
-    "successful": 8353,
-    "success_rate": 0.8749345344087148,
-    "tolerance_rule": "max(80 ms, 25% of MFA word duration)",
-    "missing_words": 5,
-    "compressed_words": 919,
-    "severely_compressed_words": 182,
-    "stretched_words": 860,
-    "mean_abs_error_ms": 57.383143919555884,
-    "median_abs_error_ms": 40.0,
-    "p90_abs_error_ms": 120.0,
-    "p95_abs_error_ms": 170.0,
-    "max_abs_error_ms": 810.0,
-    "mean_signed_error_ms": -19.563409971718865,
-    "median_signed_error_ms": -10.0,
-    "mean_ratio": 1.054200914213889,
-    "median_ratio": 0.975904,
-    "p10_ratio": 0.75,
-    "p90_ratio": 1.444444
-  },
-  "word_region_assignment": {
-    "expected": 9547,
-    "successful": 9439,
-    "success_rate": 0.9886875458259139
-  },
-  "strict_three_level_word_assignment": {
-    "expected": 9547,
-    "successful": 9434,
-    "success_rate": 0.9881638210956322,
-    "failed_cases": 56
-  },
-  "word_region_confusion": {
-    "early_region_thefts": 38,
-    "early_region_theft_cases": 18,
-    "late_region_assignments": 60,
-    "late_region_assignment_cases": 31,
-    "materially_early_intact_words": 75,
-    "materially_early_intact_word_cases": 52,
-    "max_intact_word_lead_ms": 1255.0,
-    "region_word_overruns": 19,
-    "region_word_overrun_cases": 18,
-    "max_region_word_overrun": 6
-  },
-  "guardrails": {
-    "planned_events": 35075,
-    "committed_events": 35075,
-    "event_completion_rate": 1.0,
-    "order_violations": 0,
-    "order_violation_cases": 0
-  },
-  "runtime_delivery": {
-    "planned_candidate_events": 35075,
-    "delivered_events": 35016,
-    "event_delivery_rate": 0.9983178902352102,
-    "late_after_window_events": 0,
-    "late_after_window_cases": 0,
-    "expected_words": 9547,
-    "missing_words": 5,
-    "missing_word_cases": 5,
-    "word_delivery_rate": 0.9994762752697183,
-    "compressed_words": 919,
-    "compressed_word_cases": 532,
-    "word_duration_ratio_mean": 1.054200914213889,
-    "word_duration_ratio_median": 0.975904,
-    "expected_speech_regions": 1978,
-    "empty_speech_regions": 0,
-    "empty_speech_region_cases": 0,
-    "speech_region_delivery_rate": 1.0,
-    "expected_sentences": 1289,
-    "missing_sentences": 0,
-    "missing_sentence_cases": 0,
-    "sentence_delivery_rate": 1.0,
-    "compressed_sentences": 4,
-    "compressed_sentence_cases": 4,
-    "sentence_duration_ratio_mean": 0.9884527501939487,
-    "sentence_duration_ratio_median": 0.991736
-  },
-  "viseme_proportion": {
-    "planned_multi_viseme_words": 9163,
-    "gradeable_words": 8944,
-    "ungradeable_words": 219,
-    "word_coverage_rate": 0.9760995307213794,
-    "zero_runtime_words": 3,
-    "expected_viseme_runs": 33897,
-    "runs_within_10pp": 19338,
-    "runs_within_10pp_rate": 0.5704929639791132,
-    "run_share_abs_error_mean": 0.10873148541168835,
-    "run_share_abs_error_median": 0.083333,
-    "run_share_abs_error_p90": 0.2363232000000001,
-    "boundary_position_abs_error_mean": 0.1161117961768124,
-    "boundary_position_abs_error_median": 0.096565,
-    "boundary_position_abs_error_p90": 0.236842,
-    "word_total_variation_mean": 0.20604153924418603,
-    "word_total_variation_median": 0.1989315,
-    "word_total_variation_p90": 0.3343026,
-    "severe_words": 2733
-  },
-  "presentation_event_visibility": {
-    "eligible_events": 35075,
-    "robust_visible_events": 33756,
-    "robust_visible_event_rate": 0.9623948681397007,
-    "boundary_events": 1703,
-    "robust_boundary_events": 1702,
-    "robust_boundary_event_rate": 0.9994128009395185
-  },
-  "phonetic_presentation": {
-    "vowel_frames": 124771,
-    "vowel_target_dominance_rate": 0.48203508828173214,
-    "vowel_same_word_dominance_rate": 0.6333603160990935,
-    "vowel_foreign_word_dominance_rate": 0.04945059348726868,
-    "low_dominance_vowels": 5060,
-    "foreign_intrusion_vowels": 1080,
-    "bilabial_frames": 19863,
-    "bilabial_target_dominance_rate": 0.5096410411317525,
-    "bilabial_peak_mean_abs_error_ms": 41.93322670931627,
-    "bilabial_peak_p95_abs_error_ms": 145.0,
-    "late_bilabial_peaks": 608,
-    "oh_saturation_rate": 0.2934293429342934,
-    "other_vowel_saturation_rate": 0.3790892538163492
-  },
-  "strict_region_segmentation": {
-    "boundaries": 8710,
-    "exact_boundaries": 8538,
-    "exact_boundary_rate": 0.9802525832376578,
-    "perfect_cases": 722,
-    "perfect_case_rate": 0.8626045400238949,
-    "transcript_mfa_boundary_mismatches": 148,
-    "runtime_mfa_boundary_mismatches": 123,
-    "runtime_transcript_boundary_mismatches": 65
+    "reference": 24537
   },
   "failure_classes": {
-    "pause_boundaries": {
-      "expected": 1141,
-      "missed": 42,
-      "miss_rate": 0.03680981595092025,
-      "missed_cases": 38,
-      "extra": 75,
-      "extra_cases": 65
-    },
-    "pause_presentation": {
-      "material_leakage_threshold_ms": 50,
-      "material_leakage_boundaries": 46,
-      "material_leakage_cases": 43,
-      "majority_hold_lost_boundaries": 12,
-      "majority_hold_lost_cases": 11,
-      "early_resume_boundaries": 29,
-      "early_resume_cases": 24,
-      "hold_failure_boundaries": 85,
-      "hold_failure_cases": 73
-    },
-    "word_ownership": {
-      "split_words": 10,
-      "split_word_cases": 10,
-      "incomplete_words": 0,
-      "incomplete_word_cases": 0
-    },
-    "owned_tail_recovery": {
-      "events": 0,
-      "words": 0,
-      "cases": 0,
-      "compressed_spacing_threshold_ms": 20.0,
-      "compressed_transitions": 0,
-      "compressed_transition_cases": 0,
-      "normal_commit_lead_limit_ms": 160.0,
-      "excessive_lead_events": 0,
-      "excessive_lead_cases": 0,
-      "material_prior_shift_threshold_ms": 150.0,
-      "material_prior_shift_events": 0,
-      "material_prior_shift_cases": 0,
-      "pause_overlap_boundaries": 0,
-      "pause_overlap_cases": 0
+    "by_punctuation": {
+      "colon": {
+        "early_resume_boundaries": 0,
+        "expected_boundaries": 9,
+        "hold_failures": 0,
+        "majority_hold_lost_boundaries": 0,
+        "material_leakage_boundaries": 0,
+        "missed_boundaries": 0,
+        "owned_tail_overlap_boundaries": 0
+      },
+      "hard_stop": {
+        "early_resume_boundaries": 8,
+        "expected_boundaries": 413,
+        "hold_failures": 18,
+        "majority_hold_lost_boundaries": 1,
+        "material_leakage_boundaries": 6,
+        "missed_boundaries": 7,
+        "owned_tail_overlap_boundaries": 0
+      },
+      "list_comma": {
+        "early_resume_boundaries": 6,
+        "expected_boundaries": 218,
+        "hold_failures": 21,
+        "majority_hold_lost_boundaries": 4,
+        "material_leakage_boundaries": 12,
+        "missed_boundaries": 14,
+        "owned_tail_overlap_boundaries": 0
+      },
+      "none": {
+        "early_resume_boundaries": 3,
+        "expected_boundaries": 18,
+        "hold_failures": 9,
+        "majority_hold_lost_boundaries": 0,
+        "material_leakage_boundaries": 5,
+        "missed_boundaries": 2,
+        "owned_tail_overlap_boundaries": 0
+      },
+      "other_comma": {
+        "early_resume_boundaries": 1,
+        "expected_boundaries": 11,
+        "hold_failures": 1,
+        "majority_hold_lost_boundaries": 0,
+        "material_leakage_boundaries": 0,
+        "missed_boundaries": 0,
+        "owned_tail_overlap_boundaries": 0
+      },
+      "semicolon": {
+        "early_resume_boundaries": 0,
+        "expected_boundaries": 8,
+        "hold_failures": 0,
+        "majority_hold_lost_boundaries": 0,
+        "material_leakage_boundaries": 0,
+        "missed_boundaries": 0,
+        "owned_tail_overlap_boundaries": 0
+      },
+      "standard_comma": {
+        "early_resume_boundaries": 11,
+        "expected_boundaries": 466,
+        "hold_failures": 36,
+        "majority_hold_lost_boundaries": 7,
+        "material_leakage_boundaries": 23,
+        "missed_boundaries": 19,
+        "owned_tail_overlap_boundaries": 0
+      }
     },
     "interactions": {
       "missed_pause_and_owned_tail_cases": 0
     },
-    "by_punctuation": {
-      "standard_comma": {
-        "expected_boundaries": 466,
-        "missed_boundaries": 19,
-        "material_leakage_boundaries": 23,
-        "majority_hold_lost_boundaries": 7,
-        "early_resume_boundaries": 11,
-        "owned_tail_overlap_boundaries": 0,
-        "hold_failures": 36
-      },
-      "hard_stop": {
-        "expected_boundaries": 411,
-        "missed_boundaries": 7,
-        "material_leakage_boundaries": 6,
-        "majority_hold_lost_boundaries": 1,
-        "early_resume_boundaries": 8,
-        "owned_tail_overlap_boundaries": 0,
-        "hold_failures": 18
-      },
-      "list_comma": {
-        "expected_boundaries": 218,
-        "missed_boundaries": 14,
-        "material_leakage_boundaries": 12,
-        "majority_hold_lost_boundaries": 4,
-        "early_resume_boundaries": 6,
-        "owned_tail_overlap_boundaries": 0,
-        "hold_failures": 21
-      },
-      "other_comma": {
-        "expected_boundaries": 11,
-        "missed_boundaries": 0,
-        "material_leakage_boundaries": 0,
-        "majority_hold_lost_boundaries": 0,
-        "early_resume_boundaries": 1,
-        "owned_tail_overlap_boundaries": 0,
-        "hold_failures": 1
-      },
-      "none": {
-        "expected_boundaries": 18,
-        "missed_boundaries": 2,
-        "material_leakage_boundaries": 5,
-        "majority_hold_lost_boundaries": 0,
-        "early_resume_boundaries": 3,
-        "owned_tail_overlap_boundaries": 0,
-        "hold_failures": 9
-      },
-      "colon": {
-        "expected_boundaries": 9,
-        "missed_boundaries": 0,
-        "material_leakage_boundaries": 0,
-        "majority_hold_lost_boundaries": 0,
-        "early_resume_boundaries": 0,
-        "owned_tail_overlap_boundaries": 0,
-        "hold_failures": 0
-      },
-      "semicolon": {
-        "expected_boundaries": 8,
-        "missed_boundaries": 0,
-        "material_leakage_boundaries": 0,
-        "majority_hold_lost_boundaries": 0,
-        "early_resume_boundaries": 0,
-        "owned_tail_overlap_boundaries": 0,
-        "hold_failures": 0
-      }
+    "owned_tail_recovery": {
+      "cases": 0,
+      "compressed_spacing_threshold_ms": 20.0,
+      "compressed_transition_cases": 0,
+      "compressed_transitions": 0,
+      "events": 0,
+      "excessive_lead_cases": 0,
+      "excessive_lead_events": 0,
+      "material_prior_shift_cases": 0,
+      "material_prior_shift_events": 0,
+      "material_prior_shift_threshold_ms": 150.0,
+      "normal_commit_lead_limit_ms": 160.0,
+      "pause_overlap_boundaries": 0,
+      "pause_overlap_cases": 0,
+      "words": 0
+    },
+    "pause_boundaries": {
+      "expected": 1143,
+      "extra": 75,
+      "extra_cases": 65,
+      "miss_rate": 0.03674540682414698,
+      "missed": 42,
+      "missed_cases": 38
+    },
+    "pause_presentation": {
+      "early_resume_boundaries": 29,
+      "early_resume_cases": 24,
+      "hold_failure_boundaries": 85,
+      "hold_failure_cases": 73,
+      "majority_hold_lost_boundaries": 12,
+      "majority_hold_lost_cases": 11,
+      "material_leakage_boundaries": 46,
+      "material_leakage_cases": 43,
+      "material_leakage_threshold_ms": 50
+    },
+    "word_ownership": {
+      "incomplete_word_cases": 0,
+      "incomplete_words": 0,
+      "split_word_cases": 10,
+      "split_words": 10
     }
+  },
+  "guardrails": {
+    "committed_events": 35258,
+    "event_completion_rate": 1.0,
+    "order_violation_cases": 0,
+    "order_violations": 0,
+    "planned_events": 35258
+  },
+  "pause": {
+    "clean_rate": 0.9793517261442979,
+    "duration_ms": 412480,
+    "leakage_ms": 8517
+  },
+  "phonetic_presentation": {
+    "bilabial_frames": 19917,
+    "bilabial_peak_mean_abs_error_ms": 41.895177361498604,
+    "bilabial_peak_p95_abs_error_ms": 145.0,
+    "bilabial_target_dominance_rate": 0.5101169854897826,
+    "foreign_intrusion_vowels": 1089,
+    "late_bilabial_peaks": 609,
+    "low_dominance_vowels": 5079,
+    "oh_saturation_rate": 0.2936232208898353,
+    "other_vowel_saturation_rate": 0.3794880162131062,
+    "vowel_foreign_word_dominance_rate": 0.049484733433302494,
+    "vowel_frames": 125372,
+    "vowel_same_word_dominance_rate": 0.6336662093609419,
+    "vowel_target_dominance_rate": 0.48249210349998406
+  },
+  "presentation_event_visibility": {
+    "boundary_events": 1708,
+    "eligible_events": 35258,
+    "robust_boundary_event_rate": 0.9994145199063232,
+    "robust_boundary_events": 1707,
+    "robust_visible_event_rate": 0.9624198763401214,
+    "robust_visible_events": 33933
+  },
+  "region_start": {
+    "expected": 1982,
+    "mean_abs_error_ms": 26.518669525731582,
+    "success_rate": 0.9631685166498486,
+    "successful": 1909
+  },
+  "runtime_delivery": {
+    "compressed_sentence_cases": 4,
+    "compressed_sentences": 4,
+    "compressed_word_cases": 534,
+    "compressed_words": 924,
+    "delivered_events": 35199,
+    "empty_speech_region_cases": 0,
+    "empty_speech_regions": 0,
+    "event_delivery_rate": 0.9983266209087299,
+    "expected_sentences": 1295,
+    "expected_speech_regions": 1984,
+    "expected_words": 9595,
+    "late_after_window_cases": 0,
+    "late_after_window_events": 0,
+    "missing_sentence_cases": 0,
+    "missing_sentences": 0,
+    "missing_word_cases": 5,
+    "missing_words": 5,
+    "planned_candidate_events": 35258,
+    "sentence_delivery_rate": 1.0,
+    "sentence_duration_ratio_mean": 0.9884689289575289,
+    "sentence_duration_ratio_median": 0.991736,
+    "speech_region_delivery_rate": 1.0,
+    "word_delivery_rate": 0.9994788952579469,
+    "word_duration_ratio_mean": 1.0543949796769152,
+    "word_duration_ratio_median": 0.97619
+  },
+  "start_tolerance_ms": 100.0,
+  "strict_region_nucleus_alignment": {
+    "expected": 1984,
+    "matched": 1936,
+    "mean_abs_error_ms": 79.12706869834712,
+    "success_rate": 0.4178427419354839,
+    "successful": 829,
+    "tolerance_ms": 50.0
+  },
+  "strict_region_segmentation": {
+    "boundaries": 8754,
+    "exact_boundaries": 8582,
+    "exact_boundary_rate": 0.9803518391592415,
+    "perfect_case_rate": 0.8632580261593341,
+    "perfect_cases": 726,
+    "runtime_mfa_boundary_mismatches": 123,
+    "runtime_transcript_boundary_mismatches": 65,
+    "transcript_mfa_boundary_mismatches": 148
+  },
+  "strict_three_level_word_assignment": {
+    "expected": 9595,
+    "failed_cases": 56,
+    "success_rate": 0.9882230328295988,
+    "successful": 9482
+  },
+  "viseme_proportion": {
+    "boundary_position_abs_error_mean": 0.11603587853782986,
+    "boundary_position_abs_error_median": 0.096491,
+    "boundary_position_abs_error_p90": 0.236842,
+    "expected_viseme_runs": 34074,
+    "gradeable_words": 8988,
+    "planned_multi_viseme_words": 9209,
+    "run_share_abs_error_mean": 0.10869875253859247,
+    "run_share_abs_error_median": 0.083333,
+    "run_share_abs_error_p90": 0.23626400000000003,
+    "runs_within_10pp": 19441,
+    "runs_within_10pp_rate": 0.570552327287668,
+    "severe_words": 2747,
+    "ungradeable_words": 221,
+    "word_coverage_rate": 0.9760017374307742,
+    "word_total_variation_mean": 0.20604145471740098,
+    "word_total_variation_median": 0.198864,
+    "word_total_variation_p90": 0.33429539999999996,
+    "zero_runtime_words": 3
+  },
+  "word_animation_onset": {
+    "expected": 9539,
+    "matched": 9539,
+    "mean_abs_error_ms": 33.56221203333342,
+    "success_rate": 0.9258832162700493,
+    "successful": 8832,
+    "tolerance_ms": 100.0
+  },
+  "word_duration": {
+    "compressed_words": 924,
+    "coverage_rate": 0.9994788952579469,
+    "expected": 9595,
+    "max_abs_error_ms": 810.0,
+    "mean_abs_error_ms": 57.30660500260552,
+    "mean_ratio": 1.0543949796769152,
+    "mean_signed_error_ms": -19.488470557582072,
+    "measured": 9590,
+    "median_abs_error_ms": 40.0,
+    "median_ratio": 0.97619,
+    "median_signed_error_ms": -10.0,
+    "missing_words": 5,
+    "p10_ratio": 0.75,
+    "p90_abs_error_ms": 120.0,
+    "p90_ratio": 1.4454700000000007,
+    "p95_abs_error_ms": 170.0,
+    "severely_compressed_words": 182,
+    "stretched_words": 865,
+    "success_rate": 0.8752475247524752,
+    "successful": 8398,
+    "tolerance_rule": "max(80 ms, 25% of MFA word duration)"
+  },
+  "word_interval_alignment": {
+    "animation_precision_mean": 0.7974331419489318,
+    "exit_max_abs_error_ms": 1750.0,
+    "exit_mean_abs_error_ms": 56.519486444212724,
+    "exit_p95_abs_error_ms": 160.0,
+    "expected": 9595,
+    "interval_iou_mean": 0.6768340600312662,
+    "interval_iou_median": 0.733333,
+    "low_coverage_words": 846,
+    "maximum_early_onset_ms": 1020.0,
+    "maximum_late_onset_ms": 1740.0,
+    "measured": 9590,
+    "onset_max_abs_error_ms": 1740.0,
+    "onset_mean_abs_error_ms": 60.417101147028156,
+    "onset_p95_abs_error_ms": 180.0,
+    "onsets_over_200ms": 376,
+    "spoken_coverage_mean": 0.7858148939030745,
+    "spoken_coverage_median": 0.843137,
+    "spoken_coverage_p10": 0.55,
+    "zero_overlap_words": 399
+  },
+  "word_region_assignment": {
+    "expected": 9595,
+    "success_rate": 0.9887441375716519,
+    "successful": 9487
+  },
+  "word_region_confusion": {
+    "early_region_theft_cases": 18,
+    "early_region_thefts": 38,
+    "late_region_assignment_cases": 31,
+    "late_region_assignments": 60,
+    "materially_early_intact_word_cases": 52,
+    "materially_early_intact_words": 75,
+    "max_intact_word_lead_ms": 1255.0,
+    "max_region_word_overrun": 6,
+    "region_word_overrun_cases": 18,
+    "region_word_overruns": 19
   }
 }

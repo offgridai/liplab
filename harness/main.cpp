@@ -1434,6 +1434,7 @@ static std::string monotonic_tokens_csv(
         int PunctuationType = 0;
         double Center = -1.0;
         double Duration = 0.020;
+        double TargetConfidence = 0.0;
     };
     std::vector<TokenTarget> targets;
     for (int32 event_index = 0; event_index < plan.Events.Num(); ++event_index)
@@ -1460,6 +1461,7 @@ static std::string monotonic_tokens_csv(
         {
             target.Center = 0.5 * (target.Gold->start + target.Gold->end);
             target.Duration = target.Gold->end - target.Gold->start;
+            target.TargetConfidence = 1.0;
         }
         targets.push_back(target);
     }
@@ -1504,6 +1506,13 @@ static std::string monotonic_tokens_csv(
         const GoldWordTiming* word = gold_word(word_index);
         if (word)
         {
+            if (!targets[index].Gold)
+            {
+                // A pronunciation substitution still has reliable monotonic
+                // timing inside its MFA-aligned word, even though the exact
+                // transcript phone label was not observed by MFA.
+                targets[index].TargetConfidence = 0.5;
+            }
             double target_start = targets[index].Center - 0.5 * targets[index].Duration;
             double target_end = targets[index].Center + 0.5 * targets[index].Duration;
             if (first_in_word) target_start = word->start;
@@ -1595,7 +1604,7 @@ static std::string monotonic_tokens_csv(
         << "phone_global_index,sentence_index,duration_prior_sec,is_vowel,visual_role,text_center_norm,strength,"
         << "is_silence,is_word_start,is_word_end,is_region_start,is_region_end,is_sentence_boundary,is_pause_boundary,"
         << "has_punctuation,punctuation_type,"
-        << "target_center_sec,target_duration_sec,has_mfa_target\n";
+        << "target_center_sec,target_duration_sec,target_confidence\n";
     out << std::fixed << std::setprecision(6);
     for (size_t token_index = 0; token_index < targets.size(); ++token_index)
     {
@@ -1611,7 +1620,8 @@ static std::string monotonic_tokens_csv(
             << (target.IsRegionEnd ? 1 : 0) << ',' << (target.IsSentenceBoundary ? 1 : 0) << ','
             << (target.IsPauseBoundary ? 1 : 0) << ','
             << (target.PunctuationType != 0 ? 1 : 0) << ',' << target.PunctuationType << ','
-            << target.Center << ',' << target.Duration << ',' << (target.Gold ? 1 : 0) << '\n';
+            << target.Center << ',' << target.Duration << ','
+            << target.TargetConfidence << '\n';
     }
     return out.str();
 }

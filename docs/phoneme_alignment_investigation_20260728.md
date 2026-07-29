@@ -35,8 +35,10 @@ validation-loss winner was repeatedly not the decoded-alignment winner.
 
 ## Durable changes
 
-- Interpolated non-silence phone frames retain 10% path-shaping weight but no
-  longer act as full-strength acoustic phone observations.
+- Exact MFA phones have target confidence 1.0. Monotonic pronunciation
+  substitutions bounded by an MFA-aligned word retain 0.5-confidence timing
+  supervision, while wholly unsupported interpolation retains only 10%
+  path-shaping weight. Transcript phone/pose identity remains authoritative.
 - Fine-tuning supports full, acoustic-only, and identity-only modes so accepted
   region/timing behavior can be frozen during controlled experiments.
 - Corpus summaries now include decoded viseme identity recall, precision,

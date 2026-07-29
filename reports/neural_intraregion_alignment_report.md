@@ -134,3 +134,64 @@ the logged pose weights predicts p95 jaw reductions from 0.457/0.405/0.398 to
 0.374/0.325/0.332 and peak reductions from 0.659/0.678/0.509 to
 0.453/0.430/0.444. This is a presentation-layer correction and does not alter
 neural timing or transcript ownership.
+
+## 2026-07-29 v37 Max follow-up
+
+Four v37 priestley2 recordings were imported as cases 0446-0449, expanding the
+approved corpus to 841 cases. The unchanged accepted checkpoint confirms the
+reported residuals. In case 0447, `to` has zero visible overlap and a +220 ms
+onset error; `address` begins +160 ms late. Case 0448 also contains a
+zero-overlap `the` and delayed `property`. The v37 jaw composition remains
+healthy, so these are alignment/occupancy failures rather than jaw summation.
+
+Training and checkpoint selection now measure decoded phone onset, phone exit,
+phone coverage, zero-overlap phones, under-occupied phones, and the same tails
+for supporting/primary key visemes. A phone-balanced interval loss gives brief
+phones one training instance each and weights generic visual role plus word
+entry/exit metadata. The safe phone-interval mode adapts the audio encoder and
+continuous timing columns while freezing transcript phone/pose embeddings and
+the speech-region head.
+
+The first acoustic candidate selected epoch 7. Held-out compact-word onset MAE
+fell from 33.9 to 27.9 ms, compact exit MAE from 32.6 to 28.2 ms, zero-overlap
+phones from 342 to 297, and under-occupied key visemes from 699 to 653. Its
+841-case replay improved region-start MAE from 26.5 to 22.8 ms, onset success
+from 0.926 to 0.935, decoded center MAE from 19.1 to 18.1 ms, duration success
+from 0.875 to 0.884, and split words from 10 to 5. It was not promoted because
+early/late region assignments rose from 38/60 to 40/61 and the motivating
+`to` still had zero overlap while `address` moved to +200 ms.
+
+The planner already classifies comma context as `SoftListPause` or
+`HardBreakPause`, but schema V5 collapses both into one binary neural pause
+feature. A controlled scalar encoding (`list=-1`, `none=0`, `hard=1`) selected
+a trained checkpoint but regressed pause cleanliness, material leaks, split
+words, and strict-perfect cases. Those weights and the runtime encoding were
+rejected. Lexical punctuation presence/type remains active; contextual comma
+class should use dedicated categorical columns in a future schema rather than
+overloading the accepted binary feature.
+
+The focus case also exposes pronunciation-substitution supervision. The
+transcript owns `to = T AH` while MFA observes `T UW`; `address` begins
+transcript `AE` while MFA observes `AH`. Previously both substituted transcript
+vowels were treated as unsupported interpolation. The training export now uses
+confidence 1.0 for exact MFA phones, 0.5 for monotonic substitutions bounded by
+an aligned word, and low path-only weight for unsupported interpolation. This
+affects 1,182 of 35,258 phones (3.35%) and never changes transcript viseme
+identity.
+
+The confidence-aware candidate improved held-out word/compact exit metrics and
+most aggregate scores, but still left `to` at zero overlap, delayed `address`
+to +200 ms, worsened held-out `the/property`, added three late region
+assignments, and caused one missing-sentence delivery. It was rejected. Weight
+blends at 25%, 50%, and 75% likewise failed to recover `to`; 50% and above
+worsened `address`.
+
+The accepted runtime checkpoint therefore remains unchanged. The durable
+result is better corpus coverage, detection, and supervision. The repeated
+failure under direct fine-tuning and weight interpolation supports the earlier
+architecture conclusion: the next model needs an explicit learned
+token-advance/end-of-token hazard conditioned on current and next transcript
+states, acoustic state, elapsed dwell, and punctuation context. That is the
+general neural mechanism capable of ending a short substituted vowel without
+moving the following word; a deterministic minimum duration or phrase rule is
+not justified.

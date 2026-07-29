@@ -38,7 +38,9 @@ constexpr int kFrameMilliseconds = 10;
 constexpr int kStreamingLagFrames = 30;
 constexpr int kForwardSumCadence = 16;
 constexpr float kInterpolatedPhoneWeight = 0.10f;
+constexpr float kWordAlignedPhoneWeight = 0.50f;
 constexpr float kWordIntervalLossWeight = 0.35f;
+constexpr float kPhoneIntervalLossWeight = 0.25f;
 
 struct TokenRow {
     int EventIndex = -1;
@@ -61,7 +63,7 @@ struct TokenRow {
     int PunctuationType = 0;
     float TargetCenter = 0.0f;
     float TargetDuration = 0.02f;
-    float HasMfaTarget = 0.0f;
+    float TargetConfidence = 0.0f;
 };
 
 struct SequenceCase {
@@ -190,7 +192,7 @@ static SequenceCase read_case(const fs::path& case_dir, const std::string& split
             token.PunctuationType = std::stoi(cell(row, header, "punctuation_type"));
             token.TargetCenter = std::stof(cell(row, header, "target_center_sec"));
             token.TargetDuration = std::stof(cell(row, header, "target_duration_sec"));
-            token.HasMfaTarget = std::stof(cell(row, header, "has_mfa_target"));
+            token.TargetConfidence = std::stof(cell(row, header, "target_confidence"));
             result.Tokens.push_back(std::move(token));
         }
     }
@@ -382,16 +384,18 @@ static CaseTensors tensors(const SequenceCase& sequence)
     }
     // A planned token can lack a matching MFA phone when the synthesizer uses
     // a different pronunciation (for example, reduced vowels). Its target
-    // center is then interpolated so the monotonic path remains complete, but
-    // that interpolation is not evidence that the planned phone was present
-    // in the audio. Keep a small path-shaping weight while preventing those
-    // fabricated labels from dominating acoustic phone identity learning.
+    // center is then interpolated so the monotonic path remains complete.
+    // Word-bounded substitutions retain medium-confidence timing evidence;
+    // wholly unsupported interpolation keeps only a small path-shaping weight.
+    // Neither case is allowed to dominate exact MFA phone supervision.
     for (int frame = 0; frame < used_frames; ++frame) {
         const TokenRow& selected = sequence.Tokens[
             static_cast<size_t>(targets[static_cast<size_t>(frame)])];
-        if (selected.HasMfaTarget > 0.5f || selected.IsSilence > 0.5f) continue;
-        frame_weights[static_cast<size_t>(frame)] *= kInterpolatedPhoneWeight;
-        curriculum_frame_weights[static_cast<size_t>(frame)] *= kInterpolatedPhoneWeight;
+        if (selected.TargetConfidence >= 1.0f || selected.IsSilence > 0.5f) continue;
+        const float evidence_weight = selected.TargetConfidence >= 0.5f
+            ? kWordAlignedPhoneWeight : kInterpolatedPhoneWeight;
+        frame_weights[static_cast<size_t>(frame)] *= evidence_weight;
+        curriculum_frame_weights[static_cast<size_t>(frame)] *= evidence_weight;
     }
     result.FrameWeights = torch::from_blob(frame_weights.data(), {used_frames}).clone();
     result.CurriculumFrameWeights = torch::from_blob(
@@ -888,6 +892,53 @@ static torch::Tensor word_interval_loss(
     return torch::stack(weighted_losses).sum() / total_weight;
 }
 
+static torch::Tensor phone_interval_loss(
+    const torch::Tensor& score_tensor,
+    const torch::Tensor& target_tensor,
+    const std::vector<TokenRow>& tokens)
+{
+    const torch::Tensor probability = torch::softmax(score_tensor, 1);
+    std::vector<torch::Tensor> weighted_losses;
+    float total_weight = 0.0f;
+    for (int token = 0; token < static_cast<int>(tokens.size()); ++token) {
+        const TokenRow& row = tokens[static_cast<size_t>(token)];
+        if (row.IsSilence > 0.5f || row.TargetConfidence <= 0.0f) continue;
+        const torch::Tensor token_probability = probability.index({
+            torch::indexing::Slice(), token}).clamp(1.0e-6f, 1.0f - 1.0e-6f);
+        const torch::Tensor positive_mask = target_tensor == token;
+        const torch::Tensor positive_weights = positive_mask.to(torch::kFloat32);
+        torch::Tensor loss = (-torch::log(token_probability) * positive_weights).sum()
+            / positive_weights.sum().clamp_min(1.0f);
+
+        // Contrast a phone only with its immediate transcript neighbors. This
+        // turns each MFA phone into one balanced training example, so a brief
+        // but visually important closure cannot be averaged away by long
+        // vowels or by the rest of the utterance.
+        torch::Tensor negative_mask = torch::zeros_like(positive_mask);
+        if (token > 0)
+            negative_mask = negative_mask | (target_tensor == token - 1);
+        if (token + 1 < static_cast<int>(tokens.size()))
+            negative_mask = negative_mask | (target_tensor == token + 1);
+        const torch::Tensor negative_weights = negative_mask.to(torch::kFloat32);
+        loss = loss + 0.25f
+            * (-torch::log(1.0f - token_probability) * negative_weights).sum()
+            / negative_weights.sum().clamp_min(1.0f);
+
+        // VisualRole is transcript-owned phone metadata, not a phrase rule.
+        // Supporting and primary poses receive more of the finite objective;
+        // word exits receive a small additional weight because late exits are
+        // the direct cause of animation leaking into the following word.
+        float weight = 0.5f + 0.5f * std::clamp(row.VisualRole, 0.0f, 3.0f);
+        weight *= row.TargetConfidence;
+        if (row.IsWordStart > 0.5f) weight *= 1.25f;
+        if (row.IsWordEnd > 0.5f) weight *= 1.50f;
+        weighted_losses.push_back(weight * loss);
+        total_weight += weight;
+    }
+    if (weighted_losses.empty()) return torch::zeros({}, score_tensor.options());
+    return torch::stack(weighted_losses).sum() / total_weight;
+}
+
 struct DecodedValidationMetrics {
     int Words = 0;
     int ZeroOverlapWords = 0;
@@ -899,6 +950,18 @@ struct DecodedValidationMetrics {
     double CompactMeanOnsetAbsErrorMs = 0.0;
     double CompactMeanExitAbsErrorMs = 0.0;
     double CompactMeanCoverage = 0.0;
+    int Phones = 0;
+    int ZeroOverlapPhones = 0;
+    int UnderOccupiedPhones = 0;
+    double MeanPhoneOnsetAbsErrorMs = 0.0;
+    double MeanPhoneExitAbsErrorMs = 0.0;
+    double MeanPhoneCoverage = 0.0;
+    int KeyVisemes = 0;
+    int ZeroOverlapKeyVisemes = 0;
+    int UnderOccupiedKeyVisemes = 0;
+    double MeanKeyVisemeOnsetAbsErrorMs = 0.0;
+    double MeanKeyVisemeExitAbsErrorMs = 0.0;
+    double MeanKeyVisemeCoverage = 0.0;
     double SelectionScore = 0.0;
 };
 
@@ -916,6 +979,12 @@ static DecodedValidationMetrics validation_decoded_metrics(
     double compact_onset_total = 0.0;
     double compact_exit_total = 0.0;
     double compact_coverage_total = 0.0;
+    double phone_onset_total = 0.0;
+    double phone_exit_total = 0.0;
+    double phone_coverage_total = 0.0;
+    double key_onset_total = 0.0;
+    double key_exit_total = 0.0;
+    double key_coverage_total = 0.0;
     for (const SequenceCase& sequence : dataset) {
         if (sequence.Split != "validation") continue;
         CaseTensors row = tensors(sequence);
@@ -972,6 +1041,50 @@ static DecodedValidationMetrics validation_decoded_metrics(
             }
             first = last;
         }
+        for (int token = 0; token < static_cast<int>(sequence.Tokens.size()); ++token) {
+            const TokenRow& token_row = sequence.Tokens[static_cast<size_t>(token)];
+            if (token_row.IsSilence > 0.5f || token_row.TargetConfidence <= 0.0f)
+                continue;
+            int target_first = -1;
+            int target_last = -1;
+            int predicted_first = -1;
+            int predicted_last = -1;
+            for (int frame = 0; frame < static_cast<int>(path.size()); ++frame) {
+                if (target[frame] == token) {
+                    if (target_first < 0) target_first = frame;
+                    target_last = frame;
+                }
+                if (path[static_cast<size_t>(frame)] == token) {
+                    if (predicted_first < 0) predicted_first = frame;
+                    predicted_last = frame;
+                }
+            }
+            if (target_first < 0 || predicted_first < 0) continue;
+            const int overlap = std::max(0,
+                std::min(target_last, predicted_last)
+                    - std::max(target_first, predicted_first) + 1);
+            const int target_frames = target_last - target_first + 1;
+            const int required_visible_frames = std::min(target_frames, 3);
+            const double coverage = static_cast<double>(overlap) / target_frames;
+            const double onset_error = std::abs(predicted_first - target_first)
+                * kFrameMilliseconds;
+            const double exit_error = std::abs(predicted_last - target_last)
+                * kFrameMilliseconds;
+            phone_onset_total += onset_error;
+            phone_exit_total += exit_error;
+            phone_coverage_total += coverage;
+            result.ZeroOverlapPhones += overlap == 0;
+            result.UnderOccupiedPhones += overlap < required_visible_frames;
+            ++result.Phones;
+            if (token_row.VisualRole >= 2.0f) {
+                key_onset_total += onset_error;
+                key_exit_total += exit_error;
+                key_coverage_total += coverage;
+                result.ZeroOverlapKeyVisemes += overlap == 0;
+                result.UnderOccupiedKeyVisemes += overlap < required_visible_frames;
+                ++result.KeyVisemes;
+            }
+        }
     }
     if (result.Words > 0) {
         result.MeanOnsetAbsErrorMs = onset_total / result.Words;
@@ -1000,6 +1113,35 @@ static DecodedValidationMetrics validation_decoded_metrics(
                 + 200.0 * compact_zero_rate;
         }
     }
+    if (result.Phones > 0) {
+        result.MeanPhoneOnsetAbsErrorMs = phone_onset_total / result.Phones;
+        result.MeanPhoneExitAbsErrorMs = phone_exit_total / result.Phones;
+        result.MeanPhoneCoverage = phone_coverage_total / result.Phones;
+        const double zero_rate = static_cast<double>(result.ZeroOverlapPhones)
+            / result.Phones;
+        const double under_occupied_rate =
+            static_cast<double>(result.UnderOccupiedPhones) / result.Phones;
+        result.SelectionScore += 0.35 * (
+            result.MeanPhoneOnsetAbsErrorMs + result.MeanPhoneExitAbsErrorMs)
+            + 80.0 * (1.0 - result.MeanPhoneCoverage)
+            + 150.0 * zero_rate
+            + 200.0 * under_occupied_rate;
+    }
+    if (result.KeyVisemes > 0) {
+        result.MeanKeyVisemeOnsetAbsErrorMs = key_onset_total / result.KeyVisemes;
+        result.MeanKeyVisemeExitAbsErrorMs = key_exit_total / result.KeyVisemes;
+        result.MeanKeyVisemeCoverage = key_coverage_total / result.KeyVisemes;
+        const double zero_rate = static_cast<double>(result.ZeroOverlapKeyVisemes)
+            / result.KeyVisemes;
+        const double under_occupied_rate =
+            static_cast<double>(result.UnderOccupiedKeyVisemes) / result.KeyVisemes;
+        result.SelectionScore += 0.5 * (
+            result.MeanKeyVisemeOnsetAbsErrorMs
+            + result.MeanKeyVisemeExitAbsErrorMs)
+            + 120.0 * (1.0 - result.MeanKeyVisemeCoverage)
+            + 200.0 * zero_rate
+            + 300.0 * under_occupied_rate;
+    }
     return result;
 }
 
@@ -1026,9 +1168,12 @@ static double validation_loss(MonotonicNetwork& model, const std::vector<Sequenc
                 .weight(region_weights).reduction(torch::kSum)) / region_weights.sum();
         const torch::Tensor interval_loss = word_interval_loss(
             scores, row.Target.to(device), sequence.Tokens);
+        const torch::Tensor phone_loss = phone_interval_loss(
+            scores, row.Target.to(device), sequence.Tokens);
         total += (((per_frame * weights).sum() / weights.sum())
             + 0.45f * region_loss
-            + kWordIntervalLossWeight * interval_loss).item<double>();
+            + kWordIntervalLossWeight * interval_loss
+            + kPhoneIntervalLossWeight * phone_loss).item<double>();
         ++count;
     }
     return total / std::max(count, 1);
@@ -1048,6 +1193,8 @@ int main(int argc, char** argv)
             && std::string(argv[3]) == "--identity-finetune";
         const bool word_interval_fine_tuning = fine_tuning && argc > 3
             && std::string(argv[3]) == "--word-interval-finetune";
+        const bool phone_interval_fine_tuning = fine_tuning && argc > 3
+            && std::string(argv[3]) == "--phone-interval-finetune";
         std::vector<SequenceCase> dataset = read_dataset(root);
 #ifdef _WIN32
         _putenv_s("CUBLAS_WORKSPACE_CONFIG", ":4096:8");
@@ -1061,10 +1208,10 @@ int main(int argc, char** argv)
         if (fine_tuning) {
             load_runtime_checkpoint(initial_checkpoint, model);
             if (acoustic_fine_tuning || identity_fine_tuning
-                || word_interval_fine_tuning) {
+                || word_interval_fine_tuning || phone_interval_fine_tuning) {
                 for (torch::Tensor parameter : model->parameters())
                     parameter.set_requires_grad(false);
-                if (acoustic_fine_tuning) {
+                if (acoustic_fine_tuning || phone_interval_fine_tuning) {
                     for (torch::Tensor parameter : model->AudioConv1->parameters())
                         parameter.set_requires_grad(true);
                     for (torch::Tensor parameter : model->AudioConv2->parameters())
@@ -1079,6 +1226,7 @@ int main(int argc, char** argv)
             std::cout << (full_fine_tuning ? "Full fine-tuning from "
                 : acoustic_fine_tuning ? "Acoustic fine-tuning from "
                 : identity_fine_tuning ? "Identity fine-tuning from "
+                : phone_interval_fine_tuning ? "Phone-interval fine-tuning from "
                 : word_interval_fine_tuning ? "Word-interval fine-tuning from "
                 : "Fine-tuning from ")
                 << initial_checkpoint << '\n';
@@ -1094,7 +1242,7 @@ int main(int argc, char** argv)
         torch::optim::AdamW optimizer(model->parameters(),
             torch::optim::AdamWOptions(
                 (full_fine_tuning || acoustic_fine_tuning || identity_fine_tuning
-                    || word_interval_fine_tuning)
+                    || word_interval_fine_tuning || phone_interval_fine_tuning)
                     ? 1.0e-4 : 0.001)
                 .weight_decay(fine_tuning ? 0.0 : 5.0e-4));
         std::vector<size_t> training_indices;
@@ -1166,11 +1314,13 @@ int main(int argc, char** argv)
                 torch::Tensor loss = frame_loss + 0.45f * region_loss;
                 loss = loss + kWordIntervalLossWeight * word_interval_loss(
                     scores, row.Target.to(device), dataset[index].Tokens);
+                loss = loss + kPhoneIntervalLossWeight * phone_interval_loss(
+                    scores, row.Target.to(device), dataset[index].Tokens);
                 if (apply_forward_sum)
                     loss = loss + 0.25f * forward_sum_loss(scores, dataset[index].Tokens);
                 optimizer.zero_grad();
                 loss.backward();
-                if (word_interval_fine_tuning) {
+                if (word_interval_fine_tuning || phone_interval_fine_tuning) {
                     torch::Tensor gradient = model->TokenLinear1->weight.grad();
                     // Adapt only continuous timing, silence, word-boundary,
                     // and punctuation semantics. Phone and pose embeddings
@@ -1214,7 +1364,18 @@ int main(int argc, char** argv)
                 << " compact_onset_ms=" << decoded.CompactMeanOnsetAbsErrorMs
                 << " compact_exit_ms=" << decoded.CompactMeanExitAbsErrorMs
                 << " compact_coverage=" << decoded.CompactMeanCoverage
-                << " compact_zero_overlap=" << decoded.CompactZeroOverlapWords << '\n';
+                << " compact_zero_overlap=" << decoded.CompactZeroOverlapWords
+                << " phones=" << decoded.Phones
+                << " phone_onset_ms=" << decoded.MeanPhoneOnsetAbsErrorMs
+                << " phone_exit_ms=" << decoded.MeanPhoneExitAbsErrorMs
+                << " phone_coverage=" << decoded.MeanPhoneCoverage
+                << " phone_under_occupied=" << decoded.UnderOccupiedPhones
+                << " key_visemes=" << decoded.KeyVisemes
+                << " key_onset_ms=" << decoded.MeanKeyVisemeOnsetAbsErrorMs
+                << " key_exit_ms=" << decoded.MeanKeyVisemeExitAbsErrorMs
+                << " key_coverage=" << decoded.MeanKeyVisemeCoverage
+                << " key_under_occupied=" << decoded.UnderOccupiedKeyVisemes
+                << '\n';
             if (decoded.SelectionScore + 1.0e-4 < best_selection_score) {
                 best_validation = validation;
                 best_decoded = decoded;
@@ -1238,6 +1399,7 @@ int main(int argc, char** argv)
             : full_fine_tuning ? "full"
             : acoustic_fine_tuning ? "acoustic"
             : identity_fine_tuning ? "identity"
+            : phone_interval_fine_tuning ? "phone_interval"
             : word_interval_fine_tuning ? "word_interval"
             : "new_token_features";
         std::ofstream out(report);
@@ -1252,6 +1414,8 @@ int main(int argc, char** argv)
             << (fine_tuning_mode == "new_token_features" ? "true" : "false") << ",\n"
             << "  \"interpolated_phone_frame_weight\": "
             << kInterpolatedPhoneWeight << ",\n"
+            << "  \"word_aligned_substitution_frame_weight\": "
+            << kWordAlignedPhoneWeight << ",\n"
             << "  \"selected_epoch\": " << best_epoch << ",\n"
             << "  \"validation_cross_entropy\": " << best_validation << ",\n"
             << "  \"validation_decoded_selection_score\": "
@@ -1275,8 +1439,34 @@ int main(int argc, char** argv)
             << best_decoded.CompactMeanExitAbsErrorMs << ",\n"
             << "  \"validation_decoded_compact_spoken_coverage\": "
             << best_decoded.CompactMeanCoverage << ",\n"
+            << "  \"validation_decoded_phone_count\": "
+            << best_decoded.Phones << ",\n"
+            << "  \"validation_decoded_zero_overlap_phones\": "
+            << best_decoded.ZeroOverlapPhones << ",\n"
+            << "  \"validation_decoded_under_occupied_phones\": "
+            << best_decoded.UnderOccupiedPhones << ",\n"
+            << "  \"validation_decoded_phone_onset_mae_ms\": "
+            << best_decoded.MeanPhoneOnsetAbsErrorMs << ",\n"
+            << "  \"validation_decoded_phone_exit_mae_ms\": "
+            << best_decoded.MeanPhoneExitAbsErrorMs << ",\n"
+            << "  \"validation_decoded_phone_spoken_coverage\": "
+            << best_decoded.MeanPhoneCoverage << ",\n"
+            << "  \"validation_decoded_key_viseme_count\": "
+            << best_decoded.KeyVisemes << ",\n"
+            << "  \"validation_decoded_zero_overlap_key_visemes\": "
+            << best_decoded.ZeroOverlapKeyVisemes << ",\n"
+            << "  \"validation_decoded_under_occupied_key_visemes\": "
+            << best_decoded.UnderOccupiedKeyVisemes << ",\n"
+            << "  \"validation_decoded_key_viseme_onset_mae_ms\": "
+            << best_decoded.MeanKeyVisemeOnsetAbsErrorMs << ",\n"
+            << "  \"validation_decoded_key_viseme_exit_mae_ms\": "
+            << best_decoded.MeanKeyVisemeExitAbsErrorMs << ",\n"
+            << "  \"validation_decoded_key_viseme_spoken_coverage\": "
+            << best_decoded.MeanKeyVisemeCoverage << ",\n"
             << "  \"word_interval_loss_weight\": "
             << kWordIntervalLossWeight << ",\n"
+            << "  \"phone_interval_loss_weight\": "
+            << kPhoneIntervalLossWeight << ",\n"
             << "  \"forward_sum_weight\": 0.25,\n"
             << "  \"forward_sum_cadence\": " << kForwardSumCadence << ",\n"
             << "  \"streaming_lag_ms\": " << kStreamingLagFrames * kFrameMilliseconds << ",\n"
