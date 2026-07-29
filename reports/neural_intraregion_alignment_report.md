@@ -116,3 +116,21 @@ assignment failure. The remaining standalone-`I` weakness is detected by the
 new metric but is not yet safely improved by the present model architecture.
 It should be addressed by the explicit learned token-advance hazard described
 above, rather than by a word-specific timing override.
+
+## Jaw composition reconciliation
+
+Fresh v36 logs showed jaw peaks of 0.659, 0.678, and 0.509. These were not
+authored by any single active pose. FaceDriver additively accumulated the
+central jaw control from every coarticulating pose; for example, the open
+`18_Uh` contribution remained strong while `22_MBP` was dominant, leaving the
+jaw at 0.509 during a required lip closure.
+
+The v37 host composition keeps all neural pose identities and weights intact,
+but treats the central jaw as one physical degree of freedom: it follows the
+strongest weighted authored jaw target rather than summing targets. The
+existing dominant-articulation rule now also attenuates residual jaw opening
+under bilabial authority. Isolated poses are bit-for-bit unchanged. Replaying
+the logged pose weights predicts p95 jaw reductions from 0.457/0.405/0.398 to
+0.374/0.325/0.332 and peak reductions from 0.659/0.678/0.509 to
+0.453/0.430/0.444. This is a presentation-layer correction and does not alter
+neural timing or transcript ownership.
