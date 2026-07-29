@@ -46,7 +46,7 @@ For example, two transcripts, two voices, and three seeds produce twelve WAVs:
 
 ```bat
 python scripts\generate_speech_library.py ^
-  --lines-json inputs\library_lines.json ^
+  --lines-json C:\path\to\library_lines.json ^
   --voice-json priestley=C:\git\qwen3-tts-cpp-streaming\reference\priestley_0.6b_f16.json ^
   --voice-json lana=C:\git\qwen3-tts-cpp-streaming\reference\lana_0.6b_f16.json ^
   --seeds 41,42,43
