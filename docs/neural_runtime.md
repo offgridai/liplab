@@ -68,17 +68,22 @@ exclamation mark, colon, semicolon, dash, or other. These features describe the
 transcript boundary, never timing: acoustic evidence and the causal neural path
 still decide whether and when a pause occurs.
 
-The accepted 776-case checkpoint currently scores:
+The planner also retains `SoftListPause` versus `HardBreakPause` as diagnostic
+metadata. V5 does not encode that contextual class separately: a controlled
+scalar-overload experiment regressed pause and region behavior and was rejected.
+A future schema should add dedicated categorical columns rather than changing
+the meaning of the accepted binary pause feature.
 
-- region-start success 0.9724, 19.6 ms mean absolute error;
-- pause cleanliness 0.9800;
-- word-animation-onset success 0.9313, 31.3 ms mean absolute error;
-- performed word-duration success 0.8632, 59.4 ms mean and 40.0 ms median
-  absolute error, with a 0.968 median runtime/MFA duration ratio;
-- runtime event delivery 0.9982 and word delivery 0.9993;
-- within-word run-share median error 8.33 percentage points, boundary-position
-  median error 9.77 percentage points, and word-level duration total-variation
-  median 19.91%.
+The accepted 841-case checkpoint currently scores:
+
+- region-start success 0.963, 26.5 ms mean absolute error;
+- pause cleanliness 0.979;
+- word-animation-onset success 0.926, 33.6 ms mean absolute error;
+- performed word-duration success 0.875, 57.3 ms mean and 40.0 ms median
+  absolute error;
+- runtime event completion 1.000 and word-region assignment 0.989;
+- decoded viseme recall 0.968, precision 0.938, and 19.1 ms center MAE;
+- presentation visibility 0.962 and no incomplete words.
 
 The generated JSON contains full counts, coverage, and mean/median/tail values.
 These figures are descriptive; `docs/grade_baseline.json` and
@@ -90,6 +95,10 @@ uses short 45 ms attack/release edges and sustains the neural state through its
 predicted interior, while neural speech-region clamps still prevent animation
 from crossing confirmed pauses. Training extends the first and last token target
 to MFA word boundaries and weights both word-entry and word-exit transitions.
+Phone-balanced training and selection additionally grade phone/key-viseme onset,
+exit, coverage, zero overlap, and under-occupancy. Word-bounded pronunciation
+substitutions carry medium-confidence timing evidence without replacing the
+transcript-owned phone or pose.
 
 ## Offgrid host boundary
 

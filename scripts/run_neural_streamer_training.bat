@@ -4,6 +4,8 @@ cd /d "%~dp0\.."
 
 set "TORCH_ROOT=C:\aitoolkit\libtorch-2.13.0-cu130"
 if not "%~1"=="" set "TORCH_ROOT=%~1"
+set "FINE_TUNE_MODE="
+if not "%~2"=="" set "FINE_TUNE_MODE=%~2"
 set "VS_DEV_CMD=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
 set "CMAKE_EXE=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
 set "ARTIFACT_DIR=outputs\runs\neural_streamer_artifacts\current"
@@ -56,7 +58,7 @@ if errorlevel 1 exit /b 1
 
 echo [phase] train_curriculum
 set "PATH=%TORCH_ROOT%\lib;%PATH%"
-build-torch\liplab_monotonic_aligner_torch.exe . "%NEURAL_MODEL%"
+build-torch\liplab_monotonic_aligner_torch.exe . "%NEURAL_MODEL%" %FINE_TUNE_MODE%
 if errorlevel 1 exit /b 1
 
 if not exist "%ARTIFACT_DIR%" mkdir "%ARTIFACT_DIR%"

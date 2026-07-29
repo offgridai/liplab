@@ -42,6 +42,16 @@ checks = [
         "max_word_onset_mae_ms_increase",
     ),
     (
+        "word_interval_alignment.spoken_coverage_mean",
+        "min",
+        "max_word_interval_coverage_drop",
+    ),
+    (
+        "word_interval_alignment.onset_p95_abs_error_ms",
+        "max",
+        "max_word_interval_onset_p95_ms_increase",
+    ),
+    (
         "decoded_viseme_alignment.identity_recall",
         "min",
         "max_decoded_viseme_identity_recall_drop",
@@ -95,6 +105,21 @@ checks = [
         "min",
         "max_presentation_robust_boundary_event_rate_drop",
     ),
+    (
+        "phonetic_presentation.vowel_target_dominance_rate",
+        "min",
+        "max_vowel_target_dominance_drop",
+    ),
+    (
+        "phonetic_presentation.vowel_foreign_word_dominance_rate",
+        "max",
+        "max_vowel_foreign_dominance_increase",
+    ),
+    (
+        "phonetic_presentation.bilabial_peak_mean_abs_error_ms",
+        "max",
+        "max_bilabial_peak_mae_ms_increase",
+    ),
 ]
 
 failed = False
@@ -127,6 +152,20 @@ region_confusion_checks = [
     ),
 ]
 for metric, tolerance_name in region_confusion_checks:
+    actual = float(value(summary, metric))
+    accepted = float(value(baseline, metric))
+    limit = accepted + float(thresholds[tolerance_name])
+    if actual > limit:
+        print(f"FAIL {metric}: actual={actual:.6f} limit={limit:.6f}")
+        failed = True
+
+interval_tail_checks = [
+    ("word_interval_alignment.zero_overlap_words", "max_zero_overlap_words_increase"),
+    ("word_interval_alignment.low_coverage_words", "max_low_coverage_words_increase"),
+    ("word_interval_alignment.onsets_over_200ms", "max_onsets_over_200ms_increase"),
+    ("phonetic_presentation.late_bilabial_peaks", "max_late_bilabial_peaks_increase"),
+]
+for metric, tolerance_name in interval_tail_checks:
     actual = float(value(summary, metric))
     accepted = float(value(baseline, metric))
     limit = accepted + float(thresholds[tolerance_name])

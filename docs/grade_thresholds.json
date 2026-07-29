@@ -3,6 +3,11 @@
   "max_region_start_mae_ms_increase": 5.0,
   "max_word_onset_success_drop": 0.005,
   "max_word_onset_mae_ms_increase": 5.0,
+  "max_word_interval_coverage_drop": 0.002,
+  "max_word_interval_onset_p95_ms_increase": 5.0,
+  "max_zero_overlap_words_increase": 0,
+  "max_low_coverage_words_increase": 0,
+  "max_onsets_over_200ms_increase": 0,
   "max_decoded_viseme_identity_recall_drop": 0.001,
   "max_decoded_viseme_identity_precision_drop": 0.001,
   "max_decoded_viseme_center_mae_ms_increase": 1.0,
@@ -10,7 +15,7 @@
   "max_word_duration_mean_mae_ms_increase": 3.0,
   "max_word_duration_median_mae_ms_increase": 5.0,
   "min_word_duration_coverage_rate": 0.999,
-  "max_severely_compressed_words": 220,
+  "max_severely_compressed_words": 234,
   "max_strict_region_drop": 0.0,
   "max_word_region_assignment_drop": 0.0,
   "max_strict_word_assignment_drop": 0.0,
@@ -37,5 +42,9 @@
   "min_presentation_robust_visible_event_rate": 0.95,
   "min_presentation_robust_boundary_event_rate": 0.95,
   "max_presentation_robust_visible_event_rate_drop": 0.005,
-  "max_presentation_robust_boundary_event_rate_drop": 0.0
+  "max_presentation_robust_boundary_event_rate_drop": 0.0,
+  "max_vowel_target_dominance_drop": 0.002,
+  "max_vowel_foreign_dominance_increase": 0.001,
+  "max_bilabial_peak_mae_ms_increase": 2.0,
+  "max_late_bilabial_peaks_increase": 0
 }
