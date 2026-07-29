@@ -1430,6 +1430,8 @@ static std::string monotonic_tokens_csv(
         bool IsRegionStart = false;
         bool IsRegionEnd = false;
         bool IsSentenceBoundary = false;
+        bool IsPauseBoundary = false;
+        int PunctuationType = 0;
         double Center = -1.0;
         double Duration = 0.020;
     };
@@ -1561,6 +1563,16 @@ static std::string monotonic_tokens_csv(
             silence.SentenceIndex = targets[index + 1].SentenceIndex;
             silence.IsSentenceBoundary =
                 targets[index].SentenceIndex != targets[index + 1].SentenceIndex;
+            const int32 PreviousWordIndex = targets[index].WordIndex;
+            silence.IsPauseBoundary =
+                plan.WordBoundaryPauseClassAfter.IsValidIndex(PreviousWordIndex)
+                && plan.WordBoundaryPauseClassAfter[PreviousWordIndex]
+                    != EOffgridAIBoundaryPauseClass::None;
+            if (plan.WordBoundaryPunctuationTypesAfter.IsValidIndex(PreviousWordIndex))
+            {
+                silence.PunctuationType = static_cast<int>(
+                    plan.WordBoundaryPunctuationTypesAfter[PreviousWordIndex]);
+            }
             if (silence.IsSentenceBoundary) silence.DurationPrior = 0.120;
             silence.IsRegionEnd = targets[index].IsRegionEnd;
             silence.IsRegionStart = targets[index + 1].IsRegionStart;
@@ -1569,6 +1581,11 @@ static std::string monotonic_tokens_csv(
         const double last_end = targets.back().Center + 0.5 * targets.back().Duration;
         TokenTarget trailing = silence_target(last_end + 0.050, 0.100, 1.0);
         trailing.IsRegionEnd = true;
+        if (plan.WordBoundaryPunctuationTypesAfter.IsValidIndex(targets.back().WordIndex))
+        {
+            trailing.PunctuationType = static_cast<int>(
+                plan.WordBoundaryPunctuationTypesAfter[targets.back().WordIndex]);
+        }
         sequence.push_back(std::move(trailing));
     }
     targets = std::move(sequence);
@@ -1576,7 +1593,8 @@ static std::string monotonic_tokens_csv(
     std::ostringstream out;
     out << "schema_version,token_index,event_index,pose,phone_base,word_index,phone_index_in_word,"
         << "phone_global_index,sentence_index,duration_prior_sec,is_vowel,visual_role,text_center_norm,strength,"
-        << "is_silence,is_word_start,is_word_end,is_region_start,is_region_end,is_sentence_boundary,"
+        << "is_silence,is_word_start,is_word_end,is_region_start,is_region_end,is_sentence_boundary,is_pause_boundary,"
+        << "has_punctuation,punctuation_type,"
         << "target_center_sec,target_duration_sec,has_mfa_target\n";
     out << std::fixed << std::setprecision(6);
     for (size_t token_index = 0; token_index < targets.size(); ++token_index)
@@ -1591,6 +1609,8 @@ static std::string monotonic_tokens_csv(
             << (target.IsSilence ? 1 : 0) << ',' << (target.IsWordStart ? 1 : 0) << ','
             << (target.IsWordEnd ? 1 : 0) << ',' << (target.IsRegionStart ? 1 : 0) << ','
             << (target.IsRegionEnd ? 1 : 0) << ',' << (target.IsSentenceBoundary ? 1 : 0) << ','
+            << (target.IsPauseBoundary ? 1 : 0) << ','
+            << (target.PunctuationType != 0 ? 1 : 0) << ',' << target.PunctuationType << ','
             << target.Center << ',' << target.Duration << ',' << (target.Gold ? 1 : 0) << '\n';
     }
     return out.str();
@@ -3243,6 +3263,147 @@ static std::string presentation_motion_grade_json(
     return out.str();
 }
 
+struct PresentationVisibilityReport
+{
+    std::string Csv;
+    std::string Json;
+};
+
+static PresentationVisibilityReport presentation_event_visibility_report(
+    const FOffgridAIAlignedVisemeTrack& track)
+{
+    constexpr double frame_seconds = 1.0 / 30.0;
+    constexpr int phase_count = 3;
+    constexpr float visible_weight = 0.20f;
+    constexpr int minimum_visible_frames = 2;
+
+    struct PhaseStats
+    {
+        double peak = 0.0;
+        int frames_above = 0;
+    };
+    struct EventStats
+    {
+        const FOffgridAICommittedVisemeEvent* event = nullptr;
+        std::array<PhaseStats, phase_count> phases{};
+        double region_start_offset_ms = 0.0;
+    };
+
+    std::map<int32, EventStats> stats;
+    double end_seconds = std::max(0.0, static_cast<double>(track.SpeechEndSeconds));
+    for (const auto& event : track.Events)
+    {
+        if (!event.bIsRenderable || event.bCanceledByWordHandoff
+            || event.PoseID.IsNone())
+            continue;
+        EventStats row;
+        row.event = &event;
+        for (const auto& region : track.SpeechRegions)
+        {
+            if (region.SpeechRegionIndex != event.SpeechRegionIndex) continue;
+            row.region_start_offset_ms = 1000.0 * (
+                static_cast<double>(event.FinalRenderCenterSeconds)
+                - static_cast<double>(region.StartSeconds));
+            break;
+        }
+        stats[event.EventIndex] = row;
+        end_seconds = std::max(
+            end_seconds,
+            static_cast<double>(event.FinalRenderCenterSeconds) + 0.300);
+    }
+
+    for (int phase = 0; phase < phase_count; ++phase)
+    {
+        FOffgridAILipsyncPoseRuntimeState displayed;
+        const double phase_seconds = phase * frame_seconds / phase_count;
+        for (double seconds = phase_seconds; seconds <= end_seconds + 0.0001;
+             seconds += frame_seconds)
+        {
+            const auto samples = FOffgridAIVisemePerformer::Sample(
+                track, static_cast<float>(seconds), true);
+            const auto target =
+                FOffgridAIVisemePerformer::BuildPoseStateFromSamples(samples);
+            displayed = FOffgridAIVisemePerformer::StepDisplayedPose(
+                displayed,
+                target,
+                static_cast<float>(frame_seconds),
+                0.035f,
+                false);
+            TMap<FName, float> displayed_pose_map;
+            FOffgridAIVisemePerformer::BuildPoseWeightMapFromState(
+                displayed_pose_map, displayed);
+            for (const auto& sample : samples)
+            {
+                auto found = stats.find(sample.EventIndex);
+                if (found == stats.end()) continue;
+                const double weight = displayed_pose_map.FindRef(sample.PoseID);
+                PhaseStats& phase_stats = found->second.phases[phase];
+                phase_stats.peak = std::max(phase_stats.peak, weight);
+                if (weight >= visible_weight) ++phase_stats.frames_above;
+            }
+        }
+    }
+
+    int robust_visible = 0;
+    int boundary_events = 0;
+    int robust_boundary_events = 0;
+    std::ostringstream csv;
+    csv << "event_index,pose,word,center,region_start_offset_ms,"
+           "min_peak_face_driver,min_frames_above_020,min_ms_above_020,"
+           "visible_phase_count,robust_visible\n";
+    for (const auto& pair : stats)
+    {
+        const EventStats& row = pair.second;
+        double minimum_peak = std::numeric_limits<double>::infinity();
+        int minimum_frames = std::numeric_limits<int>::max();
+        int visible_phases = 0;
+        for (const PhaseStats& phase : row.phases)
+        {
+            minimum_peak = std::min(minimum_peak, phase.peak);
+            minimum_frames = std::min(minimum_frames, phase.frames_above);
+            if (phase.peak >= visible_weight
+                && phase.frames_above >= minimum_visible_frames)
+                ++visible_phases;
+        }
+        const bool is_robust = visible_phases == phase_count;
+        if (is_robust) ++robust_visible;
+        const bool is_boundary = row.region_start_offset_ms <= 60.0;
+        if (is_boundary)
+        {
+            ++boundary_events;
+            if (is_robust) ++robust_boundary_events;
+        }
+        csv << pair.first << ','
+            << to_std(row.event->PoseID) << ','
+            << csv_value(to_std(row.event->SourceWord)) << ','
+            << std::fixed << std::setprecision(6)
+            << row.event->FinalRenderCenterSeconds << ','
+            << std::setprecision(3) << row.region_start_offset_ms << ','
+            << std::setprecision(6) << minimum_peak << ','
+            << minimum_frames << ','
+            << std::setprecision(3) << minimum_frames * frame_seconds * 1000.0 << ','
+            << visible_phases << ',' << (is_robust ? 1 : 0) << '\n';
+    }
+
+    std::ostringstream json;
+    json << std::fixed << std::setprecision(6)
+        << "{\n"
+        << "  \"sample_rate_hz\": 30.0,\n"
+        << "  \"phase_count\": " << phase_count << ",\n"
+        << "  \"eligible_event_count\": " << stats.size() << ",\n"
+        << "  \"robust_visible_event_count\": " << robust_visible << ",\n"
+        << "  \"robust_visible_event_rate\": "
+        << (stats.empty() ? 1.0
+            : static_cast<double>(robust_visible) / stats.size()) << ",\n"
+        << "  \"boundary_event_count\": " << boundary_events << ",\n"
+        << "  \"robust_boundary_event_count\": " << robust_boundary_events << ",\n"
+        << "  \"robust_boundary_event_rate\": "
+        << (boundary_events == 0 ? 1.0
+            : static_cast<double>(robust_boundary_events) / boundary_events) << "\n"
+        << "}\n";
+    return {csv.str(), json.str()};
+}
+
 static std::string region_ownership_grade_json(
     const FOffgridAIAlignedVisemeTrack& track,
     const FOffgridAITextVisemePlan& plan,
@@ -3921,6 +4082,9 @@ int main(int argc, char** argv)
             write_text(case_dir / "region_drop_diagnostics.csv", region_drop_diagnostics_csv(committed, speech));
             write_text(case_dir / "presentation_motion_grade.json",
                 presentation_motion_grade_json(committed));
+            const auto visibility = presentation_event_visibility_report(committed);
+            write_text(case_dir / "presentation_event_visibility.csv", visibility.Csv);
+            write_text(case_dir / "presentation_event_visibility_grade.json", visibility.Json);
             if (output.write_detailed_diagnostics)
             {
                 write_text(case_dir / "commit_decisions.csv", commit_decisions_csv(committed));

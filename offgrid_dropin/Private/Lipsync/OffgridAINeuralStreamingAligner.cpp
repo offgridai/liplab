@@ -96,6 +96,10 @@ bool FOffgridAINeuralStreamingAligner::Begin(
     NextInputFrame = 0;
     NextCommitFrame = 0;
     LastAssignedToken = INDEX_NONE;
+    PendingBoundaryCommitFrame = INDEX_NONE;
+    PendingBoundaryState = INDEX_NONE;
+    PendingBoundaryPauseToken = INDEX_NONE;
+    ResolvedBoundaryPauseToken = INDEX_NONE;
     bHasCommittedTrack = false;
     bFinalized = false;
     SpeechRegions.Reset();
@@ -304,7 +308,8 @@ void FOffgridAINeuralStreamingAligner::DecodeFrame(
     Backtrace.push_back(Record);
 
     const int32 CurrentFrame = static_cast<int32>(Backtrace.size()) - 1;
-    if (CurrentFrame >= FixedLagFrames && NextCommitFrame <= CurrentFrame - FixedLagFrames)
+    while (CurrentFrame >= FixedLagFrames
+        && NextCommitFrame <= CurrentFrame - FixedLagFrames)
     {
         int32 State = BacktrackToFrame(BestCurrentToken(), NextCommitFrame);
         if (LastAssignedToken >= 0)
@@ -323,6 +328,78 @@ void FOffgridAINeuralStreamingAligner::DecodeFrame(
         const bool bObservedPauseEvidence = bObservedNearFutureRegion
             || !bInSpeech
             || QuietCandidateStartFrame != INDEX_NONE;
+        int32 PostBoundaryWordCount = 0;
+        int32 LastPostBoundaryWord = INDEX_NONE;
+        for (int32 Candidate = State; Candidate < Transcript.NumTokens(); ++Candidate)
+        {
+            if (Candidate > State
+                && Transcript.SilenceTokens.IsValidIndex(Candidate)
+                && Transcript.SilenceTokens[Candidate]
+                && Transcript.HardPauseBoundaryTokens.IsValidIndex(Candidate)
+                && Transcript.HardPauseBoundaryTokens[Candidate])
+            {
+                break;
+            }
+            if (!Transcript.SilenceTokens.IsValidIndex(Candidate)
+                || Transcript.SilenceTokens[Candidate]
+                || !Transcript.WordIndices.IsValidIndex(Candidate)
+                || Transcript.WordIndices[Candidate] < 0
+                || Transcript.WordIndices[Candidate] == LastPostBoundaryWord)
+            {
+                continue;
+            }
+            LastPostBoundaryWord = Transcript.WordIndices[Candidate];
+            ++PostBoundaryWordCount;
+            if (PostBoundaryWordCount >= 2)
+                break;
+        }
+        const bool bStartsMultiWordClause = PostBoundaryWordCount >= 2;
+        const bool bCrossingUnconfirmedPauseBoundary =
+            !bObservedPauseEvidence
+            && bStartsMultiWordClause
+            && State > 0
+            && Transcript.SilenceTokens.IsValidIndex(State)
+            && !Transcript.SilenceTokens[State]
+            && Transcript.SilenceTokens.IsValidIndex(State - 1)
+            && Transcript.SilenceTokens[State - 1]
+            && Transcript.PauseBoundaryTokens.IsValidIndex(State - 1)
+            && Transcript.PauseBoundaryTokens[State - 1]
+            && Transcript.HardPauseBoundaryTokens.IsValidIndex(State - 1)
+            && Transcript.HardPauseBoundaryTokens[State - 1]
+            && Transcript.PunctuationTypeTokens.IsValidIndex(State - 1)
+            && Transcript.PunctuationTypeTokens[State - 1]
+                == EOffgridAIPunctuationType::Comma
+            && State - 1 != ResolvedBoundaryPauseToken;
+        if (PendingBoundaryCommitFrame == NextCommitFrame)
+        {
+            if (!bObservedPauseEvidence
+                && CurrentFrame - NextCommitFrame < BoundaryCommitLagFrames)
+            {
+                return;
+            }
+            if (!bObservedPauseEvidence && PendingBoundaryState != INDEX_NONE)
+            {
+                // No acoustic pause appeared during the bounded hold. Preserve
+                // the original fixed-lag decision instead of allowing later
+                // evidence to drag a fluent post-comma word forward.
+                State = PendingBoundaryState;
+                ResolvedBoundaryPauseToken = PendingBoundaryPauseToken;
+            }
+            PendingBoundaryCommitFrame = INDEX_NONE;
+            PendingBoundaryState = INDEX_NONE;
+            PendingBoundaryPauseToken = INDEX_NONE;
+        }
+        else if (bCrossingUnconfirmedPauseBoundary
+            && CurrentFrame - NextCommitFrame < BoundaryCommitLagFrames)
+        {
+            PendingBoundaryCommitFrame = NextCommitFrame;
+            PendingBoundaryState = State;
+            PendingBoundaryPauseToken = State - 1;
+            // Do not make the first post-punctuation pose irrevocable in the
+            // last frame before a quiet candidate becomes visible. Hold the
+            // snapshot for at most three frames while inference continues.
+            return;
+        }
         if (bObservedPauseEvidence
             && Transcript.SilenceTokens.IsValidIndex(State)
             && !Transcript.SilenceTokens[State])
@@ -544,6 +621,23 @@ void FOffgridAINeuralStreamingAligner::FinishToken(
         0.0f,
         FMath::Min(FirstSec - 0.005f,
             CenterSec - 0.5f * MinimumVisibleEnvelopeSec));
+    // HH is timing-only in the neural transcript. Represent its visible jaw/lip
+    // opening by beginning the following vowel's single committed envelope
+    // early, preserving one scheduler and the accepted token topology.
+    const int32 PlannedPhoneIndex = Planned.SourcePhoneGlobalIndex;
+    const bool bAnticipatesLeadingH = PlannedPhoneIndex > 0
+        && TextPlan->ExpectedPhones.IsValidIndex(PlannedPhoneIndex)
+        && TextPlan->ExpectedPhones.IsValidIndex(PlannedPhoneIndex - 1)
+        && TextPlan->ExpectedPhones[PlannedPhoneIndex].bIsVowel
+        && TextPlan->ExpectedPhones[PlannedPhoneIndex - 1].WordIndex == Planned.WordIndex
+        && TextPlan->ExpectedPhones[PlannedPhoneIndex - 1].BasePhone == TEXT("HH");
+    if (bAnticipatesLeadingH)
+    {
+        constexpr float HCoarticulationAttackSec = 0.090f;
+        Event.RenderStartSeconds = FMath::Min(
+            Event.RenderStartSeconds,
+            FMath::Max(0.0f, CenterSec - HCoarticulationAttackSec));
+    }
     const float BaseRenderEndSec = FMath::Max(
         FMath::Max(Event.RenderStartSeconds + 0.010f, LastSec + 0.005f),
         CenterSec + 0.5f * MinimumVisibleEnvelopeSec);

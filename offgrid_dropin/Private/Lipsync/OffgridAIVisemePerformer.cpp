@@ -121,6 +121,22 @@ static float EventWeightAt(
     AttackStart = FMath::Max(AttackStart, RegionStartSeconds);
     ReleaseEnd = FMath::Min(ReleaseEnd, RegionEndSeconds);
 
+    // A region-entry pose can have its attack side almost completely removed
+    // by the acoustic onset clamp.  Leave the pause gate intact, but give that
+    // pose enough post-onset runway to survive a 30 Hz game tick plus the
+    // displayed-pose attack filter.  This is deliberately one-sided: it never
+    // anticipates speech or leaks animation into the preceding pause.
+    constexpr float RegionEntryWindowSec = 0.060f;
+    constexpr float RegionEntryPresentationSec = 0.120f;
+    if (Center - RegionStartSeconds <= RegionEntryWindowSec)
+    {
+        ReleaseEnd = FMath::Max(
+            ReleaseEnd,
+            FMath::Min(
+                RegionStartSeconds + RegionEntryPresentationSec,
+                RegionEndSeconds));
+    }
+
     if (PlaybackSeconds < AttackStart || PlaybackSeconds > ReleaseEnd)
     {
         return 0.0f;
@@ -132,6 +148,11 @@ static float EventWeightAt(
     // look rushed. Restrict easing to short presentation edges and sustain the
     // state through the neural interior. Centers, ordering, and pause clamps
     // remain unchanged.
+    // Supporting articulators use lower planner strengths. With the same long
+    // easing edge as a full-strength vowel, much of their already-small target
+    // can remain below the face-driver visibility threshold. Reach and leave
+    // the intended low-amplitude pose a little faster without increasing its
+    // magnitude or broadening the committed timing window.
     constexpr float PresentationEdgeSec = 0.045f;
     const float AttackEnd = FMath::Min(Center, AttackStart + PresentationEdgeSec);
     const float ReleaseStart = FMath::Max(Center, ReleaseEnd - PresentationEdgeSec);
@@ -179,17 +200,39 @@ TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const 
         const float W = EventWeightAt(
             E, Prev, Next, PlaybackSeconds, RegionStartSeconds, RegionEndSeconds);
         if (W <= 0.012f) continue;
-        FOffgridAISubmittedVisemeSample S;
-        S.EventIndex = E.EventIndex;
-        S.PoseID = E.PoseID;
-        S.SourceWord = E.SourceWord;
-        S.PlaybackSeconds = PlaybackSeconds;
-        S.CommittedRenderStartSeconds = E.RenderStartSeconds;
-        S.CommittedRenderCenterSeconds = E.FinalRenderCenterSeconds;
-        S.CommittedRenderEndSeconds = E.RenderEndSeconds;
-        S.SubmittedWeight = FMath::Clamp(W, 0.0f, 1.0f);
-        S.SourceStrength = E.Strength;
-        Out.Add(S);
+        auto AddSample = [&Out, &E, PlaybackSeconds](FName PoseID, float Weight)
+        {
+            if (PoseID.IsNone() || Weight <= 0.012f) return;
+            FOffgridAISubmittedVisemeSample S;
+            S.EventIndex = E.EventIndex;
+            S.PoseID = PoseID;
+            S.SourceWord = E.SourceWord;
+            S.PlaybackSeconds = PlaybackSeconds;
+            S.CommittedRenderStartSeconds = E.RenderStartSeconds;
+            S.CommittedRenderCenterSeconds = E.FinalRenderCenterSeconds;
+            S.CommittedRenderEndSeconds = E.RenderEndSeconds;
+            S.SubmittedWeight = FMath::Clamp(Weight, 0.0f, 1.0f);
+            S.SourceStrength = E.Strength;
+            Out.Add(S);
+        };
+        if (E.SourcePhoneBase == FName(TEXT("AW")))
+        {
+            // AW is visibly dynamic (/a/ -> /w/). Derive its terminal rounding
+            // from the same committed event instead of adding a second neural
+            // token, which would perturb alignment and word ownership.
+            const float Phase = FMath::Clamp(
+                (PlaybackSeconds - E.RenderStartSeconds)
+                / FMath::Max(E.RenderEndSeconds - E.RenderStartSeconds, 0.001f),
+                0.0f,
+                1.0f);
+            const float RoundAlpha = SmoothStep01((Phase - 0.35f) / 0.40f);
+            AddSample(E.PoseID, W * (1.0f - 0.78f * RoundAlpha));
+            AddSample(FName(TEXT("12_Ww-Oo-")), W * RoundAlpha);
+        }
+        else
+        {
+            AddSample(E.PoseID, W);
+        }
     }
     // Neighboring gestures remain simultaneously available. The display
     // solver below supplies inertia, so coarticulation no longer depends on a
@@ -281,13 +324,19 @@ FOffgridAILipsyncPoseRuntimeState FOffgridAIVisemePerformer::StepDisplayedPose(
         float ReleaseMs = 64.0f;
         if (PoseID == ClosedPose)
         {
-            AttackMs = 18.0f;
-            ReleaseMs = 46.0f;
+            // Bilabial closure is a contact landmark: reach it decisively and
+            // clear it before the following vowel can visually reopen it.
+            AttackMs = 12.0f;
+            ReleaseMs = 36.0f;
         }
         else if (PoseID == FName(TEXT("12_Ww-Oo-"))
             || PoseID == FName(TEXT("20_FV"))
             || PoseID == FName(TEXT("21_FV-Ee-"))
-            || PoseID == FName(TEXT("24_Tongue_Th")))
+            || PoseID == FName(TEXT("24_Tongue_Th"))
+            || PoseID == FName(TEXT("23_Tongue_LNTDS"))
+            || PoseID == FName(TEXT("13_KGY_TDS"))
+            || PoseID == FName(TEXT("01_TDS-Ah-"))
+            || PoseID == FName(TEXT("14_ChJjSh")))
         {
             AttackMs = 24.0f;
             ReleaseMs = 54.0f;
@@ -297,8 +346,10 @@ FOffgridAILipsyncPoseRuntimeState FOffgridAIVisemePerformer::StepDisplayedPose(
             || PoseID == FName(TEXT("11_Oo"))
             || PoseID == FName(TEXT("17_Rr")))
         {
-            AttackMs = 48.0f;
-            ReleaseMs = 86.0f;
+            // Rounded nuclei were reaching a high eventual weight but too
+            // gradually to read as a distinct lip funnel in short words.
+            AttackMs = 30.0f;
+            ReleaseMs = 60.0f;
         }
 
         const float CurrentWeight = Current.PoseWeights.FindRef(PoseID);

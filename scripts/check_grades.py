@@ -41,6 +41,21 @@ checks = [
         "max",
         "max_word_onset_mae_ms_increase",
     ),
+    (
+        "decoded_viseme_alignment.identity_recall",
+        "min",
+        "max_decoded_viseme_identity_recall_drop",
+    ),
+    (
+        "decoded_viseme_alignment.identity_precision",
+        "min",
+        "max_decoded_viseme_identity_precision_drop",
+    ),
+    (
+        "decoded_viseme_alignment.mean_abs_center_error_ms",
+        "max",
+        "max_decoded_viseme_center_mae_ms_increase",
+    ),
     ("word_duration.success_rate", "min", "max_word_duration_success_drop"),
     (
         "word_duration.mean_abs_error_ms",
@@ -54,12 +69,32 @@ checks = [
     ),
     ("strict_region_segmentation.exact_boundary_rate", "min", "max_strict_region_drop"),
     (
+        "word_region_assignment.success_rate",
+        "min",
+        "max_word_region_assignment_drop",
+    ),
+    (
         "strict_three_level_word_assignment.success_rate",
         "min",
         "max_strict_word_assignment_drop",
     ),
     ("pause.clean_rate", "min", "max_pause_clean_drop"),
     ("guardrails.event_completion_rate", "min", "max_event_completion_drop"),
+    (
+        "runtime_delivery.compressed_sentences",
+        "max",
+        "max_compressed_sentences_increase",
+    ),
+    (
+        "presentation_event_visibility.robust_visible_event_rate",
+        "min",
+        "max_presentation_robust_visible_event_rate_drop",
+    ),
+    (
+        "presentation_event_visibility.robust_boundary_event_rate",
+        "min",
+        "max_presentation_robust_boundary_event_rate_drop",
+    ),
 ]
 
 failed = False
@@ -70,6 +105,32 @@ for metric, direction, tolerance_name in checks:
     limit = accepted - tolerance if direction == "min" else accepted + tolerance
     ok = actual >= limit if direction == "min" else actual <= limit
     if not ok:
+        print(f"FAIL {metric}: actual={actual:.6f} limit={limit:.6f}")
+        failed = True
+
+region_confusion_checks = [
+    (
+        "word_region_confusion.early_region_thefts",
+        "max_early_region_thefts_increase",
+    ),
+    (
+        "word_region_confusion.late_region_assignments",
+        "max_late_region_assignments_increase",
+    ),
+    (
+        "word_region_confusion.materially_early_intact_words",
+        "max_materially_early_intact_words_increase",
+    ),
+    (
+        "word_region_confusion.max_intact_word_lead_ms",
+        "max_intact_word_lead_ms_increase",
+    ),
+]
+for metric, tolerance_name in region_confusion_checks:
+    actual = float(value(summary, metric))
+    accepted = float(value(baseline, metric))
+    limit = accepted + float(thresholds[tolerance_name])
+    if actual > limit:
         print(f"FAIL {metric}: actual={actual:.6f} limit={limit:.6f}")
         failed = True
 
@@ -134,11 +195,6 @@ delivery_checks = [
         "max_missing_sentences",
         "max",
     ),
-    (
-        "runtime_delivery.compressed_sentences",
-        "max_compressed_sentences",
-        "max",
-    ),
 ]
 for metric, threshold_name, direction in delivery_checks:
     actual = float(value(summary, metric))
@@ -180,6 +236,23 @@ for metric, threshold_name, direction in proportion_checks:
     limit = float(thresholds[threshold_name])
     ok = actual >= limit if direction == "min" else actual <= limit
     if not ok:
+        print(f"FAIL {metric}: actual={actual:.6f} limit={limit:.6f}")
+        failed = True
+
+visibility_checks = [
+    (
+        "presentation_event_visibility.robust_visible_event_rate",
+        "min_presentation_robust_visible_event_rate",
+    ),
+    (
+        "presentation_event_visibility.robust_boundary_event_rate",
+        "min_presentation_robust_boundary_event_rate",
+    ),
+]
+for metric, threshold_name in visibility_checks:
+    actual = float(value(summary, metric))
+    limit = float(thresholds[threshold_name])
+    if actual < limit:
         print(f"FAIL {metric}: actual={actual:.6f} limit={limit:.6f}")
         failed = True
 

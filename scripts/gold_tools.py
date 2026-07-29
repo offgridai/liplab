@@ -34,6 +34,16 @@ def find_runner() -> pathlib.Path:
 
 def run_runner(buffer_ms: int, chunk_ms: int) -> int:
     exe = find_runner()
+    checkpoint = (
+        ROOT
+        / "offgrid_dropin"
+        / "Private"
+        / "Lipsync"
+        / "Models"
+        / "OffgridAINeuralStreamerV5.bin"
+    )
+    if not checkpoint.exists():
+        raise SystemExit(f"neural checkpoint not found: {checkpoint}")
     cmd = [
         str(exe),
         str(ROOT),
@@ -41,6 +51,8 @@ def run_runner(buffer_ms: int, chunk_ms: int) -> int:
         str(buffer_ms),
         "--chunk-ms",
         str(chunk_ms),
+        "--neural-checkpoint",
+        str(checkpoint),
     ]
     return subprocess.call(cmd)
 
@@ -115,6 +127,10 @@ def stage_mfa_corpus(cases: list[str], corpus_root: pathlib.Path) -> None:
         (corpus_root / f"{case_id}.lab").write_text(
             normalize_spoken_numbers(transcript) + "\n",
             encoding="utf-8",
+        )
+        shutil.copy2(
+            ROOT / "inputs" / "wav" / f"{case_id}.wav",
+            corpus_root / f"{case_id}.wav",
         )
 
 
@@ -453,6 +469,23 @@ def build_mfa_alignment_dictionary(cases: list[str], output_path: pathlib.Path) 
                 continue
             unresolved.append(word)
 
+    # Let MFA choose among reviewed pronunciations for deliberately novel
+    # dialogue terms instead of rejecting the complete utterance when one
+    # grapheme fallback disagrees with the synthesized realization.
+    pronunciation_overrides = {
+        "humordium": [
+            "HH Y UW1 M AO1 R D IY0 AH0 M",
+            "HH Y UW1 M ER0 D IY0 AH0 M",
+            "HH AH0 M AO1 R D IY0 AH0 M",
+        ],
+    }
+    for word, pronunciations in pronunciation_overrides.items():
+        if word not in selected:
+            continue
+        for pronunciation in pronunciations:
+            if pronunciation not in selected[word]:
+                selected[word].append(pronunciation)
+
     lines: list[str] = []
     for word in sorted(selected):
         for pronunciation in selected[word]:
@@ -507,10 +540,12 @@ def run_mfa_align(cases: list[str], output_root: pathlib.Path, num_jobs: int) ->
             str(generated_dictionary),
             str(mfa_acoustic_model_path()),
             str(output_root),
-            "--audio_directory",
-            str(ROOT / "inputs" / "wav"),
             "--clean",
             "--single_speaker",
+            "--beam",
+            "100",
+            "--retry_beam",
+            "400",
             "--num_jobs",
             str(max(num_jobs, 1)),
         ]
@@ -527,10 +562,12 @@ def run_mfa_align(cases: list[str], output_root: pathlib.Path, num_jobs: int) ->
             str(generated_dictionary),
             str(mfa_acoustic_model_path()),
             str(output_root),
-            "--audio_directory",
-            str(ROOT / "inputs" / "wav"),
             "--clean",
             "--single_speaker",
+            "--beam",
+            "100",
+            "--retry_beam",
+            "400",
             "--num_jobs",
             str(max(num_jobs, 1)),
         ]

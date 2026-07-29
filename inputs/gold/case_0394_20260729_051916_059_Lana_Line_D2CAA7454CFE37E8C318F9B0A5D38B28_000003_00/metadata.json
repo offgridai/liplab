@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "case_id": "case_0394_20260729_051916_059_Lana_Line_D2CAA7454CFE37E8C318F9B0A5D38B28_000003_00",
+  "exported_utc": "2026-07-29T13:29:41.020115+00:00",
+  "approval": {
+    "status": "approved_gold",
+    "reviewed": true,
+    "reviewer": "auto_mfa_phone_export",
+    "reviewed_utc": "2026-07-29T13:29:40.441973+00:00"
+  },
+  "review_layers": {
+    "speech_regions": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "word_heads": {
+      "status": "reviewed_boundary",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    },
+    "dense_visemes": {
+      "status": "reviewed_dense",
+      "reviewed": true,
+      "reviewer": "auto_mfa_phone_export"
+    }
+  },
+  "reviewer": "auto_mfa_phone_export",
+  "source_draft": "outputs/gold_drafts/case_0394_20260729_051916_059_Lana_Line_D2CAA7454CFE37E8C318F9B0A5D38B28_000003_00",
+  "summary": {
+    "word_count": 17,
+    "speech_region_count": 2,
+    "pause_boundary_count": 16,
+    "pause_region_break_count": 1,
+    "word_head_count": 17,
+    "viseme_count": 71,
+    "flag_count": 1,
+    "flags_by_kind": {
+      "speech_regions_split_on_pause_boundaries": 1
+    },
+    "commit_reasons": {
+      "mfa_phone_interval": 71
+    },
+    "alignment_reasons": {
+      "mfa_textgrid_phone": 71
+    },
+    "mapped_to_observed_speech_count": 71
+  }
+}
