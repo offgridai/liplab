@@ -940,11 +940,13 @@ static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FStr
         AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("14_ChJjSh"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.42f, TEXT("cmu_affricate_sibilant"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
-    // HH borrows the following vowel's visible shape. It remains a complete
-    // timing/acoustic phone but does not create an independent jaw-open target.
+    // /h/ has no independent oral constriction, but it is not visually silent:
+    // the jaw and lips are already forming the following vowel while air flows.
+    // Keep HH timing-only so it does not add a state to the accepted neural
+    // topology. FinishToken gives the following vowel an anticipatory attack.
     if (Base == TEXT("HH"))
     {
-        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("08_Ah"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.0f, TEXT("cmu_hh_timing_waypoint"), LocalOrder, PhoneIndex, Phone, Base, EOffgridAIVisualPhoneRole::Coarticulated, false);
+        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("08_Ah"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.0f, TEXT("cmu_hh_vowel_coarticulation_source"), LocalOrder, PhoneIndex, Phone, Base, EOffgridAIVisualPhoneRole::Coarticulated, false);
         return false;
     }
 

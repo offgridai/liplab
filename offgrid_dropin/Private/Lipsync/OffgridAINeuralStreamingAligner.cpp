@@ -621,6 +621,23 @@ void FOffgridAINeuralStreamingAligner::FinishToken(
         0.0f,
         FMath::Min(FirstSec - 0.005f,
             CenterSec - 0.5f * MinimumVisibleEnvelopeSec));
+    // HH is timing-only in the neural transcript. Represent its visible jaw/lip
+    // opening by beginning the following vowel's single committed envelope
+    // early, preserving one scheduler and the accepted token topology.
+    const int32 PlannedPhoneIndex = Planned.SourcePhoneGlobalIndex;
+    const bool bAnticipatesLeadingH = PlannedPhoneIndex > 0
+        && TextPlan->ExpectedPhones.IsValidIndex(PlannedPhoneIndex)
+        && TextPlan->ExpectedPhones.IsValidIndex(PlannedPhoneIndex - 1)
+        && TextPlan->ExpectedPhones[PlannedPhoneIndex].bIsVowel
+        && TextPlan->ExpectedPhones[PlannedPhoneIndex - 1].WordIndex == Planned.WordIndex
+        && TextPlan->ExpectedPhones[PlannedPhoneIndex - 1].BasePhone == TEXT("HH");
+    if (bAnticipatesLeadingH)
+    {
+        constexpr float HCoarticulationAttackSec = 0.090f;
+        Event.RenderStartSeconds = FMath::Min(
+            Event.RenderStartSeconds,
+            FMath::Max(0.0f, CenterSec - HCoarticulationAttackSec));
+    }
     const float BaseRenderEndSec = FMath::Max(
         FMath::Max(Event.RenderStartSeconds + 0.010f, LastSec + 0.005f),
         CenterSec + 0.5f * MinimumVisibleEnvelopeSec);
