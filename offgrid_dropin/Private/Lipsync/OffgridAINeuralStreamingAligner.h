@@ -41,6 +41,10 @@ private:
     // reservoir. A 350 ms backtrace was accurate offline but committed most
     // poses after their attack window had already begun at runtime.
     static constexpr int32 FixedLagFrames = 30;
+    // Crossing a transcript pause fence is the one irreversible decision that
+    // can change observed-region ownership. Wait three additional 10 ms frames
+    // while that crossing is unresolved; ordinary commits retain 300 ms lag.
+    static constexpr int32 BoundaryCommitLagFrames = 33;
     struct FBacktraceFrame
     {
         float CenterSec = 0.0f;
@@ -92,6 +96,10 @@ private:
     int32 NextInputFrame = 0;
     int32 NextCommitFrame = 0;
     int32 LastAssignedToken = INDEX_NONE;
+    int32 PendingBoundaryCommitFrame = INDEX_NONE;
+    int32 PendingBoundaryState = INDEX_NONE;
+    int32 PendingBoundaryPauseToken = INDEX_NONE;
+    int32 ResolvedBoundaryPauseToken = INDEX_NONE;
     bool bHasCommittedTrack = false;
     bool bFinalized = false;
     bool bCheckpointLoaded = false;

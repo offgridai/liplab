@@ -17,6 +17,13 @@ The priority scores are:
 5. `strict_three_level_word_assignment`: all planned events for a word are
    committed, remain in one neural region, and map to the word's MFA region.
 
+Word-to-region ownership is also an explicit non-regression gate independent of
+region-start timing. The gate protects the direct assignment success rate and
+the counts of early-region thefts, late-region assignments, materially early
+intact words, and the worst intact-word lead. This prevents a severe isolated
+ownership error from disappearing inside otherwise good aggregate onset or
+region-start scores.
+
 Comprehensive mean and median errors expose both aggregate outliers and typical
 behavior. Region matching is monotonic and overlap-aware so a missed pause does
 not shift all later comparisons.

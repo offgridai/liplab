@@ -21,6 +21,21 @@ enum class EOffgridAIBoundaryPauseClass : uint8
     HardBreakPause,
 };
 
+// Lexical punctuation identity carried into the neural transcript tensor.
+// None is not one-hot encoded; every other value owns one stable feature.
+enum class EOffgridAIPunctuationType : uint8
+{
+    None,
+    Comma,
+    Period,
+    QuestionMark,
+    ExclamationMark,
+    Colon,
+    Semicolon,
+    Dash,
+    Other,
+};
+
 // A CMU phone always remains in ExpectedPhones for MFA correspondence, timing,
 // syllable structure, and acoustic evidence. This role only controls whether
 // the phone owns an independent visible articulation target.
@@ -116,6 +131,7 @@ struct FOffgridAITextVisemePlan
 
     // Boundary punctuation following each tokenized word. Zero means no boundary.
     TArray<TCHAR> WordBoundaryPunctuationAfter;
+    TArray<EOffgridAIPunctuationType> WordBoundaryPunctuationTypesAfter;
     TArray<EOffgridAIBoundaryPauseClass> WordBoundaryPauseClassAfter;
     TArray<float> WordBoundaryPauseSecondsAfter;
 };

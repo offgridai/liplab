@@ -7,7 +7,7 @@ if not "%~1"=="" set "TORCH_ROOT=%~1"
 set "VS_DEV_CMD=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd.bat"
 set "CMAKE_EXE=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
 set "ARTIFACT_DIR=outputs\runs\neural_streamer_artifacts\current"
-set "NEURAL_MODEL=offgrid_dropin\Private\Lipsync\Models\OffgridAINeuralStreamerV3.bin"
+set "NEURAL_MODEL=offgrid_dropin\Private\Lipsync\Models\OffgridAINeuralStreamerV5.bin"
 
 if not exist "%TORCH_ROOT%\share\cmake\Torch\TorchConfig.cmake" (
     echo TorchConfig.cmake not found under %TORCH_ROOT%
@@ -56,7 +56,7 @@ if errorlevel 1 exit /b 1
 
 echo [phase] train_curriculum
 set "PATH=%TORCH_ROOT%\lib;%PATH%"
-build-torch\liplab_monotonic_aligner_torch.exe .
+build-torch\liplab_monotonic_aligner_torch.exe . "%NEURAL_MODEL%"
 if errorlevel 1 exit /b 1
 
 if not exist "%ARTIFACT_DIR%" mkdir "%ARTIFACT_DIR%"

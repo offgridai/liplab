@@ -68,7 +68,7 @@ if defined LIPLAB_WINDOWS_SDK_VERSION (
 
 set "BUILD_DIR=build-ninja"
 set "CMAKE_GENERATOR_ARG=-G Ninja"
-set "NEURAL_MODEL=offgrid_dropin\Private\Lipsync\Models\OffgridAINeuralStreamerV3.bin"
+set "NEURAL_MODEL=offgrid_dropin\Private\Lipsync\Models\OffgridAINeuralStreamerV5.bin"
 
 if not exist "!NEURAL_MODEL!" (
     echo Required neural checkpoint is missing: !NEURAL_MODEL!

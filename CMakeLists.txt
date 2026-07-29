@@ -68,7 +68,7 @@ if(LIPLAB_ENABLE_NEURAL_RUNTIME)
     target_link_libraries(liplab_core PUBLIC liplab_neural_streamer_cuda)
 
     set(LIPLAB_NEURAL_MODEL
-        ${CMAKE_CURRENT_SOURCE_DIR}/offgrid_dropin/Private/Lipsync/Models/OffgridAINeuralStreamerV3.bin)
+        ${CMAKE_CURRENT_SOURCE_DIR}/offgrid_dropin/Private/Lipsync/Models/OffgridAINeuralStreamerV5.bin)
     set(LIPLAB_EMBEDDED_MODEL_HEADER
         ${CMAKE_CURRENT_BINARY_DIR}/generated/OffgridAINeuralStreamerEmbeddedModel.h)
     add_custom_command(

@@ -6,11 +6,14 @@
 namespace offgridai::neural_streamer {
 
 constexpr std::uint32_t kCheckpointMagic = 0x4c504e53u;  // "SNPL"
-constexpr std::uint32_t kCheckpointVersion = 3;
+constexpr std::uint32_t kCheckpointVersion = 5;
 constexpr int kAudioFeatureCount = 18;
 constexpr int kPhoneBuckets = 64;
 constexpr int kPoseBuckets = 32;
-constexpr int kTokenContinuous = 10;
+constexpr int kLegacyTokenContinuous = 11;
+constexpr int kPunctuationTypeCount = 8;
+constexpr int kPunctuationFeatureCount = 1 + kPunctuationTypeCount;
+constexpr int kTokenContinuous = kLegacyTokenContinuous + kPunctuationFeatureCount;
 constexpr int kTokenDimensions = kPhoneBuckets + kPoseBuckets + kTokenContinuous;
 constexpr int kHiddenDimensions = 64;
 constexpr int kConvolutionKernel = 3;

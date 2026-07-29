@@ -1,0 +1,21 @@
+case: case_0375_20260728_131255_709_Lana_Line_62D32856408DAD29B8071CA61F778EB9_000000_00
+transcript: Hello, I'm Lana. Nice to meet you.
+audio: 3.257s @ 24000 Hz
+speech regions: 1
+pause boundaries: 6
+pause-driven region breaks: 0
+word heads: 7
+dense visemes: 19
+draft flags: 0
+
+review order:
+1. Confirm speech region starts and ends against the WAV.
+   Region starts should align to MFA word starts. Region ends should align to the last word before a meaningful lull.
+2. Confirm the first visible viseme for each word against the WAV.
+3. Review dense intra-word visemes, prioritizing flagged regions.
+
+approval workflow:
+- review_layers.speech_regions.status -> reviewed_boundary when speech/pause boundaries are trusted
+- review_layers.word_heads.status -> reviewed_boundary when word-entry timing is trusted
+- review_layers.dense_visemes.status -> reviewed_dense when dense timing is trusted
+- approval.status -> approved_gold only when the full case is ready for grading

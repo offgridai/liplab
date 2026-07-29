@@ -29,10 +29,15 @@ constexpr int kPhoneBuckets = offgridai::neural_streamer::kPhoneBuckets;
 constexpr int kPoseBuckets = offgridai::neural_streamer::kPoseBuckets;
 constexpr int kTokenContinuous = offgridai::neural_streamer::kTokenContinuous;
 constexpr int kTokenDimensions = offgridai::neural_streamer::kTokenDimensions;
+constexpr int kPunctuationTypeCount =
+    offgridai::neural_streamer::kPunctuationTypeCount;
+constexpr int kPunctuationFeatureCount =
+    offgridai::neural_streamer::kPunctuationFeatureCount;
 constexpr int kHiddenDimensions = offgridai::neural_streamer::kHiddenDimensions;
 constexpr int kFrameMilliseconds = 10;
 constexpr int kStreamingLagFrames = 30;
 constexpr int kForwardSumCadence = 16;
+constexpr float kInterpolatedPhoneWeight = 0.10f;
 
 struct TokenRow {
     int EventIndex = -1;
@@ -50,6 +55,9 @@ struct TokenRow {
     float IsRegionStart = 0.0f;
     float IsRegionEnd = 0.0f;
     bool IsSentenceBoundary = false;
+    float IsPauseBoundary = 0.0f;
+    float HasPunctuation = 0.0f;
+    int PunctuationType = 0;
     float TargetCenter = 0.0f;
     float TargetDuration = 0.02f;
     float HasMfaTarget = 0.0f;
@@ -176,6 +184,9 @@ static SequenceCase read_case(const fs::path& case_dir, const std::string& split
             token.IsRegionEnd = std::stof(cell(row, header, "is_region_end"));
             token.IsSentenceBoundary =
                 std::stoi(cell(row, header, "is_sentence_boundary")) != 0;
+            token.IsPauseBoundary = std::stof(cell(row, header, "is_pause_boundary"));
+            token.HasPunctuation = std::stof(cell(row, header, "has_punctuation"));
+            token.PunctuationType = std::stoi(cell(row, header, "punctuation_type"));
             token.TargetCenter = std::stof(cell(row, header, "target_center_sec"));
             token.TargetDuration = std::stof(cell(row, header, "target_duration_sec"));
             token.HasMfaTarget = std::stof(cell(row, header, "has_mfa_target"));
@@ -226,6 +237,12 @@ static torch::Tensor token_features(const SequenceCase& sequence)
         continuous[7] = token.IsSilence;
         continuous[8] = token.IsWordStart;
         continuous[9] = token.IsWordEnd;
+        continuous[10] = token.IsPauseBoundary;
+        continuous[11] = token.HasPunctuation;
+        if (token.PunctuationType > 0
+            && token.PunctuationType <= kPunctuationTypeCount) {
+            continuous[12 + token.PunctuationType - 1] = 1.0f;
+        }
     }
     return torch::from_blob(values.data(), {
         static_cast<std::int64_t>(sequence.Tokens.size()), kTokenDimensions}).clone();
@@ -362,6 +379,19 @@ static CaseTensors tensors(const SequenceCase& sequence)
                 curriculum_boundary_weight);
         }
     }
+    // A planned token can lack a matching MFA phone when the synthesizer uses
+    // a different pronunciation (for example, reduced vowels). Its target
+    // center is then interpolated so the monotonic path remains complete, but
+    // that interpolation is not evidence that the planned phone was present
+    // in the audio. Keep a small path-shaping weight while preventing those
+    // fabricated labels from dominating acoustic phone identity learning.
+    for (int frame = 0; frame < used_frames; ++frame) {
+        const TokenRow& selected = sequence.Tokens[
+            static_cast<size_t>(targets[static_cast<size_t>(frame)])];
+        if (selected.HasMfaTarget > 0.5f || selected.IsSilence > 0.5f) continue;
+        frame_weights[static_cast<size_t>(frame)] *= kInterpolatedPhoneWeight;
+        curriculum_frame_weights[static_cast<size_t>(frame)] *= kInterpolatedPhoneWeight;
+    }
     result.FrameWeights = torch::from_blob(frame_weights.data(), {used_frames}).clone();
     result.CurriculumFrameWeights = torch::from_blob(
         curriculum_frame_weights.data(), {used_frames}).clone();
@@ -488,6 +518,52 @@ static void write_runtime_checkpoint(const fs::path& path, const MonotonicNetwor
     output.write(reinterpret_cast<const char*>(values.data()),
         static_cast<std::streamsize>(values.size() * sizeof(float)));
     if (!output) throw std::runtime_error("runtime checkpoint write failed");
+}
+
+static void load_runtime_checkpoint(const fs::path& path, MonotonicNetwork& model)
+{
+    using namespace offgridai::neural_streamer;
+    std::ifstream input(path, std::ios::binary);
+    if (!input) throw std::runtime_error("cannot read initial runtime checkpoint: " + path.string());
+    CheckpointHeader header;
+    input.read(reinterpret_cast<char*>(&header), sizeof(header));
+    if (!input || header.Magic != kCheckpointMagic || header.Version != kCheckpointVersion
+        || header.AudioFeatures != kAudioFeatureCount
+        || header.TokenFeatures != offgridai::neural_streamer::kTokenDimensions
+        || header.HiddenDimensions != offgridai::neural_streamer::kHiddenDimensions
+        || header.ParameterCount != kCheckpointFloatCount)
+        throw std::runtime_error("initial runtime checkpoint schema mismatch");
+    std::vector<float> values(kCheckpointFloatCount);
+    input.read(reinterpret_cast<char*>(values.data()),
+        static_cast<std::streamsize>(values.size() * sizeof(float)));
+    if (!input) throw std::runtime_error("initial runtime checkpoint is truncated");
+    std::size_t offset = 0;
+    torch::NoGradGuard no_grad;
+    auto restore = [&](torch::Tensor tensor) {
+        const std::size_t count = static_cast<std::size_t>(tensor.numel());
+        const torch::Tensor source = torch::from_blob(
+            values.data() + offset, tensor.sizes(), torch::TensorOptions().dtype(torch::kFloat32));
+        tensor.copy_(source);
+        offset += count;
+    };
+    restore(model->AudioMean);
+    restore(model->AudioScale);
+    restore(model->AudioConv1->weight);
+    restore(model->AudioConv1->bias);
+    restore(model->AudioConv2->weight);
+    restore(model->AudioConv2->bias);
+    restore(model->TokenLinear1->weight);
+    restore(model->TokenLinear1->bias);
+    restore(model->TokenLinear2->weight);
+    restore(model->TokenLinear2->bias);
+    restore(model->RegionConv1->weight);
+    restore(model->RegionConv1->bias);
+    restore(model->RegionConv2->weight);
+    restore(model->RegionConv2->bias);
+    restore(model->RegionLinear->weight);
+    restore(model->RegionLinear->bias);
+    if (offset != values.size())
+        throw std::runtime_error("initial runtime checkpoint parameter count changed");
 }
 
 static double percentile(std::vector<double> values, double fraction)
@@ -796,6 +872,14 @@ int main(int argc, char** argv)
 {
     try {
         const fs::path root = argc > 1 ? fs::absolute(argv[1]) : fs::current_path();
+        const fs::path initial_checkpoint = argc > 2 ? fs::absolute(argv[2]) : fs::path();
+        const bool fine_tuning = !initial_checkpoint.empty();
+        const bool full_fine_tuning = fine_tuning && argc > 3
+            && std::string(argv[3]) == "--full-finetune";
+        const bool acoustic_fine_tuning = fine_tuning && argc > 3
+            && std::string(argv[3]) == "--acoustic-finetune";
+        const bool identity_fine_tuning = fine_tuning && argc > 3
+            && std::string(argv[3]) == "--identity-finetune";
         std::vector<SequenceCase> dataset = read_dataset(root);
 #ifdef _WIN32
         _putenv_s("CUBLAS_WORKSPACE_CONFIG", ":4096:8");
@@ -806,27 +890,59 @@ int main(int argc, char** argv)
         std::cout << "Training neural streamer on " << device
             << " with " << dataset.size() << " utterances\n";
         MonotonicNetwork model;
-        std::vector<torch::Tensor> training_audio;
-        for (const SequenceCase& sequence : dataset) if (sequence.Split == "train")
-            training_audio.push_back(tensors(sequence).Audio);
-        torch::Tensor concatenated = torch::cat(training_audio, 2);
-        model->AudioMean.copy_(concatenated.mean({0, 2}, true));
-        model->AudioScale.copy_(concatenated.std({0, 2}, false, true).clamp_min(1.0e-5));
+        if (fine_tuning) {
+            load_runtime_checkpoint(initial_checkpoint, model);
+            if (acoustic_fine_tuning || identity_fine_tuning) {
+                for (torch::Tensor parameter : model->parameters())
+                    parameter.set_requires_grad(false);
+                if (acoustic_fine_tuning) {
+                    for (torch::Tensor parameter : model->AudioConv1->parameters())
+                        parameter.set_requires_grad(true);
+                    for (torch::Tensor parameter : model->AudioConv2->parameters())
+                        parameter.set_requires_grad(true);
+                }
+                model->TokenLinear1->weight.set_requires_grad(true);
+            } else if (!full_fine_tuning) {
+                for (torch::Tensor parameter : model->parameters())
+                    parameter.set_requires_grad(false);
+                model->TokenLinear1->weight.set_requires_grad(true);
+            }
+            std::cout << (full_fine_tuning ? "Full fine-tuning from "
+                : acoustic_fine_tuning ? "Acoustic fine-tuning from "
+                : identity_fine_tuning ? "Identity fine-tuning from " : "Fine-tuning from ")
+                << initial_checkpoint << '\n';
+        } else {
+            std::vector<torch::Tensor> training_audio;
+            for (const SequenceCase& sequence : dataset) if (sequence.Split == "train")
+                training_audio.push_back(tensors(sequence).Audio);
+            torch::Tensor concatenated = torch::cat(training_audio, 2);
+            model->AudioMean.copy_(concatenated.mean({0, 2}, true));
+            model->AudioScale.copy_(concatenated.std({0, 2}, false, true).clamp_min(1.0e-5));
+        }
         model->to(device);
         torch::optim::AdamW optimizer(model->parameters(),
-            torch::optim::AdamWOptions(0.001).weight_decay(5.0e-4));
+            torch::optim::AdamWOptions(
+                (full_fine_tuning || acoustic_fine_tuning || identity_fine_tuning)
+                    ? 1.0e-4 : 0.001)
+                .weight_decay(fine_tuning ? 0.0 : 5.0e-4));
         std::vector<size_t> training_indices;
         for (size_t i = 0; i < dataset.size(); ++i)
             if (dataset[i].Split == "train") training_indices.push_back(i);
         std::mt19937 random(0x4c49504c);
         const fs::path checkpoint = root / "outputs/runs/latest/neural_streamer.pt";
-        double best_validation = std::numeric_limits<double>::infinity();
-        int best_epoch = -1;
+        const fs::path candidate_directory =
+            root / "outputs/runs/neural_streamer_candidates";
+        fs::create_directories(candidate_directory);
+        write_runtime_checkpoint(candidate_directory / "epoch_00.bin", model);
+        double best_validation = validation_loss(model, dataset, device);
+        int best_epoch = 0;
         int stale = 0;
-        for (int epoch = 1; epoch <= 20; ++epoch) {
+        torch::save(model, checkpoint.string());
+        const int maximum_epochs = fine_tuning ? 10 : 20;
+        for (int epoch = 1; epoch <= maximum_epochs; ++epoch) {
             model->train();
             std::vector<size_t> epoch_indices = training_indices;
-            if (epoch <= 6) {
+            if (fine_tuning || epoch <= 6) {
                 for (size_t index : training_indices) {
                     const bool has_region_gap = std::any_of(
                         dataset[index].Tokens.begin(), dataset[index].Tokens.end(), [](const TokenRow& token) {
@@ -836,7 +952,7 @@ int main(int argc, char** argv)
                     if (has_region_gap) epoch_indices.push_back(index);
                 }
             }
-            if (epoch <= 6) {
+            if (fine_tuning || epoch <= 6) {
                 for (size_t index : training_indices) {
                     const bool has_sentence_boundary = std::any_of(
                         dataset[index].Tokens.begin(), dataset[index].Tokens.end(),
@@ -877,11 +993,29 @@ int main(int argc, char** argv)
                     loss = loss + 0.25f * forward_sum_loss(scores, dataset[index].Tokens);
                 optimizer.zero_grad();
                 loss.backward();
+                if (acoustic_fine_tuning || identity_fine_tuning) {
+                    torch::Tensor gradient = model->TokenLinear1->weight.grad();
+                    // Preserve timing, word-boundary, and punctuation behavior.
+                    // Only phone/pose identity columns may adapt alongside the
+                    // acoustic encoder; the independent region network remains
+                    // bit-for-bit identical to the accepted checkpoint.
+                    gradient.slice(1, kPhoneBuckets + kPoseBuckets,
+                        kTokenDimensions).zero_();
+                } else if (fine_tuning && !full_fine_tuning) {
+                    torch::Tensor gradient = model->TokenLinear1->weight.grad();
+                    // Preserve every accepted schema-v4 weight. Only the new
+                    // punctuation-presence and one-hot type columns may learn.
+                    gradient.slice(1, 0,
+                        kTokenDimensions - kPunctuationFeatureCount).zero_();
+                }
                 torch::nn::utils::clip_grad_norm_(model->parameters(), 1.0);
                 optimizer.step();
                 epoch_loss += loss.item<double>();
             }
             const double validation = validation_loss(model, dataset, device);
+            write_runtime_checkpoint(candidate_directory /
+                ("epoch_" + (epoch < 10 ? std::string("0") : std::string())
+                    + std::to_string(epoch) + ".bin"), model);
             std::cout << "epoch=" << epoch << " train_ce=" << epoch_loss / epoch_indices.size()
                 << " validation_ce=" << validation << '\n';
             if (validation + 1.0e-4 < best_validation) {
@@ -901,10 +1035,23 @@ int main(int argc, char** argv)
         if (runtime.P95Microseconds > 1000.0)
             throw std::runtime_error("CUDA runtime exceeds the 1 ms p95 budget");
         const fs::path report = root / "outputs/runs/latest/neural_streamer_report.json";
+        const std::string fine_tuning_mode = !fine_tuning ? "from_scratch"
+            : full_fine_tuning ? "full"
+            : acoustic_fine_tuning ? "acoustic"
+            : identity_fine_tuning ? "identity"
+            : "new_token_features";
         std::ofstream out(report);
         out << std::fixed << std::setprecision(6)
-            << "{\n  \"schema_version\": 3,\n  \"device\": \"" << device << "\",\n"
+            << "{\n  \"schema_version\": 5,\n  \"device\": \"" << device << "\",\n"
             << "  \"utterance_count\": " << dataset.size() << ",\n"
+            << "  \"initial_checkpoint\": \""
+            << (fine_tuning ? initial_checkpoint.generic_string() : std::string()) << "\",\n"
+            << "  \"fine_tuning\": " << (fine_tuning ? "true" : "false") << ",\n"
+            << "  \"fine_tuning_mode\": \"" << fine_tuning_mode << "\",\n"
+            << "  \"fine_tuning_new_token_features_only\": "
+            << (fine_tuning_mode == "new_token_features" ? "true" : "false") << ",\n"
+            << "  \"interpolated_phone_frame_weight\": "
+            << kInterpolatedPhoneWeight << ",\n"
             << "  \"selected_epoch\": " << best_epoch << ",\n"
             << "  \"validation_cross_entropy\": " << best_validation << ",\n"
             << "  \"forward_sum_weight\": 0.25,\n"

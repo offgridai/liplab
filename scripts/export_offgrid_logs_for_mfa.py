@@ -22,12 +22,20 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("log_root", type=Path)
     parser.add_argument("output_root", type=Path)
+    parser.add_argument(
+        "--start-index",
+        type=int,
+        default=1,
+        help="First numeric case index (default: 1).",
+    )
     args = parser.parse_args()
 
     corpus = args.output_root / "corpus"
     corpus.mkdir(parents=True, exist_ok=True)
     rows: list[dict[str, str]] = []
-    for number, log_dir in enumerate(sorted(args.log_root.iterdir()), 1):
+    for number, log_dir in enumerate(
+        sorted(args.log_root.iterdir()), args.start_index
+    ):
         if not log_dir.is_dir() or not (log_dir / "line_metadata.txt").exists():
             continue
         values = metadata(log_dir / "line_metadata.txt")

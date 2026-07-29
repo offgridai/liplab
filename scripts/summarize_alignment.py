@@ -88,6 +88,10 @@ def main() -> int:
     viseme_run_share_errors: list[float] = []
     viseme_boundary_errors: list[float] = []
     viseme_word_total_variations: list[float] = []
+    presentation_visible_events = 0
+    presentation_eligible_events = 0
+    presentation_visible_boundary_events = 0
+    presentation_boundary_events = 0
 
     for focus_path in sorted(latest.glob("*/focus_alignment_grade.json")):
         ownership_path = focus_path.parent / "region_ownership_grade.json"
@@ -125,6 +129,22 @@ def main() -> int:
         )
         viseme_word_total_variations.extend(
             float(value) for value in proportion.get("word_total_variations", [])
+        )
+        visibility_path = (
+            focus_path.parent / "presentation_event_visibility_grade.json"
+        )
+        visibility = load_json(visibility_path) if visibility_path.exists() else {}
+        presentation_visible_events += int(
+            visibility.get("robust_visible_event_count", 0)
+        )
+        presentation_eligible_events += int(
+            visibility.get("eligible_event_count", 0)
+        )
+        presentation_visible_boundary_events += int(
+            visibility.get("robust_boundary_event_count", 0)
+        )
+        presentation_boundary_events += int(
+            visibility.get("boundary_event_count", 0)
         )
         current_case_name = focus_path.parent.name
         gold_dir = root / "inputs" / "gold" / current_case_name
@@ -614,6 +634,23 @@ def main() -> int:
             "animation_onset_mean_abs_error_ms": ratio(
                 sum(animation_onset_errors), animation_onset_matched, 0.0
             ),
+            "decoded_viseme_reference": int(
+                grade.get("intra_word_alignment", {}).get("reference_count", 0)
+            ),
+            "decoded_viseme_matched": int(
+                grade.get("intra_word_alignment", {}).get("matched_count", 0)
+            ),
+            "decoded_viseme_missing": int(
+                grade.get("intra_word_alignment", {}).get("missing_count", 0)
+            ),
+            "decoded_viseme_extra": int(
+                grade.get("intra_word_alignment", {}).get("extra_count", 0)
+            ),
+            "decoded_viseme_center_mae_ms": float(
+                grade.get("intra_word_alignment", {}).get(
+                    "mean_abs_center_error_ms", 0.0
+                )
+            ),
             "word_region_expected": assignment_expected,
             "word_region_successes": assignment_successes,
             "word_region_assignment_rate": ratio(assignment_successes, assignment_expected),
@@ -815,6 +852,15 @@ def main() -> int:
         * int(row["animation_onset_matched"])
         for row in cases
     )
+    decoded_viseme_reference = totals("decoded_viseme_reference")
+    decoded_viseme_matched = totals("decoded_viseme_matched")
+    decoded_viseme_missing = totals("decoded_viseme_missing")
+    decoded_viseme_extra = totals("decoded_viseme_extra")
+    decoded_viseme_center_error_total = sum(
+        float(row["decoded_viseme_center_mae_ms"])
+        * int(row["decoded_viseme_matched"])
+        for row in cases
+    )
     summary = {
         "cases": len(cases),
         "start_tolerance_ms": START_TOLERANCE_MS,
@@ -856,6 +902,22 @@ def main() -> int:
                 animation_onset_error_total, animation_onset_matched, 0.0
             ),
             "tolerance_ms": START_TOLERANCE_MS,
+        },
+        "decoded_viseme_alignment": {
+            "reference": decoded_viseme_reference,
+            "matched": decoded_viseme_matched,
+            "missing": decoded_viseme_missing,
+            "extra": decoded_viseme_extra,
+            "identity_recall": ratio(
+                decoded_viseme_matched, decoded_viseme_reference
+            ),
+            "identity_precision": ratio(
+                decoded_viseme_matched,
+                decoded_viseme_matched + decoded_viseme_extra,
+            ),
+            "mean_abs_center_error_ms": ratio(
+                decoded_viseme_center_error_total, decoded_viseme_matched, 0.0
+            ),
         },
         "word_duration": {
             "expected": delivery_expected_words,
@@ -1065,6 +1127,18 @@ def main() -> int:
             ),
             "severe_words": totals("viseme_proportion_severe_words"),
         },
+        "presentation_event_visibility": {
+            "eligible_events": presentation_eligible_events,
+            "robust_visible_events": presentation_visible_events,
+            "robust_visible_event_rate": ratio(
+                presentation_visible_events, presentation_eligible_events
+            ),
+            "boundary_events": presentation_boundary_events,
+            "robust_boundary_events": presentation_visible_boundary_events,
+            "robust_boundary_event_rate": ratio(
+                presentation_visible_boundary_events, presentation_boundary_events
+            ),
+        },
         "strict_region_segmentation": {
             "boundaries": len(boundaries_out),
             "exact_boundaries": exact_three_level_boundaries,
@@ -1175,6 +1249,14 @@ def main() -> int:
         f"{summary['word_animation_onset']['success_rate']:.3f} "
         f"({summary['word_animation_onset']['mean_abs_error_ms']:.1f} ms MAE)"
     )
+    decoded = summary["decoded_viseme_alignment"]
+    print(
+        "Decoded viseme alignment: "
+        f"recall={decoded['identity_recall']:.3f} "
+        f"precision={decoded['identity_precision']:.3f} "
+        f"center_MAE={decoded['mean_abs_center_error_ms']:.1f}ms "
+        f"missing={decoded['missing']} extra={decoded['extra']}"
+    )
     word_duration = summary["word_duration"]
     print(
         "Word animation duration: "
@@ -1204,6 +1286,16 @@ def main() -> int:
         f"boundary_median={proportions['boundary_position_abs_error_median'] * 100.0:.2f}pp "
         f"word_TV_median={proportions['word_total_variation_median'] * 100.0:.2f}% "
         f"coverage={proportions['word_coverage_rate']:.3f}"
+    )
+    visibility = summary["presentation_event_visibility"]
+    print(
+        "Presentation event visibility: "
+        f"all={visibility['robust_visible_events']}/"
+        f"{visibility['eligible_events']} "
+        f"({visibility['robust_visible_event_rate']:.3f}) "
+        f"region-boundary={visibility['robust_boundary_events']}/"
+        f"{visibility['boundary_events']} "
+        f"({visibility['robust_boundary_event_rate']:.3f})"
     )
     strict_regions = summary["strict_region_segmentation"]
     print(

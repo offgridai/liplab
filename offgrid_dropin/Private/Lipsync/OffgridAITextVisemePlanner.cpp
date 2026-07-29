@@ -156,6 +156,26 @@ static bool IsSpeechRegionBoundary(TCHAR C)
     return IsHardSentenceBoundary(C) || C == TEXT(',');
 }
 
+static EOffgridAIPunctuationType ClassifyPunctuationType(TCHAR C)
+{
+    switch (C)
+    {
+    case TCHAR(0): return EOffgridAIPunctuationType::None;
+    case TEXT(','): return EOffgridAIPunctuationType::Comma;
+    case TEXT('.'): return EOffgridAIPunctuationType::Period;
+    case TEXT('?'): return EOffgridAIPunctuationType::QuestionMark;
+    case TEXT('!'): return EOffgridAIPunctuationType::ExclamationMark;
+    case TEXT(':'): return EOffgridAIPunctuationType::Colon;
+    case TEXT(';'): return EOffgridAIPunctuationType::Semicolon;
+    case TEXT('-'): return EOffgridAIPunctuationType::Dash;
+    default:
+        // The remaining recognized hard boundaries are Unicode en/em dashes.
+        return IsHardSentenceBoundary(C)
+            ? EOffgridAIPunctuationType::Dash
+            : EOffgridAIPunctuationType::Other;
+    }
+}
+
 static bool IsAsciiHyphenPunctuationAt(const FString& Text, int32 Index)
 {
     if (Index < 0 || Index >= Text.Len() || Text[Index] != TEXT('-'))
@@ -841,7 +861,12 @@ static void AddEvent(TArray<FOffgridAITextVisemeEvent>& Events, EOffgridAITextVi
     E.PhoneLocalNorm = LocalOrder;
     E.VisualRole = VisualRole;
     E.bIsRenderable = bIsRenderable;
-    E.bIsStrongVisibleEvent = (V == EOffgridAITextViseme::MBP || V == EOffgridAITextViseme::WUH || ResolvedPose == FName(TEXT("20_FV")));
+    E.bIsStrongVisibleEvent = (
+        V == EOffgridAITextViseme::MBP
+        || V == EOffgridAITextViseme::WUH
+        || V == EOffgridAITextViseme::OOO
+        || ResolvedPose == FName(TEXT("20_FV"))
+        || ResolvedPose == FName(TEXT("24_Tongue_Th")));
     E.Generator = Generator;
     E.StartNorm = LocalOrder; // Overwritten by the final normalized timing pass.
     E.EndNorm = 0.0f;
@@ -887,7 +912,7 @@ static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FStr
     }
     if (Base == TEXT("TH") || Base == TEXT("DH"))
     {
-        AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("24_Tongue_Th"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.62f, TEXT("cmu_dental_tongue"), LocalOrder, PhoneIndex, Phone, Base, EOffgridAIVisualPhoneRole::SupportingPose);
+        AddEvent(Events, EOffgridAITextViseme::FVS, TEXT("24_Tongue_Th"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.82f, TEXT("cmu_dental_tongue_landmark"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
     if (Base == TEXT("T") || Base == TEXT("D"))
@@ -928,7 +953,15 @@ static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FStr
         AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("05_Ay"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_ay"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
-    if (Base == TEXT("AA") || Base == TEXT("AW"))
+    if (Base == TEXT("AW"))
+    {
+        // Keep one authoritative acoustic token. The performer expresses the
+        // phone's open-to-round motion inside this event so decoder topology
+        // and downstream word timing remain unchanged.
+        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("07_Aa"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_aw_diphthong"), LocalOrder, PhoneIndex, Phone, Base);
+        return true;
+    }
+    if (Base == TEXT("AA"))
     {
         AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("07_Aa"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_open_vowel"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
@@ -940,6 +973,11 @@ static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FStr
     }
     if (Base == TEXT("AH"))
     {
+        if (Word == TEXT("to"))
+        {
+            AddEvent(Events, EOffgridAITextViseme::OOO, TEXT("11_Oo"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, VowelStrength, TEXT("lexical_to_rounding"), LocalOrder, PhoneIndex, Phone, Base);
+            return true;
+        }
         AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("18_Uh"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_central_vowel"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
@@ -955,6 +993,14 @@ static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FStr
     }
     if (Base == TEXT("IH"))
     {
+        if (Word == TEXT("to"))
+        {
+            // Conversational TTS frequently reduces "to" to IH/AH. Retain the
+            // acoustic phone for alignment, but preserve the word's defining
+            // lip-rounding target so the function word remains readable.
+            AddEvent(Events, EOffgridAITextViseme::OOO, TEXT("11_Oo"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, VowelStrength, TEXT("lexical_to_rounding"), LocalOrder, PhoneIndex, Phone, Base);
+            return true;
+        }
         AddEvent(Events, EOffgridAITextViseme::EEE, TEXT("04_Ih"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, VowelStrength, TEXT("cmu_ih_vowel"), LocalOrder, PhoneIndex, Phone, Base);
         return true;
     }
@@ -1151,6 +1197,8 @@ FOffgridAITextVisemePlan FOffgridAITextVisemePlanner::BuildPlan(const FText& Dia
         Plan.WordSentenceIndices.Add(Sentence);
         Plan.WordSyllableCounts.Add(Syllables);
         Plan.WordBoundaryPunctuationAfter.Add(Boundaries.IsValidIndex(W) ? Boundaries[W] : TCHAR(0));
+        Plan.WordBoundaryPunctuationTypesAfter.Add(ClassifyPunctuationType(
+            Boundaries.IsValidIndex(W) ? Boundaries[W] : TCHAR(0)));
         const EOffgridAIBoundaryPauseClass BoundaryPauseClass = ClassifyBoundaryPause(Words, Boundaries, W);
         BoundaryPauseClasses.Add(BoundaryPauseClass);
         Plan.WordBoundaryPauseClassAfter.Add(BoundaryPauseClass);

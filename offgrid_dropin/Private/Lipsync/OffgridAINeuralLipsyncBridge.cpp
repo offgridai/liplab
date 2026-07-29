@@ -36,6 +36,8 @@ struct FBridgeToken
     float IsWordEnd = 0.0f;
     bool IsSentenceBoundary = false;
     bool IsPauseBoundary = false;
+    bool IsHardPauseBoundary = false;
+    EOffgridAIPunctuationType PunctuationType = EOffgridAIPunctuationType::None;
 };
 
 static FBridgeToken SilenceToken(float TextCenterNorm)
@@ -107,11 +109,27 @@ FOffgridAINeuralTranscriptTensor FOffgridAINeuralLipsyncBridge::BuildTranscriptT
                     Plan.WordBoundaryPauseClassAfter.IsValidIndex(PreviousWordIndex)
                     && Plan.WordBoundaryPauseClassAfter[PreviousWordIndex]
                         != EOffgridAIBoundaryPauseClass::None;
+                Silence.IsHardPauseBoundary =
+                    Plan.WordBoundaryPauseClassAfter.IsValidIndex(PreviousWordIndex)
+                    && Plan.WordBoundaryPauseClassAfter[PreviousWordIndex]
+                        == EOffgridAIBoundaryPauseClass::HardBreakPause;
+                if (Plan.WordBoundaryPunctuationTypesAfter.IsValidIndex(PreviousWordIndex))
+                {
+                    Silence.PunctuationType =
+                        Plan.WordBoundaryPunctuationTypesAfter[PreviousWordIndex];
+                }
                 if (Silence.IsSentenceBoundary) Silence.DurationPriorSec = 0.120f;
                 Sequence.Add(MoveTemp(Silence));
             }
         }
-        Sequence.Add(SilenceToken(1.0f));
+        FBridgeToken Trailing = SilenceToken(1.0f);
+        const int32 LastWordIndex = Visible.Last().WordIndex;
+        if (Plan.WordBoundaryPunctuationTypesAfter.IsValidIndex(LastWordIndex))
+        {
+            Trailing.PunctuationType =
+                Plan.WordBoundaryPunctuationTypesAfter[LastWordIndex];
+        }
+        Sequence.Add(MoveTemp(Trailing));
     }
 
     FOffgridAINeuralTranscriptTensor Result;
@@ -133,12 +151,21 @@ FOffgridAINeuralTranscriptTensor FOffgridAINeuralLipsyncBridge::BuildTranscriptT
         Continuous[7] = Token.IsSilence;
         Continuous[8] = Token.IsWordStart;
         Continuous[9] = Token.IsWordEnd;
+        Continuous[10] = Token.IsPauseBoundary ? 1.0f : 0.0f;
+        const int32 PunctuationValue = static_cast<int32>(Token.PunctuationType);
+        Continuous[11] = PunctuationValue != 0 ? 1.0f : 0.0f;
+        if (PunctuationValue > 0 && PunctuationValue <= kPunctuationTypeCount)
+        {
+            Continuous[12 + PunctuationValue - 1] = 1.0f;
+        }
         Result.EventIndices.Add(Token.EventIndex);
         Result.WordIndices.Add(Token.WordIndex);
         Result.PhoneIndices.Add(Token.PhoneIndex);
         Result.SilenceTokens.Add(Token.IsSilence > 0.5f);
         Result.SentenceBoundaryTokens.Add(Token.IsSentenceBoundary);
         Result.PauseBoundaryTokens.Add(Token.IsPauseBoundary);
+        Result.HardPauseBoundaryTokens.Add(Token.IsHardPauseBoundary);
+        Result.PunctuationTypeTokens.Add(Token.PunctuationType);
     }
     return Result;
 }

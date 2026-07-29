@@ -1,29 +1,50 @@
 {
-  "cases": 750,
+  "cases": 782,
   "region_start": {
-    "success_rate": 0.9744302390216787,
-    "mean_abs_error_ms": 17.99888938299055
+    "success_rate": 0.9726394849785408,
+    "mean_abs_error_ms": 19.33476448497854
   },
   "word_animation_onset": {
-    "success_rate": 0.9356868227892345,
-    "mean_abs_error_ms": 29.780374105331948
+    "success_rate": 0.9300550129111934,
+    "mean_abs_error_ms": 31.489271251299307
+  },
+  "decoded_viseme_alignment": {
+    "identity_recall": 0.9699132196819523,
+    "identity_precision": 0.9402570781910577,
+    "mean_abs_center_error_ms": 18.90852584249251
   },
   "word_duration": {
-    "success_rate": 0.8653846153846154,
-    "mean_abs_error_ms": 58.77773111677479,
+    "success_rate": 0.8625,
+    "mean_abs_error_ms": 59.44935825892857,
     "median_abs_error_ms": 40.0
   },
   "strict_region_segmentation": {
-    "exact_boundary_rate": 0.8875919817305252
+    "exact_boundary_rate": 0.8879921741257031
+  },
+  "word_region_assignment": {
+    "success_rate": 0.9392857142857143
   },
   "strict_three_level_word_assignment": {
-    "success_rate": 0.9401065801668211
+    "success_rate": 0.9391741071428571
+  },
+  "word_region_confusion": {
+    "early_region_thefts": 33,
+    "late_region_assignments": 43,
+    "materially_early_intact_words": 49,
+    "max_intact_word_lead_ms": 1255.0
   },
   "pause": {
-    "clean_rate": 0.9800538580493787
+    "clean_rate": 0.9799093307379043
   },
   "guardrails": {
-    "event_completion_rate": 0.9859507493976658,
+    "event_completion_rate": 0.9860369733707289,
     "order_violations": 0
+  },
+  "runtime_delivery": {
+    "compressed_sentences": 3
+  },
+  "presentation_event_visibility": {
+    "robust_visible_event_rate": 0.962778321507218,
+    "robust_boundary_event_rate": 1.0
   }
 }

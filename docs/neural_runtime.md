@@ -6,8 +6,8 @@ deterministic scheduler designs have been removed.
 
 ## Deployable runtime
 
-The runtime is the source under `offgrid_dropin` plus the version-3 checkpoint
-at `offgrid_dropin/Private/Lipsync/Models/OffgridAINeuralStreamerV3.bin`.
+The runtime is the source under `offgrid_dropin` plus the version-5 checkpoint
+at `offgrid_dropin/Private/Lipsync/Models/OffgridAINeuralStreamerV5.bin`.
 
 The checkpoint contains a small causal token/region network. The native CUDA
 runtime validates its schema and dimensions, retains model and transcript
@@ -50,7 +50,9 @@ This is one closed workflow:
 1. build the harness, CUDA runtime, and optional LibTorch trainer;
 2. stream every case in the unified `inputs/corpus.csv` inventory and export
    causal audio/token sequences;
-3. train against MFA phone, word, vowel, and speech-region labels;
+3. fine-tune the accepted checkpoint against MFA phone, word, vowel, and
+   speech-region labels, retaining the accepted model if validation does not
+   improve;
 4. export a versioned native `.bin` checkpoint;
 5. replay that exact checkpoint through `FOffgridAILipsyncRuntimeSession`;
 6. run the normal comprehensive scorecard and regression gates.
@@ -59,17 +61,24 @@ LibTorch is confined to step 3. There is no synthetic prediction CSV or
 composition of independently trained heads. Text-group-aware splits keep voice
 renditions of the same transcript together.
 
-The accepted 750-case checkpoint currently scores:
+Schema v4 added the planner's transcript-derived pause-boundary flag to silence
+token features. Schema v5 retains that semantic flag and adds raw punctuation
+presence plus a one-hot punctuation type: comma, period, question mark,
+exclamation mark, colon, semicolon, dash, or other. These features describe the
+transcript boundary, never timing: acoustic evidence and the causal neural path
+still decide whether and when a pause occurs.
 
-- region-start success 0.9744, 18.0 ms mean absolute error;
-- pause cleanliness 0.9801;
-- word-animation-onset success 0.9357, 29.8 ms mean absolute error;
-- performed word-duration success 0.8654, 58.8 ms mean and 40.0 ms median
-  absolute error, with a 0.967 median runtime/MFA duration ratio;
-- runtime event delivery 0.9984 and word delivery 0.9994;
-- within-word run-share median error 8.36 percentage points, boundary-position
-  median error 9.84 percentage points, and word-level duration total-variation
-  median 20.00%.
+The accepted 776-case checkpoint currently scores:
+
+- region-start success 0.9724, 19.6 ms mean absolute error;
+- pause cleanliness 0.9800;
+- word-animation-onset success 0.9313, 31.3 ms mean absolute error;
+- performed word-duration success 0.8632, 59.4 ms mean and 40.0 ms median
+  absolute error, with a 0.968 median runtime/MFA duration ratio;
+- runtime event delivery 0.9982 and word delivery 0.9993;
+- within-word run-share median error 8.33 percentage points, boundary-position
+  median error 9.77 percentage points, and word-level duration total-variation
+  median 19.91%.
 
 The generated JSON contains full counts, coverage, and mean/median/tail values.
 These figures are descriptive; `docs/grade_baseline.json` and
