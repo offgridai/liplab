@@ -941,13 +941,14 @@ static bool AddPhoneViseme(TArray<FOffgridAITextVisemeEvent>& Events, const FStr
         return true;
     }
     // /h/ has no independent oral constriction, but it is not visually silent:
-    // the jaw and lips are already forming the following vowel while air flows.
-    // Keep HH timing-only so it does not add a state to the accepted neural
-    // topology. FinishToken gives the following vowel an anticipatory attack.
+    // the jaw is partially open and the lips are already approaching the next
+    // vowel. Keep it as a low-strength, transcript-owned neural state so words
+    // such as "hello" and "how" have an alignable visible attack instead of
+    // beginning late on their first vowel.
     if (Base == TEXT("HH"))
     {
-        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("08_Ah"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.0f, TEXT("cmu_hh_vowel_coarticulation_source"), LocalOrder, PhoneIndex, Phone, Base, EOffgridAIVisualPhoneRole::Coarticulated, false);
-        return false;
+        AddEvent(Events, EOffgridAITextViseme::AAA, TEXT("08_Ah"), WordIndex, SpeechRegionIndex, SentenceIndex, Word, 0.52f, TEXT("cmu_hh_open_attack"), LocalOrder, PhoneIndex, Phone, Base, EOffgridAIVisualPhoneRole::Coarticulated);
+        return true;
     }
 
     if (Base == TEXT("AY"))

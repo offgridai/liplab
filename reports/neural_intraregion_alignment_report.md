@@ -70,3 +70,49 @@ next transcript token embeddings, elapsed dwell, and punctuation context. The
 hard ceiling can then remain only as a corruption guard. This gives the neural
 model a supervised way to distinguish a genuinely sustained vowel from a
 sticky acoustic state without changing transcript-owned viseme identity.
+
+## 2026-07-29 repeated Max greeting
+
+Fifteen completed recordings of `Hello, I'm Max. How can I assist you with the
+deal in Kentucky?` were imported as cases 0431-0445. One aborted capture without
+a finalized track or WAV was excluded. All imported alignments passed the MFA
+draft audit and were approved as gold.
+
+The host logs reported 40 planned events but only 38 committed events in every
+completed take. The two absent events were the transcript's `/h/` phones in
+`hello` and `how`. The planner had deliberately emitted those phones at zero
+strength and marked them non-renderable, so the neural streamer could neither
+display them nor use them as stable alignment states. This caused both visible
+under-animation and topology errors after pauses. In the worst take, `how` was
+assigned 1.45 seconds early. Across the fifteen takes, `how` had mean spoken
+coverage 0.352 and fourteen low-coverage occurrences. The standalone word `I`
+was also weak: mean coverage 0.116, eleven zero-overlap occurrences, and a mean
+onset delay of about 90 ms.
+
+The general planner correction makes `/h/` a low-strength, renderable,
+transcript-owned neural state using the existing open-mouth pose. It is not a
+phrase rule and does not alter event order. On the 837-case packaged replay it
+changes word-region assignment from 0.935 to 0.989, completion from 0.985 to
+1.000, strict perfect cases from 408 to 722, and incomplete words from 529 to
+zero. For the new recordings, `how` coverage rises to 0.634, zero-overlap falls
+to zero, and the 1.45-second early assignment disappears. Pause cleanliness is
+unchanged at 0.979. Small aggregate movements remain in region-start MAE
+(22.5 to 26.5 ms), word-onset MAE (32.3 to 33.6 ms), identity recall
+(0.970 to 0.968), and visibility (0.964 to 0.962); these are retained because
+the topology and completion gains are much larger and the absolute results
+remain inside the project's quality envelope.
+
+Three neural adaptations were evaluated and rejected: unrestricted fine-tune,
+identity-column fine-tune, and word-interval fine-tune. Each either regressed
+pause/region behavior or selected epoch 0. Compact words are now explicitly
+weighted in the interval objective, and held-out checkpoint selection reports
+their onset, exit, coverage, and zero-overlap metrics separately. The current
+held-out set contains 280 compact words; the accepted epoch-0 model has 24
+zero-overlap compact words and 0.704 mean coverage. The compact-aware fine-tune
+again selected epoch 0, so no experimental model weights were promoted.
+
+The `/h/` correction solves the systematic missing-animation and gross delayed
+assignment failure. The remaining standalone-`I` weakness is detected by the
+new metric but is not yet safely improved by the present model architecture.
+It should be addressed by the explicit learned token-advance hazard described
+above, rather than by a word-specific timing override.

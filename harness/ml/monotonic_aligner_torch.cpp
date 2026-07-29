@@ -846,7 +846,8 @@ static torch::Tensor word_interval_loss(
     const std::vector<TokenRow>& tokens)
 {
     const torch::Tensor probability = torch::softmax(score_tensor, 1);
-    std::vector<torch::Tensor> losses;
+    std::vector<torch::Tensor> weighted_losses;
+    float total_weight = 0.0f;
     for (int first = 0; first < static_cast<int>(tokens.size()); ++first) {
         if (tokens[static_cast<size_t>(first)].IsWordStart <= 0.5f) continue;
         int last = first;
@@ -874,11 +875,17 @@ static torch::Tensor word_interval_loss(
         loss = loss + 0.5f
             * (-torch::log(1.0f - word_probability) * negative_weights).sum()
             / negative_weights.sum().clamp_min(1.0f);
-        losses.push_back(loss);
+        // A compact word has few states through which to express both entry
+        // and exit timing, so an ordinary per-word mean can let its complete
+        // disappearance be averaged away by longer words. Give one- and
+        // two-token words an explicit but bounded share of the interval loss.
+        const float word_weight = last - first + 1 <= 2 ? 2.0f : 1.0f;
+        weighted_losses.push_back(word_weight * loss);
+        total_weight += word_weight;
         first = last;
     }
-    if (losses.empty()) return torch::zeros({}, score_tensor.options());
-    return torch::stack(losses).mean();
+    if (weighted_losses.empty()) return torch::zeros({}, score_tensor.options());
+    return torch::stack(weighted_losses).sum() / total_weight;
 }
 
 struct DecodedValidationMetrics {
@@ -887,6 +894,11 @@ struct DecodedValidationMetrics {
     double MeanOnsetAbsErrorMs = 0.0;
     double MeanExitAbsErrorMs = 0.0;
     double MeanCoverage = 0.0;
+    int CompactWords = 0;
+    int CompactZeroOverlapWords = 0;
+    double CompactMeanOnsetAbsErrorMs = 0.0;
+    double CompactMeanExitAbsErrorMs = 0.0;
+    double CompactMeanCoverage = 0.0;
     double SelectionScore = 0.0;
 };
 
@@ -901,6 +913,9 @@ static DecodedValidationMetrics validation_decoded_metrics(
     double onset_total = 0.0;
     double exit_total = 0.0;
     double coverage_total = 0.0;
+    double compact_onset_total = 0.0;
+    double compact_exit_total = 0.0;
+    double compact_coverage_total = 0.0;
     for (const SequenceCase& sequence : dataset) {
         if (sequence.Split != "validation") continue;
         CaseTensors row = tensors(sequence);
@@ -946,6 +961,15 @@ static DecodedValidationMetrics validation_decoded_metrics(
             coverage_total += static_cast<double>(overlap) / target_frames;
             result.ZeroOverlapWords += overlap == 0;
             ++result.Words;
+            if (last - first + 1 <= 2) {
+                compact_onset_total += std::abs(predicted_first - target_first)
+                    * kFrameMilliseconds;
+                compact_exit_total += std::abs(predicted_last - target_last)
+                    * kFrameMilliseconds;
+                compact_coverage_total += static_cast<double>(overlap) / target_frames;
+                result.CompactZeroOverlapWords += overlap == 0;
+                ++result.CompactWords;
+            }
             first = last;
         }
     }
@@ -959,6 +983,22 @@ static DecodedValidationMetrics validation_decoded_metrics(
             + result.MeanExitAbsErrorMs
             + 200.0 * (1.0 - result.MeanCoverage)
             + 400.0 * zero_rate;
+        if (result.CompactWords > 0) {
+            result.CompactMeanOnsetAbsErrorMs = compact_onset_total
+                / result.CompactWords;
+            result.CompactMeanExitAbsErrorMs = compact_exit_total
+                / result.CompactWords;
+            result.CompactMeanCoverage = compact_coverage_total
+                / result.CompactWords;
+            const double compact_zero_rate =
+                static_cast<double>(result.CompactZeroOverlapWords)
+                    / result.CompactWords;
+            result.SelectionScore += 0.5 * (
+                result.CompactMeanOnsetAbsErrorMs
+                + result.CompactMeanExitAbsErrorMs)
+                + 100.0 * (1.0 - result.CompactMeanCoverage)
+                + 200.0 * compact_zero_rate;
+        }
     }
     return result;
 }
@@ -1169,7 +1209,12 @@ int main(int argc, char** argv)
                 << " decoded_onset_ms=" << decoded.MeanOnsetAbsErrorMs
                 << " decoded_exit_ms=" << decoded.MeanExitAbsErrorMs
                 << " decoded_coverage=" << decoded.MeanCoverage
-                << " decoded_zero_overlap=" << decoded.ZeroOverlapWords << '\n';
+                << " decoded_zero_overlap=" << decoded.ZeroOverlapWords
+                << " compact_words=" << decoded.CompactWords
+                << " compact_onset_ms=" << decoded.CompactMeanOnsetAbsErrorMs
+                << " compact_exit_ms=" << decoded.CompactMeanExitAbsErrorMs
+                << " compact_coverage=" << decoded.CompactMeanCoverage
+                << " compact_zero_overlap=" << decoded.CompactZeroOverlapWords << '\n';
             if (decoded.SelectionScore + 1.0e-4 < best_selection_score) {
                 best_validation = validation;
                 best_decoded = decoded;
@@ -1220,6 +1265,16 @@ int main(int argc, char** argv)
             << best_decoded.MeanExitAbsErrorMs << ",\n"
             << "  \"validation_decoded_spoken_coverage\": "
             << best_decoded.MeanCoverage << ",\n"
+            << "  \"validation_decoded_compact_word_count\": "
+            << best_decoded.CompactWords << ",\n"
+            << "  \"validation_decoded_compact_zero_overlap_words\": "
+            << best_decoded.CompactZeroOverlapWords << ",\n"
+            << "  \"validation_decoded_compact_onset_mae_ms\": "
+            << best_decoded.CompactMeanOnsetAbsErrorMs << ",\n"
+            << "  \"validation_decoded_compact_exit_mae_ms\": "
+            << best_decoded.CompactMeanExitAbsErrorMs << ",\n"
+            << "  \"validation_decoded_compact_spoken_coverage\": "
+            << best_decoded.CompactMeanCoverage << ",\n"
             << "  \"word_interval_loss_weight\": "
             << kWordIntervalLossWeight << ",\n"
             << "  \"forward_sum_weight\": 0.25,\n"
