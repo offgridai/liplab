@@ -2,8 +2,8 @@
 
 ## Scope
 
-This branch adds the 18 Offgrid recordings captured on 2026-07-29 as cases
-0413-0430, expanding the graded corpus from 804 to 822 cases. The motivating
+This investigation added the 18 Offgrid recordings captured on 2026-07-29 as
+cases 0413-0430, expanding the graded corpus from 804 to 822 cases. The motivating
 failures are word-slot errors inside otherwise correct speech regions,
 especially `I'm` in the greeting and the second `to` in the synchronization
 line.
@@ -59,7 +59,8 @@ selection uses decoded word onset, exit, interval coverage, and zero-overlap
 counts rather than cross-entropy alone.
 
 The current fine-tune selected epoch 0: every trained checkpoint decoded worse
-than the packaged V5 model. No new model weights are promoted by this branch.
+than the packaged V5 model. No new model weights were promoted by this
+investigation.
 
 ## Next architecture
 
@@ -162,8 +163,11 @@ early/late region assignments rose from 38/60 to 40/61 and the motivating
 `to` still had zero overlap while `address` moved to +200 ms.
 
 The planner already classifies comma context as `SoftListPause` or
-`HardBreakPause`, but schema V5 collapses both into one binary neural pause
-feature. A controlled scalar encoding (`list=-1`, `none=0`, `hard=1`) selected
+`HardBreakPause`, but schema V5 collapses both into one binary learned pause
+feature. The monotonic decoder separately receives the hard-boundary flag and
+uses it with lexical comma context for its existing bounded commit-lag
+safeguard; that flag is not a distinct neural input column. A controlled scalar
+encoding (`list=-1`, `none=0`, `hard=1`) selected
 a trained checkpoint but regressed pause cleanliness, material leaks, split
 words, and strict-perfect cases. Those weights and the runtime encoding were
 rejected. Lexical punctuation presence/type remains active; contextual comma

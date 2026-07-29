@@ -27,7 +27,7 @@ prompt:
 scripts\verify.bat
 ```
 
-This builds the runtime, validates the corpus and reference data, runs all 750
+This builds the runtime, validates the corpus and reference data, runs all 841
 cases, writes results to `outputs/runs/latest`, and checks them against the
 accepted baseline.
 
@@ -46,11 +46,14 @@ training is described in [docs/neural_runtime.md](docs/neural_runtime.md).
 
 ## Data and model
 
-The checked-in corpus contains 350 recorded utterances and 400 synthetic
+The checked-in corpus contains 441 recorded utterances and 400 synthetic
 utterances generated with Qwen voice-clone references. The packaged checkpoint
-was trained from this corpus. The Apache license grants copyright and patent
-permissions; it does not grant rights to a person's voice or likeness. Confirm
-speaker and voice-reference consent before redistributing these assets.
+is evaluated against this unified corpus. The training workflow can fine-tune
+from it, but the accepted weights may predate newly imported regression cases
+when candidate checkpoints fail promotion. The Apache license grants copyright
+and patent permissions; it does not grant rights to a person's voice or
+likeness. Confirm speaker and voice-reference consent before redistributing
+these assets.
 
 ## Contributing
 

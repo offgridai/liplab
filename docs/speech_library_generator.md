@@ -60,7 +60,7 @@ provenance, and TextGrid hashes and interval counts.
 ## Existing corpus recipe
 
 `inputs/speech_library/existing_corpus_v1.json` assigns one deterministic seed
-and one voice to each of the 350 recorded corpus transcripts. This is a
+and one voice to each of the 441 recorded corpus transcripts. This is a
 recreation recipe: its voice is not mistaken for the speaker in the existing
 recording. Assignments are
 pseudorandom but reproducible: they are derived from a named SHA-256 namespace
@@ -110,7 +110,7 @@ partition.
 There is no separate old corpus and Data Factory corpus at grading or training
 time. `inputs/corpus.csv` is the authoritative inventory for both:
 
-- `origin=recorded` identifies the 350 Offgrid recordings. Their
+- `origin=recorded` identifies the 441 Offgrid recordings. Their
   `existing_corpus_v1` seed/voice fields describe an optional recreation.
 - `origin=data_factory` identifies the 400 imported Qwen 1.7B utterances. Their
   seed and voice describe the actual canonical WAV.

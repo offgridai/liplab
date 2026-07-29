@@ -8,6 +8,8 @@ deterministic scheduler designs have been removed.
 
 The runtime is the source under `offgrid_dropin` plus the version-5 checkpoint
 at `offgrid_dropin/Private/Lipsync/Models/OffgridAINeuralStreamerV5.bin`.
+The current shared implementation identifier is
+`2026.07.29-jaw-composition-v37`, and its diagnostic schema is version 11.
 
 The checkpoint contains a small causal token/region network. The native CUDA
 runtime validates its schema and dimensions, retains model and transcript
@@ -45,6 +47,13 @@ Run:
 scripts\run_neural_streamer_training.bat C:\aitoolkit\libtorch-2.13.0-cu130
 ```
 
+An optional second argument selects a controlled fine-tuning mode:
+`--full-finetune`, `--acoustic-finetune`, `--identity-finetune`,
+`--word-interval-finetune`, or `--phone-interval-finetune`. With no mode, only
+the schema-v5 punctuation columns are adapted. Every mode still starts
+from the packaged checkpoint and must win decoded validation selection before
+its candidate is replayed for corpus acceptance.
+
 This is one closed workflow:
 
 1. build the harness, CUDA runtime, and optional LibTorch trainer;
@@ -68,11 +77,19 @@ exclamation mark, colon, semicolon, dash, or other. These features describe the
 transcript boundary, never timing: acoustic evidence and the causal neural path
 still decide whether and when a pause occurs.
 
-The planner also retains `SoftListPause` versus `HardBreakPause` as diagnostic
-metadata. V5 does not encode that contextual class separately: a controlled
-scalar-overload experiment regressed pause and region behavior and was rejected.
-A future schema should add dedicated categorical columns rather than changing
-the meaning of the accepted binary pause feature.
+The planner also retains `SoftListPause` versus `HardBreakPause` as contextual
+metadata. V5 does not encode that distinction as separate learned columns: both
+classes set the same neural pause-boundary feature. Outside the model, the
+monotonic commit decoder uses the hard-boundary flag together with a lexical
+comma and following-clause shape for one bounded fixed-lag safeguard. That
+safeguard delays irreversible commitment while acoustic pause evidence can
+arrive; it does not choose viseme identity or create a second schedule.
+
+A controlled experiment that overloaded the learned pause scalar with
+`list=-1`, `none=0`, and `hard=1` regressed pause and region behavior and was
+rejected. A future checkpoint schema should add dedicated categorical columns
+for hard sentence endings, clause endings, list commas, and ordinary commas
+rather than changing the meaning of the accepted binary feature.
 
 The accepted 841-case checkpoint currently scores:
 
@@ -117,7 +134,12 @@ poses. `FOffgridAILipsyncPoseRuntimeState` smooths that dynamic map without
 reducing it to generic open/closed/wide/round/funnel/teeth channels. Hosts should
 submit the map produced by `BuildPoseWeightMapFromState` unchanged. Jaw motion is
 owned entirely by the `CTRL_C_jaw` values authored in the viseme pose library;
-the lipsync runtime does not generate a separate jaw target or carrier.
+the lipsync runtime does not generate a separate jaw target or carrier. When the
+host expands simultaneously active poses into MetaHuman controls, it must treat
+the central jaw as one physical degree of freedom and arbitrate the strongest
+weighted authored jaw target instead of additively summing every pose's jaw
+value. Bilabial authority may attenuate residual authored opening, but it must
+not replace, invent, or independently animate the jaw.
 
 `CloseInputStream()` means that no more PCM will arrive. It is not an
 end-of-playback signal. LineCoach must continue `Update(CurrentPlaybackSec)`

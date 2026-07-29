@@ -39,8 +39,9 @@ validation-loss winner was repeatedly not the decoded-alignment winner.
   substitutions bounded by an MFA-aligned word retain 0.5-confidence timing
   supervision, while wholly unsupported interpolation retains only 10%
   path-shaping weight. Transcript phone/pose identity remains authoritative.
-- Fine-tuning supports full, acoustic-only, and identity-only modes so accepted
-  region/timing behavior can be frozen during controlled experiments.
+- Fine-tuning supports full, acoustic-only, identity-only, word-interval, and
+  phone-interval modes so accepted region/timing behavior can be frozen during
+  controlled experiments.
 - Corpus summaries now include decoded viseme identity recall, precision,
   missing/extra counts, and matched-center MAE.
 - Grade gates limit identity recall and precision loss to 0.001 and center-MAE

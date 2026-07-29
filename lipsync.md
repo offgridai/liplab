@@ -34,6 +34,14 @@ advances through transcript phones and determines placements and learned
 within-word proportions. Fixed lag provides future acoustic context without
 revising already committed history.
 
+"Neural-only" means there is no parallel text-, TTS-, or heuristic-owned
+schedule. The streaming decoder still applies deterministic commitment
+mechanics around the learned scores: monotonic order, a finite forward-token
+window, a hard dwell corruption guard, fixed lag, and a bounded hold when
+crossing an unresolved hard comma before a multi-word clause. These constraints
+can delay or limit commitment, but they cannot choose viseme identity, invent
+events, or provide an alternate event timeline.
+
 The first and last token states delimit each word. Their training targets extend
 to the complete MFA word interval, while internal token transitions retain phone
 and syllable supervision. The performer sustains each neural state through its

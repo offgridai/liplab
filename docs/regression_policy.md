@@ -40,6 +40,13 @@ internal-boundary error, and word-level total variation.
 case, word, and boundary review tables. `scripts/check_grades.py` compares that
 scorecard with `docs/grade_baseline.json` and `docs/grade_thresholds.json`.
 
+Offline checkpoint selection additionally decodes held-out phone and key-viseme
+occupancy. It reports onset and exit MAE, spoken coverage, zero-overlap counts,
+and under-occupied counts, alongside compact-word interval metrics. These MFA
+labels are training and evaluation evidence only; they are not runtime inputs
+and cannot override transcript-owned phone or pose identity. A candidate must
+still pass the complete corpus gates after winning held-out selection.
+
 When approved gold is deliberately changed or expanded, refresh the baseline.
 When runtime quality improves, accept the new baseline rather than loosening a
 threshold. Metrics from deleted detectors, candidate estimators, diagnostic
