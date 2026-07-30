@@ -10,6 +10,10 @@ class OFFGRIDAI_API FOffgridAIVisemePerformer
 {
 public:
     static TArray<FOffgridAISubmittedVisemeSample> Sample(const FOffgridAICommittedVisemeTrack& Track, float PlaybackSeconds, bool bGateBeforeSpeechStart = true);
+    // Samples a presentation-only positive emphasis pulse from primary lexical
+    // stress. The pulse is anchored to the same immutable committed center and
+    // speech-region gates as the corresponding vowel event.
+    static float SamplePositiveStressEmphasis(const FOffgridAICommittedVisemeTrack& Track, float PlaybackSeconds, bool bGateBeforeSpeechStart = true);
     static TMap<FName, float> CollapseByPoseID(const TArray<FOffgridAISubmittedVisemeSample>& Samples);
 
     // Builds and advances the complete detailed-pose state. Every eligible

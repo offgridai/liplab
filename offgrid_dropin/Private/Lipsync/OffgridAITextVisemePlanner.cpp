@@ -349,6 +349,13 @@ static FString StripStressDigits(const FString& Phoneme)
     return Out;
 }
 
+static uint8 ParseLexicalStress(const FString& Phoneme)
+{
+    if (Phoneme.IsEmpty()) return 0;
+    const TCHAR Last = Phoneme[Phoneme.Len() - 1];
+    return Last == TEXT('1') ? 1 : (Last == TEXT('2') ? 2 : 0);
+}
+
 static bool IsVowelPhonemeBase(const FString& Base)
 {
     static const TSet<FString> Vowels = {
@@ -858,6 +865,7 @@ static void AddEvent(TArray<FOffgridAITextVisemeEvent>& Events, EOffgridAITextVi
     E.SourcePhoneGlobalIndex = INDEX_NONE;
     E.SourcePhone = SourcePhone;
     E.SourcePhoneBase = SourcePhoneBase;
+    E.LexicalStress = ParseLexicalStress(SourcePhone);
     E.PhoneLocalNorm = LocalOrder;
     E.VisualRole = VisualRole;
     E.bIsRenderable = bIsRenderable;

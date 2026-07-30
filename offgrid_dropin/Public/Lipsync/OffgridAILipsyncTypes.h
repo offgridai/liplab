@@ -57,6 +57,9 @@ struct FOffgridAICommittedVisemeEvent
     int32 SourcePhoneIndex = INDEX_NONE;
     FString SourcePhoneBase;
     FName SourcePhoneClass = NAME_None;
+    // Transcript-derived CMU lexical stress. It does not affect event identity,
+    // ordering, strength, or timing.
+    uint8 LexicalStress = 0;
     bool bMappedToObservedSpeech = false;
 
     float CommitPlaybackSeconds = 0.0f;

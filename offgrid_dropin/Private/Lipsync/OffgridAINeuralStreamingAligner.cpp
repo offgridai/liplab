@@ -651,6 +651,7 @@ void FOffgridAINeuralStreamingAligner::FinishToken(
     Event.SourcePhoneIndex = Planned.SourcePhoneGlobalIndex;
     Event.SourcePhoneBase = Planned.SourcePhoneBase;
     Event.SourcePhoneClass = NeuralPhoneClass(Planned.SourcePhoneBase);
+    Event.LexicalStress = Planned.LexicalStress;
     Event.bMappedToObservedSpeech = Event.SpeechRegionIndex != INDEX_NONE;
     Event.CommitPlaybackSeconds = CommitPlaybackSec;
     Event.CommitLeadSeconds = CenterSec - CommitPlaybackSec;

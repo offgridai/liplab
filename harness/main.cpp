@@ -827,7 +827,7 @@ static std::vector<HandmadeLabel> build_gold_visible_labels(
 static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
 {
     std::ostringstream out;
-    out << "index,pose,word,word_index,text_sentence_index,text_center_norm,strength,source_phone,source_phone_index,visual_role,renderable,generator\n";
+    out << "index,pose,word,word_index,text_sentence_index,text_center_norm,strength,source_phone,lexical_stress,source_phone_index,visual_role,renderable,generator\n";
     out << std::fixed << std::setprecision(6);
     for (int32 i = 0; i < plan.Events.Num(); ++i)
     {
@@ -841,6 +841,7 @@ static std::string planned_csv(const FOffgridAITextVisemePlan& plan)
             << center << ','
             << event.Strength << ','
             << to_std(event.SourcePhoneBase) << ','
+            << static_cast<int>(event.LexicalStress) << ','
             << event.SourcePhoneIndex << ','
             << visual_phone_role_name(event.VisualRole) << ','
             << (event.bIsRenderable ? 1 : 0) << ','
@@ -956,7 +957,7 @@ static std::string speech_csv(const TArray<FOffgridAIStreamingSpeechRegion>& spe
 static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
 {
     std::ostringstream out;
-    out << "index,start,center,end,pose,word,word_index,speech_region_index,text_sentence_index,strength,renderable,canceled_by_word_handoff,reason,source_phone_index,source_phone_base,source_phone_class,text_center_norm,text_diagnostic_center,prior_start,prior_center,prior_end,lead_adjusted_center,playback_offset,total_paused_at_commit,min_live_lead_delay,inter_event_floor_delay,total_center_delay,commit_playback,commit_lead,mapped_to_observed_speech,used_initial_speech_anchor,used_resume_anchor,acoustic_anchor_kind,acoustic_anchor_seconds,acoustic_anchor_error_seconds,observed_pause_decay_seconds,observed_resume_onset_seconds,observed_resume_energy_anchor_seconds,boundary_word_index,boundary_mark,boundary_outcome\n";
+    out << "index,start,center,end,pose,word,word_index,speech_region_index,text_sentence_index,strength,renderable,canceled_by_word_handoff,reason,source_phone_index,source_phone_base,source_phone_class,lexical_stress,text_center_norm,text_diagnostic_center,prior_start,prior_center,prior_end,lead_adjusted_center,playback_offset,total_paused_at_commit,min_live_lead_delay,inter_event_floor_delay,total_center_delay,commit_playback,commit_lead,mapped_to_observed_speech,used_initial_speech_anchor,used_resume_anchor,acoustic_anchor_kind,acoustic_anchor_seconds,acoustic_anchor_error_seconds,observed_pause_decay_seconds,observed_resume_onset_seconds,observed_resume_energy_anchor_seconds,boundary_word_index,boundary_mark,boundary_outcome\n";
     out << std::fixed << std::setprecision(6);
     for (const auto& event : track.Events)
     {
@@ -976,6 +977,7 @@ static std::string committed_csv(const FOffgridAIAlignedVisemeTrack& track)
             << event.SourcePhoneIndex << ','
             << to_std(event.SourcePhoneBase) << ','
             << to_std(event.SourcePhoneClass) << ','
+            << static_cast<int>(event.LexicalStress) << ','
             << event.TextCenterNorm << ','
             << event.TextDiagnosticCenterSeconds << ','
             << event.PriorStartSeconds << ','
