@@ -240,6 +240,63 @@ TArray<FOffgridAISubmittedVisemeSample> FOffgridAIVisemePerformer::Sample(const 
     return Out;
 }
 
+float FOffgridAIVisemePerformer::SamplePositiveStressEmphasis(
+    const FOffgridAICommittedVisemeTrack& Track,
+    float PlaybackSeconds,
+    bool bGateBeforeSpeechStart)
+{
+    if (bGateBeforeSpeechStart
+        && Track.SpeechEndSeconds > Track.SpeechStartSeconds
+        && PlaybackSeconds + 0.001f < Track.SpeechStartSeconds)
+    {
+        return 0.0f;
+    }
+
+    float OutWeight = 0.0f;
+    for (const FOffgridAICommittedVisemeEvent& E : Track.Events)
+    {
+        // Primary lexical stress is the proof-of-concept trigger. Secondary
+        // stress is preserved in the data contract but deliberately silent.
+        if (E.LexicalStress != 1 || !E.bIsRenderable || E.bCanceledByWordHandoff)
+        {
+            continue;
+        }
+        if (!FMath::IsFinite(E.FinalRenderCenterSeconds))
+        {
+            continue;
+        }
+
+        float RegionStartSeconds = Track.SpeechStartSeconds;
+        float RegionEndSeconds = TNumericLimits<float>::Max();
+        for (const FOffgridAICommittedVisemeTrack::FSpeechRegion& Region : Track.SpeechRegions)
+        {
+            if (Region.SpeechRegionIndex != E.SpeechRegionIndex) continue;
+            RegionStartSeconds = Region.StartSeconds;
+            if (Region.bEnded) RegionEndSeconds = Region.EndSeconds;
+            break;
+        }
+
+        // Visual prosody often begins before the acoustic accent. Keep this
+        // much tighter than a full brow gesture: a 100 ms preparation, peak
+        // 20 ms before the vowel center, and 140 ms release.
+        const float PeakSeconds = E.FinalRenderCenterSeconds - 0.020f;
+        const float StartSeconds = FMath::Max(E.FinalRenderCenterSeconds - 0.100f, RegionStartSeconds);
+        const float EndSeconds = FMath::Min(E.FinalRenderCenterSeconds + 0.140f, RegionEndSeconds);
+        if (PlaybackSeconds < StartSeconds || PlaybackSeconds > EndSeconds)
+        {
+            continue;
+        }
+
+        const float Shape = PlaybackSeconds <= PeakSeconds
+            ? MinimumJerk01((PlaybackSeconds - StartSeconds) / FMath::Max(PeakSeconds - StartSeconds, 0.001f))
+            : 1.0f - MinimumJerk01((PlaybackSeconds - PeakSeconds) / FMath::Max(EndSeconds - PeakSeconds, 0.001f));
+        // Overlapping stress pulses merge rather than accumulating into a large
+        // expression. Viseme strength is intentionally not reused as prosody.
+        OutWeight = FMath::Max(OutWeight, FMath::Clamp(Shape, 0.0f, 1.0f));
+    }
+    return OutWeight;
+}
+
 TMap<FName, float> FOffgridAIVisemePerformer::CollapseByPoseID(const TArray<FOffgridAISubmittedVisemeSample>& Samples)
 {
     // Multiple events for the same pose collapse by maximum weight. Cross-pose

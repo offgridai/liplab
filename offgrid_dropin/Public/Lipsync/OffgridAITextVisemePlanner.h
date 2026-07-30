@@ -72,6 +72,9 @@ struct FOffgridAITextVisemeEvent
     int32 SourcePhoneGlobalIndex = INDEX_NONE;
     FString SourcePhone;
     FString SourcePhoneBase;
+    // CMU lexical stress retained from the source vowel: 0=unstressed,
+    // 1=primary, 2=secondary. This is presentation metadata only.
+    uint8 LexicalStress = 0;
     float PhoneLocalNorm = 0.5f;
     EOffgridAIVisualPhoneRole VisualRole = EOffgridAIVisualPhoneRole::PrimaryPose;
     // Timing-only phones remain in the ordered plan but do not produce a pose.
